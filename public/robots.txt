@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://www.ryukomik.my.id
+
+# Sitemaps
+Sitemap: https://www.ryukomik.my.id/sitemap.xml
