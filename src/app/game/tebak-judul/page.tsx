@@ -29,7 +29,7 @@ type SearchParams = {
 async function getKiryuuGameItems(page: number): Promise<GameItem[]> {
   try {
     const res = await fetch(
-      `https://mgkomik-backend-three.vercel.app/kiryuu/pustaka?page=${page}`,
+      `https://api.ryukomik.web.id/kiryuu/pustaka?page=${page}`,
       { cache: "no-store" },
     );
     const json = await res.json();

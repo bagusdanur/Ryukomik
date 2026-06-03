@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import type { Dict } from "@/types/common";
 import type { SearchResultItem, SourceId } from "@/types/content";
 
-const SOURCE_API_BASE_URL = "https://mgkomik-backend-three.vercel.app";
+const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 const PUBLIC_SOURCES: { id: SourceId; label: string }[] = [
   { id: "kiryuu", label: "Source 1" },
   { id: "komiku", label: "Source 2" },

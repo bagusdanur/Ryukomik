@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import SeriesCard from "@/components/SeriesCard";
 
-const SOURCE_API_BASE_URL = "https://mgkomik-backend-three.vercel.app";
+const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 
 type PopularItem = {
   link: string;

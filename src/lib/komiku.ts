@@ -28,7 +28,7 @@ const toKomikuList = (value: unknown): KomikuListItem[] => {
 
 export async function getTerbaru(): Promise<KomikuListItem[]> {
   try {
-    const res = await fetch("https://mgkomik-backend-three.vercel.app/komiku/terbaru", {
+    const res = await fetch("https://api.ryukomik.web.id/komiku/terbaru", {
       next: { revalidate: 600 },
     });
     const json = await res.json();
@@ -46,7 +46,7 @@ export async function getTerbaru(): Promise<KomikuListItem[]> {
 
 export async function getHomeKomiku(): Promise<KomikuHomeData> {
   try {
-    const res = await fetch("https://mgkomik-backend-three.vercel.app/komiku/home", {
+    const res = await fetch("https://api.ryukomik.web.id/komiku/home", {
       next: { revalidate: 600 },
     });
     const json = await res.json();

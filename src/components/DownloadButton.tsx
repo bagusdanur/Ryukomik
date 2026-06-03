@@ -64,7 +64,7 @@ export default function DownloadButton({
 
     try {
       const res = await fetch(
-        `https://mgkomik-backend-three.vercel.app/${source}/chapter/${slug}`,
+        `https://api.ryukomik.web.id/${source}/chapter/${slug}`,
       );
       const data = (await res.json()) as ChapterResponse;
 

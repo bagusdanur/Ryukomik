@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const BASE_URL = "https://mgkomik-backend-three.vercel.app";
+const BASE_URL = "https://api.ryukomik.web.id";
 
 const SOURCES = [
   {

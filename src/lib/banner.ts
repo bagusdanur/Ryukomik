@@ -33,7 +33,7 @@ export async function getBannerKomiku(): Promise<BannerItem[]> {
     const results = await Promise.all(
       slugs.map(async (slug) => {
         const res = await fetch(
-          `https://mgkomik-backend-three.vercel.app/komiku/detail/${slug}`,
+          `https://api.ryukomik.web.id/komiku/detail/${slug}`,
           { next: { revalidate: 86400 } } // ⬅️ penting
         );
         const json = await res.json();

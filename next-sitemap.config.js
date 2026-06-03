@@ -30,7 +30,7 @@ module.exports = {
       // 1. KOMIK — page 1 saja
       // =============================
       const komikRes = await fetch(
-        `https://mgkomik-backend-three.vercel.app/komiku/pustaka-filter?page=1&orderby=modified`
+        `https://api.ryukomik.web.id/komiku/pustaka-filter?page=1&orderby=modified`
       );
       const komikJson = await komikRes.json();
       const komikItems = komikJson.data || [];
@@ -52,7 +52,7 @@ module.exports = {
       // =============================
       try {
         const animeRes = await fetch(
-          `https://mgkomik-backend-three.vercel.app/anime/list?page=1`
+          `https://api.ryukomik.web.id/anime/list?page=1`
         );
         const animeJson = await animeRes.json();
         const animeItems = animeJson.data || [];

@@ -69,7 +69,7 @@ function formatTitleFromSlug(slug?: string, currentChapter?: string) {
 
 async function fetchChapterImages(source: string, slug: string): Promise<ChapterImagesResponse> {
   const res = await fetch(
-    `https://mgkomik-backend-three.vercel.app/${source}/chapter/${slug}`
+    `https://api.ryukomik.web.id/${source}/chapter/${slug}`
   );
   const data = await res.json();
   return {

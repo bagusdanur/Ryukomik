@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   const { slug } = await params;
   try {
     const res = await fetch(
-      `https://mgkomik-backend-three.vercel.app/meionovels/detail/${slug}`,
+      `https://api.ryukomik.web.id/meionovels/detail/${slug}`,
       { next: { revalidate: 900 } }
     );
     const json = (await res.json()) as NovelApiResponse<NovelDetail>;
@@ -38,7 +38,7 @@ export default async function NovelDetailPage({ params }: RouteProps) {
   let data: NovelDetail | null = null;
   try {
     const res = await fetch(
-      `https://mgkomik-backend-three.vercel.app/meionovels/detail/${slug}`,
+      `https://api.ryukomik.web.id/meionovels/detail/${slug}`,
       { next: { revalidate: 900 } }
     );
     const json = (await res.json()) as NovelApiResponse<NovelDetail>;

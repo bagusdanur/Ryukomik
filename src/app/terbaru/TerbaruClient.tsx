@@ -41,7 +41,7 @@ function getHistory(): ReadHistoryItem[] {
   }
 }
 
-const SOURCE_API_BASE_URL = "https://mgkomik-backend-three.vercel.app";
+const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 const LISTING_CACHE_PREFIX = "rk_terbaru_listing_v3";
 const LISTING_CACHE_TTL = 5 * 60 * 1000;
 const VALID_SOURCES = new Set<SourceId>(["kiryuu", "komiku", "sekte", "meionovels"]);

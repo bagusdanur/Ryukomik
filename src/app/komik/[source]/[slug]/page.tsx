@@ -46,7 +46,7 @@ const normalizeDetail = (json: Dict): ComicDetail | null => {
 };
 
 const getDetail = async (source: string, slug: string): Promise<ComicDetail | null> => {
-  const endpoint = `https://mgkomik-backend-three.vercel.app/${source}/detail/${encodeURIComponent(slug)}`;
+  const endpoint = `https://api.ryukomik.web.id/${source}/detail/${encodeURIComponent(slug)}`;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {

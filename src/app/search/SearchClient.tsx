@@ -20,7 +20,7 @@ const COMIC_SOURCES: SearchSource[] = [
 const ADULT_SOURCE_IDS = new Set<SearchSourceId>(["sekte", "doujindesu"]);
 const PUBLIC_SOURCES = COMIC_SOURCES.filter((source) => !ADULT_SOURCE_IDS.has(source.id));
 const ADULT_SOURCES = COMIC_SOURCES.filter((source) => ADULT_SOURCE_IDS.has(source.id));
-const SOURCE_API_BASE_URL = "https://mgkomik-backend-three.vercel.app";
+const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 
 const buildSearchUrl = (sourceId: SearchSourceId, query: string) => {
   return `${SOURCE_API_BASE_URL}/${sourceId}/search?q=${encodeURIComponent(query)}`;
