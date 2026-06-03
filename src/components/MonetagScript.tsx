@@ -12,7 +12,7 @@ export default function MonetagScript() {
     <Script id="monetag-script" strategy="afterInteractive">
       {`
         (function(s){
-          s.dataset.zone='10944835';
+          s.dataset.zone='11093812';
           s.src='https://al5sm.com/tag.min.js';
         })(
           [document.documentElement, document.body]
