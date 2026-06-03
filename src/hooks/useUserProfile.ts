@@ -2,16 +2,11 @@
 
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabaseClient";
-
-interface UserProfile {
-  id: string;
-  username?: string | null;
-  avatar_url?: string | null;
-}
+import { clearCachedProfile, loadCachedProfile } from "@/utils/profileCache";
+import type { CachedProfile } from "@/utils/profileCache";
 
 export function useUserProfile(user: User | null) {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<CachedProfile | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -19,18 +14,14 @@ export function useUserProfile(user: User | null) {
     if (!user?.id) return;
 
     const fetchProfile = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, username, avatar_url")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!cancelled) setProfile(data || null);
+      const data = await loadCachedProfile(user.id);
+      if (!cancelled) setProfile(data);
     };
 
     fetchProfile();
 
     const handleProfileUpdated = () => {
+      clearCachedProfile(user.id);
       fetchProfile();
     };
 

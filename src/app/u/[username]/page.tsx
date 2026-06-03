@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import UserBadges from "@/components/UserBadges";
@@ -18,6 +19,10 @@ import {
 
 const XP_PER_LEVEL = 100;
 const BRACKET_URL_REGEX = /\[(https?:\/\/[^\]]+)\]/g;
+const PUBLIC_PROFILE_TTL = 300;
+const PUBLIC_COLLECTION_ITEM_LIMIT = 8;
+
+export const revalidate = 300;
 
 type RouteProps = {
   params: Promise<{ username: string }>;
@@ -67,6 +72,19 @@ type PublicCollection = {
 type TitleRushScoreRow = {
   user_id: string;
   rank: number;
+};
+
+type PublicProfileData = {
+  profile: Profile;
+  showReads: boolean;
+  showComments: boolean;
+  showJoinDate: boolean;
+  totalReads: number | null;
+  totalComments: number | null;
+  comments: CommentRow[];
+  publicCollections: PublicCollection[];
+  titleRushRank: number | null;
+  xpRank: number;
 };
 
 const SITE_URL = "https://www.ryukomik.my.id";
@@ -137,6 +155,120 @@ function parseCommentContent(content?: string | null): { text: string; images: s
 
   return { text, images };
 }
+
+const getPublicProfileDataCached = unstable_cache(
+  async (username: string): Promise<PublicProfileData | null> => {
+    const { data: profiles } = await supabaseAdmin
+      .from("profiles")
+      .select(
+        "id, username, avatar_url, level, xp, role, is_premium, created_at, total_comments, show_public_reads, show_public_comments, show_public_join_date",
+      )
+      .ilike("username", username)
+      .limit(1);
+    const profile = profiles?.[0] as Profile | undefined;
+
+    if (!profile) return null;
+
+    const showReads = profile.show_public_reads !== false;
+    const showComments = profile.show_public_comments !== false;
+    const showJoinDate = profile.show_public_join_date !== false;
+
+    const [
+      readsResult,
+      commentsCountResult,
+      commentsResult,
+      collectionsResult,
+      titleRushResult,
+      xpRankResult,
+    ] = await Promise.all([
+      showReads
+        ? supabaseAdmin
+            .from("user_reads")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", profile.id)
+        : Promise.resolve({ count: null }),
+      showComments
+        ? supabaseAdmin
+            .from("comments")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", profile.id)
+        : Promise.resolve({ count: null }),
+      showComments
+        ? supabaseAdmin
+            .from("comments")
+            .select("id, slug, content, created_at, is_spoiler")
+            .eq("user_id", profile.id)
+            .is("parent_id", null)
+            .order("created_at", { ascending: false })
+            .limit(6)
+        : Promise.resolve({ data: [] }),
+      supabaseAdmin
+        .from("user_collections")
+        .select("id, name, updated_at")
+        .eq("user_id", profile.id)
+        .eq("is_public", true)
+        .order("updated_at", { ascending: false })
+        .limit(4),
+      supabaseAdmin
+        .from("title_rush_winners")
+        .select("user_id, rank")
+        .not("awarded_at", "is", null)
+        .gte("awarded_at", getActiveTitleSince())
+        .order("rank", { ascending: true })
+        .limit(3),
+      supabaseAdmin
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .gt("xp", profile.xp || 0),
+    ]);
+
+    const collectionRows = (collectionsResult.data || []) as PublicCollection[];
+    const collectionItems = await Promise.all(
+      collectionRows.map(async (collection) => {
+        if (!collection.id) return { id: collection.id, items: [] as PublicCollectionItem[] };
+        const { data } = await supabaseAdmin
+          .from("user_collection_items")
+          .select("source, slug, title, image, position, created_at")
+          .eq("collection_id", collection.id)
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: false })
+          .limit(PUBLIC_COLLECTION_ITEM_LIMIT);
+
+        return {
+          id: collection.id,
+          items: (data || []) as PublicCollectionItem[],
+        };
+      }),
+    );
+    const itemsByCollection = new Map(
+      collectionItems.map((collection) => [collection.id, collection.items]),
+    );
+
+    const publicCollections = collectionRows.map((collection) => ({
+      ...collection,
+      user_collection_items: itemsByCollection.get(collection.id) || [],
+    }));
+    const titleRushRank =
+      ((titleRushResult.data || []) as TitleRushScoreRow[]).find(
+        (row) => row.user_id === profile.id,
+      )?.rank || null;
+
+    return {
+      profile,
+      showReads,
+      showComments,
+      showJoinDate,
+      totalReads: readsResult.count ?? null,
+      totalComments: commentsCountResult.count ?? null,
+      comments: (commentsResult.data || []) as CommentRow[],
+      publicCollections,
+      titleRushRank,
+      xpRank: (xpRankResult.count ?? 0) + 1,
+    };
+  },
+  ["public-profile-v2"],
+  { revalidate: PUBLIC_PROFILE_TTL, tags: ["public-profile", "comments"] },
+);
 
 function getProfileType(profile: Profile): ProfileType {
   if (profile.role === "admin") return "admin";
@@ -482,80 +614,21 @@ export default async function PublicProfilePage({ params }: RouteProps) {
   const username = decodeURIComponent(rawUsername || "").trim();
   if (!username) notFound();
 
-  const { data: profiles } = await supabaseAdmin
-    .from("profiles")
-    .select(
-      "id, username, avatar_url, level, xp, role, is_premium, created_at, total_comments, show_public_reads, show_public_comments, show_public_join_date",
-    )
-    .ilike("username", username)
-    .limit(1);
-  const profile = profiles?.[0] as Profile | undefined;
+  const data = await getPublicProfileDataCached(username);
+  if (!data) notFound();
 
-  if (!profile) notFound();
-
-  const showReads = profile.show_public_reads !== false;
-  const showComments = profile.show_public_comments !== false;
-  const showJoinDate = profile.show_public_join_date !== false;
-
-  const [
-    { count: totalReads },
-    { count: totalComments },
-    commentsResult,
-    collectionsResult,
-    titleRushResult,
-    xpRankResult,
-  ] =
-    await Promise.all([
-      supabaseAdmin
-        .from("user_reads")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", profile.id),
-      supabaseAdmin
-        .from("comments")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", profile.id),
-      showComments
-        ? supabaseAdmin
-            .from("comments")
-            .select("id, slug, content, created_at, is_spoiler")
-            .eq("user_id", profile.id)
-            .is("parent_id", null)
-            .order("created_at", { ascending: false })
-            .limit(6)
-        : Promise.resolve({ data: [] }),
-      supabaseAdmin
-        .from("user_collections")
-        .select(
-          "id, name, updated_at, user_collection_items(source, slug, title, image, position, created_at)",
-        )
-        .eq("user_id", profile.id)
-        .eq("is_public", true)
-        .order("updated_at", { ascending: false })
-        .limit(4),
-      supabaseAdmin
-        .from("title_rush_winners")
-        .select("user_id, rank")
-        .not("awarded_at", "is", null)
-        .gte("awarded_at", getActiveTitleSince())
-        .order("rank", { ascending: true })
-        .limit(3),
-      supabaseAdmin
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .gt("xp", profile.xp || 0),
-    ]);
-  const titleRushRank =
-    ((titleRushResult.data || []) as TitleRushScoreRow[]).find(
-      (row) => row.user_id === profile.id,
-    )?.rank || null;
-  const xpRank = (xpRankResult.count ?? 0) + 1;
-  const comments = (commentsResult.data || []) as CommentRow[];
-  const publicCollections = ((collectionsResult.data || []) as PublicCollection[]).map((collection) => ({
-    ...collection,
-    user_collection_items: (collection.user_collection_items || [])
-      .sort((a, b) => (a.position || 0) - (b.position || 0))
-      .slice(0, 8),
-  }));
+  const {
+    profile,
+    showReads,
+    showComments,
+    showJoinDate,
+    totalReads,
+    totalComments,
+    comments,
+    publicCollections,
+    titleRushRank,
+    xpRank,
+  } = data;
 
   return (
     <div className="rk-page px-4 pb-24 pt-20 text-white">

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { createBackup } from "@/utils/backup";
+import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 
 const AUTO_SYNC_KEY = "rk_auto_sync_backup_enabled";
 const LAST_BACKUP_KEY = "rk_last_auto_backup_at";
@@ -12,7 +13,8 @@ const getUserAutoSyncKey = (userId: string) => `${AUTO_SYNC_KEY}:${userId}`;
 const getUserLastBackupKey = (userId: string) => `${LAST_BACKUP_KEY}:${userId}`;
 
 export default function AutoBackup() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user } = useSupabaseUser();
+  const userId = user?.id || null;
   const [isPremium, setIsPremium] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const timerRef = useRef<number | null>(null);
@@ -35,26 +37,6 @@ export default function AutoBackup() {
   }, [userId]);
 
   useEffect(() => {
-    let active = true;
-
-    const loadUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (active) setUserId(data.user?.id || null);
-    };
-
-    loadUser();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
-      setUserId(session?.user?.id || null);
-    });
-
-    return () => {
-      active = false;
-      listener.subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
     if (!userId) {
       const id = requestAnimationFrame(() => setIsPremium(false));
       return () => cancelAnimationFrame(id);
@@ -62,13 +44,9 @@ export default function AutoBackup() {
 
     let active = true;
 
-    supabase
-      .from("profiles")
-      .select("is_premium")
-      .eq("id", userId)
-      .single()
-      .then(({ data }) => {
-        if (active) setIsPremium(Boolean(data?.is_premium));
+    loadCachedProfile(userId)
+      .then((profile) => {
+        if (active) setIsPremium(isActivePremiumProfile(profile));
       });
 
     return () => {

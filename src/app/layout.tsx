@@ -13,7 +13,6 @@ import { Analytics } from "@vercel/analytics/next";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./globals.css";
-import PresenceTracker from "@/components/PresenceTracker";
 import SWRegister from "./sw-register";
 import AdBanner from "@/components/AdBanner";
 
@@ -65,7 +64,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <SWRegister />
         <ThemeColorProvider />
         <AutoBackup />
-        <PresenceTracker />
         <Navbar />
         {children}
         <InstallPWA />

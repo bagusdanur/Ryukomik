@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
-import { supabase } from "@/lib/supabaseClient";
+import { supabaseAdmin } from "@/lib/supabaseServer";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
 import ProfilePopover from "@/components/profile/ProfilePopover";
@@ -45,6 +45,8 @@ const DEFAULT_PROFILE = Object.freeze({
   avatar_url: "",
   total_comments: 0,
 });
+const LATEST_COMMENTS_TTL = 300;
+const COMMENT_SNIPPET_LIMIT = 220;
 
 type CommentProfile = {
   level?: number;
@@ -167,15 +169,20 @@ export const formatTime = (date?: string | null) => {
   return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
 };
 
+function compactContent(content?: string | null) {
+  if (!content || content.length <= COMMENT_SNIPPET_LIMIT) return content || "";
+  return `${content.slice(0, COMMENT_SNIPPET_LIMIT).trim()}...`;
+}
+
 // ============================================
 // DATA FETCHING
 // ============================================
 
 const getLatestCommentsCached = unstable_cache(
   async () => {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("comments")
-      .select("id, user_id, slug, content, created_at, is_spoiler, author_name, avatar_url, profiles(level, role, is_premium, xp, username, avatar_url, total_comments)")
+      .select("id, user_id, slug, content, created_at, is_spoiler, author_name, avatar_url, profiles(level, role, is_premium, xp, username, avatar_url)")
       .is("parent_id", null)
       .order("created_at", { ascending: false })
       .limit(10);
@@ -183,16 +190,19 @@ const getLatestCommentsCached = unstable_cache(
       console.error("[LatestComments] Fetch error:", error.message);
       return [];
     }
-    return (data || []) as LatestComment[];
+    return ((data || []) as LatestComment[]).map((comment) => ({
+      ...comment,
+      content: compactContent(comment.content),
+    }));
   },
   ["latest-comments"],
-  { revalidate: 60, tags: ["comments"] }
+  { revalidate: LATEST_COMMENTS_TTL, tags: ["comments"] }
 );
 
 const getActiveTitleRushWinnersCached = unstable_cache(
   async () => {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("title_rush_winners")
       .select("user_id, rank")
       .not("awarded_at", "is", null)
@@ -209,7 +219,7 @@ const getActiveTitleRushWinnersCached = unstable_cache(
 
 const getXpLeadersCached = unstable_cache(
   async () => {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from("profiles")
       .select("id")
       .order("xp", { ascending: false })

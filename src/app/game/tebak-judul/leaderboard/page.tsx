@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { useCallback, useEffect, useState } from "react";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import VipBadge from "@/components/VipBadge";
 import TitleRushWinnerBadge from "@/components/TitleRushWinnerBadge";
 import { FaCrown, FaMedal, FaTrophy } from "react-icons/fa";
@@ -162,29 +162,30 @@ function RankRow({
 }
 
 export default function TitleRushLeaderboardPage() {
+  const { user, loading: userLoading } = useSupabaseUser();
   const [payload, setPayload] = useState<LeaderboardPayload | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadLeaderboard = async () => {
+  const loadLeaderboard = useCallback(async () => {
     setLoading(true);
-    const [userResult, leaderboardResult] = await Promise.all([
-      supabase.auth.getUser(),
-      fetch("/api/game/title-rush/leaderboard").then((res) => res.json()),
-    ]);
+    const leaderboardResult = await fetch("/api/game/title-rush/leaderboard").then((res) =>
+      res.json(),
+    );
 
-    setCurrentUserId(userResult.data.user?.id || null);
+    setCurrentUserId(user?.id || null);
     setPayload(
       Array.isArray(leaderboardResult?.rows)
         ? leaderboardResult
         : { week_start: "", rows: [] },
     );
     setLoading(false);
-  };
+  }, [user?.id]);
 
   useEffect(() => {
+    if (userLoading) return;
     void Promise.resolve().then(loadLeaderboard);
-  }, []);
+  }, [loadLeaderboard, userLoading]);
 
   const rows = payload?.rows || [];
   const activeWinnerRank = new Map(

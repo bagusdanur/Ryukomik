@@ -1,34 +1,14 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { revalidateTag } from "next/cache";
+import { verifyAdminRequest } from "@/lib/adminApi";
 import {
   getTitleRushEventStatus,
   setTitleRushEventStatus,
+  TITLE_RUSH_EVENT_STATUS_TAG,
 } from "@/lib/titleRushEvent";
 
-async function verifyAdmin(request: Request) {
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!token) return { error: "Login diperlukan.", status: 401 } as const;
-
-  const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
-  if (authError || !authData.user) {
-    return { error: "Sesi login tidak valid.", status: 401 } as const;
-  }
-
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", authData.user.id)
-    .single();
-
-  if (profileError || profile?.role !== "admin") {
-    return { error: "Akses admin diperlukan.", status: 403 } as const;
-  }
-
-  return { userId: authData.user.id } as const;
-}
-
 export async function GET(request: Request) {
-  const admin = await verifyAdmin(request);
+  const admin = await verifyAdminRequest(request);
   if ("error" in admin) {
     return NextResponse.json({ error: admin.error }, { status: admin.status });
   }
@@ -39,7 +19,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const admin = await verifyAdmin(request);
+    const admin = await verifyAdminRequest(request);
     if ("error" in admin) {
       return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
@@ -47,6 +27,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const enabled = body?.enabled === true;
     const status = await setTitleRushEventStatus(enabled);
+    revalidateTag(TITLE_RUSH_EVENT_STATUS_TAG, { expire: 0 });
 
     return NextResponse.json({
       ...status,

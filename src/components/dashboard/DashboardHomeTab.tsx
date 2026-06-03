@@ -8,6 +8,7 @@ import {
   FiUsers,
   FiMessageCircle,
   FiAward,
+  FiSmartphone,
 } from "react-icons/fi";
 import { RiVipCrownLine } from "react-icons/ri";
 import { HiOutlineSparkles } from "react-icons/hi2";
@@ -468,6 +469,21 @@ export default function DashboardHomeTab({
                 Hadiah Event
               </p>
               <p className="text-[10px] text-white/30">Title Rush mingguan</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setPage("apk")}
+            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-emerald-500/30 hover:bg-emerald-500/[.04] transition-all text-left"
+          >
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+              <FiSmartphone size={16} className="text-emerald-300" />
+            </div>
+            <div>
+              <p className="text-[12px] font-semibold text-white/70">
+                Setting APK
+              </p>
+              <p className="text-[10px] text-white/30">URL, versi & log</p>
             </div>
           </button>
         </div>

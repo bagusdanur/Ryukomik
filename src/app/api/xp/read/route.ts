@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
-// ✅ TAMBAH INI — Pastikan Node.js runtime (bukan edge)
 export const runtime = "nodejs";
 
 interface XpReadPayload {
@@ -17,21 +16,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "invalid" }, { status: 400 });
     }
 
-    // ✅ GANTI INI — Cek hanya hari ini (bukan selamanya)
     const today = new Date().toISOString().split("T")[0];
-    const { data: exist } = await supabaseAdmin
+    const { count: existingReads } = await supabaseAdmin
       .from("user_reads")
-      .select("id")
+      .select("id", { count: "exact", head: true })
       .eq("user_id", user_id)
       .eq("chapter_slug", chapter_slug)
-      .gte("created_at", today)  // ← hanya cek hari ini
-      .maybeSingle();
+      .gte("created_at", today);
 
-    if (exist) {
+    if ((existingReads || 0) > 0) {
       return NextResponse.json({ success: true, cached: true });
     }
 
-    // Insert + XP (tetap sama)
     await supabaseAdmin.from("user_reads").insert({
       user_id,
       chapter_slug,

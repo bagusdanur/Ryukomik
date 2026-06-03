@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import UserBadges from "@/components/UserBadges";
 import { RiTrophyFill } from "react-icons/ri";
 import { HiSparkles } from "react-icons/hi2";
@@ -219,10 +219,10 @@ function RankRow({
 export default function LeaderboardPage() {
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const { user } = useSupabaseUser();
+  const currentUserId = user?.id || null;
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data?.user?.id || null));
     fetch("/api/leaderboard")
       .then(r => r.json())
       .then((d: LeaderboardUser[]) => { setUsers(Array.isArray(d) ? d : []); setLoading(false); });

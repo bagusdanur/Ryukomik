@@ -5,13 +5,13 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, useLayoutEffect } from "react";
 import Link from "next/link";
-import type { User } from "@supabase/supabase-js";
 import type { Chapter, Series } from "@/types/content";
 import CommentsSupabase from "@/components/CommentsSupabase";
 import BookmarkButton from "@/components/BookmarkButton";
 import { FaArrowLeft, FaHeart, FaCommentDots } from "react-icons/fa";
 import ChapterList from "@/components/ChapterList";
-import { supabase } from "@/lib/supabaseClient";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 
 type ComicDetail = Series & {
   thumbnail: string;
@@ -46,6 +46,7 @@ function readHistory(): ReadHistoryItem[] {
 }
 
 export default function DetailClient({ data, slug, source }: DetailClientProps) {
+  const { user } = useSupabaseUser();
   const [mounted, setMounted] = useState(false);
 
   useLayoutEffect(() => {
@@ -64,38 +65,22 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
 
   const [lastRead, setLastRead] = useState<ReadHistoryItem | null>(null);
   const [isPremium, setIsPremium] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-
-  // Auth — tetap di client karena user-specific
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user || null);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) =>
-      setUser(session?.user || null),
-    );
-    return () => listener.subscription.unsubscribe();
-  }, []);
 
   // Premium check
   useEffect(() => {
-    if (!user) {
+    if (!user?.id) {
       const id = requestAnimationFrame(() => setIsPremium(false));
       return () => cancelAnimationFrame(id);
     }
     let mounted = true;
-    supabase
-      .from("profiles")
-      .select("is_premium")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (mounted) setIsPremium(data?.is_premium || false);
+    loadCachedProfile(user.id)
+      .then((profile) => {
+        if (mounted) setIsPremium(isActivePremiumProfile(profile));
       });
     return () => {
       mounted = false;
     };
-  }, [user]);
+  }, [user?.id]);
 
   // History dari localStorage
   const extractChapter = useCallback((text?: string) => {

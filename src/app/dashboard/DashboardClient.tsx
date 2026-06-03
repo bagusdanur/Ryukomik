@@ -4,6 +4,9 @@
 import { useEffect, useState, useCallback } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { loadCachedRole } from "@/utils/roleCache";
+import { clearCachedProfile } from "@/utils/profileCache";
 import {
   FiUsers,
   FiLogOut,
@@ -22,6 +25,9 @@ import CommentsModerationTab from "@/components/dashboard/CommentsModerationTab"
 import EventRewardsTab, {
   type TitleRushWinner,
 } from "@/components/dashboard/EventRewardsTab";
+import ApkSettingsTab, {
+  type ApkSettingsForm,
+} from "@/components/dashboard/ApkSettingsTab";
 
 // ── constants ──────────────────────────────────────────────────────────────
 const PER_PAGE = 20;
@@ -33,6 +39,7 @@ type DashboardPage =
   | "source-health"
   | "comments"
   | "events"
+  | "apk"
   | "codes";
 
 type AdminUser = User & {
@@ -117,6 +124,7 @@ type ActivityToday = {
 
 // ── helpers ────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
+  const { user: authUser, loading: authLoading } = useSupabaseUser();
   const [authed, setAuthed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
@@ -186,27 +194,64 @@ export default function AdminDashboard() {
   const [eventDebugAward, setEventDebugAward] = useState(false);
   const [titleRushEnabled, setTitleRushEnabled] = useState(true);
   const [titleRushStatusLoading, setTitleRushStatusLoading] = useState(false);
+  const [apkSettings, setApkSettings] = useState<ApkSettingsForm>({
+    downloadUrl: "",
+    version: "",
+    changelog: "",
+    enabled: true,
+    updated_at: null,
+  });
+  const [apkSettingsLoading, setApkSettingsLoading] = useState(false);
+  const [apkSettingsSaving, setApkSettingsSaving] = useState(false);
+  const [apkSettingsNotice, setApkSettingsNotice] = useState("");
+
+  const getAdminToken = useCallback(async () => {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token || "";
+  }, []);
+
+  const fetchDashboardSummary = useCallback(async () => {
+    const token = await getAdminToken();
+    if (!token) return;
+
+    const res = await fetch("/api/admin/dashboard-summary", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json?.error || "Gagal memuat dashboard.");
+
+    setStats(json.stats);
+    setPendingCount(json.pendingCount || 0);
+    setActivityToday(json.activityToday || { recent: [], topChapters: [], topUsers: [] });
+  }, [getAdminToken]);
+
+  const fetchStats = useCallback(async () => {
+    await fetchDashboardSummary();
+  }, [fetchDashboardSummary]);
 
   // ── init ──────────────────────────────────────────────────────────────
   const init = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return setLoading(false);
+    if (authLoading) return;
+    if (!authUser) return setLoading(false);
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, username, avatar_url")
-      .eq("id", user.id)
-      .single();
+    const role = await loadCachedRole(authUser.id).catch(() => null);
+    if (!role?.isAdmin) return setLoading(false);
 
-    if (profile?.role !== "admin") return setLoading(false);
-
-    setAdminUser({ ...user, ...profile });
+    setAdminUser({
+      ...authUser,
+      role: role.role,
+      username:
+        authUser.user_metadata?.username ||
+        authUser.user_metadata?.full_name ||
+        authUser.user_metadata?.name ||
+        authUser.email ||
+        "Admin",
+      avatar_url: authUser.user_metadata?.avatar_url || null,
+    });
     setAuthed(true);
-    await Promise.all([fetchStats(), fetchPendingCount()]);
+    await fetchDashboardSummary();
     setLoading(false);
-  }, []);
+  }, [authLoading, authUser, fetchDashboardSummary]);
 
   useEffect(() => {
     init();
@@ -215,28 +260,28 @@ export default function AdminDashboard() {
   const fetchComments = useCallback(async () => {
     setCommentsLoading(true);
     try {
-      let query = supabase
-        .from("comments")
-        .select(
-          "id, content, slug, chapter, author_name, avatar_url, created_at, is_spoiler, user_id",
-          { count: "exact" },
-        );
+      const token = await getAdminToken();
+      if (!token) return;
 
-      if (commentFilter === "spoiler") query = query.eq("is_spoiler", true);
-      if (commentSearch.trim())
-        query = query.ilike("content", `%${commentSearch.trim()}%`);
+      const params = new URLSearchParams({
+        page: String(commentPage),
+        filter: commentFilter,
+      });
+      const trimmedSearch = commentSearch.trim();
+      if (trimmedSearch) params.set("search", trimmedSearch);
 
-      query = query
-        .order("created_at", { ascending: false })
-        .range((commentPage - 1) * PER_PAGE, commentPage * PER_PAGE - 1);
+      const res = await fetch(`/api/admin/comments?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Gagal memuat komentar.");
 
-      const { data, count } = await query;
-      setComments(data ?? []);
-      setCommentTotal(count ?? 0);
+      setComments(json?.comments ?? []);
+      setCommentTotal(json?.total ?? 0);
     } finally {
       setCommentsLoading(false);
     }
-  }, [commentPage, commentFilter, commentSearch]);
+  }, [commentPage, commentFilter, commentSearch, getAdminToken]);
 
   useEffect(() => {
     if (authed && page === "comments") fetchComments();
@@ -258,104 +303,14 @@ export default function AdminDashboard() {
   }
 
   // ── stats ─────────────────────────────────────────────────────────────
-  async function fetchStats() {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayISO = todayStart.toISOString();
-
-    const [
-      { count: totalUsers },
-      { count: premiumUsers },
-      { count: commentsToday },
-      { count: totalComments },
-      { count: readsToday },
-      { count: totalReads },
-    ] = await Promise.all([
-      supabase.from("profiles").select("id", { count: "exact", head: true }),
-
-      supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .eq("is_premium", true),
-
-      supabase
-        .from("comments")
-        .select("id", { count: "exact", head: true })
-        .gte("created_at", todayISO),
-
-      supabase.from("comments").select("id", { count: "exact", head: true }),
-
-      supabase
-        .from("user_reads")
-        .select("id", { count: "exact", head: true })
-        .gte("created_at", todayISO),
-
-      supabase.from("user_reads").select("id", { count: "exact", head: true }),
-    ]);
-
-    setStats({
-      totalUsers: totalUsers ?? 0,
-      premiumUsers: premiumUsers ?? 0,
-      commentsToday: commentsToday ?? 0,
-      totalComments: totalComments ?? 0,
-      readsToday: readsToday ?? 0,
-      totalReads: totalReads ?? 0,
-    });
-  }
-
   const fetchActivityToday = useCallback(async () => {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
     setActivityLoading(true);
-
     try {
-      const { data } = await supabase
-        .from("user_reads")
-        .select("id, user_id, chapter_slug, created_at")
-        .gte("created_at", todayStart.toISOString())
-        .order("created_at", { ascending: false })
-        .limit(80);
-
-      const reads = data || [];
-      const userIds = Array.from(new Set(reads.map((read) => read.user_id).filter(Boolean)));
-      const { data: profiles } = userIds.length
-        ? await supabase
-            .from("profiles")
-            .select("id, username, avatar_url")
-            .in("id", userIds)
-        : { data: [] };
-      const profileMap = new Map((profiles || []).map((profile) => [profile.id, profile]));
-
-      const chapterCounts = new Map<string, number>();
-      const userCounts = new Map<string, number>();
-      for (const read of reads) {
-        if (!read.chapter_slug || !read.user_id) continue;
-        chapterCounts.set(read.chapter_slug, (chapterCounts.get(read.chapter_slug) || 0) + 1);
-        userCounts.set(read.user_id, (userCounts.get(read.user_id) || 0) + 1);
-      }
-
-      setActivityToday({
-        recent: reads.slice(0, 6).map((read) => ({
-          ...read,
-          profile: profileMap.get(read.user_id),
-        })),
-        topChapters: Array.from(chapterCounts.entries())
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 5)
-          .map(([slug, count]) => ({ slug, count })),
-        topUsers: Array.from(userCounts.entries())
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 5)
-          .map(([userId, count]) => ({
-            userId,
-            count,
-            profile: profileMap.get(userId),
-          })),
-      });
+      await fetchDashboardSummary();
     } finally {
       setActivityLoading(false);
     }
-  }, []);
+  }, [fetchDashboardSummary]);
 
   useEffect(() => {
     if (authed && page === "dashboard") fetchActivityToday();
@@ -365,8 +320,7 @@ export default function AdminDashboard() {
     setEventLoading(true);
     setEventNotice("");
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
+      const token = await getAdminToken();
       if (!token) {
         setEventNotice("Login admin diperlukan.");
         return;
@@ -396,13 +350,12 @@ export default function AdminDashboard() {
     } finally {
       setEventLoading(false);
     }
-  }, [eventWeekStart]);
+  }, [eventWeekStart, getAdminToken]);
 
   const fetchTitleRushStatus = useCallback(async () => {
     setTitleRushStatusLoading(true);
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
+      const token = await getAdminToken();
       if (!token) return;
 
       const res = await fetch("/api/admin/title-rush-status", {
@@ -419,15 +372,14 @@ export default function AdminDashboard() {
     } finally {
       setTitleRushStatusLoading(false);
     }
-  }, []);
+  }, [getAdminToken]);
 
   const toggleTitleRushStatus = useCallback(async () => {
     setTitleRushStatusLoading(true);
     setEventNotice("");
     try {
       const nextEnabled = !titleRushEnabled;
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
+      const token = await getAdminToken();
       if (!token) {
         setEventNotice("Login admin diperlukan.");
         return;
@@ -455,7 +407,7 @@ export default function AdminDashboard() {
     } finally {
       setTitleRushStatusLoading(false);
     }
-  }, [titleRushEnabled]);
+  }, [getAdminToken, titleRushEnabled]);
 
   const selectEventWeek = useCallback((weekStart: string) => {
     setEventWeekStart(weekStart);
@@ -466,8 +418,7 @@ export default function AdminDashboard() {
     setEventAwarding(true);
     setEventNotice("");
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
+      const token = await getAdminToken();
       if (!token) {
         setEventNotice("Login admin diperlukan.");
         return;
@@ -502,14 +453,20 @@ export default function AdminDashboard() {
     } finally {
       setEventAwarding(false);
     }
-  }, [eventCurrentWeek, eventDebugAward, eventWeekStart, eventWeeks]);
+  }, [
+    eventCurrentWeek,
+    eventDebugAward,
+    eventWeekStart,
+    eventWeeks,
+    fetchStats,
+    getAdminToken,
+  ]);
 
   const deleteCurrentEventWeek = useCallback(async () => {
     setEventDeleting(true);
     setEventNotice("");
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
+      const token = await getAdminToken();
       if (!token) {
         setEventNotice("Login admin diperlukan.");
         return;
@@ -540,7 +497,100 @@ export default function AdminDashboard() {
     } finally {
       setEventDeleting(false);
     }
-  }, [eventCurrentWeek, eventWeekStart, eventWeeks]);
+  }, [eventCurrentWeek, eventWeekStart, eventWeeks, getAdminToken]);
+
+  const fetchApkSettings = useCallback(async () => {
+    setApkSettingsLoading(true);
+    setApkSettingsNotice("");
+    try {
+      const token = await getAdminToken();
+      if (!token) {
+        setApkSettingsNotice("Login admin diperlukan.");
+        return;
+      }
+
+      const res = await fetch("/api/admin/apk-settings", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        setApkSettingsNotice(json?.error || "Gagal mengambil setting APK.");
+        return;
+      }
+
+      setApkSettings({
+        downloadUrl: json?.downloadUrl || "",
+        version: json?.version || "",
+        changelog: Array.isArray(json?.changelog) ? json.changelog.join("\n") : "",
+        enabled: json?.enabled !== false,
+        updated_at: json?.updated_at || null,
+      });
+    } catch (error) {
+      setApkSettingsNotice(
+        error instanceof Error ? error.message : "Gagal mengambil setting APK.",
+      );
+    } finally {
+      setApkSettingsLoading(false);
+    }
+  }, [getAdminToken]);
+
+  const saveApkSettings = useCallback(async (nextSettings?: ApkSettingsForm) => {
+    const settingsToSave = nextSettings || apkSettings;
+
+    setApkSettingsSaving(true);
+    setApkSettingsNotice("");
+    try {
+      const token = await getAdminToken();
+      if (!token) {
+        setApkSettingsNotice("Login admin diperlukan.");
+        return;
+      }
+
+      const res = await fetch("/api/admin/apk-settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          downloadUrl: settingsToSave.downloadUrl,
+          version: settingsToSave.version,
+          changelog: settingsToSave.changelog,
+          enabled: settingsToSave.enabled,
+        }),
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        setApkSettingsNotice(json?.error || "Gagal menyimpan setting APK.");
+        if (nextSettings) void fetchApkSettings();
+        return;
+      }
+
+      setApkSettings({
+        downloadUrl: json?.downloadUrl || settingsToSave.downloadUrl,
+        version: json?.version || settingsToSave.version,
+        changelog: Array.isArray(json?.changelog)
+          ? json.changelog.join("\n")
+          : settingsToSave.changelog,
+        enabled: json?.enabled !== false,
+        updated_at: json?.updated_at || null,
+      });
+      setApkSettingsNotice(json?.message || "Setting APK berhasil disimpan.");
+    } catch (error) {
+      setApkSettingsNotice(
+        error instanceof Error ? error.message : "Gagal menyimpan setting APK.",
+      );
+    } finally {
+      setApkSettingsSaving(false);
+    }
+  }, [apkSettings, fetchApkSettings, getAdminToken]);
+
+  useEffect(() => {
+    if (authed && page === "apk") void fetchApkSettings();
+  }, [authed, page, fetchApkSettings]);
 
   useEffect(() => {
     if (authed && page === "events") void fetchEventWinners();
@@ -552,39 +602,35 @@ export default function AdminDashboard() {
 
   // ── pending count untuk badge notif ───────────────────────────────────
   async function fetchPendingCount() {
-    const { count } = await supabase
-      .from("premium_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending");
-    setPendingCount(count ?? 0);
+    await fetchDashboardSummary();
   }
 
   // ── users table ───────────────────────────────────────────────────────
   const fetchUsers = useCallback(async () => {
     setUsersLoading(true);
     try {
-      let query = supabase
-        .from("profiles")
-        .select(
-          "id, username, avatar_url, is_premium, level, xp, created_at, premium_until",
-          { count: "exact" },
-        );
+      const token = await getAdminToken();
+      if (!token) return;
 
-      if (filter === "premium") query = query.eq("is_premium", true);
-      if (filter === "reguler") query = query.eq("is_premium", false);
-      if (search.trim()) query = query.ilike("username", `%${search.trim()}%`);
+      const params = new URLSearchParams({
+        page: String(userPage),
+        filter,
+      });
+      const trimmedSearch = search.trim();
+      if (trimmedSearch) params.set("search", trimmedSearch);
 
-      query = query
-        .order("created_at", { ascending: false })
-        .range((userPage - 1) * PER_PAGE, userPage * PER_PAGE - 1);
+      const res = await fetch(`/api/admin/users?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Gagal memuat user.");
 
-      const { data, count } = await query;
-      setUsers(data ?? []);
-      setUserTotal(count ?? 0);
+      setUsers(json?.users ?? []);
+      setUserTotal(json?.total ?? 0);
     } finally {
       setUsersLoading(false);
     }
-  }, [userPage, filter, search]);
+  }, [userPage, filter, search, getAdminToken]);
 
   useEffect(() => {
     if (authed && page === "users") fetchUsers();
@@ -594,19 +640,21 @@ export default function AdminDashboard() {
   const fetchRequests = useCallback(async () => {
     setRequestsLoading(true);
     try {
-      let query = supabase
-        .from("premium_requests")
-        .select("*, profiles(username, avatar_url)")
-        .order("created_at", { ascending: false });
+      const token = await getAdminToken();
+      if (!token) return;
 
-      if (requestFilter !== "all") query = query.eq("status", requestFilter);
+      const params = new URLSearchParams({ filter: requestFilter });
+      const res = await fetch(`/api/admin/premium-requests?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Gagal memuat request premium.");
 
-      const { data } = await query;
-      setRequests(data ?? []);
+      setRequests((json?.requests ?? []) as PremiumRequest[]);
     } finally {
       setRequestsLoading(false);
     }
-  }, [requestFilter]);
+  }, [requestFilter, getAdminToken]);
 
   useEffect(() => {
     if (authed && page === "requests") fetchRequests();
@@ -677,8 +725,7 @@ export default function AdminDashboard() {
     setChapterRefreshLoading(true);
     setHealthNotice("");
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
+      const token = await getAdminToken();
       if (!token) {
         setHealthNotice("Login admin diperlukan.");
         return;
@@ -706,7 +753,7 @@ export default function AdminDashboard() {
       setChapterRefreshLoading(false);
       setTimeout(() => setHealthNotice(""), 2200);
     }
-  }, [chapterRefreshPath]);
+  }, [chapterRefreshPath, getAdminToken]);
 
   const handleRequestAction = async (id: string, action: "approve" | "reject") => {
     setActionLoading(id + action);
@@ -728,6 +775,7 @@ export default function AdminDashboard() {
           .from("profiles")
           .update({ is_premium: true, premium_until: premiumUntil })
           .eq("id", req.user_id);
+        clearCachedProfile(req.user_id);
 
         // 🔥 TAMBAH INI — kirim notif ke user
         await supabase.from("notifications").insert({
@@ -778,6 +826,7 @@ export default function AdminDashboard() {
         alert(`Error: ${error.message}`);
         return;
       }
+      clearCachedProfile(userId);
       await Promise.all([fetchUsers(), fetchStats()]);
       alert(`Premium ${safeDays} hari berhasil ditambahkan.`);
     } catch (err) {
@@ -795,6 +844,7 @@ export default function AdminDashboard() {
         alert(`Error: ${error.message}`);
         return;
       }
+      clearCachedProfile(userId);
       await Promise.all([fetchUsers(), fetchStats()]);
       alert("✅ Premium dihapus!");
     } catch (err) {
@@ -803,18 +853,23 @@ export default function AdminDashboard() {
   }
 
   // ── premium codes ─────────────────────────────────────────────────────
-  async function fetchPremiumCodes() {
+  const fetchPremiumCodes = useCallback(async () => {
     setCodesLoading(true);
     try {
-      const { data } = await supabase
-        .from("premium_codes")
-        .select("id, code, used, duration_days, created_at, used_at, used_by")
-        .order("created_at", { ascending: false });
-      setPremiumCodes(data || []);
+      const token = await getAdminToken();
+      if (!token) return;
+
+      const res = await fetch("/api/admin/premium-codes", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Gagal memuat kode premium.");
+
+      setPremiumCodes(json?.codes || []);
     } finally {
       setCodesLoading(false);
     }
-  }
+  }, [getAdminToken]);
 
   async function generateCode() {
     await supabase.rpc("generate_premium_code", {
@@ -839,7 +894,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (authed && page === "codes") fetchPremiumCodes();
-  }, [authed, page]);
+  }, [authed, page, fetchPremiumCodes]);
 
   // ── guards ────────────────────────────────────────────────────────────
   if (loading)
@@ -878,6 +933,7 @@ export default function AdminDashboard() {
       nextPage === "source-health" ||
       nextPage === "comments" ||
       nextPage === "events" ||
+      nextPage === "apk" ||
       nextPage === "codes"
     ) {
       setPage(nextPage);
@@ -1059,6 +1115,17 @@ export default function AdminDashboard() {
             selectWeek={selectEventWeek}
             setDebugAward={setEventDebugAward}
             toggleEventEnabled={toggleTitleRushStatus}
+          />
+        )}
+        {page === "apk" && (
+          <ApkSettingsTab
+            loading={apkSettingsLoading}
+            saving={apkSettingsSaving}
+            notice={apkSettingsNotice}
+            settings={apkSettings}
+            fetchSettings={fetchApkSettings}
+            saveSettings={saveApkSettings}
+            setSettings={setApkSettings}
           />
         )}
         {page === "comments" && (

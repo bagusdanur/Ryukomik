@@ -3,19 +3,20 @@ import { useEffect, useState, useRef, useCallback, useMemo, memo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import LoginModal from "@/components/LoginModal";
 import UserBadges from "@/components/UserBadges";
 import ProfilePopover from "@/components/profile/ProfilePopover";
 import { stickers } from "@/data/stickers";
 import { RiEmojiStickerLine } from "react-icons/ri";
+import { loadCachedProfile } from "@/utils/profileCache";
 
 // ============================================
 // CONSTANTS
 // ============================================
 const SORT_OPTIONS = [
   { key: "new", label: "Terbaru" },
-  { key: "popular", label: "Populer" },
 ] as const;
 
 type CommentSort = (typeof SORT_OPTIONS)[number]["key"];
@@ -114,9 +115,6 @@ const validateImageUrl = (url: string) => {
   if (!url.startsWith("http") || !IMAGE_REGEX.test(url)) return "Link tidak valid";
   return null;
 };
-
-const getActiveTitleSince = () =>
-  new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
 // ============================================
 // MEMOIZED SUB-COMPONENTS
@@ -494,7 +492,7 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
   const [showLogin, setShowLogin] = useState(false);
   const [replying, setReplying] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useSupabaseUser();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isSpoiler, setIsSpoiler] = useState(false);
   const [sending, setSending] = useState(false);
@@ -505,21 +503,6 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
 
   const compoundSlug = useMemo(() => `${slug}`, [slug]);
 
-  // ---- Auth ----
-  useEffect(() => {
-    let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (mounted) setUser(data.session?.user || null);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) setUser(session?.user || null);
-    });
-    return () => {
-      mounted = false;
-      listener.subscription.unsubscribe();
-    };
-  }, []);
-
   useEffect(() => {
     let mounted = true;
 
@@ -529,11 +512,7 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
         return;
       }
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("username, avatar_url")
-        .eq("id", user.id)
-        .maybeSingle();
+      const data = await loadCachedProfile(user.id);
 
       if (mounted) setProfile(data || null);
     }
@@ -559,13 +538,14 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
   }, [comments]);
 
   // ---- Load Comments ----
-  const loadComments = useCallback(async () => {
+  const loadComments = useCallback(async (fresh = false) => {
     setLoading(true);
     const params = new URLSearchParams();
     params.set("type", type);
     params.set("sort", sort);
     params.set("slug", compoundSlug);
     if (chapter) params.set("chapter", chapter);
+    if (fresh) params.set("v", String(Date.now()));
 
     try {
       const res = await fetch(`/api/comments?${params.toString()}`);
@@ -596,27 +576,18 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
     let mounted = true;
 
     async function loadBadges() {
-      const [{ data: titleData }, { data: xpData }] = await Promise.all([
-        supabase
-          .from("title_rush_winners")
-          .select("user_id, rank")
-          .not("awarded_at", "is", null)
-          .gte("awarded_at", getActiveTitleSince())
-          .order("rank", { ascending: true })
-          .limit(3),
-        supabase
-          .from("profiles")
-          .select("id")
-          .order("xp", { ascending: false })
-          .limit(3),
-      ]);
+      const res = await fetch("/api/comment-badges");
+      const data = (await res.json()) as {
+        titleRushWinners?: Array<{ user_id: string; rank: number }>;
+        xpLeaders?: Array<{ id: string }>;
+      };
 
       if (!mounted) return;
       setTitleRushRanks(
-        new Map((titleData || []).map((winner) => [winner.user_id, winner.rank])),
+        new Map((data.titleRushWinners || []).map((winner) => [winner.user_id, winner.rank])),
       );
       setXpRanks(
-        new Map((xpData || []).map((leader, index) => [leader.id, index + 1])),
+        new Map((data.xpLeaders || []).map((leader, index) => [leader.id, index + 1])),
       );
     }
 
@@ -698,7 +669,7 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
           setContent("");
           setAuthorName("");
         }
-        loadComments();
+        loadComments(true);
       }
     } catch (err) {
       console.error("Submit Error:", err);

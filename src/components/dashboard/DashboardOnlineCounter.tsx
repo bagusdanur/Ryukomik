@@ -22,6 +22,8 @@ export default function DashboardOnlineCounter() {
     };
   }, []);
 
+  if (count === null) return null;
+
   return (
     <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4">
       <div className="flex items-center justify-between mb-3">
@@ -37,7 +39,7 @@ export default function DashboardOnlineCounter() {
         className="text-2xl font-bold"
         style={{ fontFamily: "Space Mono, monospace" }}
       >
-        {count === null ? "..." : count.toLocaleString("id-ID")}
+        {count.toLocaleString("id-ID")}
       </p>
       <p className="mt-0.5 text-[11px] text-white/30">Pengunjung Online</p>
       <p className="mt-1 text-[10px] text-white/20">

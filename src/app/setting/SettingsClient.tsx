@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { User } from "@supabase/supabase-js";
 import LoginModal from "@/components/LoginModal";
 import PremiumModal from "@/components/PremiumModal";
 import {
@@ -10,6 +9,7 @@ import {
   THEME_COLORS,
 } from "@/components/ThemeColorProvider";
 import { supabase } from "@/lib/supabaseClient";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { createBackup, restoreBackup } from "@/utils/backup";
 import { getCacheSizeMB } from "@/utils/getCacheSizeMB";
 import {
@@ -66,7 +66,7 @@ type ProfileForm = typeof initialProfileForm;
 type ImgBbResponse = { success?: boolean; data?: { url?: string } };
 
 export default function SettingsClient() {
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useSupabaseUser();
   const [showLogin, setShowLogin] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [loadingLogout, setLoadingLogout] = useState(false);
@@ -95,10 +95,6 @@ export default function SettingsClient() {
       (!stats.premium_until || new Date(stats.premium_until) > new Date()),
   );
   const premiumUntil = isPremium ? stats.premium_until || null : null;
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -321,7 +317,7 @@ export default function SettingsClient() {
 
       if (profileError) throw profileError;
 
-      const { data: authData, error: authError } = await supabase.auth.updateUser({
+      const { error: authError } = await supabase.auth.updateUser({
         data: {
           name: username,
           full_name: username,
@@ -331,7 +327,6 @@ export default function SettingsClient() {
 
       if (authError) throw authError;
 
-      setUser(authData.user);
       setStats((current) => ({
         ...current,
         username,

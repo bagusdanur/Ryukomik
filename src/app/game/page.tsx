@@ -10,6 +10,8 @@ export const metadata: Metadata = {
   description: "Kumpulan mini game Ryukomik.",
 };
 
+export const revalidate = 300;
+
 const games = [
   {
     title: "Ryukomik Title Rush",

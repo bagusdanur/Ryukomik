@@ -1,17 +1,13 @@
 import type { NextRequest } from "next/server";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-
-type CommentLikeRow = {
-  comment_id: string;
-};
 
 type CommentRow = {
   id: string;
   author_name?: string | null;
   avatar_url?: string | null;
   profiles?: unknown;
-  likes?: { count?: number } | { count?: number }[];
   [key: string]: unknown;
 };
 
@@ -27,14 +23,75 @@ type CreateCommentBody = {
   is_spoiler?: boolean;
 };
 
-function getLikesCount(likes: CommentRow["likes"]): number {
-  if (Array.isArray(likes)) return likes[0]?.count || 0;
-  return likes?.count || 0;
-}
-
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Terjadi kesalahan";
 }
+
+const COMMENTS_REVALIDATE_SECONDS = 300;
+
+const getCachedComments = unstable_cache(
+  async (
+    type: string,
+    slug: string | null,
+    chapter: string | null,
+    sort: string,
+    limit: number,
+  ) => {
+    let query = supabaseAdmin
+      .from("comments")
+      .select(`
+        id,
+        content,
+        parent_id,
+        author_name,
+        user_id,
+        avatar_url,
+        is_spoiler,
+        created_at,
+        profiles (
+          xp,
+          level,
+          role,
+          is_premium,
+          username,
+          avatar_url
+        )
+      `)
+      .limit(limit);
+
+    query = query.eq("type", type);
+    if (slug) query = query.eq("slug", slug);
+    if (chapter) {
+      query = query.eq("chapter", chapter);
+    } else {
+      query = query.is("chapter", null);
+    }
+
+    query = query.order("created_at", { ascending: sort === "old" });
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    return ((data || []) as CommentRow[]).map((item) => ({
+      id: item.id,
+      content: item.content,
+      parent_id: item.parent_id,
+      author_name: item.author_name,
+      user_id: item.user_id,
+      avatar_url: item.avatar_url,
+      is_spoiler: item.is_spoiler,
+      created_at: item.created_at,
+      profiles: item.profiles || {
+        level: 1,
+        xp: 0,
+        username: item.author_name,
+        avatar_url: item.avatar_url,
+      },
+    }));
+  },
+  ["comments-v2"],
+  { revalidate: COMMENTS_REVALIDATE_SECONDS, tags: ["comments"] },
+);
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -46,80 +103,21 @@ export async function GET(req: NextRequest) {
   const limit = Number.isFinite(requestedLimit)
     ? Math.min(Math.max(requestedLimit, 1), 50)
     : 20;
-  const userId = url.searchParams.get("user_id");
 
-  // QUERY UTAMA: Ambil semua komentar dan profiles yang berelasi
-  let query = supabaseAdmin
-    .from("comments")
-    .select(`
-      id,
-      type,
-      slug,
-      chapter,
-      content,
-      parent_id,
-      author_name,
-      user_id,
-      avatar_url,
-      is_spoiler,
-      created_at,
-      likes:comment_likes(count),
-      profiles (
-        xp,
-        level,
-        role,
-        is_premium,
-        username,
-        avatar_url,
-        total_comments
-      )
-    `)
-    .order('created_at', { ascending: false })
-  .limit(limit);
-  if (slug) query = query.eq("slug", slug);
-  if (chapter) {
-    query = query.eq("chapter", chapter);
-  } else {
-    query = query.is("chapter", null);
+  try {
+    const comments = await getCachedComments(type, slug, chapter, sort, limit);
+    const response = NextResponse.json(comments);
+    response.headers.set(
+      "Cache-Control",
+      `public, s-maxage=${COMMENTS_REVALIDATE_SECONDS}, stale-while-revalidate=${COMMENTS_REVALIDATE_SECONDS}`,
+    );
+    return response;
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Terjadi kesalahan" },
+      { status: 500 },
+    );
   }
-
-  if (sort === "old") {
-    query = query.order("created_at", { ascending: true });
-  } else if (sort === "popular") {
-    query = query.order("count", { ascending: false, foreignTable: "comment_likes" });
-  } else {
-    query = query.order("created_at", { ascending: false });
-  }
-
-  const { data, error } = await query;
-  
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  // Ambil ID komentar yang di-like user login (Opsional)
-  let userLikes: string[] = [];
-  if (userId) {
-    const { data: liked } = await supabaseAdmin
-      .from("comment_likes")
-      .select("comment_id")
-      .eq("user_id", userId);
-    userLikes = ((liked || []) as CommentLikeRow[]).map((l) => l.comment_id);
-  }
-
-  // Gabungkan data
-  const fixed = ((data || []) as CommentRow[]).map((item) => ({
-    ...item,
-    // Jika profiles NULL (user hapus akun/anonim), beri nilai default
-    profiles: item.profiles || {
-      level: 1,
-      xp: 0,
-      username: item.author_name,
-      avatar_url: item.avatar_url,
-    },
-    likes: getLikesCount(item.likes),
-    liked_by_me: userLikes.includes(item.id),
-  }));
-
-  return NextResponse.json(fixed);
 }
 
 export async function POST(req: NextRequest) {
@@ -174,6 +172,7 @@ export async function POST(req: NextRequest) {
   if (rpcError) console.error("Gagal tambah XP:", rpcError.message);
 }
 
+    revalidateTag("comments", { expire: 0 });
     return NextResponse.json({ success: true, comment });
   } catch (err) {
     console.error("POST Error:", errorMessage(err));

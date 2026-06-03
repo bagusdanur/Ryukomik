@@ -22,6 +22,8 @@ export default function OnlineCounter() {
     };
   }, []);
 
+  if (count === null) return null;
+
   return (
     <div className="flex items-center justify-between px-4 py-4">
       <div className="flex items-center gap-3">
@@ -32,9 +34,7 @@ export default function OnlineCounter() {
         <span className="relative flex h-2 w-2">
           <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
         </span>
-        <span className="text-white/40 text-sm">
-          {count === null ? "—" : count.toLocaleString("id-ID")}
-        </span>
+        <span className="text-white/40 text-sm">{count.toLocaleString("id-ID")}</span>
       </div>
     </div>
   );

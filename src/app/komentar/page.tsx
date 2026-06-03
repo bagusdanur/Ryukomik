@@ -1,7 +1,19 @@
-"use client";
+import { unstable_cache } from "next/cache";
+import { supabaseAdmin } from "@/lib/supabaseServer";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+const COMMENTS_TTL = 300;
+const COMMENT_SNIPPET_LIMIT = 220;
+
+type CommentProfile =
+  | {
+      username?: string | null;
+      avatar_url?: string | null;
+    }
+  | {
+      username?: string | null;
+      avatar_url?: string | null;
+    }[]
+  | null;
 
 type CommentRow = {
   id: string;
@@ -10,86 +22,82 @@ type CommentRow = {
   avatar_url?: string | null;
   created_at: string;
   content?: string | null;
-  profiles?:
-    | {
-    username?: string | null;
-    avatar_url?: string | null;
-      }
-    | {
-        username?: string | null;
-        avatar_url?: string | null;
-      }[]
-    | null;
+  profiles?: CommentProfile;
 };
 
-const firstProfile = (profiles: CommentRow["profiles"]) =>
+const firstProfile = (profiles: CommentProfile) =>
   Array.isArray(profiles) ? profiles[0] : profiles;
 
-export default function KomentarPage() {
-  const [comments, setComments] = useState<CommentRow[]>([]);
-  const [loading, setLoading] = useState(true);
+function compactContent(content?: string | null) {
+  if (!content) return "";
+  if (content.length <= COMMENT_SNIPPET_LIMIT) return content;
+  return `${content.slice(0, COMMENT_SNIPPET_LIMIT).trim()}...`;
+}
 
-  useEffect(() => {
-    async function getComments() {
-      const { data } = await supabase
-        .from("comments")
-        .select("id, slug, author_name, avatar_url, created_at, content, profiles(username, avatar_url)")
-        .is("parent_id", null)
-        .order("created_at", { ascending: false })
-        .limit(20);
+function getLink(slug?: string | null) {
+  if (!slug) return "#";
+  if (slug.includes("chapter")) return `/chapter/${slug}`;
+  return `/komik/${slug}`;
+}
 
-      setComments(data || []);
-      setLoading(false);
-    }
+function formatTitle(slug?: string | null) {
+  return slug?.replace(/-chapter-.*/, "").replace(/-/g, " ");
+}
 
-    getComments();
-  }, []);
+function getChapter(slug?: string | null) {
+  const match = slug?.match(/chapter-(\d+)/);
+  return match ? `Chapter ${match[1]}` : null;
+}
 
-  const getLink = (slug?: string | null) => {
-    if (!slug) return "#";
-    if (slug.includes("chapter")) return `/chapter/${slug}`;
-    return `/komik/${slug}`;
-  };
+const getLatestPublicComments = unstable_cache(
+  async () => {
+    const { data, error } = await supabaseAdmin
+      .from("comments")
+      .select("id, slug, author_name, avatar_url, created_at, content, profiles(username, avatar_url)")
+      .is("parent_id", null)
+      .order("created_at", { ascending: false })
+      .limit(20);
 
-  const formatTitle = (slug?: string | null) => {
-    return slug
-      ?.replace(/-chapter-.*/, "")
-      .replace(/-/g, " ");
-  };
+    if (error) throw error;
+    return ((data || []) as CommentRow[]).map((comment) => ({
+      ...comment,
+      content: compactContent(comment.content),
+    }));
+  },
+  ["public-komentar-v2"],
+  { revalidate: COMMENTS_TTL, tags: ["comments"] },
+);
 
-  const getChapter = (slug?: string | null) => {
-    const match = slug?.match(/chapter-(\d+)/);
-    return match ? `Chapter ${match[1]}` : null;
-  };
+export const revalidate = 300;
+
+export default async function KomentarPage() {
+  const comments = await getLatestPublicComments();
 
   return (
-    <div className="min-h-screen bg-[#0f0f13] text-white px-4 py-18">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Komentar Terbaru</h1>
-
-        {loading && <p className="text-gray-400">Loading...</p>}
+    <div className="min-h-screen bg-[#0f0f13] px-4 py-18 text-white">
+      <div className="mx-auto max-w-2xl">
+        <h1 className="mb-4 text-2xl font-bold">Komentar Terbaru</h1>
 
         <div className="space-y-4">
-          {comments.map((c) => {
-            const title = formatTitle(c.slug);
-            const chapter = getChapter(c.slug);
-            const profile = firstProfile(c.profiles);
-            const authorName = profile?.username || c.author_name || "Anon";
-            const avatarUrl = profile?.avatar_url || c.avatar_url;
+          {comments.map((comment) => {
+            const title = formatTitle(comment.slug);
+            const chapter = getChapter(comment.slug);
+            const profile = firstProfile(comment.profiles);
+            const authorName = profile?.username || comment.author_name || "Anon";
+            const avatarUrl = profile?.avatar_url || comment.avatar_url;
 
             return (
               <a
-                key={c.id}
-                href={getLink(c.slug)}
-                className="block bg-white/5 p-4 rounded-xl shadow hover:bg-white/10 transition"
+                key={comment.id}
+                href={getLink(comment.slug)}
+                className="block rounded-xl bg-white/5 p-4 shadow transition hover:bg-white/10"
               >
                 <div className="flex gap-3">
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-600/20 flex items-center justify-center font-bold">
+                  <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gray-600/20 font-bold">
                     {avatarUrl ? (
                       <img
                         src={avatarUrl}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-cover"
                         alt={authorName}
                         loading="lazy"
                         decoding="async"
@@ -100,13 +108,10 @@ export default function KomentarPage() {
                   </div>
 
                   <div className="flex-1">
-                    {/* Name + Time */}
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold text-sm">
-                        {authorName}
-                      </span>
-                      <span className="text-[11px] text-gray-400">
-                        {new Date(c.created_at).toLocaleString("id-ID", {
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-semibold">{authorName}</span>
+                      <span className="shrink-0 text-[11px] text-gray-400">
+                        {new Date(comment.created_at).toLocaleString("id-ID", {
                           hour: "2-digit",
                           minute: "2-digit",
                           day: "numeric",
@@ -115,15 +120,13 @@ export default function KomentarPage() {
                       </span>
                     </div>
 
-                    {/* Content */}
-                    <p className="text-sm text-gray-300 mt-2 line-clamp-2">
-                      {c.content}
+                    <p className="mt-2 line-clamp-2 text-sm text-gray-300">
+                      {comment.content}
                     </p>
 
-                    {/* Info */}
-                    <div className="text-xs text-gray-500 mt-2">
+                    <div className="mt-2 text-xs text-gray-500">
                       {title}
-                      {chapter ? ` • ${chapter}` : ""}
+                      {chapter ? ` - ${chapter}` : ""}
                     </div>
                   </div>
                 </div>

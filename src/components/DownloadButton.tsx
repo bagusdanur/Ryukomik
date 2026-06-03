@@ -5,7 +5,7 @@ import JSZip from "jszip";
 import { useState, useEffect } from "react";
 import { FiDownload, FiX } from "react-icons/fi";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabaseClient";
+import { loadCachedRole } from "@/utils/roleCache";
 
 type DownloadType = "pdf" | "zip";
 
@@ -35,17 +35,11 @@ export default function DownloadButton({
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Fetch role dari profiles
   useEffect(() => {
     if (!user?.id) return;
     const fetchRole = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      
-      setIsAdmin(data?.role === "admin");
+      const role = await loadCachedRole(user.id).catch(() => null);
+      setIsAdmin(role?.isAdmin === true);
     };
     fetchRole();
   }, [user?.id]);

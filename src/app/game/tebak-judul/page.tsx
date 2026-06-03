@@ -8,6 +8,10 @@ export const metadata: Metadata = {
     "Ikuti Ryukomik Title Rush, event mingguan tebak judul komik dengan hadiah premium.",
 };
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 const MIN_PAGE = 1;
 const MAX_PAGE = 24;
 

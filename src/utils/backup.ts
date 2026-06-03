@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 
 type BackupPayload = unknown[];
+const BACKUP_ITEM_LIMIT = 300;
 
 function readArrayFromStorage(key: string): BackupPayload {
   try {
@@ -20,8 +21,8 @@ export async function createBackup(userId?: string | null): Promise<boolean> {
     let bookmarks = readArrayFromStorage("bookmarks");
 
     // 🔥 Batasi biar tidak over besar
-    history = Array.isArray(history) ? history.slice(0, 300) : [];
-    bookmarks = Array.isArray(bookmarks) ? bookmarks : [];
+    history = Array.isArray(history) ? history.slice(0, BACKUP_ITEM_LIMIT) : [];
+    bookmarks = Array.isArray(bookmarks) ? bookmarks.slice(0, BACKUP_ITEM_LIMIT) : [];
 
     const { error } = await supabase
       .from("user_backup")
@@ -63,12 +64,16 @@ export async function restoreBackup(userId?: string | null): Promise<boolean> {
 
     localStorage.setItem(
       "read_history",
-      JSON.stringify(Array.isArray(data.history) ? data.history : [])
+      JSON.stringify(
+        Array.isArray(data.history) ? data.history.slice(0, BACKUP_ITEM_LIMIT) : [],
+      )
     );
 
     localStorage.setItem(
       "bookmarks",
-      JSON.stringify(Array.isArray(data.bookmarks) ? data.bookmarks : [])
+      JSON.stringify(
+        Array.isArray(data.bookmarks) ? data.bookmarks.slice(0, BACKUP_ITEM_LIMIT) : [],
+      )
     );
 
     return true;

@@ -9,8 +9,11 @@ import { supabase } from "@/lib/supabaseClient";
 import LoginModal from "@/components/LoginModal";
 import { useRouter } from "next/navigation";
 import AgeModal from "@/components/AgeModal";
-import { ensureTitleRushWeeklyNotification } from "@/utils/titleRushNotification";
-import type { RealtimeChannel, User } from "@supabase/supabase-js";
+import {
+  TITLE_RUSH_EVENT_TYPE,
+} from "@/utils/titleRushNotification";
+import { clearNotificationCache, fetchCachedNotifications } from "@/utils/notificationFetch";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import type { NotificationItem, SourceId, TerbaruFilters, UpdateItem } from "@/types/content";
 import type { ReadHistoryItem } from "@/types/user";
 
@@ -183,7 +186,8 @@ export default function TerbaruPage({
   const [hasMore, setHasMore] = useState(true);
   const [history] = useState(getHistory);
   const loadingRef = useRef(false);
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useSupabaseUser();
+  const userId = user?.id || null;
   const [showLogin, setShowLogin] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -192,97 +196,84 @@ export default function TerbaruPage({
 
   // ✅ REFS untuk dedupe & cleanup
   const abortRef = useRef<AbortController | null>(null);
-  const notifChannelRef = useRef<RealtimeChannel | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
 
   const [source, setSource] = useState<SourceId>(initialSource);
 
   // ✅ AUTH: dedupe session fetch
-  const authInitRef = useRef(false);
-  useEffect(() => {
-    if (authInitRef.current) return;
-    authInitRef.current = true;
-
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user || null);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) =>
-      setUser(session?.user || null),
-    );
-
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
   // ✅ NOTIFIKASI: cleanup channel saat unmount / user change
-  useEffect(() => {
-    if (!user) {
-      // Cleanup channel lama kalau logout
-      if (notifChannelRef.current) {
-        supabase.removeChannel(notifChannelRef.current);
-        notifChannelRef.current = null;
-      }
+  const fetchNotifications = useCallback(async () => {
+    if (!userId) {
+      setNotifications([]);
+      setUnreadCount(0);
       return;
     }
 
-    const fetchNotif = async () => {
-      const eventNotif = await ensureTitleRushWeeklyNotification(user.id);
+    const nextNotifications = await fetchCachedNotifications(userId);
+    setNotifications(nextNotifications);
+    setUnreadCount(nextNotifications.filter((n) => !n.is_read).length || 0);
+  }, [userId]);
 
-      const { data } = await supabase
-        .from("notifications")
-        .select("id, user_id, actor_id, actor_name, type, slug, chapter, target_id, is_read, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      void fetchNotifications();
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, [fetchNotifications]);
 
-      const nextNotifications = eventNotif
-        ? [eventNotif, ...((data || []) as NotificationItem[])]
-        : ((data || []) as NotificationItem[]);
-      setNotifications(nextNotifications);
-      setUnreadCount(nextNotifications.filter((n) => !n.is_read).length || 0);
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") void fetchNotifications();
     };
 
-    fetchNotif();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [fetchNotifications]);
 
-    // Hapus channel lama sebelum subscribe baru
-    if (notifChannelRef.current) {
-      supabase.removeChannel(notifChannelRef.current);
+  const markAsRead = useCallback(async (tab: "notif" | "info" = "notif") => {
+    if (unreadCount === 0 || !user?.id) return;
+
+    if (tab === "info") {
+      setNotifications((prev) => {
+        const next = prev.map((notification) =>
+          notification.type === TITLE_RUSH_EVENT_TYPE
+            ? { ...notification, is_read: true }
+            : notification,
+        );
+        setUnreadCount(next.filter((notification) => !notification.is_read).length);
+        return next;
+      });
+      return;
     }
 
-    notifChannelRef.current = supabase
-      .channel(`notif-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          setNotifications((prev) => [payload.new as NotificationItem, ...prev]);
-          setUnreadCount((prev) => prev + 1);
-        },
+    const unreadRegularIds = notifications
+      .filter(
+        (notification) =>
+          !notification.is_read &&
+          notification.type !== TITLE_RUSH_EVENT_TYPE &&
+          !String(notification.id).startsWith("title-rush-event-"),
       )
-      .subscribe();
+      .map((notification) => notification.id);
 
-    return () => {
-      if (notifChannelRef.current) {
-        supabase.removeChannel(notifChannelRef.current);
-        notifChannelRef.current = null;
-      }
-    };
-  }, [user]);
+    if (!unreadRegularIds.length) return;
 
-  const markAsRead = async () => {
-    if (unreadCount === 0) return;
     await supabase
       .from("notifications")
       .update({ is_read: true })
-      .eq("user_id", user?.id);
-    setUnreadCount(0);
-  };
+      .eq("user_id", user.id)
+      .in("id", unreadRegularIds);
+
+    clearNotificationCache(user.id);
+    setNotifications((prev) => {
+      const readIds = new Set(unreadRegularIds);
+      const next = prev.map((notification) =>
+        readIds.has(notification.id) ? { ...notification, is_read: true } : notification,
+      );
+      setUnreadCount(next.filter((notification) => !notification.is_read).length);
+      return next;
+    });
+  }, [notifications, unreadCount, user]);
 
   const [targetSource, setTargetSource] = useState<SourceId | null>(null);
   const [showFilter, setShowFilter] = useState(false);
@@ -624,6 +615,7 @@ export default function TerbaruPage({
           showNotif={showNotif}
           setShowNotif={setShowNotif}
           markAsRead={markAsRead}
+          refreshNotifications={fetchNotifications}
         />
       </HeaderBar>
 

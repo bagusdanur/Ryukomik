@@ -6,7 +6,7 @@ import { RiVipCrownLine } from "react-icons/ri";
 import { FiArrowRight, FiAward, FiCheckCircle, FiMessageCircle } from "react-icons/fi";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
 import type { NotificationItem, SourceId } from "@/types/content";
 import {
@@ -20,7 +20,8 @@ interface NotificationDropdownProps {
   unreadCount: number;
   showNotif: boolean;
   setShowNotif: Dispatch<SetStateAction<boolean>>;
-  markAsRead: () => Promise<void>;
+  markAsRead: (tab?: "notif" | "info") => Promise<void>;
+  refreshNotifications?: () => Promise<void>;
 }
 
 export default function NotificationDropdown({
@@ -30,6 +31,7 @@ export default function NotificationDropdown({
   showNotif,
   setShowNotif,
   markAsRead,
+  refreshNotifications,
 }: NotificationDropdownProps) {
   const [activeTab, setActiveTab] = useState<"notif" | "info">("notif");
   const infoNotifications = useMemo(
@@ -43,6 +45,31 @@ export default function NotificationDropdown({
   const infoUnreadCount = infoNotifications.filter((notification) => !notification.is_read).length;
   const regularUnreadCount = regularNotifications.filter((notification) => !notification.is_read).length;
   const activeNotifications = activeTab === "info" ? infoNotifications : regularNotifications;
+
+  useEffect(() => {
+    if (!showNotif || !user?.id) return;
+
+    if (activeTab === "info") {
+      const eventNotification = infoNotifications.find(
+        (notification) => !notification.is_read && notification.type === TITLE_RUSH_EVENT_TYPE,
+      );
+      if (eventNotification) {
+        markTitleRushWeeklyNotificationRead(user.id, eventNotification.slug);
+      }
+    }
+
+    if (activeTab === "info" ? infoUnreadCount > 0 : regularUnreadCount > 0) {
+      void markAsRead(activeTab);
+    }
+  }, [
+    activeTab,
+    infoNotifications,
+    infoUnreadCount,
+    markAsRead,
+    regularUnreadCount,
+    showNotif,
+    user?.id,
+  ]);
 
   if (!user) return null;
 
@@ -98,11 +125,7 @@ export default function NotificationDropdown({
         onClick={() => {
           setShowNotif(!showNotif);
           if (!showNotif) {
-            const eventNotification = notifications.find(
-              (notification) => notification.type === TITLE_RUSH_EVENT_TYPE,
-            );
-            markTitleRushWeeklyNotificationRead(user.id, eventNotification?.slug);
-            void markAsRead();
+            void refreshNotifications?.();
           }
         }}
         className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 transition hover:bg-white/10"

@@ -11,10 +11,11 @@ import {
   FiX,
 } from "react-icons/fi";
 import type { FormEvent } from "react";
-import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 
 const COLLECTION_KEY = "comic_collections";
+const cloudItemCache = new Map<string, NormalizedBookmark[]>();
 
 type BookmarkItem = {
   slug: string;
@@ -94,25 +95,16 @@ function normalizeCloudCollection(
 }
 
 export default function CollectionTab({ search = "" }: CollectionTabProps) {
+  const { user } = useSupabaseUser();
   const [collections, setCollections] = useState<ComicCollection[]>([]);
   const [bookmarks, setBookmarks] = useState<NormalizedBookmark[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const [cloudReady, setCloudReady] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [itemsLoading, setItemsLoading] = useState(false);
   const [hasLocalCollections, setHasLocalCollections] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (mounted) setUser(data.user || null);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     loadCollections();
@@ -120,6 +112,35 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
     return () => window.removeEventListener("bookmark-updated", loadCollections);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
+
+  async function loadCloudCollectionItems(collectionId: string, force = false) {
+    if (!user?.id || !collectionId) return [];
+
+    const cached = cloudItemCache.get(collectionId);
+    if (!force && cached) return cached;
+
+    setItemsLoading(true);
+    try {
+      const { data } = await supabase
+        .from("user_collection_items")
+        .select("collection_id, source, slug, title, image, position, created_at")
+        .eq("collection_id", collectionId)
+        .eq("user_id", user.id)
+        .order("position", { ascending: true })
+        .order("created_at", { ascending: false });
+
+      const items = ((data || []) as CloudCollectionItemRow[]).map(normalizeBookmark);
+      cloudItemCache.set(collectionId, items);
+      setCollections((current) =>
+        current.map((collection) =>
+          collection.id === collectionId ? { ...collection, items } : collection,
+        ),
+      );
+      return items;
+    } finally {
+      setItemsLoading(false);
+    }
+  }
 
   async function loadCollections() {
     const savedBookmarks = readJSON<BookmarkItem[]>("bookmarks", []).map(normalizeBookmark);
@@ -151,31 +172,25 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
     }
 
     const collectionRows = (cloudCollections || []) as CloudCollectionRow[];
-    const collectionIds = collectionRows.map((item) => item.id);
-    const { data: cloudItems } = collectionIds.length
-      ? await supabase
-          .from("user_collection_items")
-          .select("collection_id, source, slug, title, image, position, created_at")
-          .in("collection_id", collectionIds)
-          .order("position", { ascending: true })
-          .order("created_at", { ascending: false })
-      : { data: [] };
-
     const itemsByCollection = new Map<string, NormalizedBookmark[]>();
-    ((cloudItems || []) as CloudCollectionItemRow[]).forEach((item) => {
-      const list = itemsByCollection.get(item.collection_id) || [];
-      list.push(normalizeBookmark(item));
-      itemsByCollection.set(item.collection_id, list);
+    collectionRows.forEach((collection) => {
+      const cachedItems = cloudItemCache.get(collection.id);
+      if (cachedItems) itemsByCollection.set(collection.id, cachedItems);
     });
 
     const normalized = collectionRows.map((collection) =>
       normalizeCloudCollection(collection, itemsByCollection),
     );
+    const nextActiveId =
+      activeId && normalized.some((item) => item.id === activeId)
+        ? activeId
+        : normalized[0]?.id || null;
 
     setCloudReady(true);
     setCollections(normalized);
-    syncActiveCollection(normalized);
+    setActiveId(nextActiveId);
     setLoading(false);
+    if (nextActiveId) void loadCloudCollectionItems(nextActiveId);
   }
 
   function syncActiveCollection(nextCollections: ComicCollection[]) {
@@ -218,6 +233,7 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
             position: index,
           })),
         );
+        cloudItemCache.delete(inserted.id);
       }
     }
 
@@ -229,6 +245,12 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
     () => collections.find((item) => item.id === activeId) || null,
     [activeId, collections],
   );
+
+  useEffect(() => {
+    if (!cloudReady || !user?.id || !activeId) return;
+    void loadCloudCollectionItems(activeId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, cloudReady, user?.id]);
 
   const filteredCollections = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -292,6 +314,7 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
   async function deleteCollection(id: string) {
     if (cloudReady && user?.id) {
       await supabase.from("user_collections").delete().eq("id", id).eq("user_id", user.id);
+      cloudItemCache.delete(id);
       await loadCollections();
       return;
     }
@@ -315,7 +338,9 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
         .update({ updated_at: new Date().toISOString() })
         .eq("id", activeCollection.id)
         .eq("user_id", user.id);
+      cloudItemCache.delete(activeCollection.id);
       await loadCollections();
+      await loadCloudCollectionItems(activeCollection.id, true);
       return;
     }
 
@@ -342,7 +367,9 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
         .eq("user_id", user.id)
         .eq("source", item.source || "komiku")
         .eq("slug", item.slug);
+      cloudItemCache.delete(activeCollection.id);
       await loadCollections();
+      await loadCloudCollectionItems(activeCollection.id, true);
       return;
     }
 
@@ -538,7 +565,7 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
 
           {filteredItems.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-white/[0.12] py-10 text-center text-sm text-white/50">
-              Belum ada komik di koleksi ini
+              {itemsLoading ? "Memuat isi koleksi..." : "Belum ada komik di koleksi ini"}
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">

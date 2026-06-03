@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { FaCrown, FaTimes, FaCheckCircle } from "react-icons/fa";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import {
+  clearCachedProfile,
+  isActivePremiumProfile,
+  loadCachedProfile,
+} from "@/utils/profileCache";
 
 type PremiumProfile = {
   is_premium?: boolean;
@@ -21,6 +27,7 @@ type PremiumModalProps = {
 };
 
 export default function PremiumModal({ open, onClose }: PremiumModalProps) {
+  const { user } = useSupabaseUser();
   const [loading, setLoading] = useState(false);
   const [redeemCode, setRedeemCode] = useState("");
   const [isPremium, setIsPremium] = useState(false);
@@ -34,29 +41,18 @@ export default function PremiumModal({ open, onClose }: PremiumModalProps) {
     if (!open) return;
 
     async function loadStatus() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("is_premium, premium_until")
-        .eq("id", user.id)
-        .single();
+      const data = await loadCachedProfile(user.id);
 
       if (!data) return;
 
-      const active =
-        data.is_premium &&
-        (!data.premium_until || new Date(data.premium_until) > new Date());
-
-      setIsPremium(active);
+      setIsPremium(isActivePremiumProfile(data));
       setProfile(data);
     }
 
     loadStatus();
-  }, [open]);
+  }, [open, user]);
 
   async function redeemPremium() {
     setError(null);
@@ -69,9 +65,6 @@ export default function PremiumModal({ open, onClose }: PremiumModalProps) {
 
     setLoading(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
     if (!user) {
       setError("Silakan login terlebih dahulu");
       setLoading(false);
@@ -117,6 +110,8 @@ export default function PremiumModal({ open, onClose }: PremiumModalProps) {
       })
       .eq("id", codeData.id);
 
+    clearCachedProfile(user.id);
+    window.dispatchEvent(new Event("rk-profile-updated"));
     setLoading(false);
     setMessage("Premium berhasil diaktifkan 🎉");
 

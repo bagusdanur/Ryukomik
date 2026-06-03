@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { loadCachedProfile } from "@/utils/profileCache";
 
 interface PremiumProfile {
   is_premium?: boolean;
@@ -13,40 +13,25 @@ export function usePremiumStatus() {
   const [loading, setLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
   const [premiumUntil, setPremiumUntil] = useState<string | null>(null);
+  const { user, loading: userLoading } = useSupabaseUser();
 
   useEffect(() => {
-    let channel: RealtimeChannel | undefined;
+    let cancelled = false;
 
     async function init() {
-      const { data: { user }, error: authErr } =
-        await supabase.auth.getUser();
-
-      if (authErr || !user) {
+      if (userLoading) return;
+      if (!user?.id) {
+        setIsPremium(false);
+        setPremiumUntil(null);
         setLoading(false);
         return;
       }
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("is_premium, premium_until")
-        .eq("id", user.id)
-        .single();
+      setLoading(true);
+      const data = await loadCachedProfile(user.id);
 
-      if (!error && data) updateState(data);
-
-      channel = supabase
-        .channel(`premium-${user.id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "profiles",
-            filter: `id=eq.${user.id}`,
-          },
-          (payload) => updateState(payload.new as PremiumProfile)
-        )
-        .subscribe();
+      if (cancelled) return;
+      if (data) updateState(data);
 
       setLoading(false);
     }
@@ -69,9 +54,9 @@ export function usePremiumStatus() {
     init();
 
     return () => {
-      if (channel) supabase.removeChannel(channel);
+      cancelled = true;
     };
-  }, []);
+  }, [user?.id, userLoading]);
 
   return { loading, isPremium, premiumUntil };
 }

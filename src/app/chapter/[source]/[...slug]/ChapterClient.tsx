@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
-import type { User } from "@supabase/supabase-js";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import type { ReaderChapter } from "@/types/content";
 import type { ReadHistoryItem } from "@/types/user";
 
@@ -34,7 +33,7 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
   const [showUI, setShowUI] = useState(true);
   const [showSetting, setShowSetting] = useState(false);
   const [showComment, setShowComment] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useSupabaseUser();
 
   useXpQueueFlush();
   useXpRead({ user, slugStr });
@@ -75,28 +74,6 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
     filtered.unshift(entry);
     localStorage.setItem("read_history", JSON.stringify(filtered.slice(0, 50)));
   }, [data, slugStr, source]);
-
-  // Auth
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: d }) => setUser(d.user || null));
-    const { data: listener } = supabase.auth.onAuthStateChange((_, sess) =>
-      setUser(sess?.user || null),
-    );
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
-  // XP
-  useEffect(() => {
-    if (!user || !slugStr) return;
-    const t = setTimeout(() => {
-      fetch("/api/xp/read", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id, chapter_slug: slugStr }),
-      });
-    }, 5000);
-    return () => clearTimeout(t);
-  }, [user, slugStr]);
 
   // Page title
   useEffect(() => {

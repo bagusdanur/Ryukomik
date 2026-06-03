@@ -9,6 +9,8 @@ import { TbLayersLinked, TbBadge } from "react-icons/tb";
 import { HiOutlineSparkles } from "react-icons/hi2";
 import { MdOutlineDownloadForOffline } from "react-icons/md";
 import { supabase } from "@/lib/supabaseClient";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 
 const features = [
   {
@@ -72,6 +74,7 @@ type ImgBbResponse = {
 };
 
 export default function PremiumPage() {
+  const { user } = useSupabaseUser();
   const [showModal, setShowModal] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -87,23 +90,16 @@ export default function PremiumPage() {
 
   useEffect(() => {
     async function fetchProfile() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
       if (!user) {
         setProfileLoading(false);
         return;
       }
-      const { data } = await supabase
-        .from("profiles")
-        .select("username, avatar_url, is_premium, premium_until")
-        .eq("id", user.id)
-        .single();
+      const data = await loadCachedProfile(user.id);
       setProfile(data);
       setProfileLoading(false);
     }
     fetchProfile();
-  }, []);
+  }, [user]);
 
   // hitung sisa hari premium
   const premiumDaysLeft = useMemo(() => {
@@ -111,9 +107,7 @@ export default function PremiumPage() {
     const diff = new Date(profile.premium_until).getTime() - Date.now();
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }, [profile?.premium_until]);
-  const isActivePremium =
-    profile?.is_premium &&
-    (!profile.premium_until || (premiumDaysLeft ?? 0) > 0);
+  const isActivePremium = isActivePremiumProfile(profile);
 
   const closeModal = () => {
     if (preview) URL.revokeObjectURL(preview);
@@ -157,9 +151,6 @@ export default function PremiumPage() {
       const imgData = (await imgRes.json()) as ImgBbResponse;
       if (!imgData.success || !imgData.data?.url) throw new Error("Upload gambar gagal");
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
       if (!user) throw new Error("Kamu belum login");
 
       const { error: dbErr } = await supabase.from("premium_requests").insert({
