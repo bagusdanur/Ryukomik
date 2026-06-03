@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="monetag" content="340d4e9659b889e6abeb8c059125a337" />
+        <meta name="monetag" content="648210872e70b41aeb3156769958d70b"/>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#090a12" />
         <meta name="google-site-verification" content="NBp-tkkvrqSZ_6L1OLAWZUV3UotpuMo-RfQsPQlp7Gs" />
