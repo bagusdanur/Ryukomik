@@ -6,9 +6,16 @@ export interface CachedProfile {
   id: string;
   username?: string | null;
   avatar_url?: string | null;
+  level?: number | null;
+  xp?: number | null;
   role?: string | null;
   is_premium?: boolean | null;
   premium_until?: string | null;
+  created_at?: string | null;
+  total_comments?: number | null;
+  show_public_reads?: boolean | null;
+  show_public_comments?: boolean | null;
+  show_public_join_date?: boolean | null;
 }
 
 const PROFILE_TTL = 5 * 60 * 1000;
@@ -42,7 +49,9 @@ export function loadCachedProfile(userId: string, options: { force?: boolean } =
   const request = Promise.resolve(
     supabase
       .from("profiles")
-      .select("id, username, avatar_url, role, is_premium, premium_until")
+      .select(
+        "id, username, avatar_url, level, xp, role, is_premium, premium_until, created_at, total_comments, show_public_reads, show_public_comments, show_public_join_date",
+      )
       .eq("id", userId)
       .maybeSingle(),
   ).then(({ data }) => {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getXpLeadersCached, type XpLeaderRow } from "@/lib/profileServerCache";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
 import ProfilePopover from "@/components/profile/ProfilePopover";
@@ -73,10 +74,6 @@ type LatestComment = {
 type TitleRushWinnerRow = {
   user_id: string;
   rank: number;
-};
-
-type XpLeaderRow = {
-  id: string;
 };
 
 type CommentType = "admin" | "premium" | "normal";
@@ -215,21 +212,6 @@ const getActiveTitleRushWinnersCached = unstable_cache(
   },
   ["active-title-rush-winners"],
   { revalidate: 600, tags: ["title-rush-winners"] },
-);
-
-const getXpLeadersCached = unstable_cache(
-  async () => {
-    const { data, error } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .order("xp", { ascending: false })
-      .limit(3);
-
-    if (error) return [];
-    return (data || []) as XpLeaderRow[];
-  },
-  ["xp-leaders-badges"],
-  { revalidate: 600, tags: ["xp-leaders"] },
 );
 
 export async function getLatestComments() {

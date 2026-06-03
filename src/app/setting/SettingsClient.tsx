@@ -10,6 +10,7 @@ import {
 } from "@/components/ThemeColorProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { clearCachedProfile, loadCachedProfile } from "@/utils/profileCache";
 import { createBackup, restoreBackup } from "@/utils/backup";
 import { getCacheSizeMB } from "@/utils/getCacheSizeMB";
 import {
@@ -98,25 +99,33 @@ export default function SettingsClient() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
 
     const fetchStats = async () => {
       setProfileLoading(true);
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select(
-          "total_comments, level, xp, role, is_premium, premium_until, created_at, username, avatar_url, show_public_reads, show_public_comments, show_public_join_date",
-        )
-        .eq("id", user.id)
-        .single();
+      const profile = await loadCachedProfile(user.id);
 
       const { count: totalReads } = await supabase
         .from("user_reads")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id);
 
+      if (cancelled) return;
+
       if (profile) {
         setStats({
-          ...profile,
+          total_comments: profile.total_comments ?? 0,
+          level: profile.level ?? 1,
+          xp: profile.xp ?? 0,
+          username: profile.username || "",
+          avatar_url: profile.avatar_url || "",
+          role: profile.role,
+          is_premium: profile.is_premium ?? false,
+          premium_until: profile.premium_until,
+          created_at: profile.created_at,
+          show_public_reads: profile.show_public_reads,
+          show_public_comments: profile.show_public_comments,
+          show_public_join_date: profile.show_public_join_date,
           total_reads: totalReads ?? 0,
         });
         setProfileForm({
@@ -133,6 +142,10 @@ export default function SettingsClient() {
     };
 
     fetchStats();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   useEffect(() => {
@@ -333,6 +346,7 @@ export default function SettingsClient() {
         avatar_url: avatarUrl || null,
       }));
       setProfileForm({ username, avatar_url: avatarUrl });
+      clearCachedProfile(user.id);
       window.dispatchEvent(new Event("rk-profile-updated"));
       closeProfileModal();
       showToast("success", "Profil berhasil diperbarui");
@@ -363,6 +377,7 @@ export default function SettingsClient() {
         .eq("id", user.id);
 
       if (error) throw error;
+      clearCachedProfile(user.id);
       showToast("success", "Privacy profil diperbarui");
     } catch (error) {
       setPrivacy((current) => ({ ...current, [field]: previous }));

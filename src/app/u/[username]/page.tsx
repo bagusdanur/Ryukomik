@@ -3,6 +3,10 @@ import type { Metadata } from "next";
 import { unstable_cache } from "next/cache";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import {
+  getPublicProfileByUsernameCached,
+  type PublicProfileRow,
+} from "@/lib/profileServerCache";
 import UserBadges from "@/components/UserBadges";
 import PublicProfileShare from "@/components/profile/PublicProfileShare";
 import PublicCollectionsTabs from "@/components/profile/PublicCollectionsTabs";
@@ -28,20 +32,7 @@ type RouteProps = {
   params: Promise<{ username: string }>;
 };
 
-type Profile = {
-  id: string;
-  username?: string | null;
-  avatar_url?: string | null;
-  level?: number | null;
-  xp?: number | null;
-  role?: string | null;
-  is_premium?: boolean | null;
-  created_at?: string | null;
-  total_comments?: number | null;
-  show_public_reads?: boolean | null;
-  show_public_comments?: boolean | null;
-  show_public_join_date?: boolean | null;
-};
+type Profile = PublicProfileRow;
 
 type CommentRow = {
   id: string;
@@ -158,14 +149,7 @@ function parseCommentContent(content?: string | null): { text: string; images: s
 
 const getPublicProfileDataCached = unstable_cache(
   async (username: string): Promise<PublicProfileData | null> => {
-    const { data: profiles } = await supabaseAdmin
-      .from("profiles")
-      .select(
-        "id, username, avatar_url, level, xp, role, is_premium, created_at, total_comments, show_public_reads, show_public_comments, show_public_join_date",
-      )
-      .ilike("username", username)
-      .limit(1);
-    const profile = profiles?.[0] as Profile | undefined;
+    const profile = await getPublicProfileByUsernameCached(username);
 
     if (!profile) return null;
 
@@ -565,13 +549,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
     };
   }
 
-  const { data: profiles } = await supabaseAdmin
-    .from("profiles")
-    .select("username, avatar_url, level, role, is_premium, total_comments")
-    .ilike("username", username)
-    .limit(1);
-
-  const profile = profiles?.[0] as Profile | undefined;
+  const profile = await getPublicProfileByUsernameCached(username);
   const displayName = profile?.username || username;
   const title = `${displayName} - Profil Ryukomik`;
   const description = `${displayName} di Ryukomik${profile?.level ? `, Level ${profile.level}` : ""}${profile?.is_premium ? " Premium" : ""}. Lihat profil publik, komentar, dan koleksi komik.`;
