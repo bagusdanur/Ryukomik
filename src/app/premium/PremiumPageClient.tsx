@@ -11,6 +11,7 @@ import { MdOutlineDownloadForOffline } from "react-icons/md";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
+import LoginModal from "@/components/LoginModal";
 
 const features = [
   {
@@ -113,6 +114,7 @@ type ImgBbResponse = {
 export default function PremiumPage() {
   const { user } = useSupabaseUser();
   const [showModal, setShowModal] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [showQrisPreview, setShowQrisPreview] = useState(false);
@@ -159,6 +161,14 @@ export default function PremiumPage() {
     setSuccess(false);
   };
 
+  const handleActivatePremium = () => {
+    if (!user) {
+      setShowLogin(true);
+      return;
+    }
+    setShowModal(true);
+  };
+
   const handleFile = (f: File) => {
     if (!allowedImageTypes.includes(f.type)) {
       setError("File harus berupa JPG, PNG, atau WebP");
@@ -175,6 +185,11 @@ export default function PremiumPage() {
   };
 
   const handleSubmit = async () => {
+    if (!user) {
+      setShowLogin(true);
+      setError("Silakan login terlebih dahulu");
+      return;
+    }
     if (!file) {
       setError("Upload bukti transfer dulu");
       return;
@@ -190,9 +205,6 @@ export default function PremiumPage() {
       );
       const imgData = (await imgRes.json()) as ImgBbResponse;
       if (!imgData.success || !imgData.data?.url) throw new Error("Upload gambar gagal");
-
-      if (!user) throw new Error("Kamu belum login");
-
       const { error: dbErr } = await supabase.from("premium_requests").insert({
         user_id: user.id,
         name: profile?.username || user.email || "User",
@@ -432,7 +444,7 @@ export default function PremiumPage() {
                 </div>
               ) : (
                 <button
-                  onClick={() => setShowModal(true)}
+                  onClick={handleActivatePremium}
                   className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-bold"
                 >
                   <HiOutlineSparkles size={15} />
@@ -718,6 +730,8 @@ export default function PremiumPage() {
           />
         </div>
       )}
+
+      {showLogin && <LoginModal close={() => setShowLogin(false)} />}
     </>
   );
 }
