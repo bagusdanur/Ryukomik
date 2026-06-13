@@ -172,6 +172,7 @@ interface ReaderImagesProps {
   readingMode?: ReadingMode;
   imageScaling?: ImageScaling;
   pageSpacing?: PageSpacing;
+  nextChapterSlug?: string;
 }
 
 export default function ReaderImages({
@@ -183,7 +184,120 @@ export default function ReaderImages({
   readingMode = "full",
   imageScaling = "fitwidth",
   pageSpacing = "none",
+  nextChapterSlug,
 }: ReaderImagesProps) {
+  const [activePage, setActivePage] = useState(0);
+  const [prevSlug, setPrevSlug] = useState(slugStr);
+  const fetchedNextChapterRef = useRef<string | null>(null);
+
+  // Helper untuk parsing slug chapter berikutnya
+  const parseNextChapterSlug = (nextSlug: string, defaultSource: string) => {
+    if (nextSlug.startsWith("chapter/")) {
+      const parts = nextSlug.split("/");
+      const source = parts[1] || defaultSource;
+      const slugStr = parts.slice(2).join("/");
+      return { source, slugStr };
+    }
+    return { source: defaultSource, slugStr: nextSlug };
+  };
+
+  // Reset prefetch status dan activePage saat chapter berganti (di tingkat render)
+  if (slugStr !== prevSlug) {
+    setPrevSlug(slugStr);
+    setActivePage(0);
+    fetchedNextChapterRef.current = null;
+  }
+
+  // Track active page berdasarkan scroll
+  useEffect(() => {
+    if (images.length === 0) return;
+
+    const handleScroll = () => {
+      const imgs = document.querySelectorAll<HTMLImageElement>("img[data-page]");
+      if (!imgs.length) return;
+
+      const viewportMid = window.innerHeight / 2;
+      let closestIdx = 0;
+      let closestDist = Infinity;
+
+      imgs.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        const elMid = rect.top + rect.height / 2;
+        const dist = Math.abs(elMid - viewportMid);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestIdx = Number(el.dataset.page) || 0;
+        }
+      });
+
+      setActivePage(closestIdx);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    const timer = setTimeout(handleScroll, 500);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      clearTimeout(timer);
+    };
+  }, [images, slugStr]);
+
+  // Preload 2 halaman berikutnya di chapter saat ini
+  useEffect(() => {
+    const preloadIndices = [activePage + 1, activePage + 2];
+    preloadIndices.forEach((idx) => {
+      if (idx < images.length) {
+        const nextSrc = images[idx];
+        const candidates = getChapterImageCandidates(source, nextSrc);
+        const primarySrc = candidates[0] || nextSrc;
+        if (primarySrc) {
+          const img = new Image();
+          img.src = primarySrc;
+        }
+      }
+    });
+  }, [activePage, images, source]);
+
+  // Preload metadata & gambar pertama chapter selanjutnya
+  useEffect(() => {
+    if (!nextChapterSlug || images.length === 0) return;
+
+    const isNearEnd = activePage >= images.length - 3;
+    if (!isNearEnd) return;
+
+    if (fetchedNextChapterRef.current === nextChapterSlug) return;
+    fetchedNextChapterRef.current = nextChapterSlug;
+
+    const { source: nextSource, slugStr: nextCleanSlug } = parseNextChapterSlug(
+      nextChapterSlug,
+      source
+    );
+
+    const apiPath = `https://api.ryukomik.web.id/${nextSource}/chapter/${nextCleanSlug}`;
+
+    fetch(apiPath)
+      .then((res) => {
+        if (!res.ok) throw new Error("Gagal mengambil data chapter selanjutnya");
+        return res.json();
+      })
+      .then((json) => {
+        if (json && json.success && Array.isArray(json.images)) {
+          // Preload 3 gambar pertama dari chapter selanjutnya
+          const nextImages = json.images.slice(0, 3);
+          nextImages.forEach((imgUrl: string) => {
+            const candidates = getChapterImageCandidates(nextSource, imgUrl);
+            const primarySrc = candidates[0] || imgUrl;
+            if (primarySrc) {
+              const img = new Image();
+              img.src = primarySrc;
+            }
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn("Preload chapter selanjutnya gagal:", err);
+      });
+  }, [activePage, images.length, nextChapterSlug, source]);
   const containerClass = getContainerClass(readingMode, pageSpacing);
   const imgStyle = getImgStyle(imageScaling);
   const preloadUrls = useMemo(

@@ -104,11 +104,12 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
         readingMode={settings.readingMode}
         imageScaling={settings.imageScaling}
         pageSpacing={settings.pageSpacing}
+        nextChapterSlug={data.next}
       />
       <ReaderProgress 
-      images={data.images}
-      slugStr={slugStr}
-       />
+        images={data.images}
+        slugStr={slugStr}
+      />
 
       {showUI && (
         <>
