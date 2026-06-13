@@ -25,6 +25,9 @@ type PremiumRequest = {
   status: RequestStatus | string;
   name?: string | null;
   proof_url: string;
+  package_name?: string | null;
+  duration_days?: number | null;
+  amount?: number | null;
   created_at: string;
   profiles?: {
     username?: string | null;
@@ -53,6 +56,17 @@ export default function RequestsTab({
   setProofModal,
   handleRequestAction,
 }: RequestsTabProps) {
+  const formatAmount = (amount?: number | string | null) => {
+    const value = Number(amount);
+    return Number.isFinite(value)
+      ? new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          maximumFractionDigits: 0,
+        }).format(value)
+      : "Rp 10.000";
+  };
+
   return (
     <div className="space-y-4">
       <div className="mb-1 flex items-center justify-between">
@@ -114,6 +128,8 @@ export default function RequestsTab({
           {requests.map((request) => {
             const displayName = request.profiles?.username || request.name || "User";
             const avatarUrl = request.profiles?.avatar_url || null;
+            const packageName = request.package_name || "1 Bulan";
+            const durationDays = Math.max(1, Math.floor(Number(request.duration_days) || 30));
             const date = new Date(request.created_at).toLocaleDateString("id-ID", {
               day: "numeric",
               month: "short",
@@ -149,6 +165,33 @@ export default function RequestsTab({
                   >
                     {STATUS_LABEL[request.status] || request.status}
                   </span>
+                </div>
+
+                <div className="mb-3 grid grid-cols-3 gap-2 rounded-xl border border-white/[.05] bg-white/[.03] p-2.5">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-white/20">
+                      Paket
+                    </p>
+                    <p className="mt-0.5 text-[11px] font-semibold text-white/75">
+                      {packageName}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-white/20">
+                      Durasi
+                    </p>
+                    <p className="mt-0.5 text-[11px] font-semibold text-white/75">
+                      {durationDays} hari
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-white/20">
+                      Nominal
+                    </p>
+                    <p className="mt-0.5 text-[11px] font-semibold text-white/75">
+                      {formatAmount(request.amount)}
+                    </p>
+                  </div>
                 </div>
 
                 <button

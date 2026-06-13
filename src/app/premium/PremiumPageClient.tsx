@@ -57,7 +57,44 @@ const features = [
   },
 ];
 
+const premiumPlans = [
+  {
+    id: "1m",
+    name: "1 Bulan",
+    durationDays: 30,
+    amount: 10000,
+    qrisSrc: "/qris10k.jpeg",
+    note: "Coba Premium",
+  },
+  {
+    id: "3m",
+    name: "3 Bulan",
+    durationDays: 90,
+    amount: 30000,
+    qrisSrc: "/qris30k.jpeg",
+    badge: "Populer",
+    note: "Lebih praktis",
+  },
+  {
+    id: "6m",
+    name: "6 Bulan",
+    durationDays: 180,
+    amount: 60000,
+    qrisSrc: "/qris60k.jpeg",
+    badge: "Durasi Panjang",
+    note: "Aktif lebih lama",
+  },
+];
+
 const allowedImageTypes = ["image/jpeg", "image/png", "image/webp"];
+
+function formatRupiah(value: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
 type PremiumProfile = {
   username?: string | null;
@@ -79,6 +116,7 @@ export default function PremiumPage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [showQrisPreview, setShowQrisPreview] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState(premiumPlans[0].id);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -108,6 +146,8 @@ export default function PremiumPage() {
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }, [profile?.premium_until]);
   const isActivePremium = isActivePremiumProfile(profile);
+  const selectedPlan =
+    premiumPlans.find((plan) => plan.id === selectedPlanId) || premiumPlans[0];
 
   const closeModal = () => {
     if (preview) URL.revokeObjectURL(preview);
@@ -157,6 +197,9 @@ export default function PremiumPage() {
         user_id: user.id,
         name: profile?.username || user.email || "User",
         proof_url: imgData.data.url,
+        package_name: selectedPlan.name,
+        duration_days: selectedPlan.durationDays,
+        amount: selectedPlan.amount,
       });
       if (dbErr) throw new Error(dbErr.message);
 
@@ -314,18 +357,69 @@ export default function PremiumPage() {
             </div>
 
             <div className="border-t border-white/[0.06] mt-5 pt-4">
+              <div className="mb-4">
+                <div className="text-xs text-white/30 mb-3">
+                  Pilih paket
+                </div>
+                <div className="grid gap-2">
+                  {premiumPlans.map((plan) => {
+                    const active = selectedPlan.id === plan.id;
+                    return (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => setSelectedPlanId(plan.id)}
+                        className={`rounded-2xl border px-3 py-3 text-left transition-all ${
+                          active
+                            ? "border-cyan-200/50 bg-cyan-400/10"
+                            : "border-white/[0.07] bg-white/[0.025] hover:border-white/15"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-black text-white">
+                                {plan.name}
+                              </span>
+                              {plan.badge && (
+                                <span className="rounded-full bg-cyan-400/12 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-cyan-200">
+                                  {plan.badge}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-1 text-[11px] text-white/30">
+                              {plan.durationDays} hari - {plan.note}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-base font-black text-white">
+                              {formatRupiah(plan.amount)}
+                            </div>
+                            <div className="text-[10px] text-white/30">
+                              via QRIS
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="flex items-end justify-between mb-4">
                 <div>
                   <div className="text-xs text-white/30 mb-1">
-                    Harga per bulan
+                    Paket dipilih
                   </div>
-                  <div className="text-3xl font-black text-white">Rp 10.000</div>
+                  <div className="text-3xl font-black text-white">
+                    {formatRupiah(selectedPlan.amount)}
+                  </div>
                   <div className="text-xs text-white/30 mt-1">
-                    bayar via QRIS
+                    {selectedPlan.name} - {selectedPlan.durationDays} hari
                   </div>
                 </div>
                 <div className="text-[10px] bg-cyan-400/12 text-cyan-200 px-2 py-1 rounded-full font-bold uppercase tracking-wider">
-                  Terjangkau
+                  Tanpa Diskon
                 </div>
               </div>
               {isActivePremium ? (
@@ -424,7 +518,7 @@ export default function PremiumPage() {
                   </h2>
                   <p className="text-sm text-white/40 leading-relaxed">
                     Admin akan verifikasi dalam 1×24 jam. Setelah disetujui akun
-                    kamu otomatis aktif Premium.
+                    kamu otomatis aktif Premium sesuai paket yang dipilih.
                   </p>
                   <button
                     onClick={closeModal}
@@ -449,6 +543,22 @@ export default function PremiumPage() {
                     <p className="text-xs text-white/35 mt-0.5">
                       Scan QR lalu kirim screenshot transferan kamu
                     </p>
+                  </div>
+
+                  <div className="mb-3 rounded-xl border border-cyan-200/15 bg-cyan-400/[0.06] px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-widest text-cyan-200/80">
+                          {selectedPlan.name}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-white/35">
+                          Premium aktif {selectedPlan.durationDays} hari
+                        </p>
+                      </div>
+                      <p className="text-base font-black text-white">
+                        {formatRupiah(selectedPlan.amount)}
+                      </p>
+                    </div>
                   </div>
 
                   {/* ── User info (dari login) ── */}
@@ -485,8 +595,8 @@ export default function PremiumPage() {
                       aria-label="Buka QRIS fullscreen"
                     >
                       <img
-                        src="/qris10k.jpeg"
-                        alt="QR QRIS RyuDev"
+                        src={selectedPlan.qrisSrc}
+                        alt={`QR QRIS RyuDev ${selectedPlan.name}`}
                         className="w-36 h-36 object-contain rounded-lg"
                       />
                     </button>
@@ -505,10 +615,10 @@ export default function PremiumPage() {
 
                   <div className="flex items-center justify-center mb-3">
                     <div className="text-[22px] font-black text-white">
-                      Rp 10.000
+                      {formatRupiah(selectedPlan.amount)}
                     </div>
                     <span className="ml-2 text-[10px] bg-[var(--accent)]/15 text-[var(--accent)] px-2 py-0.5 rounded-full font-bold uppercase">
-                      / bulan
+                      {selectedPlan.name}
                     </span>
                   </div>
 
@@ -601,8 +711,8 @@ export default function PremiumPage() {
             <FiX size={18} />
           </button>
           <img
-            src="/qris10k.jpeg"
-            alt="QR QRIS RyuDev fullscreen"
+            src={selectedPlan.qrisSrc}
+            alt={`QR QRIS RyuDev ${selectedPlan.name} fullscreen`}
             className="max-h-[86vh] w-full max-w-[420px] rounded-2xl object-contain"
             onClick={(e) => e.stopPropagation()}
           />

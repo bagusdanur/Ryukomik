@@ -75,6 +75,9 @@ type PremiumRequest = {
   status: string;
   name?: string | null;
   proof_url: string;
+  package_name?: string | null;
+  duration_days?: number | null;
+  amount?: number | null;
   created_at: string;
   profiles?: {
     username?: string | null;
@@ -767,8 +770,12 @@ export default function AdminDashboard() {
     if (action === "approve") {
       const req = requests.find((r) => r.id === id);
       if (req?.user_id) {
+        const durationDays = Math.max(
+          1,
+          Math.min(3650, Math.floor(Number(req.duration_days) || 30)),
+        );
         const premiumUntil = new Date(
-          Date.now() + 30 * 24 * 60 * 60 * 1000,
+          Date.now() + durationDays * 24 * 60 * 60 * 1000,
         ).toISOString();
 
         await supabase
