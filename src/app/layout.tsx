@@ -70,9 +70,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AdBanner />
         <Footer />
         <Analytics />
-        <script src="https://yuki.ryukomik.web.id/widget.js"
-        data-host="https://yuki.ryukomik.web.id"
-        data-position="right" defer></script>
+       
       </body>
     </html>
   );
