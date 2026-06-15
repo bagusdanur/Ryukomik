@@ -201,12 +201,16 @@ export default function ReaderImages({
     return { source: defaultSource, slugStr: nextSlug };
   };
 
-  // Reset prefetch status dan activePage saat chapter berganti (di tingkat render)
+  // Reset activePage saat chapter berganti (di tingkat render)
   if (slugStr !== prevSlug) {
     setPrevSlug(slugStr);
     setActivePage(0);
-    fetchedNextChapterRef.current = null;
   }
+
+  // Reset status prefetch saat chapter berganti
+  useEffect(() => {
+    fetchedNextChapterRef.current = null;
+  }, [slugStr]);
 
   // Track active page berdasarkan scroll
   useEffect(() => {
