@@ -10,10 +10,13 @@ import {
   FaChevronRight,
   FaBan,
   FaGamepad,
+  FaRobot,
 } from "react-icons/fa";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import LoginModal from "@/components/LoginModal";
 import type { IconType } from "react-icons";
 
-type SlideIconKey = "ban" | "whatsapp" | "star" | "coffee" | "gamepad";
+type SlideIconKey = "ban" | "whatsapp" | "star" | "coffee" | "gamepad" | "robot";
 
 type Slide = {
   iconKey: SlideIconKey;
@@ -60,6 +63,21 @@ const SLIDES: Slide[] = [
       external: true,
       className: "bg-green-700 hover:bg-green-600 text-white",
       iconKey: "whatsapp",
+    },
+  },
+  {
+    iconKey: "robot",
+    iconBg: "bg-blue-500/20",
+    iconColor: "text-blue-300",
+    title: "Yuki AI",
+    badge: { label: "AI", className: "bg-blue-500/20 text-blue-200" },
+    sub: "Tanya jawab seputar komik dengan asisten AI kami.",
+    btn: {
+      label: "Coba AI",
+      href: "https://yuki.ryukomik.web.id",
+      external: true,
+      className: "bg-blue-600 hover:bg-blue-500 text-white",
+      iconKey: "robot",
     },
   },
    {
@@ -112,6 +130,7 @@ const ICONS: Record<SlideIconKey, IconType> = {
   star: FaStar,
   coffee: FaCoffee,
   gamepad: FaGamepad,
+  robot: FaRobot,
 };
 
 function Icon({ name }: { name: SlideIconKey }) {
@@ -124,6 +143,8 @@ export default function RecruitBanner() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartX = useRef(0);
   const total = SLIDES.length;
+  const { user } = useSupabaseUser();
+  const [showLogin, setShowLogin] = useState(false);
 
   const resetTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -200,20 +221,34 @@ export default function RecruitBanner() {
 
           {/* Button */}
           <div className="flex-shrink-0">
-            <Link
-              href={slide.btn.href}
-              {...(slide.btn.external
-                ? { target: "_blank", rel: "noopener noreferrer" }
-                : {})}
-              className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold transition ${slide.btn.className}`}
-            >
-              {slide.btn.iconKey && (
-                <span className="text-sm">
-                  <Icon name={slide.btn.iconKey} />
-                </span>
-              )}
-              {slide.btn.label}
-            </Link>
+            {slide.iconKey === "robot" && !user ? (
+              <button
+                onClick={() => setShowLogin(true)}
+                className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold transition ${slide.btn.className}`}
+              >
+                {slide.btn.iconKey && (
+                  <span className="text-sm">
+                    <Icon name={slide.btn.iconKey} />
+                  </span>
+                )}
+                {slide.btn.label}
+              </button>
+            ) : (
+              <Link
+                href={slide.btn.href}
+                {...(slide.btn.external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
+                className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold transition ${slide.btn.className}`}
+              >
+                {slide.btn.iconKey && (
+                  <span className="text-sm">
+                    <Icon name={slide.btn.iconKey} />
+                  </span>
+                )}
+                {slide.btn.label}
+              </Link>
+            )}
           </div>
         </div>
 
@@ -230,6 +265,8 @@ export default function RecruitBanner() {
           ))}
         </div>
       </div>
+
+      {showLogin && <LoginModal close={() => setShowLogin(false)} />}
     </div>
   );
 }
