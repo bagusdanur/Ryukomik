@@ -21,8 +21,8 @@ export default function YukiAiScript({ enabled }: { enabled: boolean }) {
   return (
     <Script
       id="yuki-ai-widget"
-      src="https://yuki-ai.ryukomik.my.id/widget.js"
-      data-host="https://yuki-ai.ryukomik.my.id"
+      src="https://yuki.ryukomik.web.id/widget.js"
+      data-host="https://yuki.ryukomik.web.id"
       data-position="right"
       strategy="afterInteractive"
       async
