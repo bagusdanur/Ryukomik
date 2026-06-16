@@ -28,6 +28,8 @@ import EventRewardsTab, {
 import ApkSettingsTab, {
   type ApkSettingsForm,
 } from "@/components/dashboard/ApkSettingsTab";
+import YukiAiSettingsTab from "@/components/dashboard/YukiAiSettingsTab";
+
 
 // ── constants ──────────────────────────────────────────────────────────────
 const PER_PAGE = 20;
@@ -40,7 +42,8 @@ type DashboardPage =
   | "comments"
   | "events"
   | "apk"
-  | "codes";
+  | "codes"
+  | "yuki-ai";
 
 type AdminUser = User & {
   role?: string | null;
@@ -207,6 +210,14 @@ export default function AdminDashboard() {
   const [apkSettingsLoading, setApkSettingsLoading] = useState(false);
   const [apkSettingsSaving, setApkSettingsSaving] = useState(false);
   const [apkSettingsNotice, setApkSettingsNotice] = useState("");
+
+  const [yukiAiSettings, setYukiAiSettings] = useState({
+    enabled: true,
+    updated_at: null as string | null,
+  });
+  const [yukiAiLoading, setYukiAiLoading] = useState(false);
+  const [yukiAiSaving, setYukiAiSaving] = useState(false);
+  const [yukiAiNotice, setYukiAiNotice] = useState("");
 
   const getAdminToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
@@ -595,6 +606,83 @@ export default function AdminDashboard() {
     if (authed && page === "apk") void fetchApkSettings();
   }, [authed, page, fetchApkSettings]);
 
+  const fetchYukiAiSettings = useCallback(async () => {
+    setYukiAiLoading(true);
+    setYukiAiNotice("");
+    try {
+      const token = await getAdminToken();
+      if (!token) {
+        setYukiAiNotice("Login admin diperlukan.");
+        return;
+      }
+
+      const res = await fetch("/api/admin/yuki-ai-settings", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        setYukiAiNotice(json?.error || "Gagal mengambil setting Yuki AI.");
+        return;
+      }
+
+      setYukiAiSettings({
+        enabled: json?.enabled !== false,
+        updated_at: json?.updated_at || null,
+      });
+    } catch (error) {
+      setYukiAiNotice(
+        error instanceof Error ? error.message : "Gagal mengambil setting Yuki AI.",
+      );
+    } finally {
+      setYukiAiLoading(false);
+    }
+  }, [getAdminToken]);
+
+  const saveYukiAiSettings = useCallback(async (enabled: boolean) => {
+    setYukiAiSaving(true);
+    setYukiAiNotice("");
+    try {
+      const token = await getAdminToken();
+      if (!token) {
+        setYukiAiNotice("Login admin diperlukan.");
+        return;
+      }
+
+      const res = await fetch("/api/admin/yuki-ai-settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ enabled }),
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        setYukiAiNotice(json?.error || "Gagal menyimpan setting Yuki AI.");
+        return;
+      }
+
+      setYukiAiSettings({
+        enabled: json?.enabled !== false,
+        updated_at: json?.updated_at || null,
+      });
+      setYukiAiNotice(json?.message || "Setting Yuki AI berhasil disimpan.");
+    } catch (error) {
+      setYukiAiNotice(
+        error instanceof Error ? error.message : "Gagal menyimpan setting Yuki AI.",
+      );
+    } finally {
+      setYukiAiSaving(false);
+    }
+  }, [getAdminToken]);
+
+  useEffect(() => {
+    if (authed && page === "yuki-ai") void fetchYukiAiSettings();
+  }, [authed, page, fetchYukiAiSettings]);
+
   useEffect(() => {
     if (authed && page === "events") void fetchEventWinners();
   }, [authed, page, fetchEventWinners]);
@@ -941,7 +1029,8 @@ export default function AdminDashboard() {
       nextPage === "comments" ||
       nextPage === "events" ||
       nextPage === "apk" ||
-      nextPage === "codes"
+      nextPage === "codes" ||
+      nextPage === "yuki-ai"
     ) {
       setPage(nextPage);
     }
@@ -1133,6 +1222,16 @@ export default function AdminDashboard() {
             fetchSettings={fetchApkSettings}
             saveSettings={saveApkSettings}
             setSettings={setApkSettings}
+          />
+        )}
+        {page === "yuki-ai" && (
+          <YukiAiSettingsTab
+            loading={yukiAiLoading}
+            saving={yukiAiSaving}
+            notice={yukiAiNotice}
+            settings={yukiAiSettings}
+            fetchSettings={fetchYukiAiSettings}
+            saveSettings={saveYukiAiSettings}
           />
         )}
         {page === "comments" && (

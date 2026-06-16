@@ -15,6 +15,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./globals.css";
 import SWRegister from "./sw-register";
 import AdBanner from "@/components/AdBanner";
+import YukiAiScript from "@/components/YukiAiScript";
 
 export const metadata: Metadata = {
   title: {
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AdBanner />
         <Footer />
         <Analytics />
+        <YukiAiScript />
        
       </body>
     </html>
