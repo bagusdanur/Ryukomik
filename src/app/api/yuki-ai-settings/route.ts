@@ -6,8 +6,18 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const settings = await getYukiAiSettings();
-    return NextResponse.json({ enabled: settings.enabled });
+    return new NextResponse(JSON.stringify({ enabled: settings.enabled }), {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Content-Type": "application/json",
+      },
+    });
   } catch (error) {
-    return NextResponse.json({ enabled: true }); // Fallback to true if server side error
+    return new NextResponse(JSON.stringify({ enabled: true }), {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Content-Type": "application/json",
+      },
+    });
   }
 }
