@@ -16,7 +16,6 @@ import "./globals.css";
 import SWRegister from "./sw-register";
 import AdBanner from "@/components/AdBanner";
 import YukiAiScript from "@/components/YukiAiScript";
-import { getYukiAiSettings } from "@/lib/yukiAiSettings";
 
 export const metadata: Metadata = {
   title: {
@@ -31,9 +30,7 @@ export const metadata: Metadata = {
   description: "Baca manga, manhwa, dan manhua bahasa Indonesia gratis. Update chapter terbaru setiap hari dengan kualitas gambar HD hanya di Ryukomik.",
 };
 
-export default async function RootLayout({ children }: { children: ReactNode }) {
-  const yukiAi = await getYukiAiSettings();
-
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -74,7 +71,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <AdBanner />
         <Footer />
         <Analytics />
-        <YukiAiScript enabled={yukiAi.enabled} />
+        <YukiAiScript />
        
       </body>
     </html>
