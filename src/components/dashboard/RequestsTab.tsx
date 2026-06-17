@@ -28,6 +28,8 @@ type PremiumRequest = {
   package_name?: string | null;
   duration_days?: number | null;
   amount?: number | null;
+  sk_agreed?: boolean | null;
+  sk_agreed_at?: string | null;
   created_at: string;
   profiles?: {
     username?: string | null;
@@ -167,7 +169,7 @@ export default function RequestsTab({
                   </span>
                 </div>
 
-                <div className="mb-3 grid grid-cols-3 gap-2 rounded-xl border border-white/[.05] bg-white/[.03] p-2.5">
+                <div className="mb-3 grid grid-cols-4 gap-2 rounded-xl border border-white/[.05] bg-white/[.03] p-2.5">
                   <div>
                     <p className="text-[9px] font-bold uppercase tracking-wider text-white/20">
                       Paket
@@ -190,6 +192,14 @@ export default function RequestsTab({
                     </p>
                     <p className="mt-0.5 text-[11px] font-semibold text-white/75">
                       {formatAmount(request.amount)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-white/20">
+                      Persetujuan SK
+                    </p>
+                    <p className={`mt-0.5 text-[11px] font-bold ${request.sk_agreed ? "text-emerald-400" : "text-rose-400"}`}>
+                      {request.sk_agreed ? "Setuju" : "Tidak"}
                     </p>
                   </div>
                 </div>

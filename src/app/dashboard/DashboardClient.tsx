@@ -81,6 +81,8 @@ type PremiumRequest = {
   package_name?: string | null;
   duration_days?: number | null;
   amount?: number | null;
+  sk_agreed?: boolean | null;
+  sk_agreed_at?: string | null;
   created_at: string;
   profiles?: {
     username?: string | null;

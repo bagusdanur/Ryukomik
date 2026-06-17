@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const filter = url.searchParams.get("filter") || "all";
     let query = supabaseAdmin
       .from("premium_requests")
-      .select("id, user_id, status, name, proof_url, package_name, duration_days, amount, created_at, profiles(username, avatar_url)")
+      .select("id, user_id, status, name, proof_url, package_name, duration_days, amount, sk_agreed, sk_agreed_at, created_at, profiles(username, avatar_url)")
       .order("created_at", { ascending: false })
       .limit(50);
 

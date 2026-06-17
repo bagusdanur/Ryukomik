@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 import LoginModal from "@/components/LoginModal";
+import SkPremiumModal from "@/components/SkPremiumModal";
 
 const features = [
   {
@@ -123,6 +124,8 @@ export default function PremiumPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [isSkAgreed, setIsSkAgreed] = useState(false);
+  const [showSkModal, setShowSkModal] = useState(false);
 
   // user profile state
   const [profile, setProfile] = useState<PremiumProfile | null>(null);
@@ -159,6 +162,7 @@ export default function PremiumPage() {
     setPreview(null);
     setError("");
     setSuccess(false);
+    setIsSkAgreed(false);
   };
 
   const handleActivatePremium = () => {
@@ -194,6 +198,10 @@ export default function PremiumPage() {
       setError("Upload bukti transfer dulu");
       return;
     }
+    if (!isSkAgreed) {
+      setError("Anda harus menyetujui Syarat & Ketentuan terlebih dahulu");
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -212,6 +220,8 @@ export default function PremiumPage() {
         package_name: selectedPlan.name,
         duration_days: selectedPlan.durationDays,
         amount: selectedPlan.amount,
+        sk_agreed: true,
+        sk_agreed_at: new Date().toISOString(),
       });
       if (dbErr) throw new Error(dbErr.message);
 
@@ -687,11 +697,31 @@ export default function PremiumPage() {
                     <p className="text-xs text-red-400 mb-2">{error}</p>
                   )}
 
+                  <div className="mb-2 flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      id="sk-agree"
+                      checked={isSkAgreed}
+                      onChange={(e) => setIsSkAgreed(e.target.checked)}
+                      className="mt-0.5 rounded border-white/20 bg-white/5 text-[var(--accent)] focus:ring-[var(--accent)]"
+                    />
+                    <label htmlFor="sk-agree" className="text-xs text-white/50 leading-relaxed">
+                      Saya setuju dengan{" "}
+                      <button
+                        type="button"
+                        onClick={() => setShowSkModal(true)}
+                        className="text-cyan-400 underline underline-offset-2 hover:text-cyan-300"
+                      >
+                        Syarat & Ketentuan Premium
+                      </button>
+                    </label>
+                  </div>
+
                   {/* ── Tombol kirim ── */}
                   <div className="sticky bottom-0 z-10 -mx-4 mt-2 bg-[var(--surface-1)] px-4 pb-3 pt-2">
                     <button
                       onClick={handleSubmit}
-                      disabled={loading}
+                      disabled={loading || !isSkAgreed}
                       className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {loading ? (
@@ -730,6 +760,8 @@ export default function PremiumPage() {
           />
         </div>
       )}
+
+      {showSkModal && <SkPremiumModal close={() => setShowSkModal(false)} />}
 
       {showLogin && <LoginModal close={() => setShowLogin(false)} />}
     </>

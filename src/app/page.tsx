@@ -30,7 +30,7 @@ export default async function Home() {
         <RecruitBanner />
         {titleRushStatus.enabled && <TitleRushNotice className="pb-3" />}
         <UpdateList list={list} />
-        
+        <PopularSection data={popular} />
         <LatestComments />
       </div>
     </main>
