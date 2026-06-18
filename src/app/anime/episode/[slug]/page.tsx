@@ -22,7 +22,7 @@ type ApiResponse<T> = {
 async function getEpisode(slug: string): Promise<AnimeEpisode | null> {
   try {
     const res = await fetch(
-      `https://api.ryukomik.my.id/animeid/episode/${encodeURIComponent(slug)}`,
+      `https://apiv2.ryukomik.web.id/animeid/episode/${encodeURIComponent(slug)}`,
       { next: { revalidate: 900 } }
     );
     if (!res.ok) return null;

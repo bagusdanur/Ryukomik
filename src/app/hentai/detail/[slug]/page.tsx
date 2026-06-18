@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   const { slug } = await params;
   try {
     const res = await fetch(
-      `https://api.ryukomik.my.id/nekopoi/detail/${slug}`,
+      `https://apiv2.ryukomik.web.id/nekopoi/detail/${slug}`,
       { next: { revalidate: 900 } }
     );
     const json = (await res.json()) as ApiResponse<HentaiDetail>;
@@ -34,13 +34,11 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
 
 async function getData(slug: string): Promise<HentaiDetail | null> {
   const res = await fetch(
-    `https://api.ryukomik.my.id/nekopoi/detail/${slug}`,
+    `https://apiv2.ryukomik.web.id/nekopoi/detail/${slug}`,
     { next: { revalidate: 900 } }
   );
   if (!res.ok) return null;
   const json = (await res.json()) as ApiResponse<HentaiDetail>;
-  return json.success ? json.data : null;
-}
 
 export default async function HentaiDetailPage({ params }: RouteProps) {
   const { slug } = await params;

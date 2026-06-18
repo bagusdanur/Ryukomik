@@ -23,7 +23,7 @@ type DonghuaUpdateResponse = {
 };
 
 async function getData(page: number): Promise<DonghuaUpdateResponse> {
-  const res = await fetch(`https://api.ryukomik.my.id/anichin/terbaru?page=${page}`, {
+  const res = await fetch(`https://apiv2.ryukomik.web.id/anichin/terbaru?page=${page}`, {
     next: { revalidate: 120 },
   });
   if (!res.ok) throw new Error("Gagal fetch data");

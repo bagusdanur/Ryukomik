@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
 
   try {
     const res = await fetch(
-      `https://api.ryukomik.my.id/anichin/detail/${slug}`,
+      `https://apiv2.ryukomik.web.id/anichin/detail/${slug}`,
       { next: { revalidate: 900 } }
     );
     const json = (await res.json()) as ApiResponse<DonghuaDetail>;
@@ -38,13 +38,11 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
 
 async function getData(slug: string): Promise<DonghuaDetail | null> {
   const res = await fetch(
-    `https://api.ryukomik.my.id/anichin/detail/${slug}`,
+    `https://apiv2.ryukomik.web.id/anichin/detail/${slug}`,
     { next: { revalidate: 900 } }
   );
   if (!res.ok) return null;
   const json = (await res.json()) as ApiResponse<DonghuaDetail>;
-  return json.success ? json.data : null;
-}
 
 export default async function AnimeDetailPage({ params }: RouteProps) {
   const { slug } = await params; // ✅ unwrap dulu

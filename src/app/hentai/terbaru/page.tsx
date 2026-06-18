@@ -97,7 +97,7 @@ type HentaiTerbaruProps = {
 };
 
 async function getData(page = 1): Promise<HentaiUpdateResponse> {
-  const res = await fetch(`https://api.ryukomik.my.id/nekopoi/terbaru?page=${page}`, {
+  const res = await fetch(`https://apiv2.ryukomik.web.id/nekopoi/terbaru?page=${page}`, {
     next: { revalidate: 120 },
   });
   if (!res.ok) throw new Error("Gagal fetch data");

@@ -42,7 +42,7 @@ async function searchHentai(query: string, page = 1): Promise<HentaiSearchResult
   if (page > 1) params.append("page", String(page));
 
   const res = await fetch(
-    `https://api.ryukomik.my.id/nekopoi/search?${params.toString()}`,
+    `https://apiv2.ryukomik.web.id/nekopoi/search?${params.toString()}`,
     { next: { revalidate: 300 } },
   );
   if (!res.ok) return null;

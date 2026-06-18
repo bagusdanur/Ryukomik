@@ -83,7 +83,7 @@ type AnimeUpdateResponse = {
 
 async function getData(): Promise<AnimeUpdateResponse> {
   const res = await fetch(
-    "https://api.ryukomik.my.id/animeid/terbaru",
+    "https://apiv2.ryukomik.web.id/animeid/terbaru",
     {
       next: { revalidate: 120 },
     }
