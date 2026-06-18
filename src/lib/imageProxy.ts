@@ -1,7 +1,7 @@
 const PUBLIC_PROXY_IMAGE_SOURCES = new Set(["sekte", "doujindesu"]);
 const PUBLIC_PROXY_IMAGE_HOSTS = new Set(["desu.photos"]);
-const DOUJINDESU_IMAGE_WORKER = "https://cdn.kanimenia778.workers.dev/";
-const KIRYUU_IMAGE_WORKER = "https://cdns.ezcantik9.workers.dev/";
+const DOUJINDESU_IMAGE_WORKER = "https://proxy.ryukomik.my.id/";
+const KIRYUU_IMAGE_WORKER = "https://cdn.ryukomik.my.id/";
 const KIRYUU_IMAGE_HOSTS = new Set([
   "v5.kiryuu.to",
   "v4.kiryuu.to",
