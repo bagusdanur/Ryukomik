@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
       },
     ],
-    sitemap: "https://www.ryukomik.my.id/sitemap.xml",
+    sitemap: "https://ryukomik.my.id/sitemap.xml",
   };
 }

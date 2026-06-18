@@ -17,7 +17,7 @@ type SitemapSourceResponse = {
 };
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://www.ryukomik.my.id";
+  const baseUrl = "https://ryukomik.my.id";
 
   let json: SitemapSourceResponse = {};
   try {
