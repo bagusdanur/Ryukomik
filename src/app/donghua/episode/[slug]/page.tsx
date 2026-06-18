@@ -41,6 +41,8 @@ async function getData(slug: string): Promise<DonghuaEpisode | null> {
   );
   if (!res.ok) return null;
   const json = (await res.json()) as ApiResponse<DonghuaEpisode>;
+  return json.success ? json.data : null;
+}
 
 export default async function DonghuaEpisodePage({ params }: RouteProps) {
   const { slug } = await params;

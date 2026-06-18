@@ -39,6 +39,8 @@ async function getData(slug: string): Promise<HentaiDetail | null> {
   );
   if (!res.ok) return null;
   const json = (await res.json()) as ApiResponse<HentaiDetail>;
+  return json.success ? json.data : null;
+}
 
 export default async function HentaiDetailPage({ params }: RouteProps) {
   const { slug } = await params;

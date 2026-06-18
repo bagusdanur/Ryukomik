@@ -43,6 +43,8 @@ async function getData(slug: string): Promise<DonghuaDetail | null> {
   );
   if (!res.ok) return null;
   const json = (await res.json()) as ApiResponse<DonghuaDetail>;
+  return json.success ? json.data : null;
+}
 
 export default async function AnimeDetailPage({ params }: RouteProps) {
   const { slug } = await params; // ✅ unwrap dulu
