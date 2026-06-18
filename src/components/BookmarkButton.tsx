@@ -35,6 +35,7 @@ export default function BookmarkButton({
   const [showPromo, setShowPromo] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [isPushActive, setIsPushActive] = useState(false);
   const [notification, setNotification] = useState<{
     type: "success" | "error";
     title: string;
@@ -49,6 +50,19 @@ export default function BookmarkButton({
       setSaved(list.some((item) => item.slug === slug));
     });
   }, [slug]);
+
+  // Cek apakah push notification aktif di perangkat ini
+  useEffect(() => {
+    async function checkSubscription() {
+      try {
+        const sub = await getExistingSubscription();
+        setIsPushActive(!!sub);
+      } catch (err) {
+        console.error("Gagal mengecek status subscription:", err);
+      }
+    }
+    checkSubscription();
+  }, [user]);
 
   const toggleBookmark = async () => {
     let list = readBookmarks();
@@ -73,13 +87,23 @@ export default function BookmarkButton({
 
     // Tampilkan promo notifikasi jika belum berlangganan push notification
     try {
-      const sub = await getExistingSubscription();
-      if (!sub) {
-        setShowPromo(true);
+      if (!user) {
+        // Jika tidak login, cek sessionStorage untuk sesi ini (Bug 2)
+        const isDismissedSession = sessionStorage.getItem("dismissed_push_promo") === "true";
+        if (!isDismissedSession) {
+          setShowPromo(true); // Bug 1: abaikan cek sub browser jika tidak login
+        }
+      } else {
+        // Jika login, cek sub asli & localStorage
+        const isDismissedLocal = localStorage.getItem("dismissed_push_promo") === "true";
+        const sub = await getExistingSubscription();
+        if (!sub && !isDismissedLocal) {
+          setShowPromo(true);
+        }
       }
     } catch (err) {
-      console.error("Gagal mengecek subscription:", err);
-      setShowPromo(true); // Tetap tampilkan promo jika error
+      console.error("Gagal mengecek status notif:", err);
+      setShowPromo(true);
     }
   };
 
@@ -96,6 +120,7 @@ export default function BookmarkButton({
       if (success) {
         await syncBookmarks(user.id);
         setShowPromo(false);
+        setIsPushActive(true);
         setNotification({
           type: "success",
           title: "Notifikasi Aktif!",
@@ -120,25 +145,48 @@ export default function BookmarkButton({
   };
 
   const dismissPromo = () => {
-    localStorage.setItem("dismissed_push_promo", "true");
+    if (user) {
+      localStorage.setItem("dismissed_push_promo", "true");
+    } else {
+      sessionStorage.setItem("dismissed_push_promo", "true");
+    }
     setShowPromo(false);
   };
 
   return (
     <>
-      <button
-        type="button"
-        onClick={toggleBookmark}
-        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold transition active:scale-95 ${
-          saved
-            ? "border-[var(--accent-2)]/35 bg-[var(--accent-2)]/15 text-[var(--accent-2)] hover:bg-[var(--accent-2)]/20"
-            : "border-white/10 bg-white/[0.06] text-white/80 hover:border-[var(--accent-2)]/25 hover:bg-white/10 hover:text-[var(--accent-2)]"
-        }`}
-        aria-pressed={saved}
-      >
-        {saved ? <FaBookmark className="text-xs" /> : <FaRegBookmark className="text-xs" />}
-        {saved ? "Tersimpan" : "Bookmark"}
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={toggleBookmark}
+          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold transition active:scale-95 ${
+            saved
+              ? "border-[var(--accent-2)]/35 bg-[var(--accent-2)]/15 text-[var(--accent-2)] hover:bg-[var(--accent-2)]/20"
+              : "border-white/10 bg-white/[0.06] text-white/80 hover:border-[var(--accent-2)]/25 hover:bg-white/10 hover:text-[var(--accent-2)]"
+          }`}
+          aria-pressed={saved}
+        >
+          {saved ? <FaBookmark className="text-xs" /> : <FaRegBookmark className="text-xs" />}
+          {saved ? "Tersimpan" : "Bookmark"}
+        </button>
+
+        {/* Tombol bel pulsing/statis jika komik sudah tersimpan (Bug 3) */}
+        {saved && (
+          <button
+            type="button"
+            onClick={() => setShowPromo(true)}
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-full border transition active:scale-95 ${
+              isPushActive
+                ? "border-white/10 bg-white/[0.04] text-white/40 hover:text-white"
+                : "border-[var(--accent-2)]/30 bg-[var(--accent-2)]/10 text-[var(--accent-2)] hover:bg-[var(--accent-2)]/20 animate-pulse"
+            }`}
+            title={isPushActive ? "Notifikasi Aktif" : "Aktifkan Notifikasi Rilis"}
+            disabled={isPushActive}
+          >
+            <FaBell className="text-xs" />
+          </button>
+        )}
+      </div>
 
       {/* Pop-up Promo Notifikasi */}
       {showPromo && (
