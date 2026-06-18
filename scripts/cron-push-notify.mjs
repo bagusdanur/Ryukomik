@@ -60,7 +60,7 @@ async function runCron() {
       const chapter = item.chapter_terbaru;
       const title = item.title || "Chapter Baru";
       
-      // console.log(`Cek: ${title} (${slug}) - ${chapter}`);
+      console.log(`Cek: ${title} (${slug}) - ${chapter}`);
       const image = item.image;
 
       // Cek apakah chapter ini sudah dinotifikasi sebelumnya
@@ -72,6 +72,7 @@ async function runCron() {
         .single();
 
       if (alreadyNotified) {
+        // console.log(`⏭️ [${slug}] Chapter ${chapter} sudah pernah dikirim.`);
         continue; // Skip, sudah dikirim
       }
 
@@ -82,6 +83,7 @@ async function runCron() {
         .eq("comic_slug", slug);
 
       if (!bookmarks || bookmarks.length === 0) {
+        console.log(`🤷 [${slug}] Tidak ada user yang bookmark komik ini. Lewati.`);
         // Tandai sebagai notified meskipun tidak ada yang bookmark (biar tidak dicek berulang)
         await supabase.from("notified_chapters").insert({ comic_slug: slug, chapter });
         continue;
@@ -96,6 +98,7 @@ async function runCron() {
         .in("user_id", userIds);
 
       if (!subscriptions || subscriptions.length === 0) {
+        console.log(`🤷 [${slug}] Ada yang bookmark, tapi user tersebut tidak langganan Push Notif. Lewati.`);
         // Tandai sebagai notified
         await supabase.from("notified_chapters").insert({ comic_slug: slug, chapter });
         continue;
