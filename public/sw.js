@@ -291,7 +291,7 @@ self.addEventListener("push", (event) => {
   const options = {
     body: data.body || "Ada chapter baru dari komik bookmarkmu",
     icon: "/icon.png?v=20260523",
-    badge: "/icon.png?v=20260523",
+    image: data.image, // Gambar banner komik (opsional)
     data: { url: data.url || "/" },
     vibrate: [100, 50, 100],
     tag: data.tag || "new-chapter",

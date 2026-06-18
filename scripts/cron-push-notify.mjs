@@ -107,8 +107,10 @@ async function runCron() {
       // 5. Kirim Push Notification
       const payload = JSON.stringify({
         title: title,
-        body: `Chapter ${chapter} sudah rilis! Yuk baca sekarang.`,
-        url: `/komik/${slug}`,
+        body: `${chapter} sudah rilis! Yuk baca sekarang.`,
+        url: `/komik/komiku/${slug}`,
+        tag: slug,
+        image: image,
       });
 
       console.log(`📤 Mengirim notif [${slug} - ${chapter}] ke ${subscriptions.length} device`);
