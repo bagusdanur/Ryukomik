@@ -37,11 +37,13 @@ export default function BookmarkPage() {
     const updated = bookmarks.filter((b) => b.slug !== slug);
     setBookmarks(updated);
     localStorage.setItem("bookmarks", JSON.stringify(updated));
+    window.dispatchEvent(new Event("bookmark-updated"));
   };
 
   const handleClear = () => {
     setBookmarks([]);
     localStorage.removeItem("bookmarks");
+    window.dispatchEvent(new Event("bookmark-updated"));
   };
 
   return (

@@ -28,6 +28,7 @@ import {
   MyStatsSection,
   ProfileSection,
   PrivacySection,
+  PushNotificationSection,
   StorageSection,
   SupportInfoSection,
   VisitorStatsSection,
@@ -459,6 +460,7 @@ export default function SettingsClient() {
         <PremiumModal open={showPremium} onClose={() => setShowPremium(false)} />
 
         <AppearanceSection themeColor={themeColor} onOpenTheme={() => setShowThemeModal(true)} />
+        {isLogin && <PushNotificationSection />}
         {isLogin && (
           <PrivacySection
             privacy={privacy}

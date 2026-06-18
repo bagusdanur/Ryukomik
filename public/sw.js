@@ -283,3 +283,33 @@ self.addEventListener("fetch", (event) => {
     fetch(request).catch(() => caches.match(request))
   );
 });
+
+// === PUSH NOTIFICATION ===
+self.addEventListener("push", (event) => {
+  const data = event.data ? event.data.json() : {};
+  const title = data.title || "Chapter Baru!";
+  const options = {
+    body: data.body || "Ada chapter baru dari komik bookmarkmu",
+    icon: "/icon.png?v=20260523",
+    badge: "/icon.png?v=20260523",
+    data: { url: data.url || "/" },
+    vibrate: [100, 50, 100],
+    tag: data.tag || "new-chapter",
+    renotify: true,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Klik notifikasi → buka halaman
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((list) => {
+      for (const client of list) {
+        if (client.url === url && "focus" in client) return client.focus();
+      }
+      return clients.openWindow(url);
+    })
+  );
+});

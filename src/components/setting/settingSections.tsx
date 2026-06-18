@@ -27,6 +27,7 @@ import {
   XP_PER_LEVEL,
 } from "./settingsUtils";
 import { RowLeft, Section, StatCard, ThemePreview } from "./settingUi";
+import PushNotifToggle from "@/components/PushNotifToggle";
 
 type Profile = {
   username?: string | null;
@@ -262,6 +263,14 @@ export function AppearanceSection({
         <RowLeft icon={<FaPalette className="text-white/70" />} label="Tema Website" />
         <ThemePreview themeKey={themeColor} />
       </button>
+    </Section>
+  );
+}
+
+export function PushNotificationSection() {
+  return (
+    <Section label="Notifikasi">
+      <PushNotifToggle />
     </Section>
   );
 }
