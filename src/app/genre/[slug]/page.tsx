@@ -33,6 +33,9 @@ interface GenrePageProps {
   params: Promise<{
     slug: string;
   }>;
+  searchParams: Promise<{
+    page?: string;
+  }>;
 }
 
 const getSlugFromLink = (url: string) => {
@@ -61,22 +64,29 @@ const formatChapter = (ch?: string) => {
   return ch.replace(/Chapter/i, "Ch.");
 };
 
-export async function generateMetadata({ params }: GenrePageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: GenrePageProps): Promise<Metadata> {
   const { slug } = await params;
+  const { page } = await searchParams;
+  const currentPage = Number(page || "1");
+
   const title = slug
     .split("-")
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 
+  const pageSuffix = currentPage > 1 ? ` - Halaman ${currentPage}` : "";
+
   return {
-    title: `Komik Genre ${title} Bahasa Indonesia - Ryukomik`,
-    description: `Daftar komik dengan genre ${title} bahasa Indonesia terpopuler dan terlengkap gratis di Ryukomik.`,
+    title: `Komik Genre ${title} Bahasa Indonesia${pageSuffix} - Ryukomik`,
+    description: `Daftar komik dengan genre ${title} bahasa Indonesia terpopuler dan terlengkap gratis di Ryukomik${pageSuffix.toLowerCase()}.`,
   };
 }
 
-export default async function Page({ params }: GenrePageProps) {
+export default async function Page({ params, searchParams }: GenrePageProps) {
   const { slug } = await params;
+  const { page } = await searchParams;
+  const currentPage = Number(page || "1");
 
   const title = slug
     .split("-")
@@ -88,7 +98,7 @@ export default async function Page({ params }: GenrePageProps) {
   let error = false;
 
   try {
-    const res = await fetch(`https://api.ryukomik.web.id/genre/${slug}`, {
+    const res = await fetch(`https://api.ryukomik.web.id/genre/${slug}?page=${currentPage}`, {
       next: { revalidate: 1800 },
       headers: {
         Accept: "application/json",
@@ -106,6 +116,7 @@ export default async function Page({ params }: GenrePageProps) {
   }
 
   const results = data?.results || [];
+  const totalPages = data?.total || 1;
 
   return (
     <div className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
@@ -119,7 +130,7 @@ export default async function Page({ params }: GenrePageProps) {
           </h1>
           {data && (
             <p className="text-xs text-white/55">
-              Menampilkan {results.length} komik
+              Menampilkan Halaman {currentPage} dari {totalPages}
             </p>
           )}
         </div>
@@ -141,37 +152,122 @@ export default async function Page({ params }: GenrePageProps) {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-            {results.map((item, idx) => {
-              const itemSlug = getSlugFromLink(item.link);
-              const flag = typeFlag(item.typeGenre);
+          <>
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+              {results.map((item, idx) => {
+                const itemSlug = getSlugFromLink(item.link);
+                const flag = typeFlag(item.typeGenre);
 
-              return (
-                <SeriesCard
-                  key={`${itemSlug}-${idx}`}
-                  href={`/komik/komiku/${itemSlug}`}
-                  title={item.title}
-                  image={item.image}
-                  badge={typeBadge(item.typeGenre)}
-                  eyebrow={formatChapter(item.chapterLast)}
-                  meta={formatChapter(item.chapterStart)}
-                  corner={
-                    flag ? (
-                      <span className="absolute left-2 top-2 flex h-4 w-6 items-center justify-center overflow-hidden rounded-sm bg-transparent">
-                        <img
-                          src={flag.src}
-                          alt={flag.label}
-                          loading="lazy"
-                          decoding="async"
-                          className="h-full w-full object-cover"
-                        />
-                      </span>
-                    ) : null
-                  }
-                />
-              );
-            })}
-          </div>
+                return (
+                  <SeriesCard
+                    key={`${itemSlug}-${idx}`}
+                    href={`/komik/komiku/${itemSlug}`}
+                    title={item.title}
+                    image={item.image}
+                    badge={typeBadge(item.typeGenre)}
+                    eyebrow={formatChapter(item.chapterLast)}
+                    meta={formatChapter(item.chapterStart)}
+                    corner={
+                      flag ? (
+                        <span className="absolute left-2 top-2 flex h-4 w-6 items-center justify-center overflow-hidden rounded-sm bg-transparent">
+                          <img
+                            src={flag.src}
+                            alt={flag.label}
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full w-full object-cover"
+                          />
+                        </span>
+                      ) : null
+                    }
+                  />
+                );
+              })}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-8 border-t border-white/5 pt-6">
+                {/* Prev */}
+                {currentPage > 1 ? (
+                  <Link
+                    href={`?page=${currentPage - 1}`}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 transition"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Prev
+                  </Link>
+                ) : (
+                  <span className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-white/5 bg-white/[0.02] text-white/20 cursor-not-allowed">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Prev
+                  </span>
+                )}
+
+                {/* Page numbers */}
+                <div className="flex items-center gap-1.5">
+                  {Array.from({ length: Math.min(totalPages, 5) }).map((_, idx) => {
+                    let pages: number[] = [];
+                    if (totalPages <= 5) {
+                      pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+                    } else if (currentPage <= 3) {
+                      pages = [1, 2, 3, 4, 5];
+                    } else if (currentPage >= totalPages - 2) {
+                      pages = [totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                    } else {
+                      pages = [currentPage - 2, currentPage - 1, currentPage, currentPage + 1, currentPage + 2];
+                    }
+
+                    const pageNum = pages[idx];
+                    const isActive = pageNum === currentPage;
+
+                    return (
+                      <Link
+                        key={pageNum}
+                        href={`?page=${pageNum}`}
+                        className={`flex items-center justify-center font-extrabold transition text-xs`}
+                        style={{
+                          width: isActive ? 28 : 24,
+                          height: isActive ? 28 : 24,
+                          borderRadius: isActive ? 8 : "50%",
+                          background: isActive ? "var(--accent)" : "rgba(255,255,255,0.06)",
+                          border: isActive ? "none" : "1px solid rgba(255,255,255,0.08)",
+                          color: isActive ? "#ffffff" : "rgba(255,255,255,0.35)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {pageNum}
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* Next */}
+                {currentPage < totalPages ? (
+                  <Link
+                    href={`?page=${currentPage + 1}`}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 transition"
+                  >
+                    Next
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M4.5 2L8.5 6L4.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </Link>
+                ) : (
+                  <span className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-white/5 bg-white/[0.02] text-white/20 cursor-not-allowed">
+                    Next
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M4.5 2L8.5 6L4.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </span>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
