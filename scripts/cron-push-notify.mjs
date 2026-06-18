@@ -50,8 +50,8 @@ async function runCron() {
       if (!item.link || !item.chapter_terbaru) continue;
 
       // Extract slug
-      // item.link contoh: "https://.../komiku/one-piece" -> "one-piece"
-      let slug = item.link;
+      let slug = item.slug || item.link;
+      if (slug.includes("komiku.org/manga/")) slug = slug.split("komiku.org/manga/")[1];
       if (slug.includes("/komiku/")) slug = slug.split("/komiku/")[1];
       if (slug.includes("/kiryuu/")) slug = slug.split("/kiryuu/")[1];
       if (slug.includes("/sekte/")) slug = slug.split("/sekte/")[1];
@@ -59,6 +59,8 @@ async function runCron() {
       
       const chapter = item.chapter_terbaru;
       const title = item.title || "Chapter Baru";
+      
+      // console.log(`Cek: ${title} (${slug}) - ${chapter}`);
       const image = item.image;
 
       // Cek apakah chapter ini sudah dinotifikasi sebelumnya
