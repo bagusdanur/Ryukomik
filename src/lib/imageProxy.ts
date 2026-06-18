@@ -1,7 +1,7 @@
 const PUBLIC_PROXY_IMAGE_SOURCES = new Set(["sekte", "doujindesu"]);
 const PUBLIC_PROXY_IMAGE_HOSTS = new Set(["desu.photos"]);
-const DOUJINDESU_IMAGE_WORKER = "https://proxy.ryukomik.my.id/";
-const KIRYUU_IMAGE_WORKER = "https://cdn.ryukomik.my.id/";
+const DOUJINDESU_IMAGE_WORKER = "/api/image-proxy";
+const KIRYUU_IMAGE_WORKER = "/api/image-proxy";
 const KIRYUU_IMAGE_HOSTS = new Set([
   "v5.kiryuu.to",
   "v4.kiryuu.to",
@@ -13,11 +13,13 @@ export function getOriginalImageUrl(url?: string) {
   if (!url) return "";
 
   try {
-    const parsed = new URL(url);
-    if (parsed.origin === DOUJINDESU_IMAGE_WORKER.slice(0, -1)) {
-      return parsed.searchParams.get("url") || url;
-    }
-    if (parsed.origin === KIRYUU_IMAGE_WORKER.slice(0, -1)) {
+    const base = typeof window !== "undefined" ? window.location.origin : "http://localhost";
+    const parsed = new URL(url, base);
+    if (
+      parsed.origin === "https://proxy.ryukomik.my.id" ||
+      parsed.origin === "https://cdn.ryukomik.my.id" ||
+      parsed.pathname === "/api/image-proxy"
+    ) {
       return parsed.searchParams.get("url") || url;
     }
     return url;
