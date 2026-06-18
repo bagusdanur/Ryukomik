@@ -55,10 +55,11 @@ async function runCron() {
 
       // 2. Loop setiap item
       for (const item of list) {
-        if (!item.link || !item.chapter_terbaru) continue;
+        // pustaka API menggunakan `slug` langsung (bukan link)
+        if (!item.chapter_terbaru || (!item.slug && !item.link && !item.detail_link)) continue;
 
         // Extract slug
-        let slug = item.slug || item.link;
+        let slug = item.slug || item.link || item.detail_link;
         if (slug.includes(".org/manga/")) slug = slug.split(".org/manga/")[1];
         if (slug.includes("/komiku/")) slug = slug.split("/komiku/")[1];
         if (slug.includes("/kiryuu/")) slug = slug.split("/kiryuu/")[1];
