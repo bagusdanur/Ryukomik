@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import Link from "next/link";
 import { FaBan, FaStar, FaTimes } from "react-icons/fa";
 
 const STORAGE_KEY = "adBannerDismissedSession";
 
 export default function AdBanner() {
+  const { loading: premLoading, isPremium } = usePremiumStatus();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -24,6 +26,7 @@ export default function AdBanner() {
     setShow(false);
   };
 
+  if (premLoading || isPremium) return null;
   if (!show) return null;
 
   return (
