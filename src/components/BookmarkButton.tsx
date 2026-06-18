@@ -5,6 +5,7 @@ import { FaBell, FaBookmark, FaRegBookmark, FaTimes } from "react-icons/fa";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { getExistingSubscription, subscribePush } from "@/utils/pushSubscription";
 import { syncBookmarks } from "@/utils/bookmarkSync";
+import LoginModal from "@/components/LoginModal";
 
 type BookmarkButtonProps = {
   slug: string;
@@ -32,7 +33,14 @@ export default function BookmarkButton({
 }: BookmarkButtonProps) {
   const [saved, setSaved] = useState(false);
   const [showPromo, setShowPromo] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [notification, setNotification] = useState<{
+    type: "success" | "error";
+    title: string;
+    message: string;
+  } | null>(null);
+
   const { user } = useSupabaseUser();
 
   useEffect(() => {
@@ -63,27 +71,52 @@ export default function BookmarkButton({
     setSaved(true);
     window.dispatchEvent(new Event("bookmark-updated"));
 
-    // Tampilkan promo notifikasi jika user login dan belum langganan
-    if (user && localStorage.getItem("dismissed_push_promo") !== "true") {
+    // Tampilkan promo notifikasi jika belum berlangganan push notification
+    try {
       const sub = await getExistingSubscription();
       if (!sub) {
         setShowPromo(true);
       }
+    } catch (err) {
+      console.error("Gagal mengecek subscription:", err);
+      setShowPromo(true); // Tetap tampilkan promo jika error
     }
   };
 
   const handleSubscribe = async () => {
-    if (!user) return;
-    setIsSubscribing(true);
-    const success = await subscribePush(user.id);
-    if (success) {
-      await syncBookmarks(user.id);
+    if (!user) {
       setShowPromo(false);
-      alert("Notifikasi berhasil diaktifkan!");
-    } else {
-      alert("Gagal mengaktifkan notifikasi. Pastikan izin tidak diblokir browser.");
+      setShowLogin(true);
+      return;
     }
-    setIsSubscribing(false);
+
+    setIsSubscribing(true);
+    try {
+      const success = await subscribePush(user.id);
+      if (success) {
+        await syncBookmarks(user.id);
+        setShowPromo(false);
+        setNotification({
+          type: "success",
+          title: "Notifikasi Aktif!",
+          message: "Kamu akan otomatis menerima notifikasi setiap ada chapter terbaru rilis.",
+        });
+      } else {
+        setNotification({
+          type: "error",
+          title: "Gagal Mengaktifkan",
+          message: "Gagal mengaktifkan notifikasi. Silakan periksa pengaturan izin notifikasi browser Anda.",
+        });
+      }
+    } catch (err) {
+      setNotification({
+        type: "error",
+        title: "Terjadi Kesalahan",
+        message: "Terjadi kesalahan sistem saat mengaktifkan notifikasi.",
+      });
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   const dismissPromo = () => {
@@ -109,43 +142,88 @@ export default function BookmarkButton({
 
       {/* Pop-up Promo Notifikasi */}
       {showPromo && (
-        <div className="fixed bottom-24 left-1/2 z-50 w-[90%] max-w-sm -translate-x-1/2 animate-in slide-in-from-bottom-8 fade-in rounded-2xl border border-[var(--accent-2)]/30 bg-[#161618] p-5 shadow-2xl">
-          <button
+        <>
+          {/* Backdrop untuk promo modal agar fokus */}
+          <div 
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in"
             onClick={dismissPromo}
-            className="absolute right-3 top-3 text-white/40 hover:text-white"
-          >
-            <FaTimes />
-          </button>
-          
-          <div className="flex items-start gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent-2)]/20 text-[var(--accent-2)]">
-              <FaBell className="text-lg" />
-            </div>
-            <div>
-              <h4 className="font-bold text-white">Nyala Notifikasi?</h4>
-              <p className="mt-1 text-xs text-white/70 leading-relaxed">
-                Mau dapet pesan otomatis di HP kamu kalau chapter selanjutnya rilis?
+          />
+          <div className="fixed left-1/2 top-1/2 z-50 w-[92%] max-w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-[var(--accent-2)]/20 bg-[var(--surface-1)] p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <button
+              onClick={dismissPromo}
+              className="absolute right-4 top-4 text-white/40 hover:text-white transition-colors"
+            >
+              <FaTimes />
+            </button>
+            
+            <div className="flex flex-col items-center text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent-2)]/10 text-[var(--accent-2)] shadow-inner mb-4">
+                <FaBell className="text-2xl animate-bounce" />
+              </div>
+              <h4 className="text-lg font-black text-white">Nyala Notifikasi?</h4>
+              <p className="mt-2 text-sm text-white/60 leading-relaxed">
+                {user 
+                  ? "Dapatkan notifikasi instan langsung di perangkat kamu setiap kali chapter terbaru komik ini dirilis!"
+                  : "Login untuk mengaktifkan notifikasi instan di perangkat kamu setiap kali chapter terbaru rilis!"}
               </p>
               
-              <div className="mt-4 flex gap-2">
+              <div className="mt-6 flex w-full flex-col gap-2">
                 <button
                   onClick={handleSubscribe}
                   disabled={isSubscribing}
-                  className="flex-1 rounded-lg bg-[var(--accent-2)] py-2 text-xs font-bold text-black transition active:scale-95 disabled:opacity-50"
+                  className="w-full rounded-xl bg-[var(--accent-2)] py-3 text-sm font-bold text-black transition active:scale-95 disabled:opacity-50 hover:brightness-110"
                 >
-                  {isSubscribing ? "Tunggu..." : "Mau!"}
+                  {isSubscribing ? "Menghubungkan..." : user ? "Ya, Aktifkan!" : "Login & Aktifkan"}
                 </button>
                 <button
                   onClick={dismissPromo}
-                  className="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10 active:scale-95"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-semibold text-white/80 transition hover:bg-white/10 active:scale-95"
                 >
                   Nanti Saja
                 </button>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
+
+      {/* Modal Custom Notifikasi (Sukses / Gagal) */}
+      {notification && (
+        <>
+          <div 
+            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs animate-in fade-in"
+            onClick={() => setNotification(null)}
+          />
+          <div className="fixed left-1/2 top-1/2 z-50 w-[92%] max-w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-white/10 bg-[var(--surface-1)] p-6 shadow-2xl text-center animate-in zoom-in-95 duration-200">
+            <div className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ${
+              notification.type === "success" 
+                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+            }`}>
+              {notification.type === "success" ? (
+                <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+            </div>
+            <h3 className="text-lg font-black text-white">{notification.title}</h3>
+            <p className="mt-2 text-sm text-white/60 leading-relaxed">{notification.message}</p>
+            <button
+              onClick={() => setNotification(null)}
+              className="mt-6 w-full rounded-xl bg-white/10 py-3 text-sm font-bold text-white transition hover:bg-white/15 active:scale-95"
+            >
+              Mengerti
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Render LoginModal if needed */}
+      {showLogin && <LoginModal close={() => setShowLogin(false)} />}
     </>
   );
 }
