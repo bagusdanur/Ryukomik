@@ -2,8 +2,9 @@
 import { useState, useRef } from "react";
 import Link from "next/link";
 import { nekoImg } from "@/utils/neko";
+import HentaiPlayer from "@/components/hentai/HentaiPlayer";
 
-type HentaiPlayer = {
+type HentaiPlayerType = {
   label?: string;
   src?: string;
 };
@@ -26,7 +27,7 @@ type HentaiEpisode = {
   prev?: string;
   next?: string;
   allEpisode?: string;
-  players?: HentaiPlayer[];
+  players?: HentaiPlayerType[];
   downloads?: HentaiDownloadGroup[];
   thumbnail?: string;
 };
@@ -36,15 +37,16 @@ type HentaiEpisodeClientProps = {
 };
 
 export default function HentaiEpisodeClient({ data }: HentaiEpisodeClientProps) {
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-
   const cleanTitle = (data?.title || "")
     .replace(/^\[.*?\]\s*/, "")
     .replace(" Subtitle Indonesia", "")
     .trim();
 
   const activePlayers = (data?.players || []).filter((p) => p.src);
-  const [activePlayer, setActivePlayer] = useState(0);
+  
+  // Prioritaskan streampoi.com sebagai player utama jika ada
+  const initialPlayerIndex = Math.max(0, activePlayers.findIndex(p => p.src?.includes('streampoi.com')));
+  const [activePlayer, setActivePlayer] = useState(initialPlayerIndex);
   const [openQuality, setOpenQuality] = useState<number | null>(null);
 
   if (!data) return <div>Error</div>;
@@ -59,33 +61,7 @@ export default function HentaiEpisodeClient({ data }: HentaiEpisodeClientProps) 
 
       {/* ── PLAYER ── */}
       <div className="w-full bg-[#0a0a0a] relative">
-        {activePlayers[activePlayer]?.src ? (
-          <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
-            <iframe
-              ref={iframeRef}
-              key={activePlayers[activePlayer].src}
-              src={activePlayers[activePlayer].src}
-              className="absolute inset-0 w-full h-full"
-              allowFullScreen
-              allow="autoplay; fullscreen"
-              referrerPolicy="no-referrer"
-              frameBorder="0"
-            />
-          </div>
-        ) : (
-          <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-[#ff5078]/10 border border-[#ff5078]/25 flex items-center justify-center">
-                <svg className="w-5 h-5 text-[#ff5078] ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-              <p className="text-[9px] font-black text-white/20 tracking-[.18em] uppercase">
-                Pilih server di bawah
-              </p>
-            </div>
-          </div>
-        )}
+        <HentaiPlayer src={activePlayers[activePlayer]?.src} />
       </div>
 
       <div className="max-w-2xl mx-auto px-4">
