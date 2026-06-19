@@ -102,8 +102,10 @@ export default function HentaiPlayer({ src }: { src?: string }) {
 
     if (Hls.isSupported()) {
       const hls = new Hls({
-        maxBufferLength: 30,
-        maxMaxBufferLength: 60,
+        capLevelToPlayerSize: true, // Batasi resolusi max ke ukuran layar (sangat hemat kuota & cepat di HP)
+        startLevel: 0, // Selalu mulai dari resolusi terendah agar lgsg jalan
+        maxBufferLength: 15, // Ukuran buffer diperkecil agar tembakan video lebih cepat
+        maxMaxBufferLength: 30, // Batas max buffer
       });
       hlsRef.current = hls;
       
@@ -255,20 +257,30 @@ export default function HentaiPlayer({ src }: { src?: string }) {
     }
   };
 
-  const handleMouseMove = () => {
+  const handleMouseMove = useCallback(() => {
     setShowControls(true);
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     controlsTimeoutRef.current = setTimeout(() => {
-      if (isPlaying) setShowControls(false);
+      if (videoRef.current && !videoRef.current.paused) {
+        setShowControls(false);
+      }
     }, 3000);
-  };
+  }, []);
 
-  const handleMouseLeave = () => {
-    if (isPlaying) {
+  const handleMouseLeave = useCallback(() => {
+    if (videoRef.current && !videoRef.current.paused) {
       setShowControls(false);
       setIsSettingsOpen(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isPlaying) {
+      handleMouseMove();
+    } else {
+      setShowControls(true);
+    }
+  }, [isPlaying, handleMouseMove]);
 
   // Determine Quality text (Always fallback safely)
   let qualityText = "Auto";
@@ -340,9 +352,8 @@ export default function HentaiPlayer({ src }: { src?: string }) {
           <>
             <video
               ref={videoRef}
-              className="w-full h-full object-contain cursor-pointer"
+              className="w-full h-full object-contain"
               poster={streamData.image}
-              onClick={togglePlay}
               playsInline
             />
 
