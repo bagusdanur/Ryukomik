@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SeriesCard from "@/components/SeriesCard";
 
@@ -17,7 +17,7 @@ interface GenreResultItem {
 interface GenreResponse {
   genre: string;
   page: number | string;
-  total: number;
+  total?: number;
   results: GenreResultItem[];
 }
 
@@ -26,6 +26,8 @@ interface GenreClientProps {
   slug: string;
   title: string;
 }
+
+const STORAGE_KEY_PREFIX = "genre_page_";
 
 const getSlugFromLink = (url: string) => {
   const parts = url.split("/").filter(Boolean);
@@ -66,18 +68,49 @@ function SkeletonCard() {
 export default function GenreClient({ initialData, slug, title }: GenreClientProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const restoredRef = useRef(false);
 
   const currentPage = Number(searchParams.get("page") ?? "1");
 
   const [data, setData] = useState<GenreResponse | null>(initialData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [hasNextPage, setHasNextPage] = useState(true);
 
+  // Restore page from sessionStorage on first mount (no ?page= in URL)
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+
+    const urlPage = searchParams.get("page");
+    if (!urlPage) {
+      try {
+        const saved = sessionStorage.getItem(`${STORAGE_KEY_PREFIX}${slug}`);
+        if (saved) {
+          const savedPage = Number(saved);
+          if (savedPage > 1) {
+            router.replace(`?page=${savedPage}`);
+            return;
+          }
+        }
+      } catch {}
+    }
+  }, [slug, searchParams, router]);
+
+  // Save current page to sessionStorage
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(`${STORAGE_KEY_PREFIX}${slug}`, String(currentPage));
+    } catch {}
+  }, [currentPage, slug]);
+
+  // Fetch data when page changes
   useEffect(() => {
     if (currentPage === 1 && initialData) {
       setData(initialData);
       setLoading(false);
       setError(false);
+      setHasNextPage(initialData.results.length > 0);
       return;
     }
 
@@ -90,9 +123,10 @@ export default function GenreClient({ initialData, slug, title }: GenreClientPro
         if (!res.ok) throw new Error("Gagal memuat data");
         return res.json();
       })
-      .then((json) => {
+      .then((json: GenreResponse) => {
         if (active) {
           setData(json);
+          setHasNextPage(json.results.length > 0);
           setLoading(false);
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
@@ -111,11 +145,16 @@ export default function GenreClient({ initialData, slug, title }: GenreClientPro
   }, [currentPage, slug, initialData]);
 
   const results = data?.results || [];
-  const totalPages = data?.total || 1;
 
-  const handlePageChange = (pageNum: number) => {
-    router.push(`?page=${pageNum}`);
-  };
+  const handlePageChange = useCallback(
+    (pageNum: number) => {
+      if (pageNum < 1) return;
+      router.push(`?page=${pageNum}`);
+    },
+    [router]
+  );
+
+  const isEndOfPages = !loading && !error && results.length === 0 && currentPage > 1;
 
   return (
     <div className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
@@ -129,7 +168,7 @@ export default function GenreClient({ initialData, slug, title }: GenreClientPro
           </h1>
           {data && (
             <p className="text-xs text-white/55">
-              Menampilkan Halaman {currentPage} dari {totalPages}
+              Halaman {currentPage}
             </p>
           )}
         </div>
@@ -143,6 +182,28 @@ export default function GenreClient({ initialData, slug, title }: GenreClientPro
         ) : error ? (
           <div className="rk-state rounded-2xl px-4 py-8 text-center text-sm text-rose-300">
             Terjadi kesalahan saat memuat data. Silakan coba lagi nanti.
+          </div>
+        ) : isEndOfPages ? (
+          <div className="rk-state rounded-2xl px-5 py-8 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/5">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/30">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="9" y1="15" x2="15" y2="15" />
+              </svg>
+            </div>
+            <p className="text-sm leading-6 text-white/60">
+              Tidak ada komik lagi di halaman ini.
+            </p>
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              className="rk-btn-primary mt-5 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold cursor-pointer"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Kembali ke Halaman {currentPage - 1}
+            </button>
           </div>
         ) : results.length === 0 ? (
           <div className="rk-state rounded-2xl px-5 py-8 text-center">
@@ -191,86 +252,54 @@ export default function GenreClient({ initialData, slug, title }: GenreClientPro
             </div>
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-8 border-t border-white/5 pt-6">
-                {/* Prev */}
-                {currentPage > 1 ? (
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 transition cursor-pointer"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Prev
-                  </button>
-                ) : (
-                  <span className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-white/5 bg-white/[0.02] text-white/20 cursor-not-allowed">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Prev
-                  </span>
-                )}
+            <div className="flex items-center justify-between mt-8 border-t border-white/5 pt-6">
+              {/* Prev */}
+              {currentPage > 1 ? (
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 transition cursor-pointer"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Prev
+                </button>
+              ) : (
+                <span className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-white/5 bg-white/[0.02] text-white/20 cursor-not-allowed">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Prev
+                </span>
+              )}
 
-                {/* Page numbers */}
-                <div className="flex items-center gap-1.5">
-                  {Array.from({ length: Math.min(totalPages, 5) }).map((_, idx) => {
-                    let pages: number[] = [];
-                    if (totalPages <= 5) {
-                      pages = Array.from({ length: totalPages }, (_, i) => i + 1);
-                    } else if (currentPage <= 3) {
-                      pages = [1, 2, 3, 4, 5];
-                    } else if (currentPage >= totalPages - 2) {
-                      pages = [totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-                    } else {
-                      pages = [currentPage - 2, currentPage - 1, currentPage, currentPage + 1, currentPage + 2];
-                    }
+              {/* Page indicator */}
+              <span className="flex items-center gap-2 text-xs font-bold text-white/50">
+                <span className="flex h-7 min-w-[2rem] items-center justify-center rounded-lg bg-[var(--accent)] px-2.5 text-xs font-extrabold text-white">
+                  {currentPage}
+                </span>
+              </span>
 
-                    const pageNum = pages[idx];
-                    const isActive = pageNum === currentPage;
-
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`flex items-center justify-center font-extrabold transition text-xs cursor-pointer`}
-                        style={{
-                          width: isActive ? 28 : 24,
-                          height: isActive ? 28 : 24,
-                          borderRadius: isActive ? 8 : "50%",
-                          background: isActive ? "var(--accent)" : "rgba(255,255,255,0.06)",
-                          border: isActive ? "none" : "1px solid rgba(255,255,255,0.08)",
-                          color: isActive ? "#ffffff" : "rgba(255,255,255,0.35)",
-                        }}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Next */}
-                {currentPage < totalPages ? (
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 transition cursor-pointer"
-                  >
-                    Next
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M4.5 2L8.5 6L4.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                ) : (
-                  <span className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-white/5 bg-white/[0.02] text-white/20 cursor-not-allowed">
-                    Next
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M4.5 2L8.5 6L4.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </span>
-                )}
-              </div>
-            )}
+              {/* Next */}
+              {hasNextPage ? (
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 transition cursor-pointer"
+                >
+                  Next
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M4.5 2L8.5 6L4.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              ) : (
+                <span className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold tracking-widest uppercase border border-white/5 bg-white/[0.02] text-white/20 cursor-not-allowed">
+                  Next
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M4.5 2L8.5 6L4.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+              )}
+            </div>
           </>
         )}
       </div>

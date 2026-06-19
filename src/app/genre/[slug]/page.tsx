@@ -24,7 +24,7 @@ interface GenreResultItem {
 interface GenreResponse {
   genre: string;
   page: number | string;
-  total: number;
+  total?: number;
   results: GenreResultItem[];
 }
 
