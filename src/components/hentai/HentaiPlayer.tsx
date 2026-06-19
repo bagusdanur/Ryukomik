@@ -320,7 +320,12 @@ export default function HentaiPlayer({ src }: { src?: string }) {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={() => {
-        if (!showControls) setShowControls(true);
+        if (showControls) {
+          setShowControls(false);
+          setIsSettingsOpen(false);
+        } else {
+          handleMouseMove();
+        }
       }}
     >
       <div className="absolute inset-0 w-full h-full">
@@ -350,13 +355,13 @@ export default function HentaiPlayer({ src }: { src?: string }) {
 
             {/* Settings Overlay Center Mobile */}
             {isSettingsOpen && (
-              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm sm:hidden pointer-events-auto" onClick={() => setIsSettingsOpen(false)}>
-                <div className="bg-[#1e1e1e] border border-white/10 rounded-2xl p-4 w-4/5 max-w-xs shadow-2xl" onClick={e => e.stopPropagation()}>
-                  <div className="text-[11px] font-black text-[#ff5078] mb-4 text-center uppercase tracking-widest">Pilih Kualitas</div>
-                  <div className="flex flex-col gap-2">
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm sm:hidden pointer-events-auto p-2" onClick={() => setIsSettingsOpen(false)}>
+                <div className="bg-[#1e1e1e] border border-white/10 rounded-xl p-3 w-[180px] max-h-full overflow-y-auto no-scrollbar shadow-2xl" onClick={e => e.stopPropagation()}>
+                  <div className="text-[10px] font-black text-[#ff5078] mb-2 text-center uppercase tracking-widest">Pilih Kualitas</div>
+                  <div className="flex flex-col gap-1.5">
                     <button
                       onClick={() => changeQuality(-1)}
-                      className={`w-full py-3 text-[12px] font-bold rounded-xl transition-colors ${
+                      className={`w-full py-2 text-[11px] font-bold rounded-lg transition-colors ${
                         autoMode ? "bg-[#ff5078]/20 text-[#ff5078] border border-[#ff5078]/50" : "bg-white/5 text-white hover:bg-white/10 border border-transparent"
                       }`}
                     >
@@ -368,7 +373,7 @@ export default function HentaiPlayer({ src }: { src?: string }) {
                         <button
                           key={levelIndex}
                           onClick={() => changeQuality(levelIndex)}
-                          className={`w-full py-3 text-[12px] font-bold rounded-xl transition-colors ${
+                          className={`w-full py-2 text-[11px] font-bold rounded-lg transition-colors ${
                             !autoMode && activeLevel === levelIndex ? "bg-[#ff5078]/20 text-[#ff5078] border border-[#ff5078]/50" : "bg-white/5 text-white hover:bg-white/10 border border-transparent"
                           }`}
                         >
@@ -388,7 +393,12 @@ export default function HentaiPlayer({ src }: { src?: string }) {
               }`}
             >
               
-              <div className="bg-[#05060b]/90 backdrop-blur-md border border-white/10 rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto flex flex-col gap-1 sm:gap-2 relative">
+              <div 
+                className="bg-[#05060b]/90 backdrop-blur-md border border-white/10 rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto flex flex-col gap-1 sm:gap-2 relative"
+                onClick={(e) => { e.stopPropagation(); handleMouseMove(); }}
+                onMouseMove={(e) => { e.stopPropagation(); handleMouseMove(); }}
+                onTouchStart={(e) => { e.stopPropagation(); handleMouseMove(); }}
+              >
                 
                 {/* Desktop Settings Popover */}
                 {isSettingsOpen && (
