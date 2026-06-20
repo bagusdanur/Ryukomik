@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { HTMLAttributeReferrerPolicy } from "react";
+import Image from "next/image";
 
 type FallbackImageProps = {
   src?: string;
@@ -59,15 +60,15 @@ export default function FallbackImage({
   }
 
   return (
-    <img
+    <Image
       referrerPolicy={referrerPolicy}
-      loading={loading}
-      fetchPriority={fetchPriority}
-      decoding={decoding}
+      priority={loading === "eager"}
       src={activeSrc}
       alt={alt}
-      sizes={sizes}
+      sizes={sizes || "(max-width: 640px) 32vw, (max-width: 1024px) 20vw, 160px"}
       className={className}
+      fill
+      style={{ objectFit: "cover" }}
       onError={() => {
         setStatus((current) => {
           const currentIndex = current.key === urlsKey ? current.index : 0;

@@ -88,7 +88,7 @@ export function ProfileSection({
         </div>
       ) : (
         <Image
-          src="/icon.png?v=20260523"
+          src="/icon.png"
           alt="App Logo"
           width={96}
           height={96}

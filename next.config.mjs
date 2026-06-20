@@ -5,7 +5,12 @@ const nextConfig = {
   turbopack: {},
 
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
   },
 
   compress: true,

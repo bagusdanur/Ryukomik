@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
+import Image from "next/image";
 
 import "swiper/css";
 import "swiper/css/pagination";
@@ -38,15 +39,15 @@ export default function Banner({ data }: { data?: BannerItem[] }) {
           return (
             <SwiperSlide key={`${item.slug}-${index}`}>
               <div className="relative h-full w-full bg-[var(--surface-0)]">
-                <img
+                <Image
                   src={img}
                   alt={item.title || "Spotlight"}
                   referrerPolicy="no-referrer"
-                  loading={index === 0 ? "eager" : "lazy"}
-                  fetchPriority={index === 0 ? "high" : "auto"}
-                  decoding="async"
+                  priority={index === 0}
                   sizes="(max-width: 768px) 100vw, 1180px"
-                  className="absolute inset-0 h-full w-full object-cover"
+                  className="absolute inset-0 h-full w-full"
+                  fill
+                  style={{ objectFit: "cover" }}
                 />
                 <div className="absolute inset-0 bg-[var(--background)]/72" />
 
