@@ -21,7 +21,7 @@ export default function MonetagScript() {
   if (loading || isPremium) return null;
 
   return (
-    <Script id="monetag-script" strategy="afterInteractive">
+    <Script id="monetag-script" strategy="lazyOnload">
       {`
         (function(s){
           s.dataset.zone='10944835';

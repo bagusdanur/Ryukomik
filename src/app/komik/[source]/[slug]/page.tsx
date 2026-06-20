@@ -82,11 +82,30 @@ export async function generateMetadata({ params }: DetailPageProps): Promise<Met
   const type = data?.type ?? "Komik";
   const status = data?.status ?? "";
   const genres = data?.genres?.join(", ") ?? "";
+  const description = `Baca ${title} bahasa Indonesia gratis. ${type} ${status} genre ${genres}. Update chapter terbaru hanya di Ryukomik.`;
+  const url = `https://ryukomik.my.id/komik/${source}/${cleanSlug}`;
+  const images = data?.thumbnail ? [data.thumbnail] : [];
 
   return {
     title: `Baca ${title} Bahasa Indonesia - Ryukomik`,
-    description: `Baca ${title} bahasa Indonesia gratis. ${type} ${status} genre ${genres}. Update chapter terbaru hanya di Ryukomik.`,
+    description,
     keywords: `${title}, baca ${title}, ${title} sub indo, ${title} bahasa indonesia, baca komik online, ${genres}`,
+    alternates: {
+      canonical: url,
+    },
+    openGraph: {
+      title: `Baca ${title} Bahasa Indonesia`,
+      description,
+      url,
+      images,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `Baca ${title} Bahasa Indonesia`,
+      description,
+      images,
+    },
   };
 }
 
@@ -100,5 +119,27 @@ export default async function DetailPage({ params }: DetailPageProps) {
 
   const data = await getDetail(source, cleanSlug);
 
-  return <DetailClient data={data} slug={cleanSlug} source={source} />;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ComicSeries",
+    "name": data?.title || cleanSlug.replace(/-/g, " "),
+    "image": data?.thumbnail || "",
+    "description": data ? `Baca ${data.title} bahasa Indonesia gratis.` : "",
+    "author": {
+      "@type": "Person",
+      "name": data?.author || "Unknown"
+    },
+    "genre": data?.genres || [],
+    "url": `https://ryukomik.my.id/komik/${source}/${cleanSlug}`
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <DetailClient data={data} slug={cleanSlug} source={source} />
+    </>
+  );
 }

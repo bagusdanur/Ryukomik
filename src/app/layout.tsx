@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import Footer from "@/components/Footer";
 import AutoBackup from "@/components/AutoBackup";
@@ -17,7 +17,12 @@ import SWRegister from "./sw-register";
 import AdBanner from "@/components/AdBanner";
 import YukiAiScript from "@/components/YukiAiScript";
 
+export const viewport: Viewport = {
+  themeColor: "#090a12",
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://ryukomik.my.id"),
   title: {
     default: "Ryukomik - Baca Manga, Manhwa, Manhua Bahasa Indonesia Update Terbaru",
     template: "%s | Baca Manga, Manhwa, dan Manhua Gratis Online",
@@ -28,6 +33,32 @@ export const metadata: Metadata = {
     apple: "/icon.png?v=20260523",
   },
   description: "Baca manga, manhwa, dan manhua bahasa Indonesia gratis. Update chapter terbaru setiap hari dengan kualitas gambar HD hanya di Ryukomik.",
+  manifest: "/manifest.json",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Ryukomik - Baca Manga, Manhwa, Manhua Bahasa Indonesia Update Terbaru",
+    description: "Baca manga, manhwa, dan manhua bahasa Indonesia gratis. Update chapter terbaru setiap hari dengan kualitas gambar HD hanya di Ryukomik.",
+    url: "https://ryukomik.my.id",
+    siteName: "Ryukomik",
+    images: [
+      {
+        url: "/icon.png",
+        width: 512,
+        height: 512,
+        alt: "Ryukomik Logo",
+      },
+    ],
+    locale: "id_ID",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ryukomik",
+    description: "Baca manga, manhwa, dan manhua bahasa Indonesia gratis. Update chapter terbaru setiap hari dengan kualitas gambar HD hanya di Ryukomik.",
+    images: ["/icon.png"],
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -35,13 +66,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="monetag" content="648210872e70b41aeb3156769958d70b"/>
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#090a12" />
         <meta name="google-site-verification" content="NBp-tkkvrqSZ_6L1OLAWZUV3UotpuMo-RfQsPQlp7Gs" />
         <meta name="google-site-verification" content="vm0FjHf-UaQUWEp-T0FcASH6ClSeD9nqVSfSUgmVP-4" />
+        
+        {/* Preconnect to external CDNs for performance */}
+        <link rel="preconnect" href="https://cdn.komiku.co.id" />
+        <link rel="dns-prefetch" href="https://cdn.komiku.co.id" />
+        
         <Script
           id="histats-script"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{
             __html: `
               var _Hasync = _Hasync || [];

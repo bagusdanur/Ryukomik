@@ -72,10 +72,29 @@ export async function generateMetadata({ params }: ChapterPageProps): Promise<Me
   const data = await getChapter(source, slugStr);
 
   const title = buildTitle(data, slugStr);
+  const description = `${title} gratis dengan kualitas HD. Baca chapter terbaru lengkap bahasa Indonesia hanya di Ryukomik.`;
+  const url = `https://ryukomik.my.id/chapter/${source}/${slugStr}`;
+  const images = data?.images?.[0] ? [data.images[0]] : [];
 
   return {
     title: `${title} - Ryukomik`,
-    description: `${title} gratis dengan kualitas HD. Baca chapter terbaru lengkap bahasa Indonesia hanya di Ryukomik.`,
+    description,
+    alternates: {
+      canonical: url,
+    },
+    openGraph: {
+      title: `${title} - Ryukomik`,
+      description,
+      url,
+      images,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} - Ryukomik`,
+      description,
+      images,
+    },
   };
 }
 
@@ -86,5 +105,24 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
 
   if (!data) notFound();
 
-  return <ChapterClient data={data} error={undefined} source={source} slugStr={slugStr} />;
+  const title = buildTitle(data, slugStr);
+  
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": title,
+    "image": data.images?.[0] || "",
+    "description": `${title} gratis dengan kualitas HD.`,
+    "url": `https://ryukomik.my.id/chapter/${source}/${slugStr}`
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <ChapterClient data={data} error={undefined} source={source} slugStr={slugStr} />
+    </>
+  );
 }
