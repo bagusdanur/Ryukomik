@@ -66,25 +66,31 @@ const premiumPlans = [
     durationDays: 30,
     amount: 10000,
     qrisSrc: "/qris10k.jpeg",
+    badge: "Harga Normal",
+    badgeClass: "bg-white/[0.06] text-white/40 border border-white/[0.08]",
     note: "Coba Premium",
   },
   {
     id: "3m",
     name: "3 Bulan",
     durationDays: 90,
-    amount: 30000,
-    qrisSrc: "/qris30k.jpeg",
-    badge: "Populer",
+    amount: 25000,
+    qrisSrc: "/qris25.jpeg",
+    badge: "Hemat 17%",
+    badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
     note: "Lebih praktis",
+    subtext: "≈ Rp 8.333/bulan",
   },
   {
     id: "6m",
     name: "6 Bulan",
     durationDays: 180,
-    amount: 60000,
-    qrisSrc: "/qris60k.jpeg",
-    badge: "Durasi Panjang",
+    amount: 45000,
+    qrisSrc: "/qris45k.jpeg",
+    badge: "Hemat 25%",
+    badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
     note: "Aktif lebih lama",
+    subtext: "≈ Rp 7.500/bulan",
   },
 ];
 
@@ -404,7 +410,7 @@ export default function PremiumPage() {
                                 {plan.name}
                               </span>
                               {plan.badge && (
-                                <span className="rounded-full bg-cyan-400/12 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-cyan-200">
+                                <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${plan.badgeClass || 'bg-cyan-400/12 text-cyan-200'}`}>
                                   {plan.badge}
                                 </span>
                               )}
@@ -417,7 +423,12 @@ export default function PremiumPage() {
                             <div className="text-base font-black text-white">
                               {formatRupiah(plan.amount)}
                             </div>
-                            <div className="text-[10px] text-white/30">
+                            {plan.subtext && (
+                              <div className="text-[10px] text-white/40 mt-0.5">
+                                {plan.subtext}
+                              </div>
+                            )}
+                            <div className="text-[10px] text-white/30 mt-0.5">
                               via QRIS
                             </div>
                           </div>
@@ -440,8 +451,12 @@ export default function PremiumPage() {
                     {selectedPlan.name} - {selectedPlan.durationDays} hari
                   </div>
                 </div>
-                <div className="text-[10px] bg-cyan-400/12 text-cyan-200 px-2 py-1 rounded-full font-bold uppercase tracking-wider">
-                  Tanpa Diskon
+                <div className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
+                  selectedPlan.id === "1m"
+                    ? "bg-white/[0.06] text-white/40 border border-white/[0.08]"
+                    : "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20"
+                }`}>
+                  {selectedPlan.id === "1m" ? "Tanpa Diskon" : selectedPlan.badge}
                 </div>
               </div>
               {isActivePremium ? (
