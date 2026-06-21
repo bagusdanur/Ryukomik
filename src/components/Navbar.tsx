@@ -255,19 +255,22 @@ useEffect(() => {
     pathname.startsWith("/files") ||
     pathname.startsWith("/game") ||
     pathname.startsWith("/apk") ||
-    pathname.startsWith("/terbaru")||
-    pathname.startsWith("/novel/chapter")|| pathname.startsWith("/anime")|| pathname.startsWith("/dashboard")
+    pathname.startsWith("/terbaru") ||
+    pathname.startsWith("/novel/chapter") ||
+    pathname.startsWith("/anime") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/topup")
   )
     return null;
 
   return (
     <>
-    {showAgeModal && (
-  <AgeModal
-    onConfirm={handleAgeConfirm}
-    onClose={() => setShowAgeModal(false)}
-  />
-)}
+      {showAgeModal && (
+        <AgeModal
+          onConfirm={handleAgeConfirm}
+          onClose={() => setShowAgeModal(false)}
+        />
+      )}
       <nav className="rk-topbar fixed top-0 left-0 w-full z-50">
         <div className="max-w-screen-xl mx-auto px-3 py-2.5 flex items-center gap-3">
           {/* SEARCH */}

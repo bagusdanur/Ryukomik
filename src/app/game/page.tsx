@@ -1,233 +1,114 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import TitleRushWinnerBadge from "@/components/TitleRushWinnerBadge";
-import { getTitleRushEventStatus } from "@/lib/titleRushEvent";
-import { FaCrown, FaGamepad, FaMedal, FaTrophy } from "react-icons/fa";
-import { FiArrowRight, FiBarChart2, FiCheckSquare, FiClock, FiGrid, FiHome, FiImage, FiShuffle, FiZap } from "react-icons/fi";
+import TopupHeader from "@/components/topup/TopupHeader";
+import TopupFooter from "@/components/topup/TopupFooter";
 
-export const metadata: Metadata = {
-  title: "Game - Ryukomik",
-  description: "Kumpulan mini game Ryukomik.",
-};
-
-export const revalidate = 300;
-
-const games = [
+const GAMES = [
   {
-    title: "Ryukomik Title Rush",
-    href: "/game/tebak-judul",
-    category: "Weekly",
-    rounds: "10 soal",
-    choices: "4 pilihan",
-    batch: "Acak",
-    description:
-      "Tebak judul komik dari cover dan kejar peringkat leaderboard mingguan.",
-    icon: FiImage,
-    accent: "bg-[var(--accent)]",
-    status: "Main event",
+    id: "mobile-legends",
+    name: "Mobile Legends",
+    publisher: "MLBB Indonesia",
+    image: "https://sin1.contabostorage.com/20ab04d5e89c402888b2ba814feec970:xc-alk12091as-assets-10x129-empeshop/media/file-1778309830-6olb9uli-file-1746236477-ldmdsn2k-1.jpg?w=160&q=75",
+  },
+  {
+    id: "magic-chess-gogo",
+    name: "Magic Chess GOGO",
+    publisher: "Moonton",
+    image: "https://sin1.contabostorage.com/20ab04d5e89c402888b2ba814feec970:xc-alk12091as-assets-10x129-empeshop/media/file-1746236484-0j9idri1-4.jpg?w=160&q=75",
+  },
+  {
+    id: "pubg-mobile",
+    name: "PUBG Mobile",
+    publisher: "Tencent",
+    image: "https://sin1.contabostorage.com/20ab04d5e89c402888b2ba814feec970:xc-alk12091as-assets-10x129-empeshop/media/file-1746236479-aqgje8ve-2.jpg?w=160&q=75",
+  },
+  {
+    id: "free-fire",
+    name: "Free Fire",
+    publisher: "Garena",
+    image: "https://sin1.contabostorage.com/20ab04d5e89c402888b2ba814feec970:xc-alk12091as-assets-10x129-empeshop/media/file-1746236466-2bajaevq-5.jpg?w=160&q=75",
+  },
+  {
+    id: "honor-of-kings",
+    name: "Honor Of Kings",
+    publisher: "Tencent",
+    image: "https://sin1.contabostorage.com/20ab04d5e89c402888b2ba814feec970:xc-alk12091as-assets-10x129-empeshop/media/file-1746236481-ji77o8i6-3.jpg?w=160&q=75",
+  },
+  {
+    id: "genshin-impact",
+    name: "Genshin Impact",
+    publisher: "HoYoverse",
+    image: "https://sin1.contabostorage.com/20ab04d5e89c402888b2ba814feec970:xc-alk12091as-assets-10x129-empeshop/media/file-1746236471-s2qup57v-8.jpg?w=160&q=75",
   },
 ];
 
-const upcomingGames = [
-  "Genre Rush",
-  "Chapter Hunt",
-  "Cover Clash",
-];
+export default function GamePage() {
+  const [searchQuery, setSearchQuery] = useState("");
 
-const rewards = [
-  { rank: "Juara 1", prize: "Premium 7 hari", icon: FaCrown },
-  { rank: "Juara 2", prize: "Premium 5 hari", icon: FaTrophy },
-  { rank: "Juara 3", prize: "Premium 3 hari", icon: FaMedal },
-];
-
-export default async function GamePage() {
-  const eventStatus = await getTitleRushEventStatus();
-  const eventEnabled = eventStatus.enabled;
-  const featured = games[0];
-  const FeaturedIcon = featured.icon;
+  const filteredGames = GAMES.filter((game) =>
+    game.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <main className="rk-page px-4 pb-24 pt-5 text-white">
-      <div className="mx-auto max-w-3xl">
-        <div className="mb-4 flex items-center justify-between">
-          <Link
-            href="/"
-            className="rk-btn-ghost inline-flex h-10 w-10 items-center justify-center rounded-lg"
-            aria-label="Kembali ke beranda"
-          >
-            <FiHome />
-          </Link>
-          <div className="rk-chip inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold">
-            <FaGamepad className="text-[var(--accent-2)]" />
-            Ryukomik Games
-          </div>
+    <div className="bg-[#0a0c14] text-[#f4f5fa] font-sans min-h-screen flex flex-col antialiased">
+      {/* HEADER */}
+      <TopupHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 md:px-6 py-10 space-y-8">
+        
+        {/* Page Head */}
+        <div className="space-y-2 border-b border-white/[0.08] pb-6">
+          <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--accent-3)]">
+            RyuTopup Katalog
+          </span>
+          <h1 className="text-3xl font-extrabold text-white leading-tight">Semua Game</h1>
+          <p className="text-white/50 text-sm max-w-md">
+            Pilih game favoritmu dan mulai top up secara instan dengan berbagai metode pembayaran aman.
+          </p>
         </div>
 
-        <section className="rk-card overflow-hidden rounded-lg">
-          <div className="border-b border-white/[.08] bg-[var(--surface-2)] p-4 sm:p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[.2em] text-[var(--accent-2)]">
-                  Event Mingguan
-                </p>
-                <h1 className="mt-2 max-w-[320px] text-2xl font-black leading-tight sm:text-3xl">
-                  {featured.title}
-                </h1>
-              </div>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[.05] text-2xl text-[var(--accent-2)]">
-                <FeaturedIcon />
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
-              {rewards.map((reward, index) => {
-                const RewardIcon = reward.icon;
-                const rank = (index + 1) as 1 | 2 | 3;
-
-                return (
-                  <div
-                    key={reward.rank}
-                    className="flex items-center gap-3 rounded-lg border border-white/[.08] bg-[var(--surface-1)] px-3 py-2.5"
-                  >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[.06] text-[var(--accent-2)]">
-                      <RewardIcon />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-black uppercase tracking-wide text-white/45">
-                        {reward.rank}
-                      </p>
-                      <p className="truncate text-xs font-bold text-white/80">
-                        {reward.prize}
-                      </p>
-                      <div className="mt-1 flex items-center gap-1">
-                        <span className="text-[10px] font-bold text-white/35">
-                          + Badge
-                        </span>
-                        <TitleRushWinnerBadge rank={rank} />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+        {/* Live Filter Info */}
+        {searchQuery && (
+          <div className="text-xs text-white/50">
+            Menampilkan hasil untuk pencarian &quot;<span className="text-white font-semibold">{searchQuery}</span>&quot;
           </div>
+        )}
 
-          <div className="p-4 sm:p-5">
-            <p className="text-sm leading-6 text-white/65">
-              {featured.description}
-            </p>
-            <div className="mt-3 flex items-center gap-2 rounded-lg border border-white/[.08] bg-white/[.04] px-3 py-2 text-xs font-semibold text-white/55">
-              <FiClock className="shrink-0 text-[var(--accent-2)]" />
-              Satu sesi per jam. Skor mingguan tetap ditotal.
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="rk-card-soft rounded-lg px-2 py-3">
-                <FiCheckSquare className="mx-auto mb-1 text-[var(--accent-2)]" />
-                <p className="font-bold">{featured.rounds}</p>
-                <p className="mt-1 text-white/45">Soal</p>
-              </div>
-              <div className="rk-card-soft rounded-lg px-2 py-3">
-                <FiGrid className="mx-auto mb-1 text-[var(--accent-2)]" />
-                <p className="font-bold">{featured.choices}</p>
-                <p className="mt-1 text-white/45">Pilihan</p>
-              </div>
-              <div className="rk-card-soft rounded-lg px-2 py-3">
-                <FiShuffle className="mx-auto mb-1 text-[var(--accent-2)]" />
-                <p className="font-bold">{featured.batch}</p>
-                <p className="mt-1 text-white/45">Batch</p>
-              </div>
-            </div>
-
-            <Link
-              href={eventEnabled ? featured.href : "/game"}
-              aria-disabled={!eventEnabled}
-              className={`mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-black ${
-                eventEnabled
-                  ? "rk-btn-primary"
-                  : "cursor-not-allowed border border-white/[.08] bg-white/[.06] text-white/35"
-              }`}
-            >
-              {eventEnabled ? featured.status : "Event ditutup sementara"}
-              {eventEnabled && <FiArrowRight />}
-            </Link>
-            <Link
-              href="/game/tebak-judul/leaderboard"
-              className="rk-btn-ghost mt-3 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg text-sm font-bold"
-            >
-              <FiBarChart2 />
-              Lihat leaderboard event
-            </Link>
-          </div>
-        </section>
-
-        <section className="mt-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-black">Semua Game</h2>
-            <span className="text-xs text-white/45">{games.length} aktif</span>
-          </div>
-
-          <div className="grid gap-3">
-            {games.map((game) => {
-              const Icon = game.icon;
-
-              return (
-                <Link
-                  key={game.href}
-                  href={eventEnabled ? game.href : "/game"}
-                  aria-disabled={!eventEnabled}
-                  className={`rk-card-soft flex items-center gap-3 rounded-lg p-3 active:scale-[0.99] ${
-                    eventEnabled ? "" : "pointer-events-none opacity-60"
-                  }`}
-                >
-                  <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${game.accent} text-xl`}
-                  >
-                    <Icon />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-black">
-                        {game.title}
-                      </p>
-                      <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] text-white/60">
-                        {game.category}
-                      </span>
-                    </div>
-                    <p className="mt-1 line-clamp-1 text-xs text-white/50">
-                      {game.description}
-                    </p>
-                  </div>
-                  {eventEnabled ? (
-                    <FiArrowRight className="shrink-0 text-white/45" />
-                  ) : (
-                    <span className="shrink-0 rounded bg-white/10 px-2 py-1 text-[10px] font-bold text-white/45">
-                      OFF
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="rk-card-soft mt-5 rounded-lg p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <FiZap className="text-[var(--accent-2)]" />
-            <h2 className="text-sm font-black">Segera Hadir</h2>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {upcomingGames.map((game) => (
-              <span
-                key={game}
-                className="rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white/60"
+        {/* Game Grid */}
+        {filteredGames.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-5">
+            {filteredGames.map((game) => (
+              <Link
+                key={game.id}
+                href={`/topup/${game.id}`}
+                className="bg-[#181c2b] border border-white/[0.08] hover:border-white/[0.14] rounded-[14px] p-4 text-center flex flex-col items-center hover:translate-y-[-4px] hover:shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-200"
               >
-                {game}
-              </span>
+                <img
+                  src={game.image}
+                  alt={game.name}
+                  className="w-16 h-16 rounded-[14px] object-cover mb-3 shadow-[0_6px_16px_rgba(0,0,0,0.4)]"
+                />
+                <div className="font-bold text-[13.5px] text-white leading-tight mt-1 truncate w-full">
+                  {game.name}
+                </div>
+                <div className="text-[11px] text-white/40 mt-2 truncate w-full">
+                  {game.publisher}
+                </div>
+              </Link>
             ))}
           </div>
-        </section>
-      </div>
-    </main>
+        ) : (
+          <div className="text-center py-16 bg-[#181c2b]/35 border border-dashed border-white/[0.08] rounded-[14px] text-white/40">
+            Game &quot;{searchQuery}&quot; tidak ditemukan. Silakan cari dengan kata kunci lain.
+          </div>
+        )}
+      </main>
+
+      {/* FOOTER */}
+      <TopupFooter />
+    </div>
   );
 }

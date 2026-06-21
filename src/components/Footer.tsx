@@ -13,7 +13,8 @@ export default function BottomNav() {
     path.startsWith("/novel/chapter") ||
     path.startsWith("/dashboard") ||
     path.startsWith("/game") ||
-    path.startsWith("/apk")
+    path.startsWith("/apk") ||
+    path.startsWith("/topup")
   ) {
     return null;
   }

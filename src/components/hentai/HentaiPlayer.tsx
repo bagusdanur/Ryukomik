@@ -59,6 +59,25 @@ export default function HentaiPlayer({ src }: { src?: string }) {
   const [isDraggingSeek, setIsDraggingSeek] = useState(false);
   const progressContainerRef = useRef<HTMLDivElement>(null);
 
+  // Virtual Landscape State for Mobile Portrait Fullscreen
+  const [isVirtualLandscape, setIsVirtualLandscape] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (isFullscreen) {
+        // Rotate via CSS if screen width < 1024px and held vertically (height > width)
+        const isMobilePortrait = window.innerWidth < 1024 && window.innerHeight > window.innerWidth;
+        setIsVirtualLandscape(isMobilePortrait);
+      } else {
+        setIsVirtualLandscape(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isFullscreen]);
+
   // Fetch Logic
   useEffect(() => {
     if (!src) return;
@@ -151,6 +170,10 @@ export default function HentaiPlayer({ src }: { src?: string }) {
     const onWaiting = () => setIsBuffering(true);
     const onPlaying = () => setIsBuffering(false);
 
+    // iOS WebKit fullscreen events
+    const onWebKitBeginFullscreen = () => setIsFullscreen(true);
+    const onWebKitEndFullscreen = () => setIsFullscreen(false);
+
     video.addEventListener("play", onPlay);
     video.addEventListener("pause", onPause);
     video.addEventListener("timeupdate", onTimeUpdate);
@@ -158,6 +181,8 @@ export default function HentaiPlayer({ src }: { src?: string }) {
     video.addEventListener("volumechange", onVolumeChange);
     video.addEventListener("waiting", onWaiting);
     video.addEventListener("playing", onPlaying);
+    video.addEventListener("webkitbeginfullscreen", onWebKitBeginFullscreen);
+    video.addEventListener("webkitendfullscreen", onWebKitEndFullscreen);
 
     return () => {
       video.removeEventListener("play", onPlay);
@@ -167,13 +192,22 @@ export default function HentaiPlayer({ src }: { src?: string }) {
       video.removeEventListener("volumechange", onVolumeChange);
       video.removeEventListener("waiting", onWaiting);
       video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("webkitbeginfullscreen", onWebKitBeginFullscreen);
+      video.removeEventListener("webkitendfullscreen", onWebKitEndFullscreen);
     };
   }, [streamData, isDraggingSeek]);
 
   // Fullscreen Listener
   useEffect(() => {
     const onFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isFull = !!document.fullscreenElement;
+      setIsFullscreen(isFull);
+      if (!isFull) {
+        const orientation = (screen as any).orientation;
+        if (orientation && typeof orientation.unlock === "function") {
+          orientation.unlock();
+        }
+      }
     };
     document.addEventListener("fullscreenchange", onFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
@@ -235,12 +269,37 @@ export default function HentaiPlayer({ src }: { src?: string }) {
 
   const toggleFullscreen = () => {
     const container = playerContainerRef.current;
+    const video = videoRef.current;
     if (!container) return;
 
     if (!isFullscreen) {
-      if (container.requestFullscreen) container.requestFullscreen();
+      if (container.requestFullscreen) {
+        container.requestFullscreen()
+          .then(() => {
+            const orientation = (screen as any).orientation;
+            if (orientation && typeof orientation.lock === "function") {
+              orientation.lock("landscape").catch(() => {});
+            }
+          })
+          .catch(() => {});
+      } else if ((container as any).webkitRequestFullscreen) {
+        (container as any).webkitRequestFullscreen();
+      } else if (video && (video as any).webkitEnterFullscreen) {
+        (video as any).webkitEnterFullscreen();
+      }
     } else {
-      if (document.exitFullscreen) document.exitFullscreen();
+      if (document.exitFullscreen) {
+        document.exitFullscreen()
+          .then(() => {
+            const orientation = (screen as any).orientation;
+            if (orientation && typeof orientation.unlock === "function") {
+              orientation.unlock();
+            }
+          })
+          .catch(() => {});
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      }
     }
   };
 
@@ -340,7 +399,17 @@ export default function HentaiPlayer({ src }: { src?: string }) {
         }
       }}
     >
-      <div className="absolute inset-0 w-full h-full">
+      <div 
+        className={isVirtualLandscape ? "absolute bg-black flex items-center justify-center overflow-hidden" : "absolute inset-0 w-full h-full"}
+        style={{
+          position: "absolute",
+          top: isVirtualLandscape ? "50%" : "0",
+          left: isVirtualLandscape ? "50%" : "0",
+          width: isVirtualLandscape ? "100vh" : "100%",
+          height: isVirtualLandscape ? "100vw" : "100%",
+          transform: isVirtualLandscape ? "translate(-50%, -50%) rotate(90deg)" : "none",
+        }}
+      >
         {loading ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0a0a] gap-4">
             <div className="w-10 h-10 border-2 border-white/10 border-t-[#ff5078] rounded-full animate-spin" />
