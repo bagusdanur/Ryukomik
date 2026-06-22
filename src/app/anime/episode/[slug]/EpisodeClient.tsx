@@ -1,7 +1,6 @@
 "use client";
 import { useState, useRef } from "react";
 import Link from "next/link";
-import AnimePlayer from "@/components/anime/AnimePlayer";
 
 type AnimePlayerType = {
   name?: string;
@@ -35,12 +34,8 @@ type EpisodeClientProps = {
 export default function EpisodeClient({ data }: EpisodeClientProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const cleanTitle = data?.title?.replace(" Sub Indo", "") || "";
-  const activePlayers = data?.players?.filter((p) => p.iframe || p.streamUrl) || [];
-  // Prioritaskan server dengan streamUrl (Ryu-Lokal) sebagai default
-  const defaultPlayer = activePlayers.findIndex((p) => p.streamUrl);
-  const [activePlayer, setActivePlayer] = useState(
-    defaultPlayer !== -1 ? defaultPlayer : 0
-  );
+  const activePlayers = data?.players?.filter((p) => p.iframe) || [];
+  const [activePlayer, setActivePlayer] = useState(0);
 
   if (!data) return <div>Error</div>;
 
@@ -49,12 +44,7 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
         
       {/* ── PLAYER ── */}
       <div className="w-full bg-[#0a0a0a] relative">
-        {activePlayers[activePlayer]?.streamUrl ? (
-          <AnimePlayer
-            streamUrl={activePlayers[activePlayer].streamUrl}
-            iframeFallback={activePlayers[activePlayer].iframe}
-          />
-        ) : activePlayers[activePlayer]?.iframe ? (
+        {activePlayers[activePlayer]?.iframe ? (
           <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
             <iframe
               ref={iframeRef}
