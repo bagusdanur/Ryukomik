@@ -7,7 +7,7 @@ import { FiCheck, FiX, FiZap, FiUpload, FiLoader, FiRefreshCw, FiMessageSquare }
 import { RiVipCrownLine } from "react-icons/ri";
 import { TbLayersLinked, TbBadge } from "react-icons/tb";
 import { HiOutlineSparkles } from "react-icons/hi2";
-import { MdOutlineDownloadForOffline } from "react-icons/md";
+import { MdOutlineDownloadForOffline, MdOutlineOndemandVideo } from "react-icons/md";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
@@ -28,6 +28,13 @@ const features = [
     desc: "Baca lebih fokus tanpa gangguan iklan",
     basic: null,
     premium: "Bersih",
+  },
+  {
+    icon: <MdOutlineOndemandVideo size={16} />,
+    title: "Server RYU-LOKAL",
+    desc: "Akses player super cepat (HD) & tanpa jeda iklan",
+    basic: "Ada Iklan",
+    premium: "Bebas Iklan",
   },
   {
     icon: <TbLayersLinked size={16} />,
