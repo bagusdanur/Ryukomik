@@ -1,10 +1,12 @@
 "use client";
 import { useState, useRef } from "react";
 import Link from "next/link";
+import AnimePlayer from "@/components/anime/AnimePlayer";
 
-type AnimePlayer = {
+type AnimePlayerType = {
   name?: string;
   iframe?: string;
+  streamUrl?: string;
 };
 
 type AnimeDownload = {
@@ -21,7 +23,7 @@ type AnimeEpisode = {
   prev?: string;
   next?: string;
   allEpisode?: string;
-  players?: AnimePlayer[];
+  players?: AnimePlayerType[];
   downloads?: AnimeDownload[];
   thumbnail?: string;
 };
@@ -33,10 +35,9 @@ type EpisodeClientProps = {
 export default function EpisodeClient({ data }: EpisodeClientProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const cleanTitle = data?.title?.replace(" Sub Indo", "") || "";
-  const activePlayers = data?.players?.filter((p) => p.iframe) || [];
-  const defaultPlayer = activePlayers.findIndex((p) =>
-    p.name?.toLowerCase().includes("kotakvideo")
-  );
+  const activePlayers = data?.players?.filter((p) => p.iframe || p.streamUrl) || [];
+  // Prioritaskan server dengan streamUrl (Ryu-Lokal) sebagai default
+  const defaultPlayer = activePlayers.findIndex((p) => p.streamUrl);
   const [activePlayer, setActivePlayer] = useState(
     defaultPlayer !== -1 ? defaultPlayer : 0
   );
@@ -48,7 +49,12 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
         
       {/* ── PLAYER ── */}
       <div className="w-full bg-[#0a0a0a] relative">
-        {activePlayers[activePlayer]?.iframe ? (
+        {activePlayers[activePlayer]?.streamUrl ? (
+          <AnimePlayer
+            streamUrl={activePlayers[activePlayer].streamUrl}
+            iframeFallback={activePlayers[activePlayer].iframe}
+          />
+        ) : activePlayers[activePlayer]?.iframe ? (
           <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
             <iframe
               ref={iframeRef}
@@ -146,6 +152,9 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
               }`}>
                 {(player.name ?? "Server").replace("S-", "")}
               </span>
+              {player.streamUrl && (
+                <span className="ml-auto text-[8px] font-black tracking-wider text-cyan-300 bg-cyan-400/15 border border-cyan-300/30 rounded-md px-1.5 py-0.5 uppercase flex-shrink-0">⚡ HD</span>
+              )}
             </button>
           ))}
         </div>

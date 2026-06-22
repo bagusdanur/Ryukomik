@@ -1,0 +1,629 @@
+"use client";
+import { useEffect, useRef, useState, useCallback } from "react";
+import Hls from "hls.js";
+import { 
+  FaPlay, 
+  FaPause, 
+  FaVolumeUp, 
+  FaVolumeMute, 
+  FaExpand, 
+  FaCompress, 
+  FaCog 
+} from "react-icons/fa";
+
+type StreamData = {
+  m3u8_proxy?: string;
+  image?: string;
+  duration?: string;
+};
+
+type ApiResponse<T> = {
+  success?: boolean;
+  data?: T;
+};
+
+function formatTime(seconds: number) {
+  if (isNaN(seconds)) return "00:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m < 10 ? "0" : ""}${m}:${s < 10 ? "0" : ""}${s}`;
+}
+
+export default function AnimePlayer({ streamUrl, iframeFallback }: { streamUrl?: string; iframeFallback?: string }) {
+  const [loading, setLoading] = useState(true);
+  const [streamData, setStreamData] = useState<StreamData | null>(null);
+  const [error, setError] = useState(false);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Player States
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  
+  // HLS States
+  const [levels, setLevels] = useState<{ height: number; bitrate: number }[]>([]);
+  const [autoMode, setAutoMode] = useState(true);
+  const [activeLevel, setActiveLevel] = useState<number>(-1);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+
+  // Dragging States for Custom Slider
+  const [isDraggingSeek, setIsDraggingSeek] = useState(false);
+  const progressContainerRef = useRef<HTMLDivElement>(null);
+
+  // Virtual Landscape State for Mobile Portrait Fullscreen
+  const [isVirtualLandscape, setIsVirtualLandscape] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (isFullscreen) {
+        const isMobilePortrait = window.innerWidth < 1024 && window.innerHeight > window.innerWidth;
+        setIsVirtualLandscape(isMobilePortrait);
+      } else {
+        setIsVirtualLandscape(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isFullscreen]);
+
+  // Fetch Logic — call the streamUrl directly (it's already a full resolve-stream URL)
+  useEffect(() => {
+    if (!streamUrl) {
+      setLoading(false);
+      setStreamData(null);
+      setError(false);
+      return;
+    }
+
+    let isMounted = true;
+    setLoading(true);
+    setStreamData(null);
+    setError(false);
+
+    const fetchResolve = async () => {
+      try {
+        const res = await fetch(streamUrl);
+        const json = (await res.json()) as ApiResponse<StreamData>;
+        if (json.success && json.data) {
+          if (isMounted) setStreamData(json.data);
+        } else {
+          if (isMounted) setError(true);
+        }
+      } catch {
+        if (isMounted) setError(true);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchResolve();
+    return () => { isMounted = false; };
+  }, [streamUrl]);
+
+  // HLS Init
+  useEffect(() => {
+    if (!streamData?.m3u8_proxy || !videoRef.current) return;
+
+    const video = videoRef.current;
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        capLevelToPlayerSize: true,
+        startLevel: 0,
+        maxBufferLength: 15,
+        maxMaxBufferLength: 30,
+      });
+      hlsRef.current = hls;
+      
+      hls.loadSource(streamData.m3u8_proxy);
+      hls.attachMedia(video);
+      
+      hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+        setLevels(data.levels);
+      });
+      
+      hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+        setActiveLevel(data.level);
+      });
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = streamData.m3u8_proxy;
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [streamData]);
+
+  // Event Listeners for Video
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onTimeUpdate = () => {
+      if (!isDraggingSeek) {
+        setCurrentTime(video.currentTime);
+      }
+    };
+    const onLoadedMetadata = () => setDuration(video.duration);
+    const onVolumeChange = () => {
+      setVolume(video.volume);
+      setIsMuted(video.muted);
+    };
+    const onWaiting = () => setIsBuffering(true);
+    const onPlaying = () => setIsBuffering(false);
+
+    const onWebKitBeginFullscreen = () => setIsFullscreen(true);
+    const onWebKitEndFullscreen = () => setIsFullscreen(false);
+
+    video.addEventListener("play", onPlay);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("loadedmetadata", onLoadedMetadata);
+    video.addEventListener("volumechange", onVolumeChange);
+    video.addEventListener("waiting", onWaiting);
+    video.addEventListener("playing", onPlaying);
+    video.addEventListener("webkitbeginfullscreen", onWebKitBeginFullscreen);
+    video.addEventListener("webkitendfullscreen", onWebKitEndFullscreen);
+
+    return () => {
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("loadedmetadata", onLoadedMetadata);
+      video.removeEventListener("volumechange", onVolumeChange);
+      video.removeEventListener("waiting", onWaiting);
+      video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("webkitbeginfullscreen", onWebKitBeginFullscreen);
+      video.removeEventListener("webkitendfullscreen", onWebKitEndFullscreen);
+    };
+  }, [streamData, isDraggingSeek]);
+
+  // Fullscreen Listener
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      const isFull = !!document.fullscreenElement;
+      setIsFullscreen(isFull);
+      if (!isFull) {
+        const orientation = (screen as any).orientation;
+        if (orientation && typeof orientation.unlock === "function") {
+          orientation.unlock();
+        }
+      }
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
+  // Control Handlers
+  const togglePlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (isPlaying) video.pause();
+    else video.play();
+  };
+
+  const handleSeekMove = useCallback((clientX: number) => {
+    if (!progressContainerRef.current || !duration) return;
+    const rect = progressContainerRef.current.getBoundingClientRect();
+    let pos = (clientX - rect.left) / rect.width;
+    pos = Math.max(0, Math.min(1, pos));
+    setCurrentTime(pos * duration);
+  }, [duration]);
+
+  const handleSeekEnd = useCallback((clientX: number) => {
+    setIsDraggingSeek(false);
+    if (!progressContainerRef.current || !duration || !videoRef.current) return;
+    const rect = progressContainerRef.current.getBoundingClientRect();
+    let pos = (clientX - rect.left) / rect.width;
+    pos = Math.max(0, Math.min(1, pos));
+    videoRef.current.currentTime = pos * duration;
+    setCurrentTime(pos * duration);
+  }, [duration]);
+
+  // Global mouse events for dragging
+  useEffect(() => {
+    if (!isDraggingSeek) return;
+    
+    const onMouseMove = (e: MouseEvent) => handleSeekMove(e.clientX);
+    const onTouchMove = (e: TouchEvent) => handleSeekMove(e.touches[0].clientX);
+    const onMouseUp = (e: MouseEvent) => handleSeekEnd(e.clientX);
+    const onTouchEnd = (e: TouchEvent) => handleSeekEnd(e.changedTouches[0].clientX);
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("touchend", onTouchEnd);
+
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [isDraggingSeek, handleSeekMove, handleSeekEnd]);
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+  };
+
+  const toggleFullscreen = () => {
+    const container = playerContainerRef.current;
+    const video = videoRef.current;
+    if (!container) return;
+
+    if (!isFullscreen) {
+      if (container.requestFullscreen) {
+        container.requestFullscreen()
+          .then(() => {
+            const orientation = (screen as any).orientation;
+            if (orientation && typeof orientation.lock === "function") {
+              orientation.lock("landscape").catch(() => {});
+            }
+          })
+          .catch(() => {});
+      } else if ((container as any).webkitRequestFullscreen) {
+        (container as any).webkitRequestFullscreen();
+      } else if (video && (video as any).webkitEnterFullscreen) {
+        (video as any).webkitEnterFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen()
+          .then(() => {
+            const orientation = (screen as any).orientation;
+            if (orientation && typeof orientation.unlock === "function") {
+              orientation.unlock();
+            }
+          })
+          .catch(() => {});
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      }
+    }
+  };
+
+  const changeQuality = (levelIndex: number) => {
+    if (hlsRef.current) {
+      if (levelIndex === -1) {
+        hlsRef.current.currentLevel = -1;
+        setAutoMode(true);
+      } else {
+        hlsRef.current.currentLevel = levelIndex;
+        setAutoMode(false);
+      }
+      setIsSettingsOpen(false);
+    }
+  };
+
+  const handleMouseMove = useCallback(() => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (videoRef.current && !videoRef.current.paused) {
+        setShowControls(false);
+      }
+    }, 3000);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (videoRef.current && !videoRef.current.paused) {
+      setShowControls(false);
+      setIsSettingsOpen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isPlaying) {
+      handleMouseMove();
+    } else {
+      setShowControls(true);
+    }
+  }, [isPlaying, handleMouseMove]);
+
+  // Quality text
+  let qualityText = "Auto";
+  if (!autoMode && activeLevel !== -1 && levels[activeLevel]) {
+    qualityText = `${levels[activeLevel].height}p`;
+  } else if (autoMode && activeLevel !== -1 && levels[activeLevel]) {
+    qualityText = `Auto (${levels[activeLevel].height}p)`;
+  } else if (!autoMode && activeLevel !== -1) {
+    qualityText = `${activeLevel}p`;
+  }
+
+  const progressPercentage = duration ? (currentTime / duration) * 100 : 0;
+
+  // Accent color for anime theme
+  const accent = "#22d3ee"; // cyan-400
+  const accentLight = "#a5f3fc"; // cyan-200
+  const accentGlow = "rgba(34,211,238,0.5)";
+  const accentBg = "rgba(34,211,238,0.1)";
+  const accentBgHover = "rgba(34,211,238,0.2)";
+  const accentBorder = "rgba(34,211,238,0.5)";
+
+  // No streamUrl provided — show placeholder
+  if (!streamUrl) {
+    return (
+      <div className="relative w-full rounded-xl overflow-hidden bg-[#0a0a0a] border border-white/5" style={{ paddingTop: "56.25%" }}>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-cyan-400/10 border border-cyan-300/25 flex items-center justify-center">
+            <FaPlay className="text-cyan-300 ml-1" />
+          </div>
+          <p className="text-[9px] font-black text-white/20 tracking-[.18em] uppercase">Pilih server di bawah</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error → fallback to iframe if available
+  if (error && iframeFallback) {
+    return (
+      <div className="relative w-full rounded-xl overflow-hidden bg-[#0a0a0a] border border-white/5 shadow-lg" style={{ paddingTop: "56.25%" }}>
+        <iframe
+          key={iframeFallback}
+          src={iframeFallback}
+          className="absolute inset-0 w-full h-full"
+          allowFullScreen
+          allow="autoplay; fullscreen"
+          referrerPolicy="no-referrer"
+          frameBorder="0"
+        />
+      </div>
+    );
+  }
+
+  // Error without fallback
+  if (error) {
+    return (
+      <div className="relative w-full rounded-xl overflow-hidden bg-[#0a0a0a] border border-white/5" style={{ paddingTop: "56.25%" }}>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-400/25 flex items-center justify-center">
+            <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <p className="text-[9px] font-black text-white/20 tracking-[.18em] uppercase">Gagal memuat stream</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      className={`relative w-full bg-black group select-none flex items-center justify-center ${isFullscreen ? "" : "rounded-xl overflow-hidden border border-white/10 shadow-2xl"}`}
+      style={{ paddingTop: isFullscreen ? "0" : "56.25%", height: isFullscreen ? "100vh" : "auto" }}
+      ref={playerContainerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={() => {
+        if (showControls) {
+          setShowControls(false);
+          setIsSettingsOpen(false);
+        } else {
+          handleMouseMove();
+        }
+      }}
+    >
+      <div 
+        className={isVirtualLandscape ? "absolute bg-black flex items-center justify-center overflow-hidden" : "absolute inset-0 w-full h-full"}
+        style={{
+          position: "absolute",
+          top: isVirtualLandscape ? "50%" : "0",
+          left: isVirtualLandscape ? "50%" : "0",
+          width: isVirtualLandscape ? "100vh" : "100%",
+          height: isVirtualLandscape ? "100vw" : "100%",
+          transform: isVirtualLandscape ? "translate(-50%, -50%) rotate(90deg)" : "none",
+        }}
+      >
+        {loading ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0a0a] gap-4">
+            <div className="w-10 h-10 border-2 border-white/10 border-t-cyan-400 rounded-full animate-spin" />
+            <span className="text-[10px] font-black uppercase tracking-[.25em] text-cyan-300 animate-pulse">
+              Memuat Stream...
+            </span>
+          </div>
+        ) : streamData ? (
+          <>
+            <video
+              ref={videoRef}
+              className="w-full h-full object-contain"
+              poster={streamData.image}
+              playsInline
+            />
+
+            {/* Buffering Indicator */}
+            {isBuffering && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20 backdrop-blur-[2px] transition-all">
+                <div className="w-14 h-14 border-4 border-cyan-400/20 border-t-cyan-400 rounded-full animate-spin shadow-[0_0_15px_rgba(34,211,238,0.5)]" />
+              </div>
+            )}
+
+            {/* Settings Overlay Center Mobile */}
+            {isSettingsOpen && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm sm:hidden pointer-events-auto p-2" onClick={() => setIsSettingsOpen(false)}>
+                <div className="bg-[#1e1e1e] border border-white/10 rounded-xl p-3 w-[180px] max-h-full overflow-y-auto no-scrollbar shadow-2xl" onClick={e => e.stopPropagation()}>
+                  <div className="text-[10px] font-black text-cyan-300 mb-2 text-center uppercase tracking-widest">Pilih Kualitas</div>
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      onClick={() => changeQuality(-1)}
+                      className={`w-full py-2 text-[11px] font-bold rounded-lg transition-colors ${
+                        autoMode ? "bg-cyan-400/20 text-cyan-300 border border-cyan-400/50" : "bg-white/5 text-white hover:bg-white/10 border border-transparent"
+                      }`}
+                    >
+                      Auto Recomended
+                    </button>
+                    {[...levels].reverse().map((level, idx) => {
+                      const levelIndex = levels.length - 1 - idx;
+                      return (
+                        <button
+                          key={levelIndex}
+                          onClick={() => changeQuality(levelIndex)}
+                          className={`w-full py-2 text-[11px] font-bold rounded-lg transition-colors ${
+                            !autoMode && activeLevel === levelIndex ? "bg-cyan-400/20 text-cyan-300 border border-cyan-400/50" : "bg-white/5 text-white hover:bg-white/10 border border-transparent"
+                          }`}
+                        >
+                          {level.height}p
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Controls Overlay (Glassmorphism Floating) */}
+            <div 
+              className={`absolute bottom-0 left-0 right-0 p-2 sm:p-4 transition-all duration-300 ease-out flex flex-col justify-end ${
+                showControls ? "opacity-100 translate-y-0 z-20" : "opacity-0 translate-y-4 pointer-events-none"
+              }`}
+            >
+              
+              <div 
+                className="bg-[#05060b]/90 backdrop-blur-md border border-white/10 rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-[0_10px_40px_rgba(0,0,0,0.5)] pointer-events-auto flex flex-col gap-1 sm:gap-2 relative"
+                onClick={(e) => { e.stopPropagation(); handleMouseMove(); }}
+                onMouseMove={(e) => { e.stopPropagation(); handleMouseMove(); }}
+                onTouchStart={(e) => { e.stopPropagation(); handleMouseMove(); }}
+              >
+                
+                {/* Desktop Settings Popover */}
+                {isSettingsOpen && (
+                  <div className="hidden sm:block absolute right-4 bottom-[calc(100%+10px)] bg-[#1e1e1e]/95 border border-white/10 rounded-xl p-2 w-40 backdrop-blur-md z-50 shadow-2xl">
+                    <div className="text-[10px] font-bold text-white/50 mb-2 px-2 uppercase tracking-wider">Kualitas</div>
+                    <button
+                      onClick={() => changeQuality(-1)}
+                      className={`w-full text-left px-3 py-2 text-[11px] font-bold rounded-lg transition-colors ${
+                        autoMode ? "bg-cyan-400/20 text-cyan-300" : "text-white hover:bg-white/5"
+                      }`}
+                    >
+                      Auto
+                    </button>
+                    {[...levels].reverse().map((level, idx) => {
+                      const levelIndex = levels.length - 1 - idx;
+                      return (
+                        <button
+                          key={levelIndex}
+                          onClick={() => changeQuality(levelIndex)}
+                          className={`w-full text-left px-3 py-2 text-[11px] font-bold rounded-lg transition-colors ${
+                            !autoMode && activeLevel === levelIndex ? "bg-cyan-400/20 text-cyan-300" : "text-white hover:bg-white/5"
+                          }`}
+                        >
+                          {level.height}p
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Progress Bar (Custom Div) */}
+                <div 
+                  className="w-full h-4 flex items-center group/progress cursor-pointer px-1 sm:px-2"
+                  ref={progressContainerRef}
+                  onMouseDown={(e) => {
+                    setIsDraggingSeek(true);
+                    handleSeekMove(e.clientX);
+                  }}
+                  onTouchStart={(e) => {
+                    setIsDraggingSeek(true);
+                    handleSeekMove(e.touches[0].clientX);
+                  }}
+                >
+                  <div className="w-full h-1.5 sm:h-2 bg-white/10 rounded-full overflow-hidden relative shadow-inner">
+                    <div 
+                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-400/80 to-cyan-400 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.8)]"
+                      style={{ width: `${progressPercentage}%` }}
+                    />
+                  </div>
+                  {/* Thumb Indicator */}
+                  <div 
+                    className={`absolute h-3.5 w-3.5 sm:h-4 sm:w-4 bg-white border-2 border-cyan-400 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.8)] transition-transform duration-100 ${isDraggingSeek ? 'scale-125' : 'scale-0 group-hover/progress:scale-100'}`}
+                    style={{ left: `calc(${progressPercentage}% - 6px)` }}
+                  />
+                </div>
+
+                {/* Bottom Controls */}
+                <div className="flex items-center justify-between px-1 sm:px-2">
+                  
+                  {/* Left Controls */}
+                  <div className="flex items-center gap-3 sm:gap-5">
+                    <button onClick={togglePlay} className="text-white hover:text-cyan-300 transition-all focus:outline-none p-1 sm:p-0 active:scale-90">
+                      {isPlaying ? <FaPause size={16} className="sm:text-[20px]" /> : <FaPlay size={16} className="sm:text-[20px]" />}
+                    </button>
+                    
+                    <div className="hidden sm:flex items-center gap-3 group/vol">
+                      <button onClick={toggleMute} className="text-white hover:text-cyan-300 transition-colors focus:outline-none active:scale-90">
+                        {isMuted || volume === 0 ? <FaVolumeMute size={20} /> : <FaVolumeUp size={20} />}
+                      </button>
+                      <div className="w-0 overflow-hidden group-hover/vol:w-20 transition-all duration-300 flex items-center">
+                         <input
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={isMuted ? 0 : volume}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if(videoRef.current) {
+                              videoRef.current.volume = val;
+                              setVolume(val);
+                              setIsMuted(val === 0);
+                            }
+                          }}
+                          className="w-full h-1.5 bg-white/20 rounded-full appearance-none cursor-pointer accent-cyan-400"
+                          style={{
+                            backgroundSize: `${(isMuted ? 0 : volume) * 100}% 100%`,
+                            backgroundImage: "linear-gradient(#22d3ee, #22d3ee)",
+                            backgroundRepeat: "no-repeat"
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="text-white/80 text-[10px] sm:text-[12px] font-bold tracking-wide font-mono bg-white/5 px-2 py-0.5 rounded-md">
+                      {formatTime(currentTime)} <span className="text-white/30 mx-1">/</span> {formatTime(duration)}
+                    </div>
+                  </div>
+
+                  {/* Right Controls */}
+                  <div className="flex items-center gap-2 sm:gap-4">
+                    {levels.length > 0 && (
+                      <button 
+                        onClick={() => setIsSettingsOpen(!isSettingsOpen)} 
+                        className={`transition-all focus:outline-none flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-lg active:scale-95 ${isSettingsOpen ? 'bg-cyan-400/20 text-cyan-300' : 'bg-white/5 text-white hover:bg-white/10 hover:text-cyan-300'}`}
+                      >
+                        <FaCog size={14} className={`sm:text-[16px] ${isSettingsOpen ? "animate-spin-slow" : ""}`} />
+                        <span className="text-[10px] sm:text-[11px] font-black tracking-wider uppercase">
+                          {qualityText}
+                        </span>
+                      </button>
+                    )}
+                    <button onClick={toggleFullscreen} className="text-white hover:text-cyan-300 transition-colors focus:outline-none p-1.5 sm:p-2 bg-white/5 hover:bg-white/10 rounded-lg active:scale-95">
+                      {isFullscreen ? <FaCompress size={14} className="sm:text-[16px]" /> : <FaExpand size={14} className="sm:text-[16px]" />}
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
