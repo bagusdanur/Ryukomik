@@ -166,12 +166,12 @@ export default function HentaiEpisodeClient({ data }: HentaiEpisodeClientProps) 
             Pilih Server
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-2 mb-5">
+        <div className="grid grid-cols-2 gap-2 mb-5">
           {activePlayers.map((player, idx) => (
             <button
               key={idx}
               onClick={() => setActivePlayer(idx)}
-              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-left active:scale-95 ${
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left active:scale-95 ${
                 activePlayer === idx
                   ? "bg-[#ff5078]/12 border-[#ff5078]/50"
                   : "bg-white/[0.04] border-white/5 hover:border-cyan-200/25 hover:bg-cyan-400/5"
@@ -191,6 +191,9 @@ export default function HentaiEpisodeClient({ data }: HentaiEpisodeClientProps) 
               >
                 {player.label}
               </span>
+              {player.label?.toUpperCase() === "RYU-LOKAL" && (
+                <span className="ml-auto text-[8px] font-black tracking-wider text-[#ffb3c6] bg-[#ff5078]/15 border border-[#ff5078]/30 rounded-md px-1.5 py-0.5 uppercase flex-shrink-0">⚡ HD</span>
+              )}
             </button>
           ))}
         </div>
