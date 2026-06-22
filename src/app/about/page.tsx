@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FiBook, FiMail } from "react-icons/fi";
 
 export const metadata: Metadata = {
   title: "About - Ryukomik",
@@ -9,8 +10,8 @@ export default function AboutPage() {
   return (
     <main className="rk-page px-4 pb-24 pt-20 text-white">
       <div className="rk-card mx-auto max-w-2xl rounded-3xl p-5">
-        <h1 className="mb-4 text-2xl font-black">
-          📘 About (Tentang Ryukomik)
+        <h1 className="mb-4 flex items-center gap-2 text-2xl font-black">
+          <FiBook className="text-[var(--accent-2)]" /> About (Tentang Ryukomik)
         </h1>
 
         <div className="space-y-4 text-sm leading-relaxed text-white/72">
@@ -44,7 +45,9 @@ export default function AboutPage() {
           </p>
 
           <div className="pt-4 border-t border-white/10">
-            <p className="font-medium text-white">📩 Kontak</p>
+            <p className="flex items-center gap-2 font-medium text-white">
+              <FiMail className="text-[var(--accent-2)] shrink-0" /> Kontak
+            </p>
             <p className="mt-1">
               Jika ada pertanyaan atau laporan, silakan hubungi kami melalui
               halaman kontak atau email:

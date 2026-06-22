@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FiHelpCircle, FiBookOpen, FiDownload, FiAlertTriangle, FiTrash2 } from "react-icons/fi";
 
 export const metadata: Metadata = {
   title: "Help - Ryukomik",
@@ -8,13 +9,15 @@ export default function HelpPage() {
   return (
     <main className="rk-page px-4 pb-24 pt-20 text-white">
       <div className="rk-card mx-auto max-w-2xl rounded-3xl p-5">
-        <h1 className="mb-4 text-2xl font-black">❓ Help (Bantuan)</h1>
+        <h1 className="mb-4 flex items-center gap-2 text-2xl font-black">
+          <FiHelpCircle className="text-[var(--accent-2)]" /> Help (Bantuan)
+        </h1>
 
         <div className="space-y-5 text-sm leading-relaxed text-white/72">
           {/* ================= CARA MEMBACA ================= */}
           <div>
-            <h2 className="font-semibold text-white mb-1">
-              📖 Cara Membaca Komik
+            <h2 className="mb-2 flex items-center gap-2 font-semibold text-white">
+              <FiBookOpen className="text-[var(--accent-2)] shrink-0" /> Cara Membaca Komik
             </h2>
             <ul className="list-disc pl-5 space-y-1">
               <li>Pilih komik dari halaman utama</li>
@@ -25,7 +28,9 @@ export default function HelpPage() {
 
           {/* ================= MODE OFFLINE ================= */}
           <div>
-            <h2 className="font-semibold text-white mb-1">📥 Mode Offline</h2>
+            <h2 className="mb-2 flex items-center gap-2 font-semibold text-white">
+              <FiDownload className="text-[var(--accent-2)] shrink-0" /> Mode Offline
+            </h2>
             <ul className="list-disc pl-5 space-y-1">
               <li>
                 Gunakan tombol <strong>Download</strong> pada chapter
@@ -41,7 +46,9 @@ export default function HelpPage() {
 
           {/* ================= MASALAH UMUM ================= */}
           <div>
-            <h2 className="font-semibold text-white mb-1">⚠️ Masalah Umum</h2>
+            <h2 className="mb-2 flex items-center gap-2 font-semibold text-white">
+              <FiAlertTriangle className="text-[var(--accent-2)] shrink-0" /> Masalah Umum
+            </h2>
 
             <p className="font-medium text-white mt-2">
               Komik tidak bisa dibuka?
@@ -62,8 +69,8 @@ export default function HelpPage() {
 
           {/* ================= HAPUS OFFLINE ================= */}
           <div>
-            <h2 className="font-semibold text-white mb-1">
-              🗑 Hapus Konten Offline
+            <h2 className="mb-2 flex items-center gap-2 font-semibold text-white">
+              <FiTrash2 className="text-[var(--accent-2)] shrink-0" /> Hapus Konten Offline
             </h2>
             <ul className="list-disc pl-5 space-y-1">
               <li>

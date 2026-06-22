@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FiLock, FiChevronRight } from "react-icons/fi";
 
 export const metadata: Metadata = {
   title: "Privacy Policy - Ryukomik",
@@ -8,8 +9,8 @@ export default function PrivacyPolicyPage() {
   return (
     <main className="rk-page px-4 pb-24 pt-20 text-white">
       <div className="rk-card mx-auto max-w-2xl rounded-3xl p-5">
-        <h1 className="mb-2 text-2xl font-black">
-          🔐 Privacy Policy (Kebijakan Privasi)
+        <h1 className="mb-2 flex items-center gap-2 text-2xl font-black">
+          <FiLock className="text-[var(--accent-2)]" /> Privacy Policy (Kebijakan Privasi)
         </h1>
 
         <p className="text-xs text-white/50 mb-4">
@@ -32,8 +33,8 @@ export default function PrivacyPolicyPage() {
 
           {/* ================= INFO DATA ================= */}
           <div>
-            <h2 className="font-semibold text-white mb-1">
-              📌 1. Informasi yang Kami Kumpulkan
+            <h2 className="mb-2 flex items-center gap-2 font-semibold text-white">
+              <FiChevronRight className="text-[var(--accent-2)] shrink-0" /> 1. Informasi yang Kami Kumpulkan
             </h2>
 
             <p>
@@ -63,8 +64,8 @@ export default function PrivacyPolicyPage() {
 
           {/* ================= STORAGE ================= */}
           <div>
-            <h2 className="font-semibold text-white mb-1">
-              📌 2. Penyimpanan Data
+            <h2 className="mb-2 flex items-center gap-2 font-semibold text-white">
+              <FiChevronRight className="text-[var(--accent-2)] shrink-0" /> 2. Penyimpanan Data
             </h2>
 
             <p>
@@ -77,8 +78,8 @@ export default function PrivacyPolicyPage() {
 
           {/* ================= THIRD PARTY ================= */}
           <div>
-            <h2 className="font-semibold text-white mb-1">
-              📌 3. Layanan & Konten Pihak Ketiga
+            <h2 className="mb-2 flex items-center gap-2 font-semibold text-white">
+              <FiChevronRight className="text-[var(--accent-2)] shrink-0" /> 3. Layanan & Konten Pihak Ketiga
             </h2>
 
             <p>
@@ -95,8 +96,8 @@ export default function PrivacyPolicyPage() {
 
           {/* ================= COPYRIGHT ================= */}
           <div>
-            <h2 className="font-semibold text-white mb-1">
-              📌 4. Kebijakan Hak Cipta (Copyright Policy)
+            <h2 className="mb-2 flex items-center gap-2 font-semibold text-white">
+              <FiChevronRight className="text-[var(--accent-2)] shrink-0" /> 4. Kebijakan Hak Cipta (Copyright Policy)
             </h2>
 
             <p>
@@ -124,8 +125,8 @@ export default function PrivacyPolicyPage() {
 
           {/* ================= SECURITY ================= */}
           <div>
-            <h2 className="font-semibold text-white mb-1">
-              📌 5. Keamanan Data
+            <h2 className="mb-2 flex items-center gap-2 font-semibold text-white">
+              <FiChevronRight className="text-[var(--accent-2)] shrink-0" /> 5. Keamanan Data
             </h2>
 
             <p>
@@ -136,8 +137,8 @@ export default function PrivacyPolicyPage() {
 
           {/* ================= CHILDREN ================= */}
           <div>
-            <h2 className="font-semibold text-white mb-1">
-              📌 6. Perlindungan Anak
+            <h2 className="mb-2 flex items-center gap-2 font-semibold text-white">
+              <FiChevronRight className="text-[var(--accent-2)] shrink-0" /> 6. Perlindungan Anak
             </h2>
 
             <p>
@@ -149,8 +150,8 @@ export default function PrivacyPolicyPage() {
 
           {/* ================= CHANGES ================= */}
           <div>
-            <h2 className="font-semibold text-white mb-1">
-              📌 7. Perubahan Kebijakan
+            <h2 className="mb-2 flex items-center gap-2 font-semibold text-white">
+              <FiChevronRight className="text-[var(--accent-2)] shrink-0" /> 7. Perubahan Kebijakan
             </h2>
 
             <p>
@@ -161,8 +162,8 @@ export default function PrivacyPolicyPage() {
 
           {/* ================= CONTACT ================= */}
           <div>
-            <h2 className="font-semibold text-white mb-1">
-              📌 8. Kontak Kami
+            <h2 className="mb-2 flex items-center gap-2 font-semibold text-white">
+              <FiChevronRight className="text-[var(--accent-2)] shrink-0" /> 8. Kontak Kami
             </h2>
 
             <p>
