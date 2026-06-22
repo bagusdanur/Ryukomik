@@ -33,7 +33,7 @@ const features = [
     icon: <MdOutlineOndemandVideo size={16} />,
     title: "Server RYU-LOKAL",
     desc: "Akses player super cepat (HD) & tanpa jeda iklan",
-    basic: "Ada Iklan",
+    basic: null,
     premium: "Bebas Iklan",
   },
   {
