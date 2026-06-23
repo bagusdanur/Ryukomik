@@ -158,10 +158,10 @@ export default function Navbar() {
   }, []);
 
   const sourceMap: Record<SourceKey, string> = {
-    kiryuu: "Source 1",
-    komiku: "Source 2",
-    sekte: "Source 3",
-    doujindesu: "Source 4",
+    kiryuu: "1",
+    komiku: "2",
+    sekte: "3",
+    doujindesu: "4",
     meionovels: "Novel",
   };
 

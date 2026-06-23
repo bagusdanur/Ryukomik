@@ -420,6 +420,9 @@ export default function TerbaruPage({
         case "sekte":
           url = buildSourceUrl("sekte", "pustaka", params);
           break;
+        case "doujindesu":
+          url = buildSourceUrl("doujindesu", "pustaka", params);
+          break;
         case "meionovels":
           url = buildSourceUrl("meionovels", "pustaka", params);
           break;
