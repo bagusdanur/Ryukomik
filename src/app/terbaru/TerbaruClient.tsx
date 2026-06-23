@@ -210,9 +210,13 @@ export default function TerbaruPage({
       return;
     }
 
-    const nextNotifications = await fetchCachedNotifications(userId);
-    setNotifications(nextNotifications);
-    setUnreadCount(nextNotifications.filter((n) => !n.is_read).length || 0);
+    try {
+      const nextNotifications = await fetchCachedNotifications(userId);
+      setNotifications(nextNotifications);
+      setUnreadCount(nextNotifications.filter((n) => !n.is_read).length || 0);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
   }, [userId]);
 
   useEffect(() => {
@@ -234,45 +238,51 @@ export default function TerbaruPage({
   const markAsRead = useCallback(async (tab: "notif" | "info" = "notif") => {
     if (unreadCount === 0 || !user?.id) return;
 
-    if (tab === "info") {
+    try {
+      if (tab === "info") {
+        setNotifications((prev) => {
+          const next = prev.map((notification) =>
+            notification.type === TITLE_RUSH_EVENT_TYPE
+              ? { ...notification, is_read: true }
+              : notification,
+          );
+          setUnreadCount(next.filter((notification) => !notification.is_read).length);
+          return next;
+        });
+        return;
+      }
+
+      const unreadRegularIds = notifications
+        .filter(
+          (notification) =>
+            !notification.is_read &&
+            notification.type !== TITLE_RUSH_EVENT_TYPE &&
+            !String(notification.id).startsWith("title-rush-event-"),
+        )
+        .map((notification) => notification.id);
+
+      if (!unreadRegularIds.length) return;
+
+      const { error } = await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", user.id)
+        .in("id", unreadRegularIds);
+
+      if (error) throw error;
+
+      clearNotificationCache(user.id);
       setNotifications((prev) => {
+        const readIds = new Set(unreadRegularIds);
         const next = prev.map((notification) =>
-          notification.type === TITLE_RUSH_EVENT_TYPE
-            ? { ...notification, is_read: true }
-            : notification,
+          readIds.has(notification.id) ? { ...notification, is_read: true } : notification,
         );
         setUnreadCount(next.filter((notification) => !notification.is_read).length);
         return next;
       });
-      return;
+    } catch (error) {
+      console.error("Failed to mark notifications as read:", error);
     }
-
-    const unreadRegularIds = notifications
-      .filter(
-        (notification) =>
-          !notification.is_read &&
-          notification.type !== TITLE_RUSH_EVENT_TYPE &&
-          !String(notification.id).startsWith("title-rush-event-"),
-      )
-      .map((notification) => notification.id);
-
-    if (!unreadRegularIds.length) return;
-
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", user.id)
-      .in("id", unreadRegularIds);
-
-    clearNotificationCache(user.id);
-    setNotifications((prev) => {
-      const readIds = new Set(unreadRegularIds);
-      const next = prev.map((notification) =>
-        readIds.has(notification.id) ? { ...notification, is_read: true } : notification,
-      );
-      setUnreadCount(next.filter((notification) => !notification.is_read).length);
-      return next;
-    });
   }, [notifications, unreadCount, user]);
 
   const [targetSource, setTargetSource] = useState<SourceId | null>(null);

@@ -19,19 +19,28 @@ function emit(user: User | null) {
 export function initSupabaseUser() {
   if (initPromise) return initPromise;
 
-  initPromise = supabase.auth.getSession().then(({ data }) => {
-    const user = data.session?.user || null;
-    emit(user);
+  initPromise = supabase.auth.getSession()
+    .then(({ data, error }) => {
+      if (error) {
+        console.error("Session fetch error:", error);
+      }
+      const user = data?.session?.user || null;
+      emit(user);
 
-    if (!initialized) {
-      initialized = true;
-      supabase.auth.onAuthStateChange((_event, session) => {
-        emit(session?.user || null);
-      });
-    }
+      if (!initialized) {
+        initialized = true;
+        supabase.auth.onAuthStateChange((_event, session) => {
+          emit(session?.user || null);
+        });
+      }
 
-    return user;
-  });
+      return user;
+    })
+    .catch((error) => {
+      console.error("Auth init error:", error);
+      emit(null);
+      return null;
+    });
 
   return initPromise;
 }
@@ -49,6 +58,10 @@ export function useSupabaseUser() {
 
     initSupabaseUser()
       .then((nextUser) => setUser(nextUser))
+      .catch((error) => {
+        console.error("useSupabaseUser error:", error);
+        setUser(null);
+      })
       .finally(() => setLoading(false));
 
     return () => {

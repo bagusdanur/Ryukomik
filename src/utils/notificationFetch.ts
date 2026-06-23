@@ -29,21 +29,33 @@ export async function fetchCachedNotifications(
   if (!options.force && pending) return pending;
 
   const request = (async () => {
-    const eventNotif = await ensureTitleRushWeeklyNotification(userId);
-    const { data } = await supabase
-      .from("notifications")
-      .select("id, user_id, actor_id, actor_name, type, slug, chapter, target_id, is_read, created_at")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(10);
+    try {
+      const eventNotif = await ensureTitleRushWeeklyNotification(userId).catch((e) => {
+        console.error("Title rush notif error:", e);
+        return null;
+      });
 
-    const notifications = eventNotif
-      ? [eventNotif, ...((data || []) as NotificationItem[])]
-      : ((data || []) as NotificationItem[]);
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("id, user_id, actor_id, actor_name, type, slug, chapter, target_id, is_read, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10);
 
-    notificationCache.set(userId, { at: Date.now(), data: notifications });
-    notificationRequests.delete(userId);
-    return notifications;
+      if (error) throw error;
+
+      const notifications = eventNotif
+        ? [eventNotif, ...((data || []) as NotificationItem[])]
+        : ((data || []) as NotificationItem[]);
+
+      notificationCache.set(userId, { at: Date.now(), data: notifications });
+      notificationRequests.delete(userId);
+      return notifications;
+    } catch (e) {
+      console.error("fetchCachedNotifications error:", e);
+      notificationRequests.delete(userId);
+      return [];
+    }
   })();
 
   notificationRequests.set(userId, request);
