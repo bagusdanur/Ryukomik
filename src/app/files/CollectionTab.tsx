@@ -66,7 +66,7 @@ function makeId() {
 function normalizeBookmark(item: BookmarkItem): NormalizedBookmark {
   return {
     slug: item.slug,
-    source: item.source === "doujindesu" ? "sekte" : item.source || "komiku",
+    source: item.source || "komiku",
     title: item.title || "Unknown",
     image: item.image || "",
   };

@@ -28,7 +28,7 @@ export function getContentLink(slug = "") {
   if (!slug) return null;
 
   const value = String(slug).replace(/^\/+|\/+$/g, "");
-  const sources = ["kiryuu", "komiku", "sekte", "meionovels"];
+  const sources = ["kiryuu", "komiku", "sekte", "doujindesu", "meionovels"];
   const found = sources.find((source) => value.startsWith(`${source}-`));
   const legacyAdult = value.startsWith("doujindesu-");
   const source = found || (legacyAdult ? "sekte" : "komiku");

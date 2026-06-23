@@ -22,6 +22,7 @@ const SUPPORTED_SOURCES = Object.freeze([
   "kiryuu",
   "komiku",
   "sekte",
+  "doujindesu",
   "meionovels",
 ]);
 const ADULT_SOURCE_PREFIXES = Object.freeze(["doujindesu-", "sektedoujin-"]);

@@ -21,7 +21,7 @@ export default function FavoriteTab({ search = "" }: FavoriteTabProps) {
   if (item.source) {
     return {
       ...item,
-      source: item.source === "doujindesu" ? "sekte" : item.source,
+      source: item.source,
     };
   }
 

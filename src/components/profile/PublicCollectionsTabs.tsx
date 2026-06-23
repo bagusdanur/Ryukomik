@@ -97,7 +97,7 @@ export default function PublicCollectionsTabs({
                 className="w-[96px] shrink-0 sm:w-[112px]"
               >
                 <Link
-                  href={`/komik/${item.source === "doujindesu" ? "sekte" : item.source || "komiku"}/${item.slug ?? ""}`}
+                  href={`/komik/${item.source || "komiku"}/${item.slug ?? ""}`}
                   className="group block min-w-0"
                 >
                   <div className="aspect-[3/4] overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.04]">

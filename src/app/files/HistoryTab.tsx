@@ -82,7 +82,7 @@ const cleanTitle = useCallback((title?: string) => {
  const normalizeHistory = useCallback((item: HistoryItem): HistoryItem => {
   return {
     ...item,
-    source: item.source === "doujindesu" ? "sekte" : item.source || "komiku",
+    source: item.source || "komiku",
 
     title: cleanTitle(
   item.title || formatTitleFromSlug(item.comicSlug)
@@ -102,7 +102,6 @@ const cleanTitle = useCallback((title?: string) => {
  useEffect(() => {
   try {
     const saved = JSON.parse(localStorage.getItem("read_history") ?? "[]");
-
     const normalized = Array.isArray(saved)
       ? saved.map(normalizeHistory)
       .sort((a, b) => b.updatedAt - a.updatedAt)

@@ -38,7 +38,7 @@ export default function Navbar() {
   const [source, setSource] = useState<SourceKey>(() => {
     if (typeof window === "undefined") return "kiryuu";
     const saved = localStorage.getItem("source");
-    return saved === "doujindesu" ? "sekte" : ((saved as SourceKey | null) || "kiryuu");
+    return (saved as SourceKey | null) || "kiryuu";
   });
 
   const [showSource, setShowSource] = useState(false);
@@ -46,7 +46,7 @@ export default function Navbar() {
   useEffect(() => {
     const syncSource = () => {
       const saved = localStorage.getItem("source");
-      setSource(saved === "doujindesu" ? "sekte" : ((saved as SourceKey | null) || "kiryuu"));
+      setSource((saved as SourceKey | null) || "kiryuu");
     };
 
     syncSource();
@@ -60,7 +60,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const saved = localStorage.getItem("source");
-    const normalized = saved === "doujindesu" ? "sekte" : ((saved as SourceKey | null) || "komiku");
+    const normalized = (saved as SourceKey | null) || "komiku";
     const id = requestAnimationFrame(() => setSource(normalized));
     return () => cancelAnimationFrame(id);
   }, [pathname]);
@@ -147,7 +147,7 @@ export default function Navbar() {
   useEffect(() => {
     const handleChange = () => {
       const updated = localStorage.getItem("source");
-      setSource(updated === "doujindesu" ? "sekte" : ((updated as SourceKey | null) || "komiku"));
+      setSource((updated as SourceKey | null) || "komiku");
     };
 
     window.addEventListener("sourceChange", handleChange);
@@ -158,10 +158,11 @@ export default function Navbar() {
   }, []);
 
   const sourceMap: Record<SourceKey, string> = {
-    kiryuu: "1",   // ✅ kiryuu jadi source 1
-    komiku: "2",
-    sekte: "3",
-    meionovels: "4",
+    kiryuu: "Source 1",
+    komiku: "Source 2",
+    sekte: "Source 3",
+    doujindesu: "Source 4",
+    meionovels: "Novel",
   };
 
   const sourceId = sourceMap[source] || "0";
@@ -171,7 +172,7 @@ export default function Navbar() {
       return { source: "komiku", slug: "" };
     }
 
-    const map: SourceKey[] = ["kiryuu", "komiku", "sekte"];
+    const map: SourceKey[] = ["kiryuu", "komiku", "sekte", "doujindesu"];
 
     for (const s of map) {
       const prefix = `${s}-`;
@@ -189,7 +190,7 @@ export default function Navbar() {
     );
     if (adultPrefix) {
       return {
-        source: "sekte",
+        source: adultPrefix === "doujindesu-" ? "doujindesu" : "sekte",
         slug: slug.replace(adultPrefix, ""),
       };
     }
@@ -368,6 +369,42 @@ useEffect(() => {
                 </div>
 
                 {source === "sekte" && (
+                  <FaCheckCircle className="text-red-400 text-xs" />
+                )}
+              </button>
+
+              {/* doujindesu */}
+              <button
+                onClick={() => {
+                  if (!isAdult) {
+                    setShowAgeModal(true);
+                    setTargetSource("doujindesu");
+                    return;
+                  }
+
+                  if (!user) {
+                    setShowLogin(true);
+                    
+                    return;
+                  }
+
+                  changeSource("doujindesu");
+                  setShowSource(false);
+                }}
+                className={`flex items-center justify-between w-full px-4 py-2.5 text-sm
+        ${
+          source === "doujindesu"
+            ? "bg-red-500/10 text-red-400"
+            : "text-white/80 hover:bg-white/5"
+        }`}
+              >
+                <div className="flex items-center gap-2">
+                  <FaGlobeAsia className="text-xs" />
+                  <span>Source 4</span>
+                  <span className="text-red-400">18+</span>
+                </div>
+
+                {source === "doujindesu" && (
                   <FaCheckCircle className="text-red-400 text-xs" />
                 )}
               </button>

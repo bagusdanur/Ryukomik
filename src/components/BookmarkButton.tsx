@@ -79,7 +79,7 @@ export default function BookmarkButton({
       slug,
       title,
       image,
-      source: source === "doujindesu" ? "sekte" : source,
+      source: source,
     });
     localStorage.setItem("bookmarks", JSON.stringify(list));
     setSaved(true);

@@ -45,7 +45,7 @@ export interface ReaderChapter {
   next?: string;
 }
 
-export type SourceId = "kiryuu" | "komiku" | "sekte" | "meionovels";
+export type SourceId = "kiryuu" | "komiku" | "sekte" | "doujindesu" | "meionovels";
 
 export interface UpdateItem {
   slug: string;

@@ -49,7 +49,8 @@ export default function HeaderBar({
     kiryuu: "1",
     komiku: "2",
     sekte: "3",
-    meionovels: "4",
+    doujindesu: "4",
+    meionovels: "Novel",
   };
 
   return (
@@ -163,7 +164,43 @@ export default function HeaderBar({
               )}
             </button>
 
-            {/* KIRYUU */}
+            {/* doujindesu */}
+            <button
+              onClick={() => {
+                if (!isAdult) {
+                  setShowAgeModal(true);
+                  setTargetSource("doujindesu");
+                  return;
+                }
+
+                if (!user) {
+                  setShowLogin(true);
+
+                  return;
+                }
+
+                setSource("doujindesu");
+                setShowSource(false);
+              }}
+              className={`flex items-center justify-between w-full px-4 py-2 text-sm transition
+        ${
+          source === "doujindesu"
+            ? "bg-rose-500/10 text-rose-300"
+            : "text-white/75 hover:bg-white/[0.06]"
+        }`}
+            >
+              <div className="flex items-center gap-2">
+                <FaGlobeAsia className="text-xs" />
+                <span>Source 4</span>
+                <span className="text-red-400">18+</span>
+              </div>
+
+              {source === "doujindesu" && (
+                <FaCheckCircle className="text-rose-300 text-xs" />
+              )}
+            </button>
+
+            {/* meionovels */}
             <button
               onClick={() => {
                 setSource("meionovels");
