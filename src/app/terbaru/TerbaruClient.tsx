@@ -89,7 +89,6 @@ function normalizeListingItems(items: unknown, source: SourceId): UpdateItem[] {
       );
 
       return {
-        ...entry,
         slug,
         title,
         source: itemSource,
@@ -183,6 +182,7 @@ export default function TerbaruPage({
   const [data, setData] = useState<UpdateItem[]>(initialListing);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [history] = useState(getHistory);
   const loadingRef = useRef(false);
@@ -349,14 +349,7 @@ export default function TerbaruPage({
     writeListingCache(key, initialSource, initialListing);
   }, [initialListing, initialSource]);
 
-  useEffect(() => {
-    const savedSource = normalizeStoredSource(localStorage.getItem("source"), initialSource);
-
-    if (savedSource !== initialSource) {
-      resetListing();
-      setSource(savedSource);
-    }
-  }, [initialSource, resetListing]);
+  const isInitialized = useRef(false);
 
   // ✅ FETCH DATA: cache + abort + dedupe
   const fetchData = useCallback(async (p: number, currentSource: SourceId = source) => {
@@ -396,6 +389,7 @@ export default function TerbaruPage({
 
     loadingRef.current = true;
     setLoading(true);
+    setError(false);
 
     try {
       let url = "";
@@ -450,6 +444,7 @@ export default function TerbaruPage({
     } catch (e) {
       if (!(e instanceof DOMException && e.name === "AbortError")) {
         console.error("Fetch error:", e);
+        setError(true);
       }
     } finally {
       if (requestId === requestIdRef.current) {
@@ -474,12 +469,10 @@ export default function TerbaruPage({
           window.innerHeight + window.scrollY >=
           document.documentElement.scrollHeight - 200;
 
-        if (bottom && !loadingRef.current && hasMore) {
-          setPage(prev => {
-            const next = prev + 1;
-            fetchData(next);
-            return next;
-          });
+        if (bottom && !loadingRef.current && hasMore && !error) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchData(nextPage);
         }
       }, 150); // Debounce 150ms
     };
@@ -491,14 +484,27 @@ export default function TerbaruPage({
         clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [hasMore, fetchData]);
+  }, [hasMore, fetchData, page, error]);
 
   // ✅ RESET & FETCH saat filter/source berubah
   useEffect(() => {
+    let activeSource = source;
+
+    if (!isInitialized.current) {
+      isInitialized.current = true;
+      const savedSource = normalizeStoredSource(localStorage.getItem("source"), initialSource);
+      if (savedSource !== initialSource) {
+        activeSource = savedSource;
+        resetListing();
+        setSource(savedSource);
+        return;
+      }
+    }
+
     const canUseInitialListing =
       initialListingUsedRef.current &&
       dataLengthRef.current > 0 &&
-      source === initialSource &&
+      activeSource === initialSource &&
       orderby === "modified" &&
       !tipe &&
       !genre &&
@@ -512,18 +518,16 @@ export default function TerbaruPage({
 
     initialListingUsedRef.current = false;
 
-    const timer = setTimeout(() => {
-      fetchData(1, source);
-    }, 0);
+    fetchData(1, activeSource);
+
     // Cleanup abort saat unmount/dependency change
     return () => {
-      clearTimeout(timer);
       if (abortRef.current) {
         abortRef.current.abort();
         abortRef.current = null;
       }
     };
-  }, [source, initialSource, orderby, tipe, genre, genre2, status, fetchData]);
+  }, [source, initialSource, orderby, tipe, genre, genre2, status, fetchData, resetListing]);
 
   // ✅ LOCALSTORAGE
   useEffect(() => {
@@ -675,7 +679,25 @@ export default function TerbaruPage({
 
         {loading &&
           Array.from({ length: 9 }).map((_, i) => <SkeletonCard key={i} />)}
+
+        {error && (
+          <div className="col-span-full py-8 text-center flex flex-col items-center justify-center">
+            <p className="text-red-400 mb-3">Gagal memuat data. Silakan coba lagi.</p>
+            <button
+              onClick={() => fetchData(page, source)}
+              className="px-4 py-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20 font-medium transition-colors"
+            >
+              Coba Lagi
+            </button>
+          </div>
+        )}
       </div>
+
+      {!loading && !error && data.length === 0 && (
+         <div className="py-12 text-center text-white/50">
+           Data tidak ditemukan
+         </div>
+      )}
       </main>
 
       {showNotif && (
