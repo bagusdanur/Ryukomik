@@ -69,6 +69,7 @@ export default function FallbackImage({
       className={className}
       fill
       style={{ objectFit: "cover" }}
+      unoptimized={activeSrc.startsWith("/api/")}
       onError={() => {
         setStatus((current) => {
           const currentIndex = current.key === urlsKey ? current.index : 0;
