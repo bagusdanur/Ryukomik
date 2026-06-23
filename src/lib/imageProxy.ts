@@ -82,3 +82,35 @@ export function getCoverImageCandidates(source: string, url?: string) {
     originalUrl,
   ];
 }
+
+export function getProxiedThumbnailUrl(url?: string, source?: string): string {
+  if (!url) return "";
+  const originalUrl = getOriginalImageUrl(url);
+
+  const isAdultSource = source === "doujindesu" || source === "sekte";
+  let shouldProxy = isAdultSource;
+
+  if (!shouldProxy) {
+    try {
+      const parsed = new URL(originalUrl);
+      if (
+        parsed.hostname.includes("desu.") ||
+        parsed.hostname.includes("doujindesu") ||
+        PUBLIC_PROXY_IMAGE_HOSTS.has(parsed.hostname)
+      ) {
+        shouldProxy = true;
+      }
+    } catch {}
+  }
+
+  if (shouldProxy) {
+    return toDoujindesuWorkerImageUrl(originalUrl);
+  }
+
+  if (source === "kiryuu" && shouldUseKiryuuCoverProxy(source, originalUrl)) {
+    return toKiryuuWorkerImageUrl(originalUrl);
+  }
+
+  return originalUrl;
+}
+

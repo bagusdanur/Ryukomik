@@ -13,6 +13,7 @@ import {
 import type { FormEvent } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 
 const COLLECTION_KEY = "comic_collections";
 const cloudItemCache = new Map<string, NormalizedBookmark[]>();
@@ -583,7 +584,7 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
                       {item.image ? (
                         <img
                           referrerPolicy="no-referrer"
-                          src={item.image}
+                          src={getProxiedThumbnailUrl(item.image, item.source)}
                           className="h-full w-full object-cover"
                           alt={item.title}
                         />
@@ -639,7 +640,7 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
                         {item.image && (
                           <img
                             referrerPolicy="no-referrer"
-                            src={item.image}
+                            src={getProxiedThumbnailUrl(item.image, item.source)}
                             className="h-full w-full object-cover"
                             alt={item.title}
                           />

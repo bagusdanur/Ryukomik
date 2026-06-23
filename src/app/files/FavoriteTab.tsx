@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FiTrash2 } from "react-icons/fi";
+import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 type BookmarkItem = {
   slug: string;
   source?: string;
@@ -44,6 +45,7 @@ useEffect(() => {
   }
 }, []);
 
+
   const handleRemove = (slug: string) => {
     const updated = data.filter((i) => i.slug !== slug);
     setData(updated);
@@ -72,9 +74,9 @@ useEffect(() => {
             <FiTrash2 />
           </button>
 
-         <a href={`/komik/${item.source}/${item.slug}`}>
+          <a href={`/komik/${item.source}/${item.slug}`}>
             <div className="aspect-[3/4] overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04]">
-              <img referrerPolicy="no-referrer" src={item.image} className="h-full w-full object-cover" alt={item.title ?? "Bookmark"} />
+              <img referrerPolicy="no-referrer" src={getProxiedThumbnailUrl(item.image, item.source)} className="h-full w-full object-cover" alt={item.title ?? "Bookmark"} />
             </div>
             <p className="mt-2 text-sm font-bold leading-snug text-white/90 line-clamp-2 group-hover:text-cyan-100">{item.title}</p>
           </a>

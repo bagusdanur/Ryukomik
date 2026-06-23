@@ -12,6 +12,7 @@ import { FaArrowLeft, FaHeart, FaCommentDots } from "react-icons/fa";
 import ChapterList from "@/components/ChapterList";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
+import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 
 type ComicDetail = Series & {
   thumbnail: string;
@@ -108,6 +109,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
   }, [slug, extractChapter]);
 
   const chapters = data?.chapters ?? [];
+  const proxiedThumbnail = getProxiedThumbnailUrl(data?.thumbnail, source);
 
   // ✅ Kalau data null (fetch gagal di server)
   if (!data)
@@ -132,7 +134,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
       <div className="relative h-[300px] overflow-hidden sm:h-[360px]">
         <img
           referrerPolicy="no-referrer"
-          src={data.thumbnail}
+          src={proxiedThumbnail}
           alt={data.title}
           loading="eager"
           fetchPriority="high"
@@ -165,7 +167,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
           <div className="flex-shrink-0">
             <img
               referrerPolicy="no-referrer"
-              src={data.thumbnail}
+              src={proxiedThumbnail}
               alt="Poster"
               loading="eager"
               decoding="async"

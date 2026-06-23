@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { FiFolder, FiGrid } from "react-icons/fi";
+import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 
 type CollectionItem = {
   source?: string;
@@ -102,7 +103,7 @@ export default function PublicCollectionsTabs({
                   <div className="aspect-[3/4] overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.04]">
                     {item.image ? (
                       <img
-                        src={item.image}
+                        src={getProxiedThumbnailUrl(item.image, item.source)}
                         alt={item.title ?? "Komik"}
                         loading="lazy"
                         referrerPolicy="no-referrer"

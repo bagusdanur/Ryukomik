@@ -224,10 +224,10 @@ export default function SearchClient({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-bold text-rose-200">
-                Source 3 berisi konten 18+
+                Source 3 & 4 berisi konten 18+
               </p>
               <p className="mt-1 text-xs text-white/55">
-                Hasil dari Sekte dan Doujindesu tidak ditampilkan otomatis.
+                Hasil dari Source 3 dan Source 4 tidak ditampilkan otomatis.
               </p>
             </div>
 
@@ -238,16 +238,16 @@ export default function SearchClient({
               className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/45"
             >
               {adultLoading
-                ? "Memuat Source 3..."
+                ? "Memuat Source 3 & 4..."
                 : adultUnlocked
-                  ? "Source 3 Ditampilkan"
-                  : "Tampilkan Source 3 (18+)"}
+                  ? "Source 3 & 4 Ditampilkan"
+                  : "Tampilkan Source 3 & 4 (18+)"}
             </button>
           </div>
 
           {adultError && (
             <p className="mt-3 text-xs text-red-300">
-              Source 3 gagal dimuat. Coba lagi nanti.
+              Source 3 & 4 gagal dimuat. Coba lagi nanti.
             </p>
           )}
         </div>
@@ -283,6 +283,7 @@ export default function SearchClient({
               href={`/komik/${item.source}/${item.slug}`}
               title={item.title || "Tanpa judul"}
               image={item.image}
+              source={item.source}
               eyebrow={item.update || item.chapter_terbaru || item.latest_chapter}
               corner={
                 <span className="rk-cover-badge absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold text-[var(--accent-2)]">

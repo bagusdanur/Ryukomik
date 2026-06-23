@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { useMemo } from "react";
 import type { ReactNode } from "react";
 import FallbackImage from "@/components/FallbackImage";
+import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 
 type SeriesCardProps = {
   href: string;
@@ -14,6 +16,7 @@ type SeriesCardProps = {
   corner?: ReactNode;
   priority?: boolean;
   className?: string;
+  source?: string;
 };
 
 export default function SeriesCard({
@@ -28,7 +31,28 @@ export default function SeriesCard({
   corner,
   priority = false,
   className = "",
+  source,
 }: SeriesCardProps) {
+  const detectedSource = useMemo(() => {
+    if (source) return source;
+    if (href.startsWith("/komik/")) {
+      const parts = href.split("/");
+      return parts[2];
+    }
+    return undefined;
+  }, [href, source]);
+
+  const candidates = useMemo(() => {
+    if (imageCandidates) return imageCandidates;
+    if (image) {
+      const proxied = getProxiedThumbnailUrl(image, detectedSource);
+      if (proxied !== image) {
+        return [proxied, image];
+      }
+    }
+    return [];
+  }, [imageCandidates, image, detectedSource]);
+
   return (
     <Link prefetch={false} href={href} className={`rk-cover-card group ${className}`}>
       <div className="rk-cover-frame">
@@ -38,7 +62,7 @@ export default function SeriesCard({
           fetchPriority={priority ? "high" : "auto"}
           decoding="async"
           src={image || ""}
-          candidates={imageCandidates}
+          candidates={candidates}
           alt={title || "Komik"}
           sizes="(max-width: 640px) 32vw, (max-width: 1024px) 20vw, 160px"
         />
