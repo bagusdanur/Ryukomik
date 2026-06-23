@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
     let referer = parsedUrl.origin;
     if (parsedUrl.hostname.includes("kiryuu")) {
       referer = "https://kiryuu.org/"; // domain kiryuu untuk bypass referrer check
-    } else if (parsedUrl.hostname.includes("desu.photos") || parsedUrl.hostname.includes("doujindesu")) {
-      referer = "https://doujindesu.tv/"; // domain doujindesu untuk bypass referrer check
+    } else if (parsedUrl.hostname.includes("desu.") || parsedUrl.hostname.includes("doujindesu")) {
+      referer = "https://doujin.desu.xxx/";  // ganti dari doujindesu.tv ke domain baru
     }
 
     const response = await fetch(decodedUrl, {
