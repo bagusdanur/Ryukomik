@@ -16,7 +16,11 @@ export async function GET(request: NextRequest) {
     let referer = parsedUrl.origin;
     if (parsedUrl.hostname.includes("kiryuu")) {
       referer = "https://kiryuu.org/"; // domain kiryuu untuk bypass referrer check
-    } else if (parsedUrl.hostname.includes("desu.") || parsedUrl.hostname.includes("doujindesu")) {
+    } else if (
+      parsedUrl.hostname.includes("desu.") ||
+      parsedUrl.hostname.includes("doujindesu") ||
+      parsedUrl.hostname.includes("sektedoujin")
+    ) {
       referer = "https://doujin.desu.xxx/";  // ganti dari doujindesu.tv ke domain baru
     }
 

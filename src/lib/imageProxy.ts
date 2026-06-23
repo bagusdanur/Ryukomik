@@ -9,20 +9,30 @@ const KIRYUU_IMAGE_HOSTS = new Set([
   "kiryuu.io",
 ]);
 
-export function getOriginalImageUrl(url?: string) {
+export function getOriginalImageUrl(url?: string): string {
   if (!url) return "";
 
   try {
+    let cleanUrl = url;
+    if (cleanUrl.includes(".wp.com/")) {
+      cleanUrl = cleanUrl.replace(/^https?:\/\/[a-z0-9]+\.wp\.com\//i, "https://");
+    }
+
     const base = typeof window !== "undefined" ? window.location.origin : "http://localhost";
-    const parsed = new URL(url, base);
+    const parsed = new URL(cleanUrl, base);
     if (
       parsed.origin === "https://proxy.ryukomik.my.id" ||
       parsed.origin === "https://cdn.ryukomik.my.id" ||
-      parsed.pathname === "/api/image-proxy"
+      parsed.origin === "https://api.ryukomik.web.id" ||
+      parsed.pathname === "/api/image-proxy" ||
+      parsed.pathname.includes("/image")
     ) {
-      return parsed.searchParams.get("url") || url;
+      const nestedUrl = parsed.searchParams.get("url");
+      if (nestedUrl) {
+        return getOriginalImageUrl(nestedUrl);
+      }
     }
-    return url;
+    return cleanUrl;
   } catch {
     return url;
   }
@@ -96,6 +106,7 @@ export function getProxiedThumbnailUrl(url?: string, source?: string): string {
       if (
         parsed.hostname.includes("desu.") ||
         parsed.hostname.includes("doujindesu") ||
+        parsed.hostname.includes("sektedoujin") ||
         PUBLIC_PROXY_IMAGE_HOSTS.has(parsed.hostname)
       ) {
         shouldProxy = true;
