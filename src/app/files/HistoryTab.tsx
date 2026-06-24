@@ -50,16 +50,33 @@ export default function HistoryTab({ search = "" }: HistoryTabProps) {
 const extractChapter = useCallback((text?: string, slug?: string) => {
   let raw = "";
 
-  // 1. ambil dari text dulu
+  // 1. Ambil dari text dulu jika mengandung kata "Chapter" atau "Ch"
   if (text) {
-    const match = text.match(/(\d+(\.\d+)?)/);
-    if (match) raw = match[1];
+    const match = text.match(/(?:chapter|ch)\s*(\d+(\.\d+)?)/i);
+    if (match) {
+      raw = match[1];
+    } else {
+      // Jika text hanya mengandung angka di akhir (biasanya "Judul 01")
+      const endMatch = text.match(/(\d+(\.\d+)?)$/);
+      if (endMatch) {
+        raw = endMatch[1];
+      }
+    }
   }
 
-  // 2. fallback dari slug (kiryuu)
+  // 2. Fallback dari slug
   if (!raw && slug) {
-    const match = slug.match(/chapter[-/](\d+(\.\d+)?)/i);
-    if (match) raw = match[1];
+    // Cari pola "chapter-X" atau "ch-X"
+    const match = slug.match(/(?:chapter|ch)[-/](\d+(\.\d+)?)/i);
+    if (match) {
+      raw = match[1];
+    } else {
+      // Fallback: ambil angka terakhir di slug jika ada
+      const lastNumMatch = slug.match(/(\d+)(?!.*\d)/);
+      if (lastNumMatch) {
+        raw = lastNumMatch[1];
+      }
+    }
   }
 
   // 🔥 POTONG ANGKA SETELAH TITIK
@@ -67,7 +84,15 @@ const extractChapter = useCallback((text?: string, slug?: string) => {
     raw = raw.split(".")[0];
   }
 
-  return raw ? `Ch. ${raw}` : "Ch. ?";
+  // Hapus leading zero (misal "01" -> "1")
+  if (raw) {
+    const num = parseInt(raw, 10);
+    if (!isNaN(num)) {
+      return `Ch. ${num}`;
+    }
+  }
+
+  return raw ? `Ch. ${raw}` : "Ch. 1";
 }, []);
 
 const cleanTitle = useCallback((title?: string) => {

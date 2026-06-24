@@ -20,13 +20,25 @@ export function getOriginalImageUrl(url?: string): string {
 
     const base = typeof window !== "undefined" ? window.location.origin : "http://localhost";
     const parsed = new URL(cleanUrl, base);
-    if (
+
+    const isFrontendProxy =
       parsed.origin === "https://proxy.ryukomik.my.id" ||
       parsed.origin === "https://cdn.ryukomik.my.id" ||
-      parsed.origin === "https://api.ryukomik.web.id" ||
       parsed.pathname === "/api/image-proxy" ||
-      parsed.pathname.includes("/image")
-    ) {
+      parsed.pathname === "/api/image" ||
+      parsed.pathname === "/image";
+
+    let shouldExtract = isFrontendProxy;
+
+    if (!shouldExtract && parsed.origin === "https://api.ryukomik.web.id") {
+      const pathParts = parsed.pathname.split("/").filter(Boolean);
+      const urlSource = pathParts[0];
+      if (urlSource === "doujindesu" || urlSource === "sekte") {
+        shouldExtract = true;
+      }
+    }
+
+    if (shouldExtract) {
       const nestedUrl = parsed.searchParams.get("url");
       if (nestedUrl) {
         return getOriginalImageUrl(nestedUrl);
