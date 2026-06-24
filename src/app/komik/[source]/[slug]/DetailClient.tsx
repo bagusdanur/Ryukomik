@@ -84,12 +84,52 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
   }, [user?.id]);
 
   // History dari localStorage
-  const extractChapter = useCallback((text?: string) => {
-    if (!text) return "";
-    const match =
-      text.match(/(?:ch\.?|chapter)\s*(\d+(\.\d+)?)/i) ||
-      text.match(/(\d+(\.\d+)?)/);
-    return match?.[1] ? `Ch. ${match[1]}` : text;
+  const extractChapter = useCallback((text?: string, slug?: string) => {
+    let raw = "";
+
+    // 1. Ambil dari text dulu jika mengandung kata "Chapter" atau "Ch"
+    if (text) {
+      const match = text.match(/(?:chapter|ch)\s*(\d+(\.\d+)?)/i);
+      if (match) {
+        raw = match[1];
+      } else {
+        // Jika text hanya mengandung angka di akhir (biasanya "Judul 01")
+        const endMatch = text.match(/(\d+(\.\d+)?)$/);
+        if (endMatch) {
+          raw = endMatch[1];
+        }
+      }
+    }
+
+    // 2. Fallback dari slug
+    if (!raw && slug) {
+      // Cari pola "chapter-X" atau "ch-X"
+      const match = slug.match(/(?:chapter|ch)[-/](\d+(\.\d+)?)/i);
+      if (match) {
+        raw = match[1];
+      } else {
+        // Fallback: ambil angka terakhir di slug jika ada
+        const lastNumMatch = slug.match(/(\d+)(?!.*\d)/);
+        if (lastNumMatch) {
+          raw = lastNumMatch[1];
+        }
+      }
+    }
+
+    // 🔥 POTONG ANGKA SETELAH TITIK
+    if (raw.includes(".")) {
+      raw = raw.split(".")[0];
+    }
+
+    // Hapus leading zero (misal "01" -> "1")
+    if (raw) {
+      const num = parseInt(raw, 10);
+      if (!isNaN(num)) {
+        return `Ch. ${num}`;
+      }
+    }
+
+    return raw ? `Ch. ${raw}` : "Ch. 1";
   }, []);
 
   useEffect(() => {
@@ -99,7 +139,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
       if (current) {
         setLastRead({
           ...current,
-          displayChapter: extractChapter(current.lastChapter),
+          displayChapter: extractChapter(current.lastChapter, current.lastChapterSlug),
         });
       }
     };

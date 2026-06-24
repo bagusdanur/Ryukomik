@@ -322,10 +322,52 @@ export default function TerbaruPage({
     return () => controller.abort();
   }, [initialFilters]);
 
-  const extractChapter = useCallback((text?: string) => {
-    if (!text) return "";
-    const match = text.match(/(?:ch\.?|chapter)\s*(\d+(\.\d+)?)/i);
-    return match ? `Ch. ${match[1]}` : text;
+  const extractChapter = useCallback((text?: string, slug?: string) => {
+    let raw = "";
+
+    // 1. Ambil dari text dulu jika mengandung kata "Chapter" atau "Ch"
+    if (text) {
+      const match = text.match(/(?:chapter|ch)\s*(\d+(\.\d+)?)/i);
+      if (match) {
+        raw = match[1];
+      } else {
+        // Jika text hanya mengandung angka di akhir (biasanya "Judul 01")
+        const endMatch = text.match(/(\d+(\.\d+)?)$/);
+        if (endMatch) {
+          raw = endMatch[1];
+        }
+      }
+    }
+
+    // 2. Fallback dari slug
+    if (!raw && slug) {
+      // Cari pola "chapter-X" atau "ch-X"
+      const match = slug.match(/(?:chapter|ch)[-/](\d+(\.\d+)?)/i);
+      if (match) {
+        raw = match[1];
+      } else {
+        // Fallback: ambil angka terakhir di slug jika ada
+        const lastNumMatch = slug.match(/(\d+)(?!.*\d)/);
+        if (lastNumMatch) {
+          raw = lastNumMatch[1];
+        }
+      }
+    }
+
+    // 🔥 POTONG ANGKA SETELAH TITIK
+    if (raw.includes(".")) {
+      raw = raw.split(".")[0];
+    }
+
+    // Hapus leading zero (misal "01" -> "1")
+    if (raw) {
+      const num = parseInt(raw, 10);
+      if (!isNaN(num)) {
+        return `Ch. ${num}`;
+      }
+    }
+
+    return raw ? `Ch. ${raw}` : "Ch. 1";
   }, []);
 
   // ✅ MEMOIZE getLastRead
@@ -334,7 +376,7 @@ export default function TerbaruPage({
     if (!item) return null;
     return {
       ...item,
-      lastChapter: extractChapter(item.lastChapter),
+      lastChapter: extractChapter(item.lastChapter, item.lastChapterSlug),
     };
   }, [history, extractChapter]);
 
