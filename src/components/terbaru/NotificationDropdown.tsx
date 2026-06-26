@@ -6,7 +6,7 @@ import { RiVipCrownLine } from "react-icons/ri";
 import { FiArrowRight, FiAward, FiCheckCircle, FiMessageCircle } from "react-icons/fi";
 import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useState, startTransition, type Dispatch, type SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
 import type { NotificationItem, SourceId } from "@/types/content";
 import {
@@ -24,6 +24,10 @@ interface NotificationDropdownProps {
   refreshNotifications?: () => Promise<void>;
 }
 
+interface FormattedNotificationItem extends NotificationItem {
+  formattedTime: string;
+}
+
 export default function NotificationDropdown({
   user,
   notifications,
@@ -34,13 +38,32 @@ export default function NotificationDropdown({
   refreshNotifications,
 }: NotificationDropdownProps) {
   const [activeTab, setActiveTab] = useState<"notif" | "info">("notif");
+
+  const formattedNotifications = useMemo<FormattedNotificationItem[]>(() => {
+    return notifications.map((notification) => {
+      let formattedTime = "";
+      try {
+        formattedTime = formatDistanceToNow(new Date(notification.created_at), {
+          addSuffix: true,
+          locale: id,
+        });
+      } catch (e) {
+        formattedTime = "";
+      }
+      return {
+        ...notification,
+        formattedTime,
+      };
+    });
+  }, [notifications]);
+
   const infoNotifications = useMemo(
-    () => notifications.filter((notification) => notification.type === TITLE_RUSH_EVENT_TYPE),
-    [notifications],
+    () => formattedNotifications.filter((notification) => notification.type === TITLE_RUSH_EVENT_TYPE),
+    [formattedNotifications],
   );
   const regularNotifications = useMemo(
-    () => notifications.filter((notification) => notification.type !== TITLE_RUSH_EVENT_TYPE),
-    [notifications],
+    () => formattedNotifications.filter((notification) => notification.type !== TITLE_RUSH_EVENT_TYPE),
+    [formattedNotifications],
   );
   const infoUnreadCount = infoNotifications.filter((notification) => !notification.is_read).length;
   const regularUnreadCount = regularNotifications.filter((notification) => !notification.is_read).length;
@@ -126,7 +149,9 @@ export default function NotificationDropdown({
     <div className="relative shrink-0">
       <button
         onClick={() => {
-          setShowNotif(!showNotif);
+          startTransition(() => {
+            setShowNotif(!showNotif);
+          });
           if (!showNotif) {
             void refreshNotifications?.();
           }
@@ -163,7 +188,7 @@ export default function NotificationDropdown({
                 <button
                   key={tab.key}
                   type="button"
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => startTransition(() => setActiveTab(tab.key))}
                   className={`flex h-8 items-center justify-center gap-1.5 rounded-lg text-[11px] font-black transition ${
                     active
                       ? "border border-[color:color-mix(in_srgb,var(--accent)_78%,white)] bg-[var(--accent)] text-white shadow-[inset_0_1px_0_color-mix(in_srgb,white_22%,transparent)]"
@@ -229,10 +254,7 @@ export default function NotificationDropdown({
                     </p>
                     <div className="mt-1.5 flex items-center justify-between gap-2">
                       <span className="text-[9px] text-white/35">
-                        {formatDistanceToNow(new Date(notification.created_at), {
-                          addSuffix: true,
-                          locale: id,
-                        })}
+                        {notification.formattedTime}
                       </span>
                       <span className="inline-flex items-center gap-1 rounded-md border border-[var(--line-soft)] bg-[color:color-mix(in_srgb,var(--surface-2)_65%,transparent)] px-1.5 py-1 text-[9px] font-bold text-white/70">
                         Main
@@ -272,10 +294,7 @@ export default function NotificationDropdown({
                     </p>
                     <div className="mt-1.5 flex items-center justify-between gap-2">
                       <span className="text-[9px] text-white/35">
-                        {formatDistanceToNow(new Date(notification.created_at), {
-                          addSuffix: true,
-                          locale: id,
-                        })}
+                        {notification.formattedTime}
                       </span>
                       <span className="inline-flex items-center gap-1 rounded-md border border-[var(--line-soft)] bg-[color:color-mix(in_srgb,var(--surface-2)_65%,transparent)] px-1.5 py-1 text-[9px] font-bold text-white/70">
                         Cek Premium
@@ -318,10 +337,7 @@ export default function NotificationDropdown({
                     </p>
                     <div className="mt-1.5 flex items-center justify-between gap-2">
                       <span className="text-[9px] text-white/35">
-                        {formatDistanceToNow(new Date(notification.created_at), {
-                          addSuffix: true,
-                          locale: id,
-                        })}
+                        {notification.formattedTime}
                       </span>
                       <span className="inline-flex items-center gap-1 rounded-md border border-[var(--line-soft)] bg-[color:color-mix(in_srgb,var(--surface-2)_65%,transparent)] px-1.5 py-1 text-[9px] font-bold text-white/70">
                         Lihat
@@ -348,10 +364,7 @@ export default function NotificationDropdown({
                         membalas komentar kamu
                       </p>
                       <span className="mt-1 block text-[9px] text-white/30">
-                        {formatDistanceToNow(new Date(notification.created_at), {
-                          addSuffix: true,
-                          locale: id,
-                        })}
+                        {notification.formattedTime}
                       </span>
                     </div>
                   </Link>

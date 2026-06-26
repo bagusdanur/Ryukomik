@@ -9,21 +9,25 @@ export default function YukiAiScript() {
 
   useEffect(() => {
     let active = true;
-    // Gunakan query param timestamp dan cache no-store untuk menghindari cache CDN / Browser
-    fetch(`/api/yuki-ai-settings?t=${Date.now()}`, { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (active) {
-          setEnabled(data.enabled !== false);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setEnabled(true); // default ke true jika gagal fetch
-        }
-      });
+    // Delay fetch 3 detik untuk membiarkan loading utama selesai
+    const timer = setTimeout(() => {
+      fetch(`/api/yuki-ai-settings?t=${Date.now()}`, { cache: "no-store" })
+        .then((res) => res.json())
+        .then((data) => {
+          if (active) {
+            setEnabled(data.enabled !== false);
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setEnabled(true); // default ke true jika gagal fetch
+          }
+        });
+    }, 3000);
+
     return () => {
       active = false;
+      clearTimeout(timer);
     };
   }, []);
 
@@ -36,16 +40,28 @@ export default function YukiAiScript() {
       // Pastikan script tidak dimuat ganda
       if (document.getElementById("yuki-ai-widget-script")) return;
 
-      const script = document.createElement("script");
-      script.id = "yuki-ai-widget-script";
-      script.src = "https://yuki.ryukomik.web.id/widget.js";
-      script.setAttribute("data-host", "https://yuki.ryukomik.web.id");
-      script.setAttribute("data-position", "right");
-      script.async = true;
+      let idleId: number | null = null;
 
-      document.body.appendChild(script);
+      const injectScript = () => {
+        const script = document.createElement("script");
+        script.id = "yuki-ai-widget-script";
+        script.src = "https://yuki.ryukomik.web.id/widget.js";
+        script.setAttribute("data-host", "https://yuki.ryukomik.web.id");
+        script.setAttribute("data-position", "right");
+        script.async = true;
+        document.body.appendChild(script);
+      };
+
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        idleId = window.requestIdleCallback(injectScript);
+      } else {
+        injectScript();
+      }
 
       return () => {
+        if (idleId && typeof window !== "undefined" && "cancelIdleCallback" in window) {
+          window.cancelIdleCallback(idleId);
+        }
         cleanupYukiWidget();
       };
     } else {
@@ -67,16 +83,9 @@ export default function YukiAiScript() {
       }
     });
 
-    // 3. Cari dan hapus div/button/kontainer melayang yang ID atau kelasnya mengandung kata "yuki"
-    document.querySelectorAll("div, button, section").forEach((node) => {
-      const id = node.id || "";
-      const className = typeof node.className === "string" ? node.className : "";
-      if (
-        id.toLowerCase().includes("yuki") || 
-        className.toLowerCase().includes("yuki")
-      ) {
-        node.remove();
-      }
+    // 3. Cari dan hapus div/button/kontainer melayang yang ID atau kelasnya mengandung kata "yuki" (optimasi selektor)
+    document.querySelectorAll('[id*="yuki" i], [class*="yuki" i]').forEach((node) => {
+      node.remove();
     });
   }
 

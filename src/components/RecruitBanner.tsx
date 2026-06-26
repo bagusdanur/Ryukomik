@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, startTransition } from "react";
 import {
   FaWhatsapp,
   FaStar,
@@ -145,28 +145,60 @@ export default function RecruitBanner() {
   const total = SLIDES.length;
   const { user } = useSupabaseUser();
   const [showLogin, setShowLogin] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.05 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   const resetTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => setCur((c) => (c + 1) % total), 3500);
+    if (!isVisible) return;
+    timerRef.current = setInterval(() => {
+      startTransition(() => {
+        setCur((c) => (c + 1) % total);
+      });
+    }, 3500);
   };
 
   const goTo = (n: number) => {
-    setCur(((n % total) + total) % total);
+    startTransition(() => {
+      setCur(((n % total) + total) % total);
+    });
     resetTimer();
   };
 
   useEffect(() => {
-    timerRef.current = setInterval(() => setCur((c) => (c + 1) % total), 3500);
+    if (!isVisible) return;
+    timerRef.current = setInterval(() => {
+      startTransition(() => {
+        setCur((c) => (c + 1) % total);
+      });
+    }, 3500);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [total]);
+  }, [total, isVisible]);
 
   const slide = SLIDES[cur];
 
   return (
-    <div className="p-3 sm:px-6">
+    <div ref={containerRef} className="p-3 sm:px-6">
       <div
         className="rk-card relative overflow-hidden rounded-3xl"
         onTouchStart={(e) => {
@@ -223,7 +255,7 @@ export default function RecruitBanner() {
           <div className="flex-shrink-0">
             {slide.iconKey === "robot" && !user ? (
               <button
-                onClick={() => setShowLogin(true)}
+                onClick={() => startTransition(() => setShowLogin(true))}
                 className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold transition ${slide.btn.className}`}
               >
                 {slide.btn.iconKey && (

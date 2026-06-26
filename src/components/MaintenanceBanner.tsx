@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, startTransition } from "react";
 
 type MaintenancePhase = "normal" | "upcoming" | "active";
 
@@ -20,6 +20,8 @@ export default function MaintenanceBanner({
   const [popupDismissed, setPopupDismissed] = useState(false);
 
   useEffect(() => {
+    let timerId: ReturnType<typeof setTimeout>;
+
     const check = () => {
       const now = new Date();
       const jakartaStr = now.toLocaleString("en-US", { timeZone: timezone });
@@ -41,21 +43,35 @@ export default function MaintenanceBanner({
         return `${mm}m ${String(ss).padStart(2, "0")}d`;
       };
 
+      let nextPhase: MaintenancePhase = "normal";
+      let nextTimeLeft = "";
+
       if (totalSec >= warnSec && totalSec < startSec) {
-        setPhase("upcoming");
-        setTimeLeft(fmt(startSec - totalSec));
+        nextPhase = "upcoming";
+        nextTimeLeft = fmt(startSec - totalSec);
       } else if (totalSec >= startSec && totalSec < endSec) {
-        setPhase("active");
+        nextPhase = "active";
+        nextTimeLeft = fmt(endSec - totalSec);
         setPopupDismissed(false);
-        setTimeLeft(fmt(endSec - totalSec));
       } else {
-        setPhase("normal");
+        nextPhase = "normal";
       }
+
+      setPhase(nextPhase);
+      if (nextTimeLeft) {
+        setTimeLeft(nextTimeLeft);
+      }
+
+      // Gunakan 30 detik jika di fase normal untuk menghemat CPU/thread, 1 detik jika countdown aktif
+      const delay = nextPhase === "normal" ? 30000 : 1000;
+      timerId = setTimeout(check, delay);
     };
 
     check();
-    const interval = setInterval(check, 1000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearTimeout(timerId);
+    };
   }, [startHour, endHour, timezone]);
 
   if (phase === "normal") return null;
@@ -165,7 +181,7 @@ export default function MaintenanceBanner({
           {/* Footer */}
           <div className="px-6 pb-6">
             <button
-              onClick={() => setPopupDismissed(true)}
+              onClick={() => startTransition(() => setPopupDismissed(true))}
               className="w-full font-semibold text-sm py-3 rounded-xl"
               style={{ backgroundColor: "#7d5fff", color: "#fff" }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#6b4fe0")}

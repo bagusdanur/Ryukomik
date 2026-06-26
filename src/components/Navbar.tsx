@@ -1,7 +1,7 @@
 "use client";
 import NotificationDropdown from "@/components/terbaru/NotificationDropdown";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, startTransition } from "react";
 import type { FormEvent } from "react";
 import type { NotificationItem, SourceId } from "@/types/content";
 import { supabase } from "@/lib/supabaseClient";
@@ -35,21 +35,28 @@ export default function Navbar() {
   const pathname = usePathname();
   const { avatarUrl, displayName } = useUserProfile(user);
   const userId = user?.id || null;
-  const [source, setSource] = useState<SourceKey>(() => {
-    if (typeof window === "undefined") return "kiryuu";
-    const saved = localStorage.getItem("source");
-    return (saved as SourceKey | null) || "kiryuu";
-  });
+  const [source, setSource] = useState<SourceKey>("kiryuu");
 
   const [showSource, setShowSource] = useState(false);
 
   useEffect(() => {
     const syncSource = () => {
       const saved = localStorage.getItem("source");
-      setSource((saved as SourceKey | null) || "kiryuu");
+      startTransition(() => {
+        setSource((saved as SourceKey | null) || "kiryuu");
+      });
     };
 
     syncSource();
+
+    if (typeof window !== "undefined") {
+      const savedAdult = localStorage.getItem("isAdult");
+      if (savedAdult === "true") {
+        startTransition(() => {
+          setIsAdult(true);
+        });
+      }
+    }
 
     window.addEventListener("sourceChange", syncSource);
 
@@ -61,7 +68,11 @@ export default function Navbar() {
   useEffect(() => {
     const saved = localStorage.getItem("source");
     const normalized = (saved as SourceKey | null) || "komiku";
-    const id = requestAnimationFrame(() => setSource(normalized));
+    const id = requestAnimationFrame(() => {
+      startTransition(() => {
+        setSource(normalized);
+      });
+    });
     return () => cancelAnimationFrame(id);
   }, [pathname]);
 
@@ -139,23 +150,12 @@ export default function Navbar() {
 
   const changeSource = (newSource: SourceKey) => {
     localStorage.setItem("source", newSource);
-    setSource(newSource);
+    startTransition(() => {
+      setSource(newSource);
+    });
 
     window.dispatchEvent(new Event("sourceChange"));
   };
-
-  useEffect(() => {
-    const handleChange = () => {
-      const updated = localStorage.getItem("source");
-      setSource((updated as SourceKey | null) || "komiku");
-    };
-
-    window.addEventListener("sourceChange", handleChange);
-
-    return () => {
-      window.removeEventListener("sourceChange", handleChange);
-    };
-  }, []);
 
   const sourceMap: Record<SourceKey, string> = {
     kiryuu: "1",
@@ -203,29 +203,32 @@ export default function Navbar() {
   };
 
   const [showAgeModal, setShowAgeModal] = useState(false);
-  const [isAdult, setIsAdult] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("isAdult") === "true";
-  });
+  const [isAdult, setIsAdult] = useState(false);
   const [targetSource, setTargetSource] = useState<SourceKey | null>(null);
 
   const handleAgeConfirm = () => {
-  localStorage.setItem("isAdult", "true");
-  setIsAdult(true);
-  setShowAgeModal(false);
+    localStorage.setItem("isAdult", "true");
+    startTransition(() => {
+      setIsAdult(true);
+      setShowAgeModal(false);
+    });
 
-  // 🔥 LANGSUNG CEK LOGIN
-  if (!user) {
-    setShowLogin(true);
-    return;
-  }
+    // 🔥 LANGSUNG CEK LOGIN
+    if (!user) {
+      startTransition(() => {
+        setShowLogin(true);
+      });
+      return;
+    }
 
-  // 🔥 kalau sudah login langsung masuk
-  if (targetSource) {
-    changeSource(targetSource);
-    setTargetSource(null);
-  }
-};
+    // 🔥 kalau sudah login langsung masuk
+    if (targetSource) {
+      changeSource(targetSource);
+      startTransition(() => {
+        setTargetSource(null);
+      });
+    }
+  };
 
 useEffect(() => {
   if (user && targetSource) {
@@ -433,7 +436,7 @@ useEffect(() => {
 
           <div className="relative">
             <button
-              onClick={() => setShowSource(!showSource)}
+              onClick={() => startTransition(() => setShowSource(!showSource))}
               className="rk-btn-ghost flex h-10 items-center gap-2 rounded-full px-3 text-sm"
             >
               <FaExchangeAlt className="text-xs" />
@@ -457,7 +460,7 @@ useEffect(() => {
           <div className="shrink-0 flex justify-center items-center">
             {!user ? (
               <button
-                onClick={() => setShowLogin(true)}
+                onClick={() => startTransition(() => setShowLogin(true))}
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 transition hover:bg-white/10"
                 aria-label="Login"
               >
@@ -490,7 +493,7 @@ useEffect(() => {
       {showNotif && (
         <div
           className="fixed inset-0 z-40"
-          onClick={() => setShowNotif(false)}
+          onClick={() => startTransition(() => setShowNotif(false))}
         />
       )}
 
