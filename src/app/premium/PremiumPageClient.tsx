@@ -1,9 +1,19 @@
 "use client";
 
-
 import { useState, useRef, useEffect, useMemo } from "react";
 import type { ChangeEvent } from "react";
-import { FiCheck, FiX, FiZap, FiUpload, FiLoader, FiRefreshCw, FiMessageSquare } from "react-icons/fi";
+import {
+  FiCheck,
+  FiX,
+  FiZap,
+  FiUpload,
+  FiLoader,
+  FiRefreshCw,
+  FiMessageSquare,
+  FiChevronRight,
+  FiChevronLeft,
+  FiAlertTriangle,
+} from "react-icons/fi";
 import { RiVipCrownLine } from "react-icons/ri";
 import { TbLayersLinked, TbBadge } from "react-icons/tb";
 import { HiOutlineSparkles } from "react-icons/hi2";
@@ -125,6 +135,54 @@ type ImgBbResponse = {
   };
 };
 
+function StepIndicator({ step }: { step: number }) {
+  const steps = ["Bayar", "Upload", "Konfirmasi"];
+  return (
+    <div className="flex items-center justify-center gap-1 mb-4 select-none">
+      {steps.map((label, i) => {
+        const idx = i + 1;
+        const isDone = idx < step;
+        const isActive = idx === step;
+        return (
+          <div key={idx} className="flex items-center gap-1">
+            <div className="flex flex-col items-center gap-0.5">
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black transition-all duration-300 ${
+                  isDone
+                    ? "bg-[#5DCAA5]/20 text-[#5DCAA5]"
+                    : isActive
+                    ? "bg-cyan-400/20 text-cyan-200 ring-1 ring-cyan-400/30 animate-pulse"
+                    : "bg-white/[0.06] text-white/25"
+                }`}
+              >
+                {isDone ? <FiCheck size={10} /> : idx}
+              </div>
+              <span
+                className={`text-[9px] font-bold uppercase tracking-widest transition-colors duration-300 ${
+                  isDone
+                    ? "text-[#5DCAA5]/80"
+                    : isActive
+                    ? "text-cyan-200"
+                    : "text-white/20"
+                }`}
+              >
+                {label}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div
+                className={`h-[1px] w-8 mb-3 transition-colors duration-300 ${
+                  isDone ? "bg-[#5DCAA5]/40" : "bg-white/[0.08]"
+                }`}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function PremiumPage() {
   const { user } = useSupabaseUser();
   const [showModal, setShowModal] = useState(false);
@@ -139,6 +197,8 @@ export default function PremiumPage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isSkAgreed, setIsSkAgreed] = useState(false);
   const [showSkModal, setShowSkModal] = useState(false);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   // user profile state
   const [profile, setProfile] = useState<PremiumProfile | null>(null);
@@ -163,11 +223,12 @@ export default function PremiumPage() {
     const diff = new Date(profile.premium_until).getTime() - Date.now();
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }, [profile?.premium_until]);
+
   const isActivePremium = isActivePremiumProfile(profile);
   const selectedPlan =
     premiumPlans.find((plan) => plan.id === selectedPlanId) || premiumPlans[0];
 
-  const closeModal = () => {
+  const doClose = () => {
     if (preview) URL.revokeObjectURL(preview);
     setShowModal(false);
     setShowQrisPreview(false);
@@ -176,6 +237,16 @@ export default function PremiumPage() {
     setError("");
     setSuccess(false);
     setIsSkAgreed(false);
+    setStep(1);
+    setShowCloseConfirm(false);
+  };
+
+  const handleCloseRequest = () => {
+    if (file && !success) {
+      setShowCloseConfirm(true);
+      return;
+    }
+    doClose();
   };
 
   const handleActivatePremium = () => {
@@ -183,6 +254,7 @@ export default function PremiumPage() {
       setShowLogin(true);
       return;
     }
+    setStep(1);
     setShowModal(true);
   };
 
@@ -195,7 +267,7 @@ export default function PremiumPage() {
       setError("File max 5MB");
       return;
     }
-    if (preview) URL.revokeObjectURL(preview); // cleanup URL lama
+    if (preview) URL.revokeObjectURL(preview);
     setFile(f);
     setPreview(URL.createObjectURL(f));
     setError("");
@@ -222,10 +294,12 @@ export default function PremiumPage() {
       formData.append("image", file);
       const imgRes = await fetch(
         `https://api.imgbb.com/1/upload?key=${process.env.NEXT_PUBLIC_IMGBB_API_KEY}`,
-        { method: "POST", body: formData },
+        { method: "POST", body: formData }
       );
       const imgData = (await imgRes.json()) as ImgBbResponse;
-      if (!imgData.success || !imgData.data?.url) throw new Error("Upload gambar gagal");
+      if (!imgData.success || !imgData.data?.url) {
+        throw new Error("Upload gambar gagal. Coba format lain atau kompres file.");
+      }
       const { error: dbErr } = await supabase.from("premium_requests").insert({
         user_id: user.id,
         name: profile?.username || user.email || "User",
@@ -244,6 +318,20 @@ export default function PremiumPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const goToStep2 = () => {
+    setError("");
+    setStep(2);
+  };
+
+  const goToStep3 = () => {
+    if (!file) {
+      setError("Upload bukti transfer dulu di Step 2!");
+      return;
+    }
+    setError("");
+    setStep(3);
   };
 
   return (
@@ -271,11 +359,10 @@ export default function PremiumPage() {
                   : "bg-white/[0.04] border-white/10 text-white/40"
               }`}
             >
-              {/* Avatar */}
               {profile.avatar_url ? (
                 <img
                   src={profile.avatar_url}
-                  alt={profile.username}
+                  alt={profile.username || "Avatar"}
                   className="w-6 h-6 rounded-full object-cover"
                 />
               ) : (
@@ -310,7 +397,7 @@ export default function PremiumPage() {
                 Basic
               </div>
               <div className="text-2xl font-black text-white">Gratis</div>
-              <div className="text-xs text-white/30 mt-1">
+              <div className="text-xs text-white/30 mt-1 font-medium">
                 Tanpa biaya apapun
               </div>
             </div>
@@ -335,7 +422,7 @@ export default function PremiumPage() {
                     >
                       {f.title}
                     </div>
-                    <div className="text-xs text-white/25 mt-0.5">
+                    <div className="text-xs text-white/25 mt-0.5 font-normal leading-normal">
                       {f.basic === null ? f.desc : f.basic}
                     </div>
                   </div>
@@ -345,7 +432,7 @@ export default function PremiumPage() {
 
             <button
               disabled
-              className="mt-6 w-full py-2.5 rounded-xl text-sm font-semibold bg-white/5 text-white/30 cursor-not-allowed border border-white/[0.06]"
+              className="mt-6 w-full py-2.5 rounded-xl text-sm font-semibold bg-white/5 text-white/30 cursor-not-allowed border border-white/[0.06] min-h-[44px]"
             >
               Paket Aktif
             </button>
@@ -363,7 +450,7 @@ export default function PremiumPage() {
                 </div>
               </div>
               <div className="text-2xl font-black text-white">Premium Akses</div>
-              <div className="text-xs text-white/30 mt-1">
+              <div className="text-xs text-white/30 mt-1 font-medium">
                 Dari Admin atau Support
               </div>
             </div>
@@ -380,7 +467,7 @@ export default function PremiumPage() {
                     <div className="text-sm font-medium text-white leading-tight">
                       {f.title}
                     </div>
-                    <div className="text-xs text-white/35 mt-0.5">
+                    <div className="text-xs text-white/35 mt-0.5 font-normal leading-normal">
                       {f.desc}
                     </div>
                     <div className="text-[10px] font-black uppercase tracking-widest text-cyan-200/80 mt-1">
@@ -393,7 +480,7 @@ export default function PremiumPage() {
 
             <div className="border-t border-white/[0.06] mt-5 pt-4">
               <div className="mb-4">
-                <div className="text-xs text-white/30 mb-3">
+                <div className="text-xs text-white/30 mb-3 font-semibold">
                   Pilih paket
                 </div>
                 <div className="grid gap-2">
@@ -404,7 +491,7 @@ export default function PremiumPage() {
                         key={plan.id}
                         type="button"
                         onClick={() => setSelectedPlanId(plan.id)}
-                        className={`rounded-2xl border px-3 py-3 text-left transition-all ${
+                        className={`rounded-2xl border px-3 py-3 text-left transition-all min-h-[44px] cursor-pointer ${
                           active
                             ? "border-cyan-200/50 bg-cyan-400/10"
                             : "border-white/[0.07] bg-white/[0.025] hover:border-white/15"
@@ -422,7 +509,7 @@ export default function PremiumPage() {
                                 </span>
                               )}
                             </div>
-                            <div className="mt-1 text-[11px] text-white/30">
+                            <div className="mt-1 text-[11px] text-white/30 font-medium">
                               {plan.durationDays} hari - {plan.note}
                             </div>
                           </div>
@@ -431,11 +518,11 @@ export default function PremiumPage() {
                               {formatRupiah(plan.amount)}
                             </div>
                             {plan.subtext && (
-                              <div className="text-[10px] text-white/40 mt-0.5">
+                              <div className="text-[10px] text-white/40 mt-0.5 font-medium">
                                 {plan.subtext}
                               </div>
                             )}
-                            <div className="text-[10px] text-white/30 mt-0.5">
+                            <div className="text-[10px] text-white/30 mt-0.5 font-medium">
                               via QRIS
                             </div>
                           </div>
@@ -448,13 +535,13 @@ export default function PremiumPage() {
 
               <div className="flex items-end justify-between mb-4">
                 <div>
-                  <div className="text-xs text-white/30 mb-1">
+                  <div className="text-xs text-white/30 mb-1 font-semibold">
                     Paket dipilih
                   </div>
                   <div className="text-3xl font-black text-white">
                     {formatRupiah(selectedPlan.amount)}
                   </div>
-                  <div className="text-xs text-white/30 mt-1">
+                  <div className="text-xs text-white/30 mt-1 font-medium">
                     {selectedPlan.name} - {selectedPlan.durationDays} hari
                   </div>
                 </div>
@@ -467,7 +554,7 @@ export default function PremiumPage() {
                 </div>
               </div>
               {isActivePremium ? (
-                <div className="w-full py-2.5 rounded-xl text-sm font-bold bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center gap-2">
+                <div className="w-full py-2.5 rounded-xl text-sm font-bold bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center gap-2 min-h-[44px]">
                   <RiVipCrownLine size={15} />
                   Aktif
                   {premiumDaysLeft !== null
@@ -477,7 +564,7 @@ export default function PremiumPage() {
               ) : (
                 <button
                   onClick={handleActivatePremium}
-                  className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-bold"
+                  className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-bold min-h-[44px] cursor-pointer"
                 >
                   <HiOutlineSparkles size={15} />
                   Aktifkan Premium
@@ -493,7 +580,7 @@ export default function PremiumPage() {
             href="https://chat.whatsapp.com/JJjlXcgdm90H5qNaJiXPDV"
             target="_blank"
             rel="noopener noreferrer"
-          className="rk-card-soft group flex items-center gap-3 rounded-2xl px-4 py-3.5 hover:border-cyan-200/20"
+            className="rk-card-soft group flex items-center gap-3 rounded-2xl px-4 py-3.5 hover:border-cyan-200/20"
           >
             <div className="w-9 h-9 rounded-xl bg-[#25d366]/15 flex items-center justify-center shrink-0 group-hover:bg-[#25d366]/25 transition-colors">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="#25d366">
@@ -527,233 +614,393 @@ export default function PremiumPage() {
         </p>
       </div>
 
-      {/* ── MODAL ── */}
+      {/* ── MODAL UTAMA DENGAN STEPPER (z-[60] & responsive bottom-sheet/center) ── */}
       {showModal && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-3 pb-24 pt-4 sm:p-4 bg-black/70"
-          onClick={closeModal}
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/80 px-0 sm:px-4 pb-0 pt-4 backdrop-blur-sm"
+          onClick={handleCloseRequest}
         >
           <div
-            className="rk-card relative max-h-[calc(100dvh-7rem)] w-full max-w-[340px] overflow-y-auto rounded-3xl sm:max-w-sm sm:max-h-[84vh]"
+            className="rk-card relative w-full sm:max-w-md max-h-[92vh] sm:max-h-[85vh] overflow-hidden rounded-t-[2rem] sm:rounded-[2rem] flex flex-col animate-[slideUp_0.3s_ease-out] pb-safe"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal handle bar (mobile) */}
+            {/* Modal handle bar untuk mobile */}
             <div className="flex justify-center pt-3 pb-1 sm:hidden">
-              <div className="w-10 h-1 rounded-full bg-white/10" />
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
             </div>
 
-            {/* Tombol close */}
+            {/* Tombol close interaktif (touch target besar) */}
             <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/[0.06] hover:bg-white/10 flex items-center justify-center transition-colors"
+              onClick={handleCloseRequest}
+              className="absolute top-4 right-4 w-11 h-11 rounded-full bg-white/[0.06] hover:bg-white/10 active:scale-95 flex items-center justify-center transition-all z-10 cursor-pointer"
+              aria-label="Tutup"
             >
-              <FiX size={14} className="text-white/50" />
+              <FiX size={18} className="text-white/60" />
             </button>
 
-            <div className="px-4 pb-3 pt-3">
+            {/* Body Modal */}
+            <div className="overflow-y-auto px-6 pb-6 pt-4 flex-1">
               {success ? (
-                /* ── Sukses ── */
-                <div className="flex flex-col items-center text-center py-4">
-                  <div className="w-14 h-14 rounded-full bg-[#5DCAA5]/15 flex items-center justify-center mb-4">
-                    <FiCheck size={24} className="text-[#5DCAA5]" />
+                /* ── Tampilan Sukses Pembayaran ── */
+                <div className="flex flex-col items-center text-center py-6 animate-fadeIn">
+                  <div className="w-16 h-16 rounded-full bg-[#5DCAA5]/15 flex items-center justify-center mb-4">
+                    <FiCheck size={32} className="text-[#5DCAA5]" />
                   </div>
-                  <h2 className="text-lg font-black text-white mb-2">
+                  <h2 className="text-xl font-black text-white mb-2">
                     Bukti Terkirim!
                   </h2>
-                  <p className="text-sm text-white/40 leading-relaxed">
-                    Admin akan verifikasi dalam 1×24 jam. Setelah disetujui akun
-                    kamu otomatis aktif Premium sesuai paket yang dipilih.
+                  <p className="text-sm text-white/40 leading-relaxed mb-1">
+                    Admin akan memverifikasi pembayaran Anda dalam 1×24 jam. Akun kamu otomatis aktif setelah disetujui.
                   </p>
-                  <button
-                    onClick={closeModal}
-                    className="mt-5 w-full py-2.5 rounded-xl text-sm font-bold bg-[var(--accent)] text-white"
-                  >
-                    Oke, Tutup
-                  </button>
+                  <p className="text-xs text-cyan-300/80 font-bold mb-6">
+                    Anda bisa mengecek status aktivasi di Halaman Profil.
+                  </p>
+                  <div className="w-full flex flex-col gap-2">
+                    <a
+                      href="/setting"
+                      className="w-full py-3 rounded-2xl text-sm font-bold bg-cyan-400/15 border border-cyan-400/20 text-cyan-200 text-center block min-h-[44px] cursor-pointer hover:bg-cyan-400/25 active:scale-[0.99] transition-all"
+                    >
+                      Lihat Profil
+                    </a>
+                    <button
+                      onClick={doClose}
+                      className="w-full py-3 rounded-2xl text-sm font-bold bg-[var(--accent)] hover:brightness-110 active:scale-[0.99] transition-all text-white min-h-[44px] cursor-pointer"
+                    >
+                      Oke, Tutup
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
-                  {/* ── Header modal ── */}
-                  <div className="mb-3">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <RiVipCrownLine size={13} className="text-cyan-200" />
-                      <span className="text-xs font-bold text-cyan-200 uppercase tracking-widest">
-                        Premium
+                  {/* Title & Info */}
+                  <div className="mb-4 pr-10">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <RiVipCrownLine size={14} className="text-cyan-200" />
+                      <span className="text-[10px] font-black text-cyan-200 uppercase tracking-widest">
+                        Langkah {step} dari 3
                       </span>
                     </div>
-                    <h2 className="text-[17px] font-black text-white">
-                      Bayar & Upload Bukti
+                    <h2 className="text-lg font-black text-white leading-snug">
+                      {step === 1 ? "Scan QRIS & Transfer" : step === 2 ? "Upload Bukti Pembayaran" : "Konfirmasi Pembelian"}
                     </h2>
-                    <p className="text-xs text-white/35 mt-0.5">
-                      Scan QR lalu kirim screenshot transferan kamu
-                    </p>
                   </div>
 
-                  <div className="mb-3 rounded-xl border border-cyan-200/15 bg-cyan-400/[0.06] px-3 py-2.5">
-                    <div className="flex items-center justify-between gap-3">
+                  {/* Stepper indicator */}
+                  <StepIndicator step={step} />
+
+                  {/* ──────────────── STEP 1: BAYAR ──────────────── */}
+                  {step === 1 && (
+                    <div className="animate-fadeIn space-y-4">
+                      {/* Compact Plan Selector inside Modal */}
                       <div>
-                        <p className="text-[11px] font-bold uppercase tracking-widest text-cyan-200/80">
-                          {selectedPlan.name}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-white/35">
-                          Premium aktif {selectedPlan.durationDays} hari
-                        </p>
-                      </div>
-                      <p className="text-base font-black text-white">
-                        {formatRupiah(selectedPlan.amount)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* ── User info (dari login) ── */}
-                  {profile && (
-                    <div className="flex items-center gap-3 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3 py-2 mb-3">
-                      {profile.avatar_url ? (
-                        <img
-                          src={profile.avatar_url}
-                          alt={profile.username}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-[11px] font-bold text-[var(--accent)]">
-                          {profile.username?.slice(0, 2)?.toUpperCase() || "??"}
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-[13px] font-semibold text-white">
-                          {profile.username}
-                        </p>
-                        <p className="text-[10px] text-white/30">
-                          Akun yang akan diaktifkan
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── QR QRIS ── */}
-                  <div className="bg-white rounded-2xl p-2.5 flex flex-col items-center mb-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setShowQrisPreview(true)}
-                      className="rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/60"
-                      aria-label="Buka QRIS fullscreen"
-                    >
-                      <img
-                        src={selectedPlan.qrisSrc}
-                        alt={`QR QRIS RyuDev ${selectedPlan.name}`}
-                        className="w-36 h-36 object-contain rounded-lg"
-                      />
-                    </button>
-                    <div className="mt-1.5 text-center">
-                      <p className="text-[11px] font-bold text-gray-700">
-                        RyuDev · QRIS
-                      </p>
-                      <p className="text-[11px] text-gray-400 font-mono">
-                        NMID: ID1026514213762
-                      </p>
-                      <p className="mt-1 text-[10px] font-medium text-gray-400">
-                        Tap QR untuk memperbesar
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-center mb-3">
-                    <div className="text-[22px] font-black text-white">
-                      {formatRupiah(selectedPlan.amount)}
-                    </div>
-                    <span className="ml-2 text-[10px] bg-[var(--accent)]/15 text-[var(--accent)] px-2 py-0.5 rounded-full font-bold uppercase">
-                      {selectedPlan.name}
-                    </span>
-                  </div>
-
-                  {/* ── Upload bukti ── */}
-                  <div
-                    className="mb-2 flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-white/10 p-2.5 hover:border-cyan-200/40"
-                    onClick={() => inputRef.current?.click()}
-                  >
-                    {preview ? (
-                      <img
-                        src={preview}
-                        className="w-full max-h-20 object-cover rounded-lg sm:max-h-24"
-                        alt="preview"
-                      />
-                    ) : (
-                      <>
-                        <div className="w-9 h-9 rounded-full bg-[var(--accent)]/10 flex items-center justify-center">
-                          <FiUpload size={16} className="text-cyan-200" />
-                        </div>
-                        <span className="text-xs text-white/40 text-center">
-                          Upload screenshot bukti transfer
-                          <br />
-                          <span className="text-white/20">
-                            JPG / PNG / WebP · max 5MB
-                          </span>
+                        <span className="text-[10px] font-bold text-white/30 uppercase tracking-wider block mb-2">
+                          Ganti Paket Pilihan
                         </span>
-                      </>
-                    )}
-                    <input
-                      ref={inputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="hidden"
-                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                      e.target.files?.[0] && handleFile(e.target.files[0])
-                    }
-                    />
-                  </div>
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                          {premiumPlans.map((plan) => {
+                            const active = selectedPlan.id === plan.id;
+                            return (
+                              <button
+                                key={plan.id}
+                                type="button"
+                                onClick={() => setSelectedPlanId(plan.id)}
+                                className={`shrink-0 rounded-2xl border px-3 py-2 text-left transition-all min-h-[44px] cursor-pointer ${
+                                  active
+                                    ? "border-cyan-200/50 bg-cyan-400/10"
+                                    : "border-white/[0.07] bg-white/[0.025] hover:border-white/15"
+                                }`}
+                              >
+                                <div className="text-xs font-black text-white">{plan.name}</div>
+                                <div className="text-[10px] font-bold text-white/50 mt-0.5">
+                                  {formatRupiah(plan.amount)}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
 
-                  {preview && (
-                    <button
-                      onClick={() => {
-                        if (preview) URL.revokeObjectURL(preview);
-                        setFile(null);
-                        setPreview(null);
-                      }}
-                      className="text-[11px] text-white/25 hover:text-white/50 mb-2 block transition-colors"
-                    >
-                      × Hapus foto
-                    </button>
+                      {/* Selected Info Summary */}
+                      <div className="rounded-2xl border border-cyan-200/15 bg-cyan-400/[0.05] p-3 flex justify-between items-center">
+                        <div>
+                          <p className="text-[11px] font-bold text-cyan-200 uppercase tracking-wider">
+                            Paket {selectedPlan.name}
+                          </p>
+                          <p className="text-[10px] text-white/35 mt-0.5">
+                            Aktif {selectedPlan.durationDays} Hari setelah disetujui
+                          </p>
+                        </div>
+                        <span className="text-base font-black text-white">
+                          {formatRupiah(selectedPlan.amount)}
+                        </span>
+                      </div>
+
+                      {/* QRIS Scan Area */}
+                      <div className="bg-white rounded-3xl p-3.5 flex flex-col items-center border border-white/10">
+                        <button
+                          type="button"
+                          onClick={() => setShowQrisPreview(true)}
+                          className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/60 cursor-pointer active:scale-[0.98] transition-all"
+                          aria-label="Perbesar QRIS"
+                        >
+                          <img
+                            src={selectedPlan.qrisSrc}
+                            alt="QRIS QR Code"
+                            className="w-40 h-40 object-contain mx-auto"
+                          />
+                        </button>
+                        <div className="mt-2.5 text-center">
+                          <p className="text-xs font-black text-gray-800">
+                            RyuDev · QRIS GPN
+                          </p>
+                          <p className="text-[10px] text-gray-400 font-mono mt-0.5 select-all">
+                            NMID: ID1026514213762
+                          </p>
+                          <p className="mt-1 text-[9px] font-bold text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full inline-block">
+                            Tap gambar untuk memperbesar
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="pt-2">
+                        <button
+                          onClick={goToStep2}
+                          className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all"
+                        >
+                          Saya Sudah Transfer
+                          <FiChevronRight size={16} />
+                        </button>
+                      </div>
+                    </div>
                   )}
 
-                  {error && (
-                    <p className="text-xs text-red-400 mb-2">{error}</p>
-                  )}
-
-                  <div className="mb-2 flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      id="sk-agree"
-                      checked={isSkAgreed}
-                      onChange={(e) => setIsSkAgreed(e.target.checked)}
-                      className="mt-0.5 rounded border-white/20 bg-white/5 text-[var(--accent)] focus:ring-[var(--accent)]"
-                    />
-                    <label htmlFor="sk-agree" className="text-xs text-white/50 leading-relaxed">
-                      Saya setuju dengan{" "}
-                      <button
-                        type="button"
-                        onClick={() => setShowSkModal(true)}
-                        className="text-cyan-400 underline underline-offset-2 hover:text-cyan-300"
-                      >
-                        Syarat & Ketentuan Premium
-                      </button>
-                    </label>
-                  </div>
-
-                  {/* ── Tombol kirim ── */}
-                  <div className="sticky bottom-0 z-10 -mx-4 mt-2 bg-[var(--surface-1)] px-4 pb-3 pt-2">
-                    <button
-                      onClick={handleSubmit}
-                      disabled={loading || !isSkAgreed}
-                      className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {loading ? (
-                        <FiLoader size={14} />
-                      ) : (
-                        <HiOutlineSparkles size={14} />
+                  {/* ──────────────── STEP 2: UPLOAD ──────────────── */}
+                  {step === 2 && (
+                    <div className="animate-fadeIn space-y-4">
+                      {/* Active profile review */}
+                      {profile && (
+                        <div className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.06] rounded-2xl p-3">
+                          {profile.avatar_url ? (
+                            <img
+                              src={profile.avatar_url}
+                              alt="Profile"
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-xs font-bold text-[var(--accent)]">
+                              {profile.username?.slice(0, 2)?.toUpperCase() || "??"}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-white truncate">
+                              {profile.username}
+                            </p>
+                            <p className="text-[10px] text-white/30">
+                              Akun tujuan aktivasi premium
+                            </p>
+                          </div>
+                        </div>
                       )}
-                      {loading ? "Mengirim..." : "Kirim Bukti Pembayaran"}
-                    </button>
-                  </div>
+
+                      {/* Upload Box Area */}
+                      <div
+                        className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-white/10 p-5 hover:border-cyan-200/40 hover:bg-white/[0.01] transition-all min-h-[160px]"
+                        onClick={() => inputRef.current?.click()}
+                      >
+                        {preview ? (
+                          <div className="relative w-full flex flex-col items-center">
+                            <img
+                              src={preview}
+                              className="w-full max-h-48 object-contain rounded-2xl border border-white/10"
+                              alt="Bukti Transfer"
+                            />
+                            <p className="text-[10px] text-white/40 mt-2 text-center underline">
+                              Tap area untuk mengganti foto
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="w-12 h-12 rounded-full bg-cyan-400/10 flex items-center justify-center text-cyan-300">
+                              <FiUpload size={22} />
+                            </div>
+                            <div className="text-center">
+                              <span className="text-xs font-bold text-white/70 block">
+                                Klik / Tap untuk Upload Bukti
+                              </span>
+                              <span className="text-[10px] text-white/30 block mt-1">
+                                Format: JPG, PNG, WebP (Maks 5MB)
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        <input
+                          ref={inputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                            e.target.files?.[0] && handleFile(e.target.files[0])
+                          }
+                        />
+                      </div>
+
+                      {/* Image clean handler */}
+                      {file && (
+                        <div className="flex items-center justify-between px-2 py-1 bg-white/[0.02] rounded-xl border border-white/[0.05]">
+                          <span className="text-[11px] text-white/50 truncate max-w-[70%]">
+                            📄 {file.name}
+                          </span>
+                          <button
+                            onClick={() => {
+                              if (preview) URL.revokeObjectURL(preview);
+                              setFile(null);
+                              setPreview(null);
+                            }}
+                            className="text-[10px] font-bold text-red-400 hover:text-red-300 active:scale-95 transition-all p-1.5 cursor-pointer min-h-[36px] flex items-center"
+                          >
+                            Hapus File
+                          </button>
+                        </div>
+                      )}
+
+                      {error && (
+                        <p className="text-xs text-red-400 font-medium px-1">
+                          ⚠️ {error}
+                        </p>
+                      )}
+
+                      {/* Navigation buttons */}
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          onClick={() => { setError(""); setStep(1); }}
+                          className="flex items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] active:scale-95 transition-all text-sm font-bold text-white/70 px-4 min-h-[44px] cursor-pointer"
+                        >
+                          <FiChevronLeft size={16} />
+                          Kembali
+                        </button>
+                        <button
+                          onClick={goToStep3}
+                          className="rk-btn-primary flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all"
+                        >
+                          Lanjut Konfirmasi
+                          <FiChevronRight size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ──────────────── STEP 3: KONFIRMASI ──────────────── */}
+                  {step === 3 && (
+                    <div className="animate-fadeIn space-y-4">
+                      {/* Summary details */}
+                      <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-3">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-white/40">Paket Premium</span>
+                          <span className="font-bold text-white">{selectedPlan.name}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-white/40">Durasi Aktif</span>
+                          <span className="font-bold text-white">{selectedPlan.durationDays} Hari</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-white/40">Jumlah Bayar</span>
+                          <span className="font-black text-cyan-200 text-sm">
+                            {formatRupiah(selectedPlan.amount)}
+                          </span>
+                        </div>
+                        {profile && (
+                          <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs">
+                            <span className="text-white/40">Akun Penerima</span>
+                            <span className="font-bold text-white truncate max-w-[150px]">{profile.username}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Small receipt preview */}
+                      {preview && (
+                        <div className="rounded-2xl border border-white/[0.06] overflow-hidden flex items-center gap-3 p-2 bg-white/[0.01]">
+                          <img
+                            src={preview}
+                            className="w-12 h-12 rounded-lg object-cover border border-white/10 shrink-0"
+                            alt="Bukti"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">
+                              Bukti Pembayaran
+                            </p>
+                            <p className="text-xs text-white/60 truncate font-mono mt-0.5">
+                              {file?.name}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Terms & Conditions Checkbox - DIRECTLY VISIBLE */}
+                      <div className="rounded-2xl border border-cyan-400/10 bg-cyan-400/[0.02] p-4.5">
+                        <label
+                          htmlFor="sk-agree"
+                          className="flex items-start gap-3 cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            id="sk-agree"
+                            checked={isSkAgreed}
+                            onChange={(e) => setIsSkAgreed(e.target.checked)}
+                            className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-[var(--accent)] focus:ring-[var(--accent)] shrink-0 cursor-pointer"
+                          />
+                          <span className="text-xs text-white/50 leading-relaxed select-none">
+                            Saya menyetujui seluruh{" "}
+                            <button
+                              type="button"
+                              onClick={() => setShowSkModal(true)}
+                              className="text-cyan-300 underline underline-offset-2 hover:text-cyan-200 font-bold inline"
+                            >
+                              Syarat &amp; Ketentuan Premium
+                            </button>{" "}
+                            yang berlaku di RyuKomik.
+                          </span>
+                        </label>
+                      </div>
+
+                      {error && (
+                        <p className="text-xs text-red-400 font-medium px-1">
+                          ⚠️ {error}
+                        </p>
+                      )}
+
+                      {/* Hint centang */}
+                      {!isSkAgreed && (
+                        <div className="text-center bg-amber-500/10 border border-amber-500/20 text-amber-300/90 text-[10px] font-bold rounded-xl py-1.5 px-3">
+                          Silakan centang persetujuan Syarat &amp; Ketentuan untuk mengirim bukti.
+                        </div>
+                      )}
+
+                      {/* Step 3 Action Buttons */}
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          disabled={loading}
+                          onClick={() => { setError(""); setStep(2); }}
+                          className="flex items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] active:scale-95 transition-all text-sm font-bold text-white/70 px-4 min-h-[44px] cursor-pointer disabled:opacity-50"
+                        >
+                          <FiChevronLeft size={16} />
+                          Kembali
+                        </button>
+                        <button
+                          onClick={handleSubmit}
+                          disabled={loading || !isSkAgreed}
+                          className="rk-btn-primary flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 hover:brightness-110 active:scale-[0.99] transition-all"
+                        >
+                          {loading ? (
+                            <FiLoader size={16} className="animate-spin" />
+                          ) : (
+                            <HiOutlineSparkles size={16} />
+                          )}
+                          {loading ? "Mengirim..." : "Kirim Bukti Pembayaran"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -761,30 +1008,69 @@ export default function PremiumPage() {
         </div>
       )}
 
+      {/* ── DIALOG KONFIRMASI TUTUP MODAL (z-[70]) ── */}
+      {showCloseConfirm && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 px-6 backdrop-blur-xs"
+          onClick={() => setShowCloseConfirm(false)}
+        >
+          <div
+            className="rk-card rounded-[2rem] p-6 w-full max-w-[320px] animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0 text-amber-400">
+                <FiAlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Batalkan Pengajuan?</h3>
+                <p className="text-[11px] text-white/40 mt-1 leading-normal">
+                  Bukti transfer yang sudah diupload akan dihapus. Anda harus mengulangi proses dari awal.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowCloseConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-white/[0.05] hover:bg-white/10 active:scale-95 transition-all text-white/70 min-h-[44px] cursor-pointer"
+              >
+                Lanjutkan
+              </button>
+              <button
+                onClick={doClose}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-red-500/20 text-red-400 hover:bg-red-500/30 active:scale-95 transition-all min-h-[44px] cursor-pointer"
+              >
+                Ya, Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── QRIS Fullscreen Preview (z-[70]) ── */}
       {showQrisPreview && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 p-4"
           onClick={() => setShowQrisPreview(false)}
         >
           <button
             type="button"
             onClick={() => setShowQrisPreview(false)}
-            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/15"
+            className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 active:scale-95 transition-all cursor-pointer"
             aria-label="Tutup QRIS fullscreen"
           >
-            <FiX size={18} />
+            <FiX size={20} />
           </button>
           <img
             src={selectedPlan.qrisSrc}
-            alt={`QR QRIS RyuDev ${selectedPlan.name} fullscreen`}
-            className="max-h-[86vh] w-full max-w-[420px] rounded-2xl object-contain"
+            alt="QRIS Fullscreen"
+            className="max-h-[80vh] w-full max-w-[400px] rounded-3xl object-contain bg-white p-4"
             onClick={(e) => e.stopPropagation()}
           />
         </div>
       )}
 
       {showSkModal && <SkPremiumModal close={() => setShowSkModal(false)} />}
-
       {showLogin && <LoginModal close={() => setShowLogin(false)} />}
     </>
   );
