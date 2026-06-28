@@ -98,6 +98,7 @@ const nextConfig = {
         "/bookmark/:path*",
         "/history/:path*",
         "/premium/:path*",
+        "/premium-pay/:path*",
         "/auth/:path*",
         "/u/:path*",
         "/api/comments",
