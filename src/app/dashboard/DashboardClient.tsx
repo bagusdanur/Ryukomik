@@ -90,6 +90,21 @@ type PremiumRequest = {
   } | null;
 };
 
+export type PaymentTransaction = {
+  id: string;
+  order_id: string;
+  amount: number;
+  status: string;
+  payment_method?: string | null;
+  package_name: string;
+  duration_days: number;
+  created_at: string;
+  profiles?: {
+    username?: string | null;
+    avatar_url?: string | null;
+  } | null;
+};
+
 type ModeratedComment = {
   id: string;
   content?: string | null;
@@ -176,6 +191,12 @@ export default function AdminDashboard() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [proofModal, setProofModal] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
+
+  // auto transactions
+  const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>([]);
+  const [paymentTransactionsLoading, setPaymentTransactionsLoading] = useState(false);
+  const [paymentTransactionsFilter, setPaymentTransactionsFilter] = useState("all");
+
   const [sourceHealth, setSourceHealth] = useState<SourceHealth | null>(null);
   const [sourceHealthLoading, setSourceHealthLoading] = useState(false);
   const [healthNotice, setHealthNotice] = useState("");
@@ -753,6 +774,30 @@ export default function AdminDashboard() {
     if (authed && page === "requests") fetchRequests();
   }, [authed, page, fetchRequests]);
 
+  // ── payment transactions ────
+  const fetchPaymentTransactions = useCallback(async () => {
+    setPaymentTransactionsLoading(true);
+    try {
+      const token = await getAdminToken();
+      if (!token) return;
+
+      const params = new URLSearchParams({ filter: paymentTransactionsFilter });
+      const res = await fetch(`/api/admin/payment-transactions?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Gagal memuat transaksi otomatis.");
+
+      setPaymentTransactions((json?.transactions ?? []) as PaymentTransaction[]);
+    } finally {
+      setPaymentTransactionsLoading(false);
+    }
+  }, [paymentTransactionsFilter, getAdminToken]);
+
+  useEffect(() => {
+    if (authed && page === "requests") fetchPaymentTransactions();
+  }, [authed, page, fetchPaymentTransactions]);
+
   const fetchSourceHealth = useCallback(async () => {
     setSourceHealthLoading(true);
     try {
@@ -1191,6 +1236,11 @@ export default function AdminDashboard() {
             setRequestFilter={setRequestFilter}
             setProofModal={setProofModal}
             handleRequestAction={handleRequestAction}
+            paymentTransactions={paymentTransactions}
+            paymentTransactionsLoading={paymentTransactionsLoading}
+            paymentTransactionsFilter={paymentTransactionsFilter}
+            setPaymentTransactionsFilter={setPaymentTransactionsFilter}
+            fetchPaymentTransactions={fetchPaymentTransactions}
           />
         )}
         {/* ══ COMMENTS PAGE ══ */}

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     const PROJECT_SLUG = process.env.PAYMENT_GATEWAY_PROJECT_SLUG;
     const API_KEY = process.env.PAYMENT_GATEWAY_API_KEY;
     
-    if (PROJECT_SLUG && API_KEY && payment_method !== "sandbox") {
+    if (PROJECT_SLUG && API_KEY) {
       try {
         const verifyUrl = `https://app.pakasir.com/api/transactiondetail?project=${PROJECT_SLUG}&amount=${amount}&order_id=${order_id}&api_key=${API_KEY}`;
         const verifyRes = await fetch(verifyUrl);

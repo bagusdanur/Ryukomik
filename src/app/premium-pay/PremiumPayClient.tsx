@@ -79,7 +79,7 @@ const premiumPlans = [
     id: "1m",
     name: "1 Bulan",
     durationDays: 30,
-    amount: 10000,
+    amount: 12000,
     badge: "Harga Normal",
     badgeClass: "bg-white/[0.06] text-white/40 border border-white/[0.08]",
     note: "Coba Premium",
@@ -88,21 +88,21 @@ const premiumPlans = [
     id: "3m",
     name: "3 Bulan",
     durationDays: 90,
-    amount: 25000,
+    amount: 27000,
     badge: "Hemat 17%",
     badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
     note: "Lebih praktis",
-    subtext: "≈ Rp 8.333/bulan",
+    subtext: "≈ Rp 9.000/bulan",
   },
   {
     id: "6m",
     name: "6 Bulan",
     durationDays: 180,
-    amount: 45000,
+    amount: 47000,
     badge: "Hemat 25%",
     badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
     note: "Aktif lebih lama",
-    subtext: "≈ Rp 7.500/bulan",
+    subtext: "≈ Rp 7.833/bulan",
   },
 ];
 
@@ -338,32 +338,9 @@ export default function PremiumPayClient() {
     return () => clearInterval(pollingInterval);
   }, [step, paymentData]);
 
-  const handleSimulatePayment = async () => {
-    if (!paymentData?.order_id) return;
-    setLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      
-      const res = await fetch("/api/payment/simulate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { "Authorization": `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          order_id: paymentData.order_id,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal simulasi");
-      
-      // We don't change step here immediately, the polling will detect the status change
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Simulasi gagal");
-      setLoading(false);
-    }
+  const checkPaymentStatus = async () => {
+    // Implement polling logic if needed here, 
+    // but the system relies on webhook updating the DB anyway.
   };
 
   const copyToClipboard = (text: string) => {
@@ -374,11 +351,6 @@ export default function PremiumPayClient() {
   return (
     <>
       <div className="rk-page px-4 pb-24 pt-20 text-white relative">
-        {/* Sandbox Badge */}
-        <div className="absolute top-24 right-4 bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5 z-10 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-          Sandbox Mode
-        </div>
 
         {/* Heading */}
         <div className="max-w-xl mx-auto text-center mb-8 pt-4">
@@ -843,16 +815,7 @@ export default function PremiumPayClient() {
                         <p className="text-xs text-white/40">Halaman ini akan otomatis terupdate setelah Anda melakukan pembayaran.</p>
                       </div>
 
-                      {/* SANDBOX SIMULATION BUTTON */}
-                      <div className="pt-4 border-t border-dashed border-white/10">
-                        <button
-                          onClick={handleSimulatePayment}
-                          disabled={loading}
-                          className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold min-h-[44px] cursor-pointer bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all disabled:opacity-50"
-                        >
-                          {loading ? <FiLoader size={16} className="animate-spin" /> : "Simulasi Pembayaran (Sandbox)"}
-                        </button>
-                      </div>
+                      {/* Simulai Button removed for Production */}
                     </div>
                   )}
                 </>
