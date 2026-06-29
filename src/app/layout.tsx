@@ -15,6 +15,7 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./globals.css";
 import SWRegister from "./sw-register";
 import AdBanner from "@/components/AdBanner";
+import AntiAdblock from "@/components/AntiAdblock";
 import YukiAiScript from "@/components/YukiAiScript";
 
 export const viewport: Viewport = {
@@ -102,6 +103,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {children}
         <InstallPWA />
         <MonetagScript />
+        <AntiAdblock />
         <AdBanner />
         <Footer />
         <Analytics />
