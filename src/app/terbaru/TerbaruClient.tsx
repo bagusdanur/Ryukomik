@@ -180,6 +180,7 @@ export default function TerbaruPage({
   );
   const [data, setData] = useState<UpdateItem[]>(initialListing);
   const [page, setPage] = useState(1);
+  const pageRef = useRef(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -383,6 +384,7 @@ export default function TerbaruPage({
   const resetListing = useCallback(() => {
     setData([]);
     setPage(1);
+    pageRef.current = 1;
     setHasMore(true);
   }, []);
 
@@ -524,7 +526,8 @@ export default function TerbaruPage({
           document.documentElement.scrollHeight - 200;
 
         if (bottom && !loadingRef.current && hasMore && !error) {
-          const nextPage = page + 1;
+          const nextPage = pageRef.current + 1;
+          pageRef.current = nextPage;
           setPage(nextPage);
           fetchData(nextPage);
         }
@@ -538,7 +541,7 @@ export default function TerbaruPage({
         clearTimeout(scrollTimeoutRef.current);
       }
     };
-  }, [hasMore, fetchData, page, error]);
+  }, [hasMore, fetchData, error]);
 
   // ✅ RESET & FETCH saat filter/source berubah
   useEffect(() => {

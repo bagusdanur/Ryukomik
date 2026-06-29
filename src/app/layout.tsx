@@ -92,7 +92,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             `,
           }}
         />
-        <MonetagScript />
       </head>
       <body className="antialiased">
         
@@ -102,6 +101,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Navbar />
         {children}
         <InstallPWA />
+        <MonetagScript />
         <AdBanner />
         <Footer />
         <Analytics />

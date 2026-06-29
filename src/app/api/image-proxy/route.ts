@@ -41,9 +41,27 @@ export async function GET(request: NextRequest) {
     const contentType = response.headers.get("content-type") || "image/jpeg";
     const buffer = await response.arrayBuffer();
 
+    // Validasi: jika origin kirim Content-Length, pastikan buffer lengkap (tidak truncated)
+    const expectedLength = Number(response.headers.get("content-length") || 0);
+    if (expectedLength > 0 && buffer.byteLength < expectedLength) {
+      return new NextResponse("Incomplete image response from origin", {
+        status: 502,
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
+
+    // Validasi: gambar valid minimal ~1KB (response kecil kemungkinan corrupt/placeholder)
+    if (buffer.byteLength < 1024) {
+      return new NextResponse("Image too small, likely corrupt or empty", {
+        status: 502,
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
+
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": contentType,
+        "Content-Length": String(buffer.byteLength),
         // Caching 7 hari di browser & CDN / Cloudflare DNS Cache agar server hemat bandwidth
         "Cache-Control": "public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400",
       },

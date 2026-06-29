@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import type { HTMLAttributeReferrerPolicy } from "react";
-import Image from "next/image";
 
 type FallbackImageProps = {
   src?: string;
@@ -60,16 +59,23 @@ export default function FallbackImage({
   }
 
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       referrerPolicy={referrerPolicy}
-      priority={loading === "eager"}
+      loading={loading || "lazy"}
+      fetchPriority={fetchPriority}
+      decoding={decoding || "async"}
       src={activeSrc}
       alt={alt}
       sizes={sizes || "(max-width: 640px) 32vw, (max-width: 1024px) 20vw, 160px"}
       className={className}
-      fill
-      style={{ objectFit: "cover" }}
-      unoptimized={activeSrc.startsWith("/api/")}
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+      }}
       onError={() => {
         setStatus((current) => {
           const currentIndex = current.key === urlsKey ? current.index : 0;
