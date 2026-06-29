@@ -34,9 +34,23 @@ export default function MonetagScript() {
     };
   }, [loading, isPremium]);
 
-  if (loading || isPremium) return null;
+  // Load script monetag secara dinamis menggunakan useEffect
+  useEffect(() => {
+    if (loading || isPremium) return;
 
-  return (
-    <script dangerouslySetInnerHTML={{ __html: `(function(s){s.dataset.zone='10944835',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))` }} />
-  );
+    const s = document.createElement("script");
+    s.dataset.zone = "10944835";
+    s.src = "https://al5sm.com/tag.min.js";
+
+    const target = [document.documentElement, document.body].filter(Boolean).pop();
+    if (target) {
+      target.appendChild(s);
+    }
+
+    return () => {
+      s.remove();
+    };
+  }, [loading, isPremium]);
+
+  return null;
 }

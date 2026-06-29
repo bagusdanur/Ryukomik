@@ -14,13 +14,7 @@ export async function GET(request: Request) {
 
     let query = supabaseAdmin
       .from("payment_transactions")
-      .select(`
-        *,
-        profiles (
-          username,
-          avatar_url
-        )
-      `)
+      .select("*")
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -28,11 +22,29 @@ export async function GET(request: Request) {
       query = query.eq("status", filter);
     }
 
-    const { data, error } = await query;
+    const { data: transactions, error } = await query;
     if (error) throw error;
     
-    return privateAdminJson({ transactions: data || [] });
-  } catch (error) {
-    return adminErrorResponse(error, "Gagal memuat data transaksi otomatis");
+    let mergedTransactions = [];
+    if (transactions && transactions.length > 0) {
+      const userIds = Array.from(new Set(transactions.map((t: any) => t.user_id)));
+      const { data: profiles, error: profilesError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .in("id", userIds);
+      
+      if (profilesError) throw profilesError;
+
+      const profileMap = new Map(profiles?.map((p: any) => [p.id, p]));
+      mergedTransactions = transactions.map((t: any) => ({
+        ...t,
+        profiles: profileMap.get(t.user_id) || null
+      }));
+    }
+
+    return privateAdminJson({ transactions: mergedTransactions });
+  } catch (error: any) {
+    console.error("Error fetching payment transactions:", error);
+    return adminErrorResponse(error, error?.message || "Gagal memuat data transaksi otomatis");
   }
 }
