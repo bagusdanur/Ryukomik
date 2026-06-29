@@ -184,7 +184,10 @@ export default function TerbaruPage({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [history] = useState(getHistory);
+  const [history, setHistory] = useState<ReadHistoryItem[]>([]);
+  useEffect(() => {
+    setHistory(getHistory());
+  }, []);
   const loadingRef = useRef(false);
   const { user } = useSupabaseUser();
   const userId = user?.id || null;
@@ -592,10 +595,13 @@ export default function TerbaruPage({
   }, [source]);
 
   const [showAgeModal, setShowAgeModal] = useState(false);
-  const [isAdult, setIsAdult] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("isAdult") === "true";
-  });
+  const [isAdult, setIsAdult] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsAdult(localStorage.getItem("isAdult") === "true");
+    }
+  }, []);
 
   const handleAgeConfirm = () => {
     localStorage.setItem("isAdult", "true");
