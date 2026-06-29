@@ -37,18 +37,11 @@ export default function MonetagScript() {
   if (loading || isPremium) return null;
 
   return (
-    <Script id="monetag-script" strategy="lazyOnload">
-      {`
-        (function(s){
-          s.dataset.zone='10944835';
-          s.src='https://al5sm.com/tag.min.js';
-        })(
-          [document.documentElement, document.body]
-            .filter(Boolean)
-            .pop()
-            .appendChild(document.createElement('script'))
-        );
-      `}
-    </Script>
+    <Script 
+      id="monetag-script" 
+      strategy="afterInteractive"
+      src="https://al5sm.com/tag.min.js"
+      data-zone="10944835"
+    />
   );
 }

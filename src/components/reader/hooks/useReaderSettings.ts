@@ -53,28 +53,28 @@ function readStoredSettings(): ReaderSettings {
 
 export function useReaderSettings() {
   const [stored] = useState(readStoredSettings);
-  const [autoNext,        setAutoNext]        = useState(stored.autoNext);
-  const [scrollSpeed,     setScrollSpeed]     = useState(stored.scrollSpeed);
+  const [autoNext, setAutoNext] = useState(stored.autoNext);
+  const [scrollSpeed, setScrollSpeed] = useState(stored.scrollSpeed);
   const [tapScrollAmount, setTapScrollAmount] = useState(stored.tapScrollAmount);
-  const [readingMode,     setReadingMode]     = useState(stored.readingMode);
-  const [imageScaling,    setImageScaling]    = useState(stored.imageScaling);
-  const [pageSpacing,     setPageSpacing]     = useState(stored.pageSpacing);
+  const [readingMode, setReadingMode] = useState(stored.readingMode);
+  const [imageScaling, setImageScaling] = useState(stored.imageScaling);
+  const [pageSpacing, setPageSpacing] = useState(stored.pageSpacing);
 
   useEffect(() => {
-    localStorage.setItem("reader:autoNext",        autoNext ? "1" : "0");
-    localStorage.setItem("reader:scrollSpeed",     scrollSpeed.toString());
+    localStorage.setItem("reader:autoNext", autoNext ? "1" : "0");
+    localStorage.setItem("reader:scrollSpeed", scrollSpeed.toString());
     localStorage.setItem("reader:tapScrollAmount", tapScrollAmount.toString());
-    localStorage.setItem("reader:readingMode",     readingMode);
-    localStorage.setItem("reader:imageScaling",    imageScaling);
-    localStorage.setItem("reader:pageSpacing",     pageSpacing);
+    localStorage.setItem("reader:readingMode", readingMode);
+    localStorage.setItem("reader:imageScaling", imageScaling);
+    localStorage.setItem("reader:pageSpacing", pageSpacing);
   }, [autoNext, scrollSpeed, tapScrollAmount, readingMode, imageScaling, pageSpacing]);
 
   return {
-    autoNext,        setAutoNext,
-    scrollSpeed,     setScrollSpeed,
+    autoNext, setAutoNext,
+    scrollSpeed, setScrollSpeed,
     tapScrollAmount, setTapScrollAmount,
-    readingMode,     setReadingMode,
-    imageScaling,    setImageScaling,
-    pageSpacing,     setPageSpacing,
+    readingMode, setReadingMode,
+    imageScaling, setImageScaling,
+    pageSpacing, setPageSpacing,
   };
 }
