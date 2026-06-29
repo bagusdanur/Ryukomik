@@ -10,6 +10,7 @@ import {
   FiMessageSquare,
   FiChevronRight,
   FiChevronLeft,
+  FiDownload,
 } from "react-icons/fi";
 import { RiVipCrownLine } from "react-icons/ri";
 import { TbLayersLinked, TbBadge } from "react-icons/tb";
@@ -186,6 +187,16 @@ export default function PremiumPayClient() {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [showQrisPreview, setShowQrisPreview] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  const handleDownloadQr = () => {
+    if (!qrCodeUrl || !paymentData) return;
+    const a = document.createElement("a");
+    a.href = qrCodeUrl;
+    a.download = `qris-payment-${paymentData.order_id}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   // user profile state
   const [profile, setProfile] = useState<any>(null);
@@ -789,9 +800,15 @@ export default function PremiumPayClient() {
                             className="w-48 h-48 object-contain cursor-pointer"
                             onClick={() => setShowQrisPreview(true)}
                           />
-                          <p className="mt-3 text-[10px] text-gray-500 font-mono select-all bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 w-full text-center truncate">
+                          <p className="mt-3 text-[10px] text-gray-500 font-mono select-all bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 w-full text-center truncate mb-3">
                             {paymentData.payment_number}
                           </p>
+                          <button
+                            onClick={handleDownloadQr}
+                            className="w-full text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-700 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <FiDownload size={14} /> Download QR Code
+                          </button>
                         </div>
                       ) : (
                         <div className="bg-white/[0.03] rounded-3xl p-5 border border-white/10 text-center">
@@ -828,15 +845,32 @@ export default function PremiumPayClient() {
       {/* ── QRIS Fullscreen Preview ── */}
       {showQrisPreview && qrCodeUrl && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 p-4"
+          className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-black/90 p-4 gap-4"
           onClick={() => setShowQrisPreview(false)}
         >
-          <img
-            src={qrCodeUrl}
-            alt="QRIS Fullscreen"
-            className="max-h-[80vh] w-full max-w-[400px] rounded-3xl object-contain bg-white p-4"
+          <div 
+            className="relative w-full max-w-[400px] bg-white rounded-3xl p-4 flex flex-col items-center gap-3" 
             onClick={(e) => e.stopPropagation()}
-          />
+          >
+            <button 
+              onClick={() => setShowQrisPreview(false)} 
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition-all p-1"
+            >
+              <FiX size={20} />
+            </button>
+            <p className="text-xs font-black text-gray-800 uppercase tracking-widest border-b border-gray-100 pb-2 w-full text-center">Scan QRIS</p>
+            <img
+              src={qrCodeUrl}
+              alt="QRIS Fullscreen"
+              className="max-h-[60vh] w-full object-contain"
+            />
+            <button
+              onClick={handleDownloadQr}
+              className="w-full text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-700 py-2.5 rounded-2xl transition-all flex items-center justify-center gap-1.5 mt-2"
+            >
+              <FiDownload size={14} /> Download QR Code
+            </button>
+          </div>
         </div>
       )}
 
