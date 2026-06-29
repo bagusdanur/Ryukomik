@@ -73,7 +73,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* Preconnect to external CDNs for performance */}
         <link rel="preconnect" href="https://cdn.komiku.co.id" />
         <link rel="dns-prefetch" href="https://cdn.komiku.co.id" />
-        
+        <MonetagScript />
         <Script
           id="histats-script"
           strategy="lazyOnload"
@@ -102,7 +102,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Navbar />
         {children}
         <InstallPWA />
-        <MonetagScript />
+        
         <AntiAdblock />
         <AdBanner />
         <Footer />
