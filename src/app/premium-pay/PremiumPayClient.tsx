@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import type { ChangeEvent } from "react";
 import {
   FiCheck,
   FiX,
@@ -11,6 +12,8 @@ import {
   FiChevronRight,
   FiChevronLeft,
   FiDownload,
+  FiUpload,
+  FiAlertTriangle,
 } from "react-icons/fi";
 import { RiVipCrownLine } from "react-icons/ri";
 import { TbLayersLinked, TbBadge } from "react-icons/tb";
@@ -75,12 +78,25 @@ const features = [
   },
 ];
 
-const premiumPlans = [
+interface PremiumPlan {
+  id: string;
+  name: string;
+  durationDays: number;
+  amount: number;
+  qrisSrc?: string;
+  badge: string;
+  badgeClass: string;
+  note: string;
+  subtext?: string;
+}
+
+const manualPlans: PremiumPlan[] = [
   {
     id: "1m",
     name: "1 Bulan",
     durationDays: 30,
-    amount: 12000,
+    amount: 10000,
+    qrisSrc: "/qris10k.jpeg",
     badge: "Harga Normal",
     badgeClass: "bg-white/[0.06] text-white/40 border border-white/[0.08]",
     note: "Coba Premium",
@@ -89,21 +105,55 @@ const premiumPlans = [
     id: "3m",
     name: "3 Bulan",
     durationDays: 90,
-    amount: 27000,
+    amount: 25000,
+    qrisSrc: "/qris25.jpeg",
     badge: "Hemat 17%",
     badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
     note: "Lebih praktis",
-    subtext: "≈ Rp 9.000/bulan",
+    subtext: "≈ Rp 8.333/bulan",
   },
   {
     id: "6m",
     name: "6 Bulan",
     durationDays: 180,
-    amount: 47000,
+    amount: 45000,
+    qrisSrc: "/qris45k.jpeg",
     badge: "Hemat 25%",
     badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
     note: "Aktif lebih lama",
-    subtext: "≈ Rp 7.833/bulan",
+    subtext: "≈ Rp 7.500/bulan",
+  },
+];
+
+const autoPlans: PremiumPlan[] = [
+  {
+    id: "1m",
+    name: "1 Bulan",
+    durationDays: 30,
+    amount: 15000,
+    badge: "Harga Normal",
+    badgeClass: "bg-white/[0.06] text-white/40 border border-white/[0.08]",
+    note: "Coba Premium",
+  },
+  {
+    id: "3m",
+    name: "3 Bulan",
+    durationDays: 90,
+    amount: 35000,
+    badge: "Hemat 22%",
+    badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
+    note: "Lebih praktis",
+    subtext: "≈ Rp 11.667/bulan",
+  },
+  {
+    id: "6m",
+    name: "6 Bulan",
+    durationDays: 180,
+    amount: 60000,
+    badge: "Hemat 33%",
+    badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
+    note: "Aktif lebih lama",
+    subtext: "≈ Rp 10.000/bulan",
   },
 ];
 
@@ -115,6 +165,15 @@ const paymentMethods = [
   { id: "permata_va", name: "Permata VA", type: "va" },
 ];
 
+const allowedImageTypes = ["image/jpeg", "image/png", "image/webp"];
+
+type ImgBbResponse = {
+  success?: boolean;
+  data?: {
+    url?: string;
+  };
+};
+
 function formatRupiah(value: number) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -123,8 +182,8 @@ function formatRupiah(value: number) {
   }).format(value);
 }
 
-function StepIndicator({ step }: { step: number }) {
-  const steps = ["Pilih Paket", "Pembayaran", "Selesai"];
+function StepIndicator({ step, mode }: { step: number; mode: "auto" | "manual" }) {
+  const steps = mode === "auto" ? ["Pilih Paket", "Pembayaran", "Selesai"] : ["Bayar", "Upload", "Konfirmasi"];
   return (
     <div className="flex items-center justify-center gap-1 mb-4 select-none">
       {steps.map((label, i) => {
@@ -175,7 +234,11 @@ export default function PremiumPayClient() {
   const { user } = useSupabaseUser();
   const [showModal, setShowModal] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const [selectedPlanId, setSelectedPlanId] = useState(premiumPlans[0].id);
+
+  const [paymentMode, setPaymentMode] = useState<"auto" | "manual">("auto");
+  const premiumPlans = paymentMode === "auto" ? autoPlans : manualPlans;
+
+  const [selectedPlanId, setSelectedPlanId] = useState(autoPlans[0].id);
   const [selectedMethodId, setSelectedMethodId] = useState(paymentMethods[0].id);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -187,6 +250,12 @@ export default function PremiumPayClient() {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [showQrisPreview, setShowQrisPreview] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  // Manual payment upload states
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const handleDownloadQr = () => {
     if (!qrCodeUrl || !paymentData) return;
@@ -228,6 +297,37 @@ export default function PremiumPayClient() {
   const selectedMethod = 
     paymentMethods.find((method) => method.id === selectedMethodId) || paymentMethods[0];
 
+  const doClose = () => {
+    if (preview) URL.revokeObjectURL(preview);
+    setShowModal(false);
+    setShowQrisPreview(false);
+    setFile(null);
+    setPreview(null);
+    setError("");
+    setSuccess(false);
+    setIsSkAgreed(false);
+    setStep(1);
+    setShowCloseConfirm(false);
+    setPaymentData(null);
+    setQrCodeUrl("");
+  };
+
+  const handleCloseRequest = () => {
+    if (paymentMode === "manual") {
+      if (file && !success) {
+        setShowCloseConfirm(true);
+        return;
+      }
+    } else {
+      if (step === 2 && !success) {
+        if (!window.confirm("Yakin ingin membatalkan pembayaran ini?")) {
+          return;
+        }
+      }
+    }
+    doClose();
+  };
+
   const handleActivatePremium = () => {
     if (!user) {
       setShowLogin(true);
@@ -235,6 +335,82 @@ export default function PremiumPayClient() {
     }
     setStep(1);
     setShowModal(true);
+  };
+
+  const handleFile = (f: File) => {
+    if (!allowedImageTypes.includes(f.type)) {
+      setError("File harus berupa JPG, PNG, atau WebP");
+      return;
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      setError("File max 5MB");
+      return;
+    }
+    if (preview) URL.revokeObjectURL(preview);
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+    setError("");
+  };
+
+  const handleSubmitManual = async () => {
+    if (!user) {
+      setShowLogin(true);
+      setError("Silakan login terlebih dahulu");
+      return;
+    }
+    if (!file) {
+      setError("Upload bukti transfer dulu");
+      return;
+    }
+    if (!isSkAgreed) {
+      setError("Anda harus menyetujui Syarat & Ketentuan terlebih dahulu");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const imgRes = await fetch(
+        `https://api.imgbb.com/1/upload?key=${process.env.NEXT_PUBLIC_IMGBB_API_KEY}`,
+        { method: "POST", body: formData }
+      );
+      const imgData = (await imgRes.json()) as ImgBbResponse;
+      if (!imgData.success || !imgData.data?.url) {
+        throw new Error("Upload gambar gagal. Coba format lain atau kompres file.");
+      }
+      const { error: dbErr } = await supabase.from("premium_requests").insert({
+        user_id: user.id,
+        name: profile?.username || user.email || "User",
+        proof_url: imgData.data.url,
+        package_name: selectedPlan.name,
+        duration_days: selectedPlan.durationDays,
+        amount: selectedPlan.amount,
+        sk_agreed: true,
+        sk_agreed_at: new Date().toISOString(),
+      });
+      if (dbErr) throw new Error(dbErr.message);
+
+      setSuccess(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const goToStep2Manual = () => {
+    setError("");
+    setStep(2);
+  };
+
+  const goToStep3Manual = () => {
+    if (!file) {
+      setError("Upload bukti transfer dulu di Step 2!");
+      return;
+    }
+    setError("");
+    setStep(3);
   };
 
   const handleCreateTransaction = async () => {
@@ -313,17 +489,17 @@ export default function PremiumPayClient() {
 
   // Timer effect
   useEffect(() => {
-    if (step === 2 && timeLeft > 0) {
+    if (paymentMode === "auto" && step === 2 && timeLeft > 0) {
       const timerId = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timerId);
     }
-  }, [step, timeLeft]);
+  }, [step, timeLeft, paymentMode]);
 
   // Polling status effect
   useEffect(() => {
     let pollingInterval: NodeJS.Timeout;
 
-    if (step === 2 && paymentData?.order_id) {
+    if (paymentMode === "auto" && step === 2 && paymentData?.order_id) {
       pollingInterval = setInterval(async () => {
         try {
           const { data: { session } } = await supabase.auth.getSession();
@@ -347,12 +523,7 @@ export default function PremiumPayClient() {
     }
 
     return () => clearInterval(pollingInterval);
-  }, [step, paymentData]);
-
-  const checkPaymentStatus = async () => {
-    // Implement polling logic if needed here, 
-    // but the system relies on webhook updating the DB anyway.
-  };
+  }, [step, paymentData, paymentMode]);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -470,14 +641,49 @@ export default function PremiumPayClient() {
 
             <div className="mb-5">
               <div className="flex items-center gap-1.5 mb-1">
-                <RiVipCrownLine size={13} className="text-cyan-200" />
-                <div className="text-xs font-bold text-cyan-200 uppercase tracking-widest">
+                <RiVipCrownLine size={13} className={paymentMode === "auto" ? "text-cyan-200" : "text-amber-300"} />
+                <div className={`text-xs font-bold uppercase tracking-widest ${paymentMode === "auto" ? "text-cyan-200" : "text-amber-300"}`}>
                   Premium
                 </div>
               </div>
-              <div className="text-2xl font-black text-white">Premium Akses</div>
-              <div className="text-xs text-white/30 mt-1 font-medium">
-                Otomatis via Payment Gateway
+              <div className="text-2xl font-black text-white mb-3">Premium Akses</div>
+
+              {/* Tab Selector */}
+              <div className="grid grid-cols-2 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06] mb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentMode("auto");
+                    setSelectedPlanId("1m");
+                  }}
+                  className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    paymentMode === "auto"
+                      ? "bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 shadow-sm"
+                      : "text-white/40 hover:text-white/60"
+                  }`}
+                >
+                  <FiZap size={13} />
+                  <span>Otomatis</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentMode("manual");
+                    setSelectedPlanId("1m");
+                  }}
+                  className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    paymentMode === "manual"
+                      ? "bg-amber-500/15 border border-amber-500/30 text-amber-300 shadow-sm"
+                      : "text-white/40 hover:text-white/60"
+                  }`}
+                >
+                  <RiVipCrownLine size={13} />
+                  <span>Manual</span>
+                </button>
+              </div>
+
+              <div className="text-xs text-white/30 font-medium">
+                {paymentMode === "auto" ? "Otomatis via Payment Gateway" : "Konfirmasi manual oleh Admin"}
               </div>
             </div>
 
@@ -485,8 +691,8 @@ export default function PremiumPayClient() {
               {features.map((f, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <div className="mt-0.5 shrink-0">
-                    <div className="w-4 h-4 rounded-full bg-cyan-400/15 flex items-center justify-center">
-                      <FiCheck size={10} className="text-cyan-200" />
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${paymentMode === "auto" ? "bg-cyan-400/15" : "bg-amber-500/15"}`}>
+                      <FiCheck size={10} className={paymentMode === "auto" ? "text-cyan-200" : "text-amber-300"} />
                     </div>
                   </div>
                   <div>
@@ -496,7 +702,7 @@ export default function PremiumPayClient() {
                     <div className="text-xs text-white/35 mt-0.5 font-normal leading-normal">
                       {f.desc}
                     </div>
-                    <div className="text-[10px] font-black uppercase tracking-widest text-cyan-200/80 mt-1">
+                    <div className={`text-[10px] font-black uppercase tracking-widest mt-1 ${paymentMode === "auto" ? "text-cyan-200/80" : "text-amber-300/80"}`}>
                       {f.premium}
                     </div>
                   </div>
@@ -519,7 +725,9 @@ export default function PremiumPayClient() {
                         onClick={() => setSelectedPlanId(plan.id)}
                         className={`rounded-2xl border px-3 py-3 text-left transition-all min-h-[44px] cursor-pointer ${
                           active
-                            ? "border-cyan-200/50 bg-cyan-400/10"
+                            ? paymentMode === "auto"
+                              ? "border-cyan-200/50 bg-cyan-400/10"
+                              : "border-amber-300/50 bg-amber-500/10"
                             : "border-white/[0.07] bg-white/[0.025] hover:border-white/15"
                         }`}
                       >
@@ -530,7 +738,13 @@ export default function PremiumPayClient() {
                                 {plan.name}
                               </span>
                               {plan.badge && (
-                                <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${plan.badgeClass || 'bg-cyan-400/12 text-cyan-200'}`}>
+                                <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                                  active
+                                    ? paymentMode === "auto"
+                                      ? "bg-cyan-400/12 text-cyan-200"
+                                      : "bg-amber-400/12 text-amber-200"
+                                    : plan.badgeClass || 'bg-cyan-400/12 text-cyan-200'
+                                }`}>
                                   {plan.badge}
                                 </span>
                               )}
@@ -546,6 +760,11 @@ export default function PremiumPayClient() {
                             {plan.subtext && (
                               <div className="text-[10px] text-white/40 mt-0.5 font-medium">
                                 {plan.subtext}
+                              </div>
+                            )}
+                            {paymentMode === "manual" && (
+                              <div className="text-[10px] text-white/35 mt-0.5 font-medium">
+                                via QRIS
                               </div>
                             )}
                           </div>
@@ -571,7 +790,9 @@ export default function PremiumPayClient() {
                 <div className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${
                   selectedPlan.id === "1m"
                     ? "bg-white/[0.06] text-white/40 border border-white/[0.08]"
-                    : "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20"
+                    : paymentMode === "auto"
+                    ? "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20"
+                    : "bg-amber-400/12 text-amber-200 border border-amber-500/20"
                 }`}>
                   {selectedPlan.id === "1m" ? "Tanpa Diskon" : selectedPlan.badge}
                 </div>
@@ -588,10 +809,14 @@ export default function PremiumPayClient() {
               ) : (
                 <button
                   onClick={handleActivatePremium}
-                  className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-bold min-h-[44px] cursor-pointer"
+                  className={`flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-bold min-h-[44px] cursor-pointer transition-all ${
+                    paymentMode === "auto"
+                      ? "rk-btn-primary"
+                      : "bg-amber-500 text-black hover:bg-amber-400"
+                  }`}
                 >
-                  <HiOutlineSparkles size={15} />
-                  Bayar Sekarang
+                  {paymentMode === "auto" ? <HiOutlineSparkles size={15} /> : <RiVipCrownLine size={15} />}
+                  {paymentMode === "auto" ? "Bayar Sekarang" : "Aktifkan Premium"}
                 </button>
               )}
             </div>
@@ -603,15 +828,7 @@ export default function PremiumPayClient() {
       {showModal && (
         <div
           className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/80 px-0 sm:px-4 pb-0 pt-4 backdrop-blur-sm"
-          onClick={() => {
-            if (step === 2 && !success) {
-              if (window.confirm("Yakin ingin membatalkan pembayaran ini?")) {
-                setShowModal(false);
-              }
-            } else {
-              setShowModal(false);
-            }
-          }}
+          onClick={handleCloseRequest}
         >
           <div
             className="rk-card relative w-full sm:max-w-md max-h-[92vh] sm:max-h-[85vh] overflow-hidden rounded-t-[2rem] sm:rounded-[2rem] flex flex-col animate-[slideUp_0.3s_ease-out] pb-safe"
@@ -624,7 +841,7 @@ export default function PremiumPayClient() {
 
             {/* Tombol close */}
             <button
-              onClick={() => setShowModal(false)}
+              onClick={handleCloseRequest}
               className="absolute top-4 right-4 w-11 h-11 rounded-full bg-white/[0.06] hover:bg-white/10 active:scale-95 flex items-center justify-center transition-all z-10 cursor-pointer"
               aria-label="Tutup"
             >
@@ -640,20 +857,35 @@ export default function PremiumPayClient() {
                     <FiCheck size={32} className="text-[#5DCAA5]" />
                   </div>
                   <h2 className="text-xl font-black text-white mb-2">
-                    Pembayaran Berhasil!
+                    {paymentMode === "auto" ? "Pembayaran Berhasil!" : "Bukti Terkirim!"}
                   </h2>
                   <p className="text-sm text-white/40 leading-relaxed mb-1">
-                    Premium kamu sudah aktif secara otomatis. Selamat menikmati fitur tanpa batas!
+                    {paymentMode === "auto"
+                      ? "Premium kamu sudah aktif secara otomatis. Selamat menikmati fitur tanpa batas!"
+                      : "Admin akan memverifikasi pembayaran Anda dalam 1×24 jam. Akun kamu otomatis aktif setelah disetujui."}
                   </p>
+                  {paymentMode === "manual" && (
+                    <p className="text-xs text-cyan-300/80 font-bold mb-6">
+                      Anda bisa mengecek status aktivasi di Halaman Profil.
+                    </p>
+                  )}
                   <div className="w-full flex flex-col gap-2 mt-6">
+                    {paymentMode === "manual" && (
+                      <a
+                        href="/setting"
+                        className="w-full py-3 rounded-2xl text-sm font-bold bg-cyan-400/15 border border-cyan-400/20 text-cyan-200 text-center block min-h-[44px] cursor-pointer hover:bg-cyan-400/25 active:scale-[0.99] transition-all"
+                      >
+                        Lihat Profil
+                      </a>
+                    )}
                     <button
                       onClick={() => {
-                        setShowModal(false);
+                        doClose();
                         window.location.reload();
                       }}
                       className="w-full py-3 rounded-2xl text-sm font-bold bg-[var(--accent)] hover:brightness-110 active:scale-[0.99] transition-all text-white min-h-[44px] cursor-pointer"
                     >
-                      Kembali & Refresh
+                      {paymentMode === "auto" ? "Kembali & Refresh" : "Oke, Tutup"}
                     </button>
                   </div>
                 </div>
@@ -662,178 +894,494 @@ export default function PremiumPayClient() {
                   {/* Title & Info */}
                   <div className="mb-4 pr-10">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <RiVipCrownLine size={14} className="text-cyan-200" />
-                      <span className="text-[10px] font-black text-cyan-200 uppercase tracking-widest">
+                      <RiVipCrownLine size={14} className={paymentMode === "auto" ? "text-cyan-200" : "text-amber-300"} />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-white/50">
                         Langkah {step} dari 3
                       </span>
                     </div>
                     <h2 className="text-lg font-black text-white leading-snug">
-                      {step === 1 ? "Pilih Metode Pembayaran" : step === 2 ? "Selesaikan Pembayaran" : "Menunggu Konfirmasi"}
+                      {paymentMode === "auto" ? (
+                        step === 1 ? "Pilih Metode Pembayaran" : step === 2 ? "Selesaikan Pembayaran" : "Menunggu Konfirmasi"
+                      ) : (
+                        step === 1 ? "Scan QRIS & Transfer" : step === 2 ? "Upload Bukti Pembayaran" : "Konfirmasi Pembelian"
+                      )}
                     </h2>
                   </div>
 
                   {/* Stepper indicator */}
-                  <StepIndicator step={step} />
+                  <StepIndicator step={step} mode={paymentMode} />
 
-                  {/* ──────────────── STEP 1: PILIH PAKET & METODE ──────────────── */}
-                  {step === 1 && (
-                    <div className="animate-fadeIn space-y-4">
-                      {/* Selected Info Summary */}
-                      <div className="rounded-2xl border border-cyan-200/15 bg-cyan-400/[0.05] p-3 flex justify-between items-center">
-                        <div>
-                          <p className="text-[11px] font-bold text-cyan-200 uppercase tracking-wider">
-                            Paket {selectedPlan.name}
-                          </p>
-                          <p className="text-[10px] text-white/35 mt-0.5">
-                            Durasi {selectedPlan.durationDays} Hari
-                          </p>
+                  {/* Render steps based on mode */}
+                  {paymentMode === "auto" ? (
+                    <>
+                      {/* ──────────────── STEP 1: PILIH PAKET & METODE (AUTO) ──────────────── */}
+                      {step === 1 && (
+                        <div className="animate-fadeIn space-y-4">
+                          {/* Selected Info Summary */}
+                          <div className="rounded-2xl border border-cyan-200/15 bg-cyan-400/[0.05] p-3 flex justify-between items-center">
+                            <div>
+                              <p className="text-[11px] font-bold text-cyan-200 uppercase tracking-wider">
+                                Paket {selectedPlan.name}
+                              </p>
+                              <p className="text-[10px] text-white/35 mt-0.5">
+                                Durasi {selectedPlan.durationDays} Hari
+                              </p>
+                            </div>
+                            <span className="text-base font-black text-white">
+                              {formatRupiah(selectedPlan.amount)}
+                            </span>
+                          </div>
+
+                          {/* Payment Methods Selector */}
+                          <div>
+                            <span className="text-[10px] font-bold text-white/30 uppercase tracking-wider block mb-2">
+                              Metode Pembayaran
+                            </span>
+                            <div className="grid gap-2">
+                              {paymentMethods.map((method) => {
+                                const active = selectedMethodId === method.id;
+                                return (
+                                  <button
+                                    key={method.id}
+                                    type="button"
+                                    onClick={() => setSelectedMethodId(method.id)}
+                                    className={`rounded-xl border px-3 py-3 text-left transition-all min-h-[44px] cursor-pointer flex items-center justify-between ${
+                                      active
+                                        ? "border-cyan-200/50 bg-cyan-400/10"
+                                        : "border-white/[0.07] bg-white/[0.025] hover:border-white/15"
+                                    }`}
+                                  >
+                                    <div className="text-sm font-bold text-white flex items-center gap-2">
+                                      {method.type === 'qris' ? (
+                                        <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-black">QRIS</span>
+                                      ) : (
+                                        <span className="bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded font-black">VA</span>
+                                      )}
+                                      {method.name}
+                                    </div>
+                                    {active && (
+                                      <div className="w-4 h-4 rounded-full bg-cyan-400/20 flex items-center justify-center">
+                                        <FiCheck size={10} className="text-cyan-200" />
+                                      </div>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Terms & Conditions Checkbox */}
+                          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 mt-2">
+                            <label
+                              htmlFor="sk-agree"
+                              className="flex items-start gap-3 cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                id="sk-agree"
+                                checked={isSkAgreed}
+                                onChange={(e) => setIsSkAgreed(e.target.checked)}
+                                className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-[var(--accent)] focus:ring-[var(--accent)] shrink-0 cursor-pointer"
+                              />
+                              <span className="text-xs text-white/50 leading-relaxed select-none">
+                                Saya menyetujui seluruh{" "}
+                                <button
+                                  type="button"
+                                  onClick={() => setShowSkModal(true)}
+                                  className="text-cyan-300 underline underline-offset-2 hover:text-cyan-200 font-bold inline"
+                                >
+                                  Syarat &amp; Ketentuan Premium
+                                </button>{" "}
+                                yang berlaku di RyuKomik.
+                              </span>
+                            </label>
+                          </div>
+
+                          {error && (
+                            <p className="text-xs text-red-400 font-medium px-1">
+                              ⚠️ {error}
+                            </p>
+                          )}
+
+                          {/* Action buttons */}
+                          <div className="pt-2">
+                            <button
+                              onClick={handleCreateTransaction}
+                              disabled={loading || !isSkAgreed}
+                              className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {loading ? (
+                                <FiLoader size={16} className="animate-spin" />
+                              ) : (
+                                "Lanjut Pembayaran"
+                              )}
+                              {!loading && <FiChevronRight size={16} />}
+                            </button>
+                          </div>
                         </div>
-                        <span className="text-base font-black text-white">
-                          {formatRupiah(selectedPlan.amount)}
-                        </span>
-                      </div>
+                      )}
 
-                      {/* Payment Methods Selector */}
-                      <div>
-                        <span className="text-[10px] font-bold text-white/30 uppercase tracking-wider block mb-2">
-                          Metode Pembayaran
-                        </span>
-                        <div className="grid gap-2">
-                          {paymentMethods.map((method) => {
-                            const active = selectedMethodId === method.id;
-                            return (
+                      {/* ──────────────── STEP 2: PEMBAYARAN (AUTO) ──────────────── */}
+                      {step === 2 && paymentData && (
+                        <div className="animate-fadeIn space-y-5">
+                          <div className="text-center space-y-1">
+                            <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Total Pembayaran</p>
+                            <h3 className="text-3xl font-black text-cyan-200">{formatRupiah(paymentData.total_payment)}</h3>
+                            <p className="text-xs text-white/40">Batas Waktu: <span className="text-amber-400 font-bold font-mono">{formatTime(timeLeft)}</span></p>
+                          </div>
+
+                          {paymentData.payment_method === 'qris' && qrCodeUrl ? (
+                            <div className="bg-white rounded-3xl p-4 flex flex-col items-center border border-white/10 relative overflow-hidden">
+                              <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2 border-b border-gray-200 pb-2 w-full text-center">Scan QRIS Ini</p>
+                              <img
+                                src={qrCodeUrl}
+                                alt="QRIS QR Code"
+                                className="w-48 h-48 object-contain cursor-pointer"
+                                onClick={() => setShowQrisPreview(true)}
+                              />
+                              <p className="mt-3 text-[10px] text-gray-500 font-mono select-all bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 w-full text-center truncate mb-3">
+                                {paymentData.payment_number}
+                              </p>
                               <button
-                                key={method.id}
-                                type="button"
-                                onClick={() => setSelectedMethodId(method.id)}
-                                className={`rounded-xl border px-3 py-3 text-left transition-all min-h-[44px] cursor-pointer flex items-center justify-between ${
-                                  active
-                                    ? "border-cyan-200/50 bg-cyan-400/10"
-                                    : "border-white/[0.07] bg-white/[0.025] hover:border-white/15"
-                                }`}
+                                onClick={handleDownloadQr}
+                                className="w-full text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-700 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
                               >
-                                <div className="text-sm font-bold text-white flex items-center gap-2">
-                                  {method.type === 'qris' ? (
-                                    <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-black">QRIS</span>
-                                  ) : (
-                                    <span className="bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded font-black">VA</span>
-                                  )}
-                                  {method.name}
-                                </div>
-                                {active && (
-                                  <div className="w-4 h-4 rounded-full bg-cyan-400/20 flex items-center justify-center">
-                                    <FiCheck size={10} className="text-cyan-200" />
-                                  </div>
-                                )}
+                                <FiDownload size={14} /> Download QR Code
                               </button>
-                            );
-                          })}
-                        </div>
-                      </div>
+                            </div>
+                          ) : (
+                            <div className="bg-white/[0.03] rounded-3xl p-5 border border-white/10 text-center">
+                              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Nomor Virtual Account</p>
+                              <p className="text-xl font-mono font-black text-white tracking-widest mb-3 select-all">
+                                {paymentData.payment_number}
+                              </p>
+                              <button 
+                                onClick={() => copyToClipboard(paymentData.payment_number)}
+                                className="text-xs font-bold bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all"
+                              >
+                                Salin Nomor
+                              </button>
+                            </div>
+                          )}
 
-                      {/* Terms & Conditions Checkbox */}
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 mt-2">
-                        <label
-                          htmlFor="sk-agree"
-                          className="flex items-start gap-3 cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            id="sk-agree"
-                            checked={isSkAgreed}
-                            onChange={(e) => setIsSkAgreed(e.target.checked)}
-                            className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-[var(--accent)] focus:ring-[var(--accent)] shrink-0 cursor-pointer"
-                          />
-                          <span className="text-xs text-white/50 leading-relaxed select-none">
-                            Saya menyetujui seluruh{" "}
+                          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-center">
+                            <div className="flex items-center justify-center gap-2 text-sm font-bold text-white/80 mb-2">
+                              <FiLoader className="animate-spin text-cyan-400" /> Menunggu Pembayaran
+                            </div>
+                            <p className="text-xs text-white/40">Halaman ini akan otomatis terupdate setelah Anda melakukan pembayaran.</p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {/* ──────────────── STEP 1: SCAN QRIS & TRANSFER (MANUAL) ──────────────── */}
+                      {step === 1 && (
+                        <div className="animate-fadeIn space-y-4">
+                          {/* Compact Plan Selector inside Modal */}
+                          <div>
+                            <span className="text-[10px] font-bold text-white/30 uppercase tracking-wider block mb-2">
+                              Ganti Paket Pilihan
+                            </span>
+                            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                              {manualPlans.map((plan) => {
+                                const active = selectedPlan.id === plan.id;
+                                return (
+                                  <button
+                                    key={plan.id}
+                                    type="button"
+                                    onClick={() => setSelectedPlanId(plan.id)}
+                                    className={`shrink-0 rounded-2xl border px-3 py-2 text-left transition-all min-h-[44px] cursor-pointer ${
+                                      active
+                                        ? "border-amber-300/50 bg-amber-500/10"
+                                        : "border-white/[0.07] bg-white/[0.025] hover:border-white/15"
+                                    }`}
+                                  >
+                                    <div className="text-xs font-black text-white">{plan.name}</div>
+                                    <div className="text-[10px] font-bold text-white/50 mt-0.5">
+                                      {formatRupiah(plan.amount)}
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Selected Info Summary */}
+                          <div className="rounded-2xl border border-amber-500/15 bg-amber-500/[0.05] p-3 flex justify-between items-center">
+                            <div>
+                              <p className="text-[11px] font-bold text-amber-300 uppercase tracking-wider">
+                                Paket {selectedPlan.name}
+                              </p>
+                              <p className="text-[10px] text-white/35 mt-0.5">
+                                Aktif {selectedPlan.durationDays} Hari setelah disetujui
+                              </p>
+                            </div>
+                            <span className="text-base font-black text-white">
+                              {formatRupiah(selectedPlan.amount)}
+                            </span>
+                          </div>
+
+                          {/* QRIS Scan Area */}
+                          <div className="bg-white rounded-3xl p-3.5 flex flex-col items-center border border-white/10">
                             <button
                               type="button"
-                              onClick={() => setShowSkModal(true)}
-                              className="text-cyan-300 underline underline-offset-2 hover:text-cyan-200 font-bold inline"
+                              onClick={() => setShowQrisPreview(true)}
+                              className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/60 cursor-pointer active:scale-[0.98] transition-all"
+                              aria-label="Perbesar QRIS"
                             >
-                              Syarat &amp; Ketentuan Premium
-                            </button>{" "}
-                            yang berlaku di RyuKomik.
-                          </span>
-                        </label>
-                      </div>
+                              <img
+                                src={selectedPlan.qrisSrc}
+                                alt="QRIS QR Code"
+                                className="w-40 h-40 object-contain mx-auto"
+                              />
+                            </button>
+                            <div className="mt-2.5 text-center">
+                              <p className="text-xs font-black text-gray-800">
+                                RyuDev · QRIS GPN
+                              </p>
+                              <p className="text-[10px] text-gray-400 font-mono mt-0.5 select-all">
+                                NMID: ID1026514213762
+                              </p>
+                              <p className="mt-1 text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full inline-block">
+                                Tap gambar untuk memperbesar
+                              </p>
+                            </div>
+                          </div>
 
-                      {error && (
-                        <p className="text-xs text-red-400 font-medium px-1">
-                          ⚠️ {error}
-                        </p>
+                          {/* Action buttons */}
+                          <div className="pt-2">
+                            <button
+                              onClick={goToStep2Manual}
+                              className="w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer bg-amber-500 text-black hover:brightness-110 active:scale-[0.99] transition-all"
+                            >
+                              Saya Sudah Transfer
+                              <FiChevronRight size={16} />
+                            </button>
+                          </div>
+                        </div>
                       )}
 
-                      {/* Action buttons */}
-                      <div className="pt-2">
-                        <button
-                          onClick={handleCreateTransaction}
-                          disabled={loading || !isSkAgreed}
-                          className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {loading ? (
-                            <FiLoader size={16} className="animate-spin" />
-                          ) : (
-                            "Lanjut Pembayaran"
+                      {/* ──────────────── STEP 2: UPLOAD (MANUAL) ──────────────── */}
+                      {step === 2 && (
+                        <div className="animate-fadeIn space-y-4">
+                          {profile && (
+                            <div className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.06] rounded-2xl p-3">
+                              {profile.avatar_url ? (
+                                <img
+                                  src={profile.avatar_url}
+                                  alt="Profile"
+                                  className="w-8 h-8 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-xs font-bold text-[var(--accent)]">
+                                  {profile.username?.slice(0, 2)?.toUpperCase() || "??"}
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-bold text-white truncate">
+                                  {profile.username}
+                                </p>
+                                <p className="text-[10px] text-white/30">
+                                  Akun tujuan aktivasi premium
+                                </p>
+                              </div>
+                            </div>
                           )}
-                          {!loading && <FiChevronRight size={16} />}
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
-                  {/* ──────────────── STEP 2: PEMBAYARAN ──────────────── */}
-                  {step === 2 && paymentData && (
-                    <div className="animate-fadeIn space-y-5">
-                      <div className="text-center space-y-1">
-                        <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Total Pembayaran</p>
-                        <h3 className="text-3xl font-black text-cyan-200">{formatRupiah(paymentData.total_payment)}</h3>
-                        <p className="text-xs text-white/40">Batas Waktu: <span className="text-amber-400 font-bold font-mono">{formatTime(timeLeft)}</span></p>
-                      </div>
+                          {/* Upload Box Area */}
+                          <div
+                            className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-white/10 p-5 hover:border-amber-300/40 hover:bg-white/[0.01] transition-all min-h-[160px]"
+                            onClick={() => inputRef.current?.click()}
+                          >
+                            {preview ? (
+                              <div className="relative w-full flex flex-col items-center">
+                                <img
+                                  src={preview}
+                                  className="w-full max-h-48 object-contain rounded-2xl border border-white/10"
+                                  alt="Bukti Transfer"
+                                />
+                                <p className="text-[10px] text-white/40 mt-2 text-center underline">
+                                  Tap area untuk mengganti foto
+                                </p>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-300">
+                                  <FiUpload size={22} />
+                                </div>
+                                <div className="text-center">
+                                  <span className="text-xs font-bold text-white/70 block">
+                                    Klik / Tap untuk Upload Bukti
+                                  </span>
+                                  <span className="text-[10px] text-white/30 block mt-1">
+                                    Format: JPG, PNG, WebP (Maks 5MB)
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            <input
+                              ref={inputRef}
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              className="hidden"
+                              onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                                e.target.files?.[0] && handleFile(e.target.files[0])
+                              }
+                            />
+                          </div>
 
-                      {paymentData.payment_method === 'qris' && qrCodeUrl ? (
-                        <div className="bg-white rounded-3xl p-4 flex flex-col items-center border border-white/10 relative overflow-hidden">
-                          <p className="text-[10px] font-black text-gray-800 uppercase tracking-widest mb-2 border-b border-gray-200 pb-2 w-full text-center">Scan QRIS Ini</p>
-                          <img
-                            src={qrCodeUrl}
-                            alt="QRIS QR Code"
-                            className="w-48 h-48 object-contain cursor-pointer"
-                            onClick={() => setShowQrisPreview(true)}
-                          />
-                          <p className="mt-3 text-[10px] text-gray-500 font-mono select-all bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 w-full text-center truncate mb-3">
-                            {paymentData.payment_number}
-                          </p>
-                          <button
-                            onClick={handleDownloadQr}
-                            className="w-full text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-700 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
-                          >
-                            <FiDownload size={14} /> Download QR Code
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="bg-white/[0.03] rounded-3xl p-5 border border-white/10 text-center">
-                          <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Nomor Virtual Account</p>
-                          <p className="text-xl font-mono font-black text-white tracking-widest mb-3 select-all">
-                            {paymentData.payment_number}
-                          </p>
-                          <button 
-                            onClick={() => copyToClipboard(paymentData.payment_number)}
-                            className="text-xs font-bold bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all"
-                          >
-                            Salin Nomor
-                          </button>
+                          {file && (
+                            <div className="flex items-center justify-between px-2 py-1 bg-white/[0.02] rounded-xl border border-white/[0.05]">
+                              <span className="text-[11px] text-white/50 truncate max-w-[70%]">
+                                📄 {file.name}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  if (preview) URL.revokeObjectURL(preview);
+                                  setFile(null);
+                                  setPreview(null);
+                                }}
+                                className="text-[10px] font-bold text-red-400 hover:text-red-300 active:scale-95 transition-all p-1.5 cursor-pointer min-h-[36px] flex items-center"
+                              >
+                                Hapus File
+                              </button>
+                            </div>
+                          )}
+
+                          {error && (
+                            <p className="text-xs text-red-400 font-medium px-1">
+                              ⚠️ {error}
+                            </p>
+                          )}
+
+                          <div className="flex gap-3 pt-2">
+                            <button
+                              onClick={() => { setError(""); setStep(1); }}
+                              className="flex items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] active:scale-95 transition-all text-sm font-bold text-white/70 px-4 min-h-[44px] cursor-pointer"
+                            >
+                              <FiChevronLeft size={16} />
+                              Kembali
+                            </button>
+                            <button
+                              onClick={goToStep3Manual}
+                              className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer bg-amber-500 text-black hover:brightness-110 active:scale-[0.99] transition-all"
+                            >
+                              Lanjut Konfirmasi
+                              <FiChevronRight size={16} />
+                            </button>
+                          </div>
                         </div>
                       )}
 
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-center">
-                        <div className="flex items-center justify-center gap-2 text-sm font-bold text-white/80 mb-2">
-                          <FiLoader className="animate-spin text-cyan-400" /> Menunggu Pembayaran
-                        </div>
-                        <p className="text-xs text-white/40">Halaman ini akan otomatis terupdate setelah Anda melakukan pembayaran.</p>
-                      </div>
+                      {/* ──────────────── STEP 3: KONFIRMASI (MANUAL) ──────────────── */}
+                      {step === 3 && (
+                        <div className="animate-fadeIn space-y-4">
+                          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-3">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-white/40">Paket Premium</span>
+                              <span className="font-bold text-white">{selectedPlan.name}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-white/40">Durasi Aktif</span>
+                              <span className="font-bold text-white">{selectedPlan.durationDays} Hari</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-white/40">Jumlah Bayar</span>
+                              <span className="font-black text-amber-300 text-sm">
+                                {formatRupiah(selectedPlan.amount)}
+                              </span>
+                            </div>
+                            {profile && (
+                              <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs">
+                                <span className="text-white/40">Akun Penerima</span>
+                                <span className="font-bold text-white truncate max-w-[150px]">{profile.username}</span>
+                              </div>
+                            )}
+                          </div>
 
-                      {/* Simulai Button removed for Production */}
-                    </div>
+                          {preview && (
+                            <div className="rounded-2xl border border-white/[0.06] overflow-hidden flex items-center gap-3 p-2 bg-white/[0.01]">
+                              <img
+                                src={preview}
+                                className="w-12 h-12 rounded-lg object-cover border border-white/10 shrink-0"
+                                alt="Bukti"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">
+                                  Bukti Pembayaran
+                                </p>
+                                <p className="text-xs text-white/60 truncate font-mono mt-0.5">
+                                  {file?.name}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Terms & Conditions Checkbox */}
+                          <div className="rounded-2xl border border-amber-500/10 bg-amber-500/[0.02] p-4">
+                            <label
+                              htmlFor="sk-agree"
+                              className="flex items-start gap-3 cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                id="sk-agree"
+                                checked={isSkAgreed}
+                                onChange={(e) => setIsSkAgreed(e.target.checked)}
+                                className="mt-0.5 w-4 h-4 rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500 shrink-0 cursor-pointer"
+                              />
+                              <span className="text-xs text-white/50 leading-relaxed select-none">
+                                Saya menyetujui seluruh{" "}
+                                <button
+                                  type="button"
+                                  onClick={() => setShowSkModal(true)}
+                                  className="text-amber-300 underline underline-offset-2 hover:text-amber-200 font-bold inline"
+                                >
+                                  Syarat &amp; Ketentuan Premium
+                                </button>{" "}
+                                yang berlaku di RyuKomik.
+                              </span>
+                            </label>
+                          </div>
+
+                          {error && (
+                            <p className="text-xs text-red-400 font-medium px-1">
+                              ⚠️ {error}
+                            </p>
+                          )}
+
+                          {!isSkAgreed && (
+                            <div className="text-center bg-amber-500/10 border border-amber-500/20 text-amber-300/90 text-[10px] font-bold rounded-xl py-1.5 px-3">
+                              Silakan centang persetujuan Syarat &amp; Ketentuan untuk mengirim bukti.
+                            </div>
+                          )}
+
+                          <div className="flex gap-3 pt-2">
+                            <button
+                              disabled={loading}
+                              onClick={() => { setError(""); setStep(2); }}
+                              className="flex items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] active:scale-95 transition-all text-sm font-bold text-white/70 px-4 min-h-[44px] cursor-pointer disabled:opacity-50"
+                            >
+                              <FiChevronLeft size={16} />
+                              Kembali
+                            </button>
+                            <button
+                              onClick={handleSubmitManual}
+                              disabled={loading || !isSkAgreed}
+                              className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 bg-amber-500 text-black hover:brightness-110 active:scale-[0.99] transition-all"
+                            >
+                              {loading ? (
+                                <FiLoader size={16} className="animate-spin" />
+                              ) : (
+                                <HiOutlineSparkles size={16} />
+                              )}
+                              {loading ? "Mengirim..." : "Kirim Bukti Pembayaran"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -842,8 +1390,47 @@ export default function PremiumPayClient() {
         </div>
       )}
 
+      {/* ── DIALOG KONFIRMASI TUTUP MODAL (z-[70]) ── */}
+      {showCloseConfirm && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 px-6 backdrop-blur-xs"
+          onClick={() => setShowCloseConfirm(false)}
+        >
+          <div
+            className="rk-card rounded-[2rem] p-6 w-full max-w-[320px] animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0 text-amber-400">
+                <FiAlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Batalkan Pengajuan?</h3>
+                <p className="text-[11px] text-white/40 mt-1 leading-normal">
+                  Bukti transfer yang sudah diupload akan dihapus. Anda harus mengulangi proses dari awal.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowCloseConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-white/[0.05] hover:bg-white/10 active:scale-95 transition-all text-white/70 min-h-[44px] cursor-pointer"
+              >
+                Lanjutkan
+              </button>
+              <button
+                onClick={doClose}
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-red-500/20 text-red-400 hover:bg-red-500/30 active:scale-95 transition-all min-h-[44px] cursor-pointer"
+              >
+                Ya, Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── QRIS Fullscreen Preview ── */}
-      {showQrisPreview && qrCodeUrl && (
+      {showQrisPreview && (
         <div
           className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-black/90 p-4 gap-4"
           onClick={() => setShowQrisPreview(false)}
@@ -860,16 +1447,18 @@ export default function PremiumPayClient() {
             </button>
             <p className="text-xs font-black text-gray-800 uppercase tracking-widest border-b border-gray-100 pb-2 w-full text-center">Scan QRIS</p>
             <img
-              src={qrCodeUrl}
+              src={paymentMode === "manual" ? selectedPlan.qrisSrc : qrCodeUrl}
               alt="QRIS Fullscreen"
               className="max-h-[60vh] w-full object-contain"
             />
-            <button
-              onClick={handleDownloadQr}
-              className="w-full text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-700 py-2.5 rounded-2xl transition-all flex items-center justify-center gap-1.5 mt-2"
-            >
-              <FiDownload size={14} /> Download QR Code
-            </button>
+            {paymentMode === "auto" && (
+              <button
+                onClick={handleDownloadQr}
+                className="w-full text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-700 py-2.5 rounded-2xl transition-all flex items-center justify-center gap-1.5 mt-2"
+              >
+                <FiDownload size={14} /> Download QR Code
+              </button>
+            )}
           </div>
         </div>
       )}
