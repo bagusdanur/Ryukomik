@@ -4,15 +4,25 @@ import { useEffect, useState, useRef } from "react";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 import Link from "next/link";
 import { FaBan, FaSync, FaCrown } from "react-icons/fa";
+import { usePathname } from "next/navigation";
 
 export default function AntiAdblock() {
   const { loading, isPremium } = usePremiumStatus();
   const [adblockDetected, setAdblockDetected] = useState(false);
   const baitRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     // Jangan lakukan pengecekan jika masih loading atau jika user premium
-    if (loading || isPremium) return;
+    // Atau jika user berada di halaman premium / topup
+    if (
+      loading || 
+      isPremium || 
+      pathname?.startsWith("/premium") || 
+      pathname?.startsWith("/topup")
+    ) {
+      return;
+    }
 
     let detected = false;
 
