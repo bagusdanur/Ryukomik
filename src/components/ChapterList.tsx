@@ -24,6 +24,7 @@ type DetailData = {
 type LastRead = {
   lastChapterSlug?: string;
   displayChapter?: string;
+  source?: string;
 };
 
 type ChapterListProps = {
@@ -60,8 +61,8 @@ export default function ChapterList({
     const chapters = data.chapters || [];
     const filtered = keyword
       ? chapters.filter((c) =>
-          c.title?.toLowerCase().includes(keyword.toLowerCase()),
-        )
+        c.title?.toLowerCase().includes(keyword.toLowerCase()),
+      )
       : chapters;
     return reverse ? [...filtered].reverse() : filtered;
   }, [data.chapters, keyword, reverse]);
@@ -111,7 +112,7 @@ export default function ChapterList({
         {mounted && clientLastRead?.lastChapterSlug && (
           <Link
             prefetch={false}
-            href={`/chapter/${source}/${clientLastRead.lastChapterSlug}`}
+            href={`/chapter/${clientLastRead.source || source}/${clientLastRead.lastChapterSlug}`}
             className="rk-btn-primary rounded-xl px-3 py-1.5 text-xs font-bold"
           >
             Lanjut {clientLastRead.displayChapter}
@@ -229,7 +230,9 @@ export default function ChapterList({
         {filteredChapters.map((chap) => {
           // isLastRead hanya dihitung setelah mounted
           const isLastRead =
-            mounted && chap.slug === clientLastRead?.lastChapterSlug;
+            mounted &&
+            chap.slug === clientLastRead?.lastChapterSlug &&
+            (!clientLastRead?.source || clientLastRead.source === source);
           const chapterSlug = chap.slug ?? "";
           const isSelected = selected.has(chapterSlug);
           const isDisabled = batchMode && !isSelected && selected.size >= MAX;
@@ -267,13 +270,12 @@ export default function ChapterList({
       flex items-center justify-between
       rounded-2xl px-3.5 py-2.5
       border transition-all duration-200
-      ${
-        isSelected
-          ? "bg-blue-500/10 border-blue-500/30"
-            : isLastRead
-            ? "bg-violet-500/10 border-violet-300/30"
-            : "rk-card-soft hover:bg-white/[0.08] hover:border-cyan-200/20"
-      }
+      ${isSelected
+                    ? "bg-blue-500/10 border-blue-500/30"
+                    : isLastRead
+                      ? "bg-violet-500/10 border-violet-300/30"
+                      : "rk-card-soft hover:bg-white/[0.08] hover:border-cyan-200/20"
+                  }
     `}
               >
                 {/* Left */}
@@ -282,13 +284,12 @@ export default function ChapterList({
                     <span
                       className={`
             text-[13px] font-medium truncate
-            ${
-              isSelected
-                ? "text-blue-300"
-                : isLastRead
-                  ? "text-white/70"
-                  : "text-white/90"
-            }
+            ${isSelected
+                          ? "text-blue-300"
+                          : isLastRead
+                            ? "text-white/70"
+                            : "text-white/90"
+                        }
           `}
                     >
                       {chap.title}

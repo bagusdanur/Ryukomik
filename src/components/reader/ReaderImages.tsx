@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { FiArrowDown, FiRefreshCw } from "react-icons/fi";
 import { getChapterImageCandidates } from "@/lib/imageProxy";
-import type { ImageScaling, PageSpacing, ReadingMode } from "./hooks/useReaderSettings";
+import type { ImageScaling, PageSpacing, ReadingMode } from "@/store/readerStore";
 
 const BOTTOM_ZONE = 0.35;
 const EAGER_IMAGE_COUNT = 1;
@@ -212,38 +212,30 @@ export default function ReaderImages({
     fetchedNextChapterRef.current = null;
   }, [slugStr]);
 
-  // Track active page berdasarkan scroll
+  // Track active page menggunakan IntersectionObserver
   useEffect(() => {
     if (images.length === 0) return;
 
-    const handleScroll = () => {
-      const imgs = document.querySelectorAll<HTMLImageElement>("img[data-page]");
-      if (!imgs.length) return;
+    const observerOptions = {
+      root: null,
+      rootMargin: "-40% 0px -40% 0px", // Memantau area tengah layar
+      threshold: 0,
+    };
 
-      const viewportMid = window.innerHeight / 2;
-      let closestIdx = 0;
-      let closestDist = Infinity;
-
-      imgs.forEach((el) => {
-        const rect = el.getBoundingClientRect();
-        const elMid = rect.top + rect.height / 2;
-        const dist = Math.abs(elMid - viewportMid);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closestIdx = Number(el.dataset.page) || 0;
+    const observerCallback: IntersectionObserverCallback = (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const idx = Number((entry.target as HTMLImageElement).dataset.page) || 0;
+          setActivePage(idx);
         }
       });
-
-      setActivePage(closestIdx);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    const timer = setTimeout(handleScroll, 500);
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    const imgs = document.querySelectorAll<HTMLImageElement>("img[data-page]");
+    imgs.forEach((img) => observer.observe(img));
 
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      clearTimeout(timer);
-    };
+    return () => observer.disconnect();
   }, [images, slugStr]);
 
   // Preload 2 halaman berikutnya di chapter saat ini

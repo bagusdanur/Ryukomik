@@ -6,7 +6,7 @@ import type { ReaderChapter } from "@/types/content";
 import type { ReadHistoryItem } from "@/types/user";
 
 
-import { useReaderSettings } from "@/components/reader/hooks/useReaderSettings";
+import { useReaderStore } from "@/store/readerStore";
 import { useAutoScroll } from "@/components/reader/hooks/useAutoScroll";
 import { useScrollBehavior } from "@/components/reader/hooks/useScrollBehavior";
 import { useTapScroll } from "@/components/reader/hooks/useTapScroll";
@@ -38,7 +38,7 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
   useXpQueueFlush();
   useXpRead({ user, slugStr });
 
-  const settings = useReaderSettings();
+  const settings = useReaderStore();
   const autoScroll = useAutoScroll(settings.scrollSpeed);
 
   useScrollBehavior({

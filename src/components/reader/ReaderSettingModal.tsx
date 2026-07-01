@@ -1,7 +1,8 @@
 "use client";
 import { FiX, FiSettings } from "react-icons/fi";
 import type { ReactNode } from "react";
-import type { ImageScaling, PageSpacing, ReadingMode, useReaderSettings } from "./hooks/useReaderSettings";
+import type { ImageScaling, PageSpacing, ReadingMode, ReaderSettingsState } from "@/store/readerStore";
+import { useReaderStore } from "@/store/readerStore";
 
 const ACCENT = "#22d3ee";
 
@@ -139,7 +140,7 @@ const Divider = () => (
 );
 
 interface ReaderSettingModalProps {
-  settings: ReturnType<typeof useReaderSettings>;
+  settings: ReaderSettingsState;
   onClose: () => void;
 }
 

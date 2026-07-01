@@ -28,6 +28,7 @@ type ReadHistoryItem = {
   lastChapter?: string;
   lastChapterSlug?: string;
   displayChapter?: string;
+  source?: string;
   [key: string]: unknown;
 };
 
@@ -137,16 +138,34 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
       const history = readHistory();
       const current = history.find((h) => h.comicSlug === slug);
       if (current) {
+        const displayCh = extractChapter(current.lastChapter, current.lastChapterSlug);
+        let resolvedSlug = current.lastChapterSlug;
+        let resolvedSource = current.source as string | undefined;
+
+        // CROSS-SOURCE SMART MAPPING
+        if (resolvedSource && resolvedSource !== source && data?.chapters) {
+          const matchingChapter = data.chapters.find(
+            (c) => extractChapter(c.title, c.slug) === displayCh
+          );
+
+          if (matchingChapter && matchingChapter.slug) {
+            resolvedSlug = matchingChapter.slug;
+            resolvedSource = source; 
+          }
+        }
+
         setLastRead({
           ...current,
-          displayChapter: extractChapter(current.lastChapter, current.lastChapterSlug),
+          displayChapter: displayCh,
+          lastChapterSlug: resolvedSlug,
+          source: resolvedSource,
         });
       }
     };
     update();
     window.addEventListener("focus", update);
     return () => window.removeEventListener("focus", update);
-  }, [slug, extractChapter]);
+  }, [slug, extractChapter, source, data?.chapters]);
 
   const chapters = data?.chapters ?? [];
   const proxiedThumbnail = getProxiedThumbnailUrl(data?.thumbnail, source);
