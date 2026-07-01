@@ -31,6 +31,11 @@ export async function createBackup(userId?: string | null): Promise<boolean> {
     // 🔥 Batasi biar tidak over besar
     history = history.slice(0, BACKUP_ITEM_LIMIT);
     bookmarks = Array.isArray(bookmarks) ? bookmarks.slice(0, BACKUP_ITEM_LIMIT) : [];
+
+    const { error } = await supabase
+      .from("user_backup")
+      .upsert(
+        {
           user_id: userId,
           history,
           bookmarks,
