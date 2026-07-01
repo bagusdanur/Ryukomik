@@ -2,16 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { FiTrash2 } from "react-icons/fi";
+import { useHistoryStore } from "@/store/historyStore";
+import type { ReadHistoryItem } from "@/types/user";
 
-type HistoryItem = {
-  comicSlug?: string;
-  source?: string;
-  title?: string;
-  updatedAt?: number;
-  date?: string | number;
-  lastChapterSlug?: string;
-  lastChapter?: string;
-};
 
 type HistoryTabProps = {
   search?: string;
@@ -35,8 +28,10 @@ function timeAgo(timestamp?: number) {
 }
 
 export default function HistoryTab({ search = "" }: HistoryTabProps) {
-  const [data, setData] = useState<HistoryItem[]>([]);
-  const [confirm, setConfirm] = useState<HistoryItem | null>(null); // item yang mau dihapus
+  const historyStore = useHistoryStore((state) => state.history);
+  const removeHistory = useHistoryStore((state) => state.removeHistory);
+  const [data, setData] = useState<ReadHistoryItem[]>([]);
+  const [confirm, setConfirm] = useState<ReadHistoryItem | null>(null); // item yang mau dihapus
 
 
   const formatTitleFromSlug = useCallback((slug?: string) => {
@@ -104,7 +99,7 @@ const cleanTitle = useCallback((title?: string) => {
     .split("/")[0]; // ambil judul doang
 }, []);
 
- const normalizeHistory = useCallback((item: HistoryItem): HistoryItem => {
+  const normalizeHistory = useCallback((item: ReadHistoryItem): ReadHistoryItem => {
   return {
     ...item,
     source: item.source || "komiku",
@@ -113,7 +108,7 @@ const cleanTitle = useCallback((title?: string) => {
   item.title || formatTitleFromSlug(item.comicSlug)
 ),
 
-    updatedAt: Number(item.updatedAt || item.date) || Date.now(),
+    updatedAt: Number(item.updatedAt || (item as any).date) || Date.now(),
 
     lastChapterSlug: item.lastChapterSlug || "",
 
@@ -126,29 +121,20 @@ const cleanTitle = useCallback((title?: string) => {
 
  useEffect(() => {
   try {
-    const saved = JSON.parse(localStorage.getItem("read_history") ?? "[]");
-    const normalized = Array.isArray(saved)
-      ? saved.map(normalizeHistory)
-      .sort((a, b) => b.updatedAt - a.updatedAt)
-      : [];
+    const normalized = historyStore.map(normalizeHistory)
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
     const id = requestAnimationFrame(() => setData(normalized));
-    
-
-    // 🔥 auto update localStorage
-    localStorage.setItem("read_history", JSON.stringify(normalized));
     return () => cancelAnimationFrame(id);
   } catch {
     const id = requestAnimationFrame(() => setData([]));
     return () => cancelAnimationFrame(id);
   }
-}, [normalizeHistory]);
+}, [normalizeHistory, historyStore]);
 
   const deleteItem = () => {
     if (!confirm) return;
-    const updated = data.filter((item) => item.comicSlug !== confirm.comicSlug);
-    setData(updated);
-    localStorage.setItem("read_history", JSON.stringify(updated));
+    removeHistory(confirm.comicSlug);
     setConfirm(null);
   };
 

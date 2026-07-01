@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback, useLayoutEffect } from "react";
 import Link from "next/link";
 import type { Chapter, Series } from "@/types/content";
+import { useHistoryStore } from "@/store/historyStore";
 import CommentsSupabase from "@/components/CommentsSupabase";
 import BookmarkButton from "@/components/BookmarkButton";
 import { FaArrowLeft, FaHeart, FaCommentDots } from "react-icons/fa";
@@ -21,31 +22,16 @@ type ComicDetail = Series & {
   Pengarang?: string;
   Konsep?: string;
   chapters: Chapter[];
+  mangaId?: string;
 };
 
-type ReadHistoryItem = {
-  comicSlug?: string;
-  lastChapter?: string;
-  lastChapterSlug?: string;
-  displayChapter?: string;
-  source?: string;
-  [key: string]: unknown;
-};
+import type { ReadHistoryItem } from "@/types/user";
 
 type DetailClientProps = {
   data: ComicDetail | null;
   slug: string;
   source: string;
 };
-
-function readHistory(): ReadHistoryItem[] {
-  try {
-    const history = JSON.parse(localStorage.getItem("read_history") ?? "[]");
-    return Array.isArray(history) ? history : [];
-  } catch {
-    return [];
-  }
-}
 
 export default function DetailClient({ data, slug, source }: DetailClientProps) {
   const { user } = useSupabaseUser();
@@ -65,7 +51,8 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
 
   const [expand, setExpand] = useState(false);
 
-  const [lastRead, setLastRead] = useState<ReadHistoryItem | null>(null);
+  const historyStore = useHistoryStore((state) => state.history);
+  const [lastRead, setLastRead] = useState<(ReadHistoryItem & { displayChapter?: string }) | null>(null);
   const [isPremium, setIsPremium] = useState(false);
 
   // Premium check
@@ -84,7 +71,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
     };
   }, [user?.id]);
 
-  // History dari localStorage
+  // History dari store
   const extractChapter = useCallback((text?: string, slug?: string) => {
     let raw = "";
 
@@ -134,13 +121,13 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
   }, []);
 
   useEffect(() => {
-    const update = () => {
-      const history = readHistory();
-      const current = history.find((h) => h.comicSlug === slug);
-      if (current) {
-        const displayCh = extractChapter(current.lastChapter, current.lastChapterSlug);
-        let resolvedSlug = current.lastChapterSlug;
-        let resolvedSource = current.source as string | undefined;
+    try {
+      const historyItem = historyStore.find((h: ReadHistoryItem) => h.comicSlug === (data?.mangaId || slug));
+      
+      if (historyItem) {
+        const displayCh = extractChapter(historyItem.lastChapter, historyItem.lastChapterSlug);
+        let resolvedSlug = historyItem.lastChapterSlug;
+        let resolvedSource = historyItem.source;
 
         // CROSS-SOURCE SMART MAPPING
         if (resolvedSource && resolvedSource !== source && data?.chapters) {
@@ -155,17 +142,16 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
         }
 
         setLastRead({
-          ...current,
+          ...historyItem,
           displayChapter: displayCh,
           lastChapterSlug: resolvedSlug,
           source: resolvedSource,
         });
       }
-    };
-    update();
-    window.addEventListener("focus", update);
-    return () => window.removeEventListener("focus", update);
-  }, [slug, extractChapter, source, data?.chapters]);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [slug, extractChapter, source, data?.chapters, historyStore]);
 
   const chapters = data?.chapters ?? [];
   const proxiedThumbnail = getProxiedThumbnailUrl(data?.thumbnail, source);

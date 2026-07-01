@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useHistoryStore } from "@/store/historyStore";
 import CommentsSupabase from "@/components/CommentsSupabase";
 import { FiMessageCircle, FiX } from "react-icons/fi";
 
@@ -26,11 +27,6 @@ type NovelReaderClientProps = {
   slugStr: string;
 };
 
-type ReadHistoryItem = {
-  comicSlug?: string;
-  [key: string]: unknown;
-};
-
 function parseReaderSettings(value: string | null): ReaderSettings | null {
   if (!value) return null;
   try {
@@ -38,15 +34,6 @@ function parseReaderSettings(value: string | null): ReaderSettings | null {
     return parsed && typeof parsed === "object" ? parsed : null;
   } catch {
     return null;
-  }
-}
-
-function readHistory(): ReadHistoryItem[] {
-  try {
-    const history = JSON.parse(localStorage.getItem("read_history") ?? "[]");
-    return Array.isArray(history) ? history : [];
-  } catch {
-    return [];
   }
 }
 
@@ -61,6 +48,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
   const [showUI, setShowUI] = useState(true);
   const [showComment, setShowComment] = useState(false);
   const scrollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const addHistory = useHistoryStore((state) => state.addHistory);
 
   // Load settings
   useEffect(() => {
@@ -94,7 +82,6 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
   // Save history
   useEffect(() => {
     if (!data) return;
-    const history = readHistory();
     const newEntry = {
       comicSlug: data.series || "",
       lastChapterSlug: slugStr,
@@ -103,10 +90,8 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
       source: data.source || "",
       updatedAt: Date.now(),
     };
-    const filtered = history.filter((h) => h.comicSlug !== data.series);
-    filtered.unshift(newEntry);
-    localStorage.setItem("read_history", JSON.stringify(filtered.slice(0, 50)));
-  }, [data, slugStr]);
+    addHistory(newEntry);
+  }, [data, slugStr, addHistory]);
 
   const cleanHtml = (html?: string) => {
     if (!html) return "";

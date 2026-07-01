@@ -8,6 +8,7 @@ import type { ReadHistoryItem } from "@/types/user";
 
 import { useReaderStore } from "@/store/readerStore";
 import { useAutoScroll } from "@/components/reader/hooks/useAutoScroll";
+import { useHistoryStore } from "@/store/historyStore";
 import { useScrollBehavior } from "@/components/reader/hooks/useScrollBehavior";
 import { useTapScroll } from "@/components/reader/hooks/useTapScroll";
 import { useXpRead, useXpQueueFlush } from "@/hooks/useXpRead";
@@ -39,6 +40,7 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
   useXpRead({ user, slugStr });
 
   const settings = useReaderStore();
+  const addHistory = useHistoryStore((state) => state.addHistory);
   const autoScroll = useAutoScroll(settings.scrollSpeed);
 
   useScrollBehavior({
@@ -61,7 +63,6 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
   // History
   useEffect(() => {
     if (!data) return;
-    const history = JSON.parse(localStorage.getItem("read_history") || "[]") as ReadHistoryItem[];
     const entry: ReadHistoryItem = {
       comicSlug: data.mangaId || "",
       lastChapterSlug: slugStr,
@@ -70,10 +71,8 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
       source,
       updatedAt: Date.now(),
     };
-    const filtered = history.filter((h) => h.comicSlug !== data.mangaId);
-    filtered.unshift(entry);
-    localStorage.setItem("read_history", JSON.stringify(filtered.slice(0, 50)));
-  }, [data, slugStr, source]);
+    addHistory(entry);
+  }, [data, slugStr, source, addHistory]);
 
   // Page title
   useEffect(() => {

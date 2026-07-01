@@ -1,6 +1,7 @@
 "use client";
 import CommentsSupabase from "@/components/CommentsSupabase";
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useHistoryStore } from "@/store/historyStore";
 import { useRouter } from "next/navigation";
 
 type NovelChapter = {
@@ -23,33 +24,22 @@ type NovelDetail = {
   source?: string;
 };
 
-type ReadHistoryItem = {
-  comicSlug?: string;
-  lastChapter?: string;
-  lastChapterSlug?: string;
-  displayChapter?: string;
-};
+import type { ReadHistoryItem } from "@/types/user";
 
 type NovelDetailClientProps = {
   data: NovelDetail | null;
   slug: string;
 };
 
-function readHistory(): ReadHistoryItem[] {
-  try {
-    const history = JSON.parse(localStorage.getItem("read_history") ?? "[]");
-    return Array.isArray(history) ? history : [];
-  } catch {
-    return [];
-  }
-}
+
 
 export default function NovelDetailClient({ data, slug }: NovelDetailClientProps) {
   const router = useRouter();
   const [keyword, setKeyword] = useState("");
   const [reverse, setReverse] = useState(false);
   const [expand, setExpand] = useState(false);
-  const [lastRead, setLastRead] = useState<ReadHistoryItem | null>(null);
+  const historyStore = useHistoryStore((state) => state.history);
+  const [lastRead, setLastRead] = useState<(ReadHistoryItem & { displayChapter?: string }) | null>(null);
 
   const extractChapter = useCallback((text?: string, slug?: string) => {
     let raw = "";
@@ -99,21 +89,23 @@ export default function NovelDetailClient({ data, slug }: NovelDetailClientProps
     return raw ? `Ch. ${raw}` : "Ch. 1";
   }, []);
 
+  // History dari store
   useEffect(() => {
-    const update = () => {
-      const history = readHistory();
-      const current = history.find((h) => h.comicSlug === slug);
-      if (current) {
+    try {
+      const historyItems = historyStore;
+      const historyItem = historyItems.find((h: ReadHistoryItem) => h.comicSlug === slug);
+
+      if (historyItem) {
+        const displayCh = extractChapter(historyItem.lastChapter, historyItem.lastChapterSlug);
         setLastRead({
-          ...current,
-          displayChapter: extractChapter(current.lastChapter, current.lastChapterSlug),
+          ...historyItem,
+          displayChapter: displayCh,
         });
       }
-    };
-    update();
-    window.addEventListener("focus", update);
-    return () => window.removeEventListener("focus", update);
-  }, [slug, extractChapter]);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [slug, extractChapter, historyStore]);
 
   const chapters = data?.chapters ?? [];
 

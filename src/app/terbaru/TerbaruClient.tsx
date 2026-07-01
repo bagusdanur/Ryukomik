@@ -13,6 +13,7 @@ import {
   TITLE_RUSH_EVENT_TYPE,
 } from "@/utils/titleRushNotification";
 import { clearNotificationCache, fetchCachedNotifications } from "@/utils/notificationFetch";
+import { useHistoryStore } from "@/store/historyStore";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import type { NotificationItem, SourceId, TerbaruFilters, UpdateItem } from "@/types/content";
 import type { ReadHistoryItem } from "@/types/user";
@@ -31,15 +32,7 @@ interface SourceResponse {
   data?: unknown;
 }
 
-function getHistory(): ReadHistoryItem[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const value = JSON.parse(localStorage.getItem("read_history") || "[]");
-    return Array.isArray(value) ? value : [];
-  } catch {
-    return [];
-  }
-}
+
 
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 const LISTING_CACHE_PREFIX = "rk_terbaru_listing_v3";
@@ -184,10 +177,7 @@ export default function TerbaruPage({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [history, setHistory] = useState<ReadHistoryItem[]>([]);
-  useEffect(() => {
-    setHistory(getHistory());
-  }, []);
+  const history = useHistoryStore((state) => state.history);
   const loadingRef = useRef(false);
   const { user } = useSupabaseUser();
   const userId = user?.id || null;
