@@ -11,6 +11,32 @@ interface HistoryState {
 
 const MAX_HISTORY = 200;
 
+// 🔥 MIGRATION SCRIPT UNTUK PENGGUNA LAMA
+if (typeof window !== "undefined") {
+  try {
+    const oldRaw = localStorage.getItem("read_history");
+    if (oldRaw) {
+      const parsed = JSON.parse(oldRaw);
+      // Jika bentuknya Array, berarti ini history versi lama (sebelum Zustand)
+      // Dan belum tertimpa oleh Zustand.
+      if (Array.isArray(parsed)) {
+        // Konversi ke format Zustand persist
+        localStorage.setItem(
+          "rk_history_zustand",
+          JSON.stringify({
+            state: { history: parsed.slice(0, MAX_HISTORY) },
+            version: 0,
+          })
+        );
+        // Hapus key lama agar tidak dijalankan ulang (atau biarkan sebagai backup)
+        localStorage.removeItem("read_history");
+      }
+    }
+  } catch (e) {
+    console.error("Gagal migrasi history lama:", e);
+  }
+}
+
 export const useHistoryStore = create<HistoryState>()(
   persist(
     (set) => ({
@@ -31,7 +57,7 @@ export const useHistoryStore = create<HistoryState>()(
       clearHistory: () => set({ history: [] }),
     }),
     {
-      name: "read_history", // Sesuai dengan key localStorage lama
+      name: "rk_history_zustand", // Nama key baru agar tidak tabrakan
     }
   )
 );
