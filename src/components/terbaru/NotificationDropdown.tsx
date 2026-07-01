@@ -127,7 +127,7 @@ export default function NotificationDropdown({
       notification?.type === "premium_reward"
     ) {
       if (notification?.type === TITLE_RUSH_EVENT_TYPE) return "/game";
-      return "/premium";
+      return "/premium-pay";
     }
     if (!notification?.slug) return "#";
 
@@ -266,7 +266,7 @@ export default function NotificationDropdown({
                   <Link
                     prefetch={false}
                     key={notification.id}
-                    href="/premium"
+                    href="/premium-pay"
                     onClick={() => setShowNotif(false)}
                     className="block border-b border-[var(--line-soft)] bg-[color:color-mix(in_srgb,var(--accent-2)_8%,transparent)] p-2.5 transition-colors hover:bg-[color:color-mix(in_srgb,var(--accent-2)_12%,transparent)]"
                   >
@@ -306,7 +306,7 @@ export default function NotificationDropdown({
                   <Link
                     prefetch={false}
                     key={notification.id}
-                    href="/premium"
+                    href="/premium-pay"
                     onClick={() => setShowNotif(false)}
                     className="block border-b border-[var(--line-soft)] bg-[color:color-mix(in_srgb,var(--accent)_8%,transparent)] p-2.5 transition-colors hover:bg-[color:color-mix(in_srgb,var(--accent)_12%,transparent)]"
                   >

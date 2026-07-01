@@ -14,6 +14,7 @@ export const PRIVATE_PATH_PREFIXES = [
   "/bookmark",
   "/history",
   "/premium",
+  "/premium-pay",
   "/auth",
   "/u",
 ] as const;

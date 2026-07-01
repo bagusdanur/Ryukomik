@@ -181,7 +181,7 @@ export default function PremiumModal({ open, onClose }: PremiumModalProps) {
             <button
               onClick={() => {
                 onClose();
-                router.push("/premium");
+                router.push("/premium-pay");
               }}
               className="rk-btn-ghost mt-3 w-full rounded-2xl py-3 font-bold"
             >
@@ -194,7 +194,7 @@ export default function PremiumModal({ open, onClose }: PremiumModalProps) {
           </>
         ) : (
           <div
-            onClick={() => router.push("/premium")}
+            onClick={() => router.push("/premium-pay")}
             className="rk-card-soft mt-6 cursor-pointer rounded-2xl p-5"
           >
             {/* ICON */}

@@ -96,7 +96,7 @@ export default function AdAnnouncementModal() {
           {/* Buttons */}
           <div className="flex flex-col gap-2.5">
             <a
-              href="/premium"
+              href="/premium-pay"
               className="flex items-center justify-center gap-2 bg-[var(--accent)] hover:bg-[var(--accent)] active:scale-[0.98] text-white font-semibold text-[15px] py-[15px] rounded-[14px] no-underline tracking-[0.01em]"
             >
               <RiSparklingFill size={16} />

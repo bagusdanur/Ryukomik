@@ -130,7 +130,7 @@ const autoPlans: PremiumPlan[] = [
     id: "1m",
     name: "1 Bulan",
     durationDays: 30,
-    amount: 15000,
+    amount: 12000,
     badge: "Harga Normal",
     badgeClass: "bg-white/[0.06] text-white/40 border border-white/[0.08]",
     note: "Coba Premium",
@@ -139,21 +139,21 @@ const autoPlans: PremiumPlan[] = [
     id: "3m",
     name: "3 Bulan",
     durationDays: 90,
-    amount: 35000,
-    badge: "Hemat 22%",
+    amount: 30000,
+    badge: "Hemat 17%",
     badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
     note: "Lebih praktis",
-    subtext: "≈ Rp 11.667/bulan",
+    subtext: "≈ Rp 10.000/bulan",
   },
   {
     id: "6m",
     name: "6 Bulan",
     durationDays: 180,
-    amount: 60000,
-    badge: "Hemat 33%",
+    amount: 50000,
+    badge: "Hemat 30%",
     badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
     note: "Aktif lebih lama",
-    subtext: "≈ Rp 10.000/bulan",
+    subtext: "≈ Rp 8.333/bulan",
   },
 ];
 
@@ -235,10 +235,10 @@ export default function PremiumPayClient() {
   const [showModal, setShowModal] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
 
-  const [paymentMode, setPaymentMode] = useState<"auto" | "manual">("auto");
+  const [paymentMode, setPaymentMode] = useState<"auto" | "manual">("manual");
   const premiumPlans = paymentMode === "auto" ? autoPlans : manualPlans;
 
-  const [selectedPlanId, setSelectedPlanId] = useState(autoPlans[0].id);
+  const [selectedPlanId, setSelectedPlanId] = useState(manualPlans[0].id);
   const [selectedMethodId, setSelectedMethodId] = useState(paymentMethods[0].id);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -683,7 +683,13 @@ export default function PremiumPayClient() {
               </div>
 
               <div className="text-xs text-white/30 font-medium">
-                {paymentMode === "auto" ? "Otomatis via Payment Gateway" : "Konfirmasi manual oleh Admin"}
+                {paymentMode === "auto" ? (
+                  <span>
+                    <span className="text-emerald-400 font-bold">⚡ Aktif Instan</span> · Otomatis via Payment Gateway
+                  </span>
+                ) : (
+                  "Konfirmasi manual oleh Admin (1-24 Jam)"
+                )}
               </div>
             </div>
 

@@ -45,7 +45,7 @@ const SLIDES: Slide[] = [
     sub: "Nikmati baca komik tanpa gangguan iklan dengan Premium.",
     btn: {
       label: "Premium",
-      href: "/premium",
+      href: "/premium-pay",
       className: "rk-btn-primary text-white",
       iconKey: "star",
     },
@@ -103,7 +103,7 @@ const SLIDES: Slide[] = [
     sub: "Akses fitur eksklusif tanpa batas dengan Premium.",
     btn: {
       label: "Premium",
-      href: "/premium",
+      href: "/premium-pay",
       className: "rk-btn-primary text-white",
     },
   },

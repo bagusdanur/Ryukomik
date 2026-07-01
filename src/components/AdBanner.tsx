@@ -54,7 +54,7 @@ export default function AdBanner() {
           </div>
 
           <Link
-            href="/premium"
+            href="/premium-pay"
             className="flex shrink-0 items-center gap-1 rounded-xl bg-[var(--accent-2)] px-2.5 py-2 text-[10px] font-bold text-[#071018] hover:bg-sky-300 sm:gap-1.5 sm:px-3 sm:text-[11px]"
           >
             <FaStar className="text-[12px]" />

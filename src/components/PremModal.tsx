@@ -20,7 +20,7 @@ export default function PremiumModal({ onClose }: { onClose: () => void }) {
         <p className="text-center text-sm text-white/50 mb-6">
           Fitur ini tersedia khusus untuk member Premium. Upgrade sekarang dan nikmati akses penuh!
         </p>
-        <a href="/premium" className="rk-btn-primary mb-2 block w-full rounded-2xl py-3 text-center font-bold">
+        <a href="/premium-pay" className="rk-btn-primary mb-2 block w-full rounded-2xl py-3 text-center font-bold">
           Upgrade Premium
         </a>
         <button onClick={onClose} className="block w-full text-center text-sm text-white/30 hover:text-white py-2 transition">
