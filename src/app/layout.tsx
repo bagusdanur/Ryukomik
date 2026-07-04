@@ -10,8 +10,6 @@ import MonetagScript from "@/components/MonetagScript";
 import Navbar from "@/components/Navbar";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
-import "react-pdf/dist/Page/TextLayer.css";
-import "react-pdf/dist/Page/AnnotationLayer.css";
 import "./globals.css";
 import SWRegister from "./sw-register";
 import AdBanner from "@/components/AdBanner";
