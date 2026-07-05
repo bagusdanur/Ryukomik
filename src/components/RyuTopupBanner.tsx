@@ -69,7 +69,7 @@ export default function RyuTopupBanner({ className = "" }: RyuTopupBannerProps) 
               className="text-[13px] font-bold leading-snug text-white"
               style={{ fontFamily: "'Syne', sans-serif" }}
             >
-              Top up diamond &amp; UC, harga termurah
+              Top up game, harga termurah
             </div>
             <div className="mt-1 hidden flex-wrap gap-1 sm:flex">
               {["⚡ Instan", "QRIS & e-wallet", "CS 24 jam"].map((tag) => (
