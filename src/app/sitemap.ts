@@ -15,7 +15,6 @@ type ApiResponse = {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://ryukomik.my.id";
   const komikRoutes: MetadataRoute.Sitemap = [];
-  const chapterRoutes: MetadataRoute.Sitemap = [];
 
   // Ambil semua komik dari API (loop semua page)
   let page = 1;
@@ -48,15 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           priority: 0.8,
         });
 
-        // Halaman chapter (kalau ada)
-        if (item.chapter_terbaru) {
-          chapterRoutes.push({
-            url: `${baseUrl}/chapter/${source}/${item.slug}/${item.chapter_terbaru}`,
-            lastModified: new Date(),
-            changeFrequency: "daily",
-            priority: 0.6,
-          });
-        }
+      
       }
 
       page++;
@@ -75,7 +66,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Semua komik
     ...komikRoutes,
 
-    // Semua chapter
-    ...chapterRoutes,
   ];
 }
