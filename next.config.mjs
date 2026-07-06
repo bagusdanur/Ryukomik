@@ -5,9 +5,6 @@ const nextConfig = {
   turbopack: {},
   experimental: {
     optimizePackageImports: ['react-icons', 'date-fns', 'swiper'],
-    turbo: {
-      treeShaking: true,
-    },
   },
 
   images: {
