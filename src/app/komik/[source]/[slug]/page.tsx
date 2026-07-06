@@ -139,6 +139,29 @@ export default async function DetailPage({ params }: DetailPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Beranda",
+                "item": "https://ryukomik.my.id"
+              },
+              {
+                "@type": "ListItem", 
+                "position": 2,
+                "name": data?.title || "Komik",
+                "item": `https://ryukomik.my.id/komik/${source}/${cleanSlug}`
+              }
+            ]
+          })
+        }}
+      />
       <DetailClient data={data} slug={cleanSlug} source={source} />
     </>
   );

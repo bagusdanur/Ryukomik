@@ -70,10 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     { url: baseUrl, lastModified: new Date() },
-    { url: `${baseUrl}/bookmark`, lastModified: new Date() },
     { url: `${baseUrl}/list-komik`, lastModified: new Date() },
-    { url: `${baseUrl}/history`, lastModified: new Date() },
-    { url: `${baseUrl}/icon.png`, lastModified: new Date() },
 
     ...komikRoutes,
     ...chapterRoutes,

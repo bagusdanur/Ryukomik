@@ -62,9 +62,28 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning>
       <head>
         <meta name="monetag" content="648210872e70b41aeb3156769958d70b"/>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "Ryukomik",
+              "url": "https://ryukomik.my.id",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": {
+                  "@type": "EntryPoint",
+                  "urlTemplate": "https://ryukomik.my.id/search?q={search_term_string}"
+                },
+                "query-input": "required name=search_term_string"
+              }
+            })
+          }}
+        />
         <meta name="google-site-verification" content="NBp-tkkvrqSZ_6L1OLAWZUV3UotpuMo-RfQsPQlp7Gs" />
         <meta name="google-site-verification" content="vm0FjHf-UaQUWEp-T0FcASH6ClSeD9nqVSfSUgmVP-4" />
         

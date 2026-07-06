@@ -3,6 +3,12 @@ const nextConfig = {
   reactCompiler: true,
   reactStrictMode: true,
   turbopack: {},
+  experimental: {
+    optimizePackageImports: ['react-icons', 'date-fns', 'swiper'],
+    turbo: {
+      treeShaking: true,
+    },
+  },
 
   images: {
     remotePatterns: [
