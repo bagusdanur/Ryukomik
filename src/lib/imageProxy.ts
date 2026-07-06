@@ -109,6 +109,9 @@ export function getProxiedThumbnailUrl(url?: string, source?: string): string {
   if (!url) return "";
   const originalUrl = getOriginalImageUrl(url);
 
+  // Jika URL relatif (tidak dimulai http), skip — biar gak error di image proxy
+  if (!originalUrl.startsWith("http")) return "";
+
   const isAdultSource = source === "doujindesu" || source === "sekte";
   let shouldProxy = isAdultSource;
 
