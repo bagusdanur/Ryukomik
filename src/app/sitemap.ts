@@ -1,78 +1,81 @@
 import type { MetadataRoute } from "next";
 
-type SitemapSourceItem = {
-  link?: string;
-  chapter_link?: string;
+type KomikItem = {
+  source: string;
+  slug: string;
+  title: string;
+  chapter_awal?: string;
+  chapter_terbaru?: string;
 };
 
-type SitemapSourceData = Partial<
-  Record<
-    "terbaru" | "populer_manhwa" | "populer_manga" | "populer_manhua",
-    SitemapSourceItem[]
-  >
->;
-
-type SitemapSourceResponse = {
-  data?: SitemapSourceData;
+type ApiResponse = {
+  data?: KomikItem[];
 };
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://ryukomik.my.id";
-
-  let json: SitemapSourceResponse = {};
-  try {
-    const res = await fetch("https://ryukomikback.vercel.app/komiku/home", {
-      next: { revalidate: 3600 },
-    });
-
-    json = await res.json();
-  } catch (e) {
-    json = { data: {} }; // fallback aman
-  }
-
-  const data = json.data || {};
-
-  const categories = [
-    "terbaru",
-    "populer_manhwa",
-    "populer_manga",
-    "populer_manhua",
-  ];
-
   const komikRoutes: MetadataRoute.Sitemap = [];
   const chapterRoutes: MetadataRoute.Sitemap = [];
 
-  categories.forEach((category) => {
-    const items = data[category] || [];
+  // Ambil semua komik dari API (loop semua page)
+  let page = 1;
+  let hasMore = true;
 
-    items.forEach((item) => {
-      if (!item.link || !item.chapter_link) return;
+  while (hasMore && page <= 50) {
+    try {
+      const res = await fetch(
+        `https://api.ryukomik.web.id/komiku/pustaka-filter?page=${page}&orderby=modified`,
+        { next: { revalidate: 3600 } }
+      );
+      const json: ApiResponse = await res.json();
+      const items = json.data || [];
 
-      const slug = item.link
-        .replace("https://komiku.org/manga/", "")
-        .replace(/\/$/, "");
+      if (items.length === 0) {
+        hasMore = false;
+        break;
+      }
 
-      komikRoutes.push({
-        url: `${baseUrl}/komik/${slug}`,
-        lastModified: new Date(),
-      });
+      for (const item of items) {
+        if (!item.slug) continue;
 
-      const chapterSlug = item.chapter_link
-        .replace("https://komiku.org/", "")
-        .replace(/\/$/, "");
+        const source = item.source || "komiku";
 
-      chapterRoutes.push({
-        url: `${baseUrl}/chapter/${chapterSlug}`,
-        lastModified: new Date(),
-      });
-    });
-  });
+        // Halaman detail komik
+        komikRoutes.push({
+          url: `${baseUrl}/komik/${source}/${item.slug}`,
+          lastModified: new Date(),
+          changeFrequency: "weekly",
+          priority: 0.8,
+        });
+
+        // Halaman chapter (kalau ada)
+        if (item.chapter_terbaru) {
+          chapterRoutes.push({
+            url: `${baseUrl}/chapter/${source}/${item.slug}/${item.chapter_terbaru}`,
+            lastModified: new Date(),
+            changeFrequency: "daily",
+            priority: 0.6,
+          });
+        }
+      }
+
+      page++;
+    } catch {
+      hasMore = false;
+    }
+  }
 
   return [
-    { url: baseUrl, lastModified: new Date() },
-    { url: `${baseUrl}/list-komik`, lastModified: new Date() },
+    // Halaman statis
+    { url: baseUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1.0 },
+    { url: `${baseUrl}/list-komik`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
+    { url: `${baseUrl}/terbaru`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
+    { url: `${baseUrl}/genre`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
 
+    // Semua komik
     ...komikRoutes,
+
+    // Semua chapter
     ...chapterRoutes,
   ];
 }
