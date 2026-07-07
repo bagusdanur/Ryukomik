@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { FiArrowDown, FiRefreshCw } from "react-icons/fi";
 import { getChapterImageCandidates } from "@/lib/imageProxy";
 import type { ImageScaling, PageSpacing, ReadingMode } from "@/store/readerStore";
@@ -6,7 +6,6 @@ import type { ImageScaling, PageSpacing, ReadingMode } from "@/store/readerStore
 const BOTTOM_ZONE = 0.35;
 const EAGER_IMAGE_COUNT = 1;
 const PRELOAD_IMAGE_COUNT = 1;
-const VIRTUAL_BUFFER = 5; // Jumlah gambar di-mount di sekitar halaman aktif
 
 const SPACING_MAP: Record<PageSpacing, string> = {
   none: "gap-0",
@@ -61,7 +60,7 @@ interface ReaderImageProps {
   readingMode: ReadingMode;
 }
 
-const ReaderImage = memo(function ReaderImage({ src, source, slugStr, index, imgStyle, imageScaling, readingMode }: ReaderImageProps) {
+function ReaderImage({ src, source, slugStr, index, imgStyle, imageScaling, readingMode }: ReaderImageProps) {
   const candidates = useMemo(
     () => getChapterImageCandidates(source, src),
     [source, src],
@@ -162,7 +161,7 @@ const ReaderImage = memo(function ReaderImage({ src, source, slugStr, index, img
       )}
     </div>
   );
-});
+}
 
 interface ReaderImagesProps {
   images: string[];
@@ -219,7 +218,7 @@ export default function ReaderImages({
 
     const observerOptions = {
       root: null,
-      rootMargin: "-40% 0px -40% 0px", // Memantau area tengah layar
+      rootMargin: "-40% 0px -40% 0px",
       threshold: 0,
     };
 
@@ -295,6 +294,7 @@ export default function ReaderImages({
         console.warn("Preload chapter selanjutnya gagal:", err);
       });
   }, [activePage, images.length, nextChapterSlug, source]);
+
   const containerClass = getContainerClass(readingMode, pageSpacing);
   const imgStyle = getImgStyle(imageScaling);
   const preloadUrls = useMemo(
@@ -333,18 +333,7 @@ export default function ReaderImages({
   return (
     <>
       <div className={containerClass}>
-        {images.map((src, i) => {
-          // Virtualisasi: cuma mount gambar di sekitar viewport
-          const minIdx = Math.max(0, activePage - VIRTUAL_BUFFER);
-          const maxIdx = Math.min(images.length - 1, activePage + VIRTUAL_BUFFER);
-          const isVisible = i >= minIdx && i <= maxIdx;
-
-          if (!isVisible) {
-            // Tempat kosong dengan tinggi minimal biar scroll position terjaga
-            return <div key={`${source}-${slugStr}-${i}`} className="h-4" />;
-          }
-
-          return (
+        {images.map((src, i) => (
           <ReaderImage
             key={`${source}-${slugStr}-${i}`}
             src={src}
@@ -355,8 +344,7 @@ export default function ReaderImages({
             imageScaling={imageScaling}
             readingMode={readingMode}
           />
-          );
-        })}
+        ))}
       </div>
 
       <div
