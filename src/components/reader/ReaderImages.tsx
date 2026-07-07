@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { FiArrowDown, FiRefreshCw } from "react-icons/fi";
 import { getChapterImageCandidates } from "@/lib/imageProxy";
 import type { ImageScaling, PageSpacing, ReadingMode } from "@/store/readerStore";
@@ -6,6 +6,7 @@ import type { ImageScaling, PageSpacing, ReadingMode } from "@/store/readerStore
 const BOTTOM_ZONE = 0.35;
 const EAGER_IMAGE_COUNT = 1;
 const PRELOAD_IMAGE_COUNT = 1;
+const VIRTUAL_BUFFER = 5; // Jumlah gambar di-mount di sekitar halaman aktif
 
 const SPACING_MAP: Record<PageSpacing, string> = {
   none: "gap-0",
@@ -60,7 +61,7 @@ interface ReaderImageProps {
   readingMode: ReadingMode;
 }
 
-function ReaderImage({ src, source, slugStr, index, imgStyle, imageScaling, readingMode }: ReaderImageProps) {
+const ReaderImage = memo(function ReaderImage({ src, source, slugStr, index, imgStyle, imageScaling, readingMode }: ReaderImageProps) {
   const candidates = useMemo(
     () => getChapterImageCandidates(source, src),
     [source, src],
@@ -161,7 +162,7 @@ function ReaderImage({ src, source, slugStr, index, imgStyle, imageScaling, read
       )}
     </div>
   );
-}
+});
 
 interface ReaderImagesProps {
   images: string[];
@@ -332,7 +333,18 @@ export default function ReaderImages({
   return (
     <>
       <div className={containerClass}>
-        {images.map((src, i) => (
+        {images.map((src, i) => {
+          // Virtualisasi: cuma mount gambar di sekitar viewport
+          const minIdx = Math.max(0, activePage - VIRTUAL_BUFFER);
+          const maxIdx = Math.min(images.length - 1, activePage + VIRTUAL_BUFFER);
+          const isVisible = i >= minIdx && i <= maxIdx;
+
+          if (!isVisible) {
+            // Tempat kosong dengan tinggi minimal biar scroll position terjaga
+            return <div key={`${source}-${slugStr}-${i}`} className="h-4" />;
+          }
+
+          return (
           <ReaderImage
             key={`${source}-${slugStr}-${i}`}
             src={src}
@@ -343,7 +355,8 @@ export default function ReaderImages({
             imageScaling={imageScaling}
             readingMode={readingMode}
           />
-        ))}
+          );
+        })}
       </div>
 
       <div
