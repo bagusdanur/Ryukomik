@@ -173,6 +173,61 @@ export async function POST(req: NextRequest) {
 }
 
     revalidateTag("comments", { expire: 0 });
+
+    // ── Kirim notifikasi reply ─────────────────────────────────────
+    if (parent_id && comment) {
+      try {
+        // Ambil komentar asli
+        const { data: parentComment } = await supabaseAdmin
+          .from("comments")
+          .select("user_id, content")
+          .eq("id", parent_id)
+          .maybeSingle();
+
+        if (parentComment?.user_id && parentComment.user_id !== user_id) {
+          // Dapatkan subscription pemilik komentar asli
+          const { data: subs } = await supabaseAdmin
+            .from("push_subscriptions")
+            .select("endpoint, p256dh, auth")
+            .eq("user_id", parentComment.user_id);
+
+          if (subs && subs.length > 0) {
+            // Dynamic import web-push (server-side only)
+            const webPush = await import("web-push");
+            const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY;
+            const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
+            const vapidSubject = process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.web.id";
+
+            if (vapidPublic && vapidPrivate) {
+              webPush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
+
+              const replyPreview = (content || "").substring(0, 80);
+              const notifPayload = JSON.stringify({
+                title: `${author_name || "Seseorang"} membalas komentar Anda`,
+                body: replyPreview,
+                tag: `reply:${parent_id}`,
+                url: slug ? `/${type}/${slug}${chapter ? `/chapter/${chapter}` : ""}` : "/",
+              });
+
+              const sendPromises = subs.map((sub: any) => {
+                try {
+                  return webPush.sendNotification(
+                    { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                    notifPayload,
+                  );
+                } catch (e) {
+                  return Promise.resolve();
+                }
+              });
+              await Promise.allSettled(sendPromises);
+            }
+          }
+        }
+      } catch (notifErr) {
+        console.error("Gagal kirim notif reply:", notifErr);
+      }
+    }
+
     return NextResponse.json({ success: true, comment });
   } catch (err) {
     console.error("POST Error:", errorMessage(err));
