@@ -37,7 +37,7 @@ interface SourceResponse {
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 const LISTING_CACHE_PREFIX = "rk_terbaru_listing_v3";
 const LISTING_CACHE_TTL = 5 * 60 * 1000;
-const VALID_SOURCES = new Set<SourceId>(["kiryuu", "komiku", "sekte", "doujindesu", "meionovels"]);
+const VALID_SOURCES = new Set<SourceId>(["kiryuu", "komiku", "luvyaa", "sekte", "doujindesu", "meionovels"]);
 
 async function fetchJson<T = unknown>(url: string, options: FetchOptions = {}): Promise<T> {
   const res = await fetch(url, options);
@@ -453,6 +453,9 @@ export default function TerbaruPage({
           break;
         case "kiryuu":
           url = buildSourceUrl("kiryuu", "pustaka", params);
+          break;
+        case "luvyaa":
+          url = buildSourceUrl("luvyaa", "pustaka", params);
           break;
         case "sekte":
           url = buildSourceUrl("sekte", "pustaka", params);

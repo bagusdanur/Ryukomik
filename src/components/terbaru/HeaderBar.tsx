@@ -48,8 +48,9 @@ export default function HeaderBar({
   const sourceMap: Record<SourceId, string> = {
     kiryuu: "1",
     komiku: "2",
-    sekte: "3",
-    doujindesu: "4",
+    luvyaa: "3",
+    sekte: "4",
+    doujindesu: "5",
     meionovels: "Novel",
   };
 
@@ -128,6 +129,24 @@ export default function HeaderBar({
               )}
             </button>
 
+            {/* luvyaa - jadi Source 3 */}
+            <button
+              onClick={() => {
+                setSource("luvyaa");
+                setShowSource(false);
+              }}
+              className={`flex items-center justify-between w-full px-4 py-2 text-sm transition
+    ${source === "luvyaa" ? "bg-cyan-400/10 text-cyan-200" : "text-white/75 hover:bg-white/[0.06]"}`}
+            >
+              <div className="flex items-center gap-2">
+                <FaGlobeAsia className="text-xs" />
+                <span>Source 3</span>
+              </div>
+              {source === "luvyaa" && (
+                <FaCheckCircle className="text-cyan-300 text-xs" />
+              )}
+            </button>
+
             {/* sekte */}
             <button
               onClick={() => {
@@ -155,7 +174,7 @@ export default function HeaderBar({
             >
               <div className="flex items-center gap-2">
                 <FaGlobeAsia className="text-xs" />
-                <span>Source 3</span>
+                <span>Source 4</span>
                 <span className="text-red-400">18+</span>
               </div>
 
@@ -191,7 +210,7 @@ export default function HeaderBar({
             >
               <div className="flex items-center gap-2">
                 <FaGlobeAsia className="text-xs" />
-                <span>Source 4</span>
+                <span>Source 5</span>
                 <span className="text-red-400">18+</span>
               </div>
 

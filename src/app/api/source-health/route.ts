@@ -16,10 +16,22 @@ const SOURCES = [
     localPath: "/api/source/komiku/pustaka-filter?page=1",
   },
   {
-    id: "sekte",
+    id: "luvyaa",
     label: "Source 3",
     path: "pustaka?page=1",
+    localPath: "/api/source/luvyaa/pustaka?page=1",
+  },
+  {
+    id: "sekte",
+    label: "Source 4",
+    path: "pustaka?page=1",
     localPath: "/api/source/sekte/pustaka?page=1",
+  },
+  {
+    id: "doujindesu",
+    label: "Source 5",
+    path: "pustaka?page=1",
+    localPath: "/api/source/doujindesu/pustaka?page=1",
   },
 ];
 
