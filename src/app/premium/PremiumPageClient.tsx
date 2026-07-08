@@ -200,6 +200,10 @@ export default function PremiumPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
+  // Pending request states
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [isCheckingPending, setIsCheckingPending] = useState(false);
+
   // user profile state
   const [profile, setProfile] = useState<PremiumProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -216,6 +220,37 @@ export default function PremiumPage() {
     }
     fetchProfile();
   }, [user]);
+
+  useEffect(() => {
+    async function checkPending() {
+      if (!user) {
+        setHasPendingRequest(false);
+        return;
+      }
+      setIsCheckingPending(true);
+      try {
+        const { data } = await supabase
+          .from("premium_requests")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("status", "pending")
+          .limit(1);
+
+        if (data && data.length > 0) {
+          setHasPendingRequest(true);
+        } else {
+          setHasPendingRequest(false);
+        }
+      } catch (e) {
+        console.error("Error checking pending request", e);
+      } finally {
+        setIsCheckingPending(false);
+      }
+    }
+    if (showModal) {
+      checkPending();
+    }
+  }, [user, showModal]);
 
   // hitung sisa hari premium
   const premiumDaysLeft = useMemo(() => {
@@ -277,6 +312,10 @@ export default function PremiumPage() {
     if (!user) {
       setShowLogin(true);
       setError("Silakan login terlebih dahulu");
+      return;
+    }
+    if (hasPendingRequest) {
+      setError("Anda masih memiliki request premium yang menunggu konfirmasi.");
       return;
     }
     if (!file) {
@@ -803,11 +842,26 @@ export default function PremiumPage() {
                         </div>
                       )}
 
-                      {/* Upload Box Area */}
-                      <div
-                        className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-white/10 p-5 hover:border-cyan-200/40 hover:bg-white/[0.01] transition-all min-h-[160px]"
-                        onClick={() => inputRef.current?.click()}
-                      >
+                      {isCheckingPending ? (
+                        <div className="flex flex-col items-center justify-center py-10 gap-3 rounded-3xl border border-white/10 bg-white/[0.01]">
+                          <FiLoader size={24} className="animate-spin text-cyan-400" />
+                          <p className="text-xs text-white/50">Mengecek status request...</p>
+                        </div>
+                      ) : hasPendingRequest ? (
+                        <div className="flex flex-col items-center justify-center p-6 gap-3 rounded-3xl border border-amber-500/30 bg-amber-500/10 text-center">
+                          <FiAlertTriangle size={32} className="text-amber-400 mb-1" />
+                          <h3 className="text-sm font-bold text-amber-300">Request Sedang Diproses</h3>
+                          <p className="text-[11px] text-amber-200/70 leading-relaxed max-w-[250px]">
+                            Anda masih memiliki pengajuan premium yang sedang menunggu konfirmasi admin. Harap tunggu maksimal 1x24 jam sebelum mengajukan lagi.
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Upload Box Area */}
+                          <div
+                            className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-white/10 p-5 hover:border-cyan-200/40 hover:bg-white/[0.01] transition-all min-h-[160px]"
+                            onClick={() => inputRef.current?.click()}
+                          >
                         {preview ? (
                           <div className="relative w-full flex flex-col items-center">
                             <img
@@ -881,12 +935,15 @@ export default function PremiumPage() {
                         </button>
                         <button
                           onClick={goToStep3}
-                          className="rk-btn-primary flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all"
+                          disabled={hasPendingRequest}
+                          className="rk-btn-primary flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Lanjut Konfirmasi
                           <FiChevronRight size={16} />
                         </button>
                       </div>
+                        </>
+                      )}
                     </div>
                   )}
 
