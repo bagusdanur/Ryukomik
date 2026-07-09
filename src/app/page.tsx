@@ -6,7 +6,7 @@ import { getTerbaru, getHomeKomiku } from "@/lib/komiku";
 import { getBannerKomiku } from "@/lib/banner";
 import { Suspense } from "react";
 import RecruitBanner from "@/components/RecruitBanner";
-import RyuTopupBanner from "@/components/RyuTopupBanner";
+import RyukomikDiscordBanner from "@/components/RyukomikDiscordBanner";
 import LatestComments from "@/components/LatestComments";
 import TitleRushNotice from "@/components/TitleRushNotice";
 import { getTitleRushEventStatus } from "@/lib/titleRushEvent";
@@ -30,7 +30,7 @@ export default async function Home() {
           <Banner data={banner} />
         </Suspense>
         <RecruitBanner />
-        <RyuTopupBanner />
+        <RyukomikDiscordBanner />
         {titleRushStatus.enabled && <TitleRushNotice className="pb-3" />}
         <UpdateList list={list} />
         <PopularSection data={popular} />
