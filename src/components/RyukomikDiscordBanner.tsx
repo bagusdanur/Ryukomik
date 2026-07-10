@@ -40,14 +40,14 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
   return (
     <div className={`px-3 pt-2 pb-1 sm:px-6 ${className}`}>
       <div
-        className={`group relative overflow-hidden rounded-2xl border border-[#7d5fff]/25 bg-gradient-to-br from-[var(--background)] via-[var(--surface-0)] to-[var(--surface-1)] px-4 py-3 transition-all duration-300 hover:border-[#7d5fff]/60`}
+        className={`group relative overflow-hidden rounded-2xl border border-[var(--accent)]/20 bg-gradient-to-br from-[var(--background)] via-[var(--surface-0)] to-[var(--surface-1)] px-4 py-3 transition-all duration-300 hover:border-[var(--accent)]/50`}
       >
         {/* watermark icon */}
         <svg
           className="pointer-events-none absolute -right-5 -top-3 h-32 w-32 opacity-10 transition-transform duration-500 group-hover:scale-110"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#7d5fff"
+          stroke="var(--accent)"
           strokeWidth="1.2"
         >
           <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5V4.5Z" />
@@ -59,7 +59,7 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
           {/* Logo + wordmark + badge */}
           <div className="flex min-w-[130px] items-center gap-2">
             <div className="flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-[8px] border border-white/10 bg-black">
-              <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" fill="none" stroke="#a78bfa" strokeWidth="1.8">
+              <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" fill="none" stroke="var(--accent-2)" strokeWidth="1.8">
                 <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5V4.5Z" />
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                 <path d="M9 8h7M9 11.5h5" strokeLinecap="round" />
@@ -72,7 +72,7 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
               >
                 RYUKOMIK
               </span>
-              <span className="rounded-full border border-[#7d5fff]/40 bg-[#7d5fff]/15 px-1.5 py-[1px] text-[8px] font-semibold tracking-wide text-[#c3b6ff]">
+              <span className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/15 px-1.5 py-[1px] text-[8px] font-semibold tracking-wide text-[var(--accent-2)]">
                 STAFF RECRUITMENT
               </span>
             </div>
@@ -90,7 +90,7 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
               {POSITIONS.map((p) => (
                 <span
                   key={p.role}
-                  className="rounded-full border border-[#7d5fff]/25 bg-[#7d5fff]/10 px-2 py-[2px] text-[9.5px] text-[#c3b6ff]"
+                  className="rounded-full border border-[var(--accent)]/20 bg-[var(--accent)]/10 px-2 py-[2px] text-[9.5px] text-[var(--accent-2)]"
                 >
                   {p.icon} {p.role}
                 </span>
@@ -103,7 +103,7 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
             <button
               type="button"
               onClick={() => setShowSteps(true)}
-              className="whitespace-nowrap rounded-lg border border-[#7d5fff]/40 bg-[#7d5fff]/10 px-3 py-2 text-[11.5px] font-bold text-[#c3b6ff] transition-colors hover:bg-[#7d5fff]/20"
+              className="whitespace-nowrap rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2 text-[11.5px] font-bold text-[var(--accent-2)] transition-colors hover:bg-[var(--accent)]/20"
             >
               Lihat Alur
             </button>
@@ -111,7 +111,7 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
               href={DISCORD_INVITE}
               target="_blank"
               rel="noopener noreferrer"
-              className="whitespace-nowrap rounded-lg bg-gradient-to-r from-[#7d5fff] to-[#ff5fa8] px-3 py-2 text-[11.5px] font-bold text-white transition-transform duration-300 hover:scale-105"
+              className="whitespace-nowrap rounded-lg bg-gradient-to-r from-[var(--accent)] to-[var(--accent-3)] px-3 py-2 text-[11.5px] font-bold text-white transition-transform duration-300 hover:scale-105"
             >
               Gabung →
             </a>
@@ -122,23 +122,23 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
       {/* POPUP: alur pendaftaran */}
       {showSteps && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
           onClick={() => setShowSteps(false)}
         >
           <div
-            className="relative max-h-[85vh] w-full overflow-y-auto rounded-t-2xl border border-[#7d5fff]/30 bg-[#140f28] p-5 sm:max-w-md sm:rounded-2xl sm:p-6"
+            className="relative max-h-[85vh] w-full overflow-y-auto rounded-t-2xl border border-[var(--accent)]/30 bg-[var(--surface-1)] p-5 sm:max-w-md sm:rounded-2xl sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setShowSteps(false)}
-              className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-[13px] text-[#b8b0d9] hover:bg-white/5"
+              className="absolute right-4 top-4 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-[13px] text-[var(--muted)] hover:bg-white/5"
               aria-label="Tutup"
             >
               ✕
             </button>
 
-            <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#8ea1ff]">
+            <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[var(--accent-2)]">
               Alur Pendaftaran
             </div>
             <h2
@@ -152,15 +152,15 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
               {STEPS.map((s, idx) => (
                 <div key={s.n} className="relative flex gap-3">
                   {idx < STEPS.length - 1 && (
-                    <div className="absolute left-[13px] top-7 h-[calc(100%+2px)] w-px bg-[#7d5fff]/25" />
+                    <div className="absolute left-[13px] top-7 h-[calc(100%+2px)] w-px bg-[var(--accent)]/25" />
                   )}
                   <div
                     className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
                       idx === 0
-                        ? "bg-[#7d5fff] text-white"
+                        ? "bg-[var(--accent)] text-white"
                         : idx === STEPS.length - 1
-                        ? "bg-[#ff5fa8] text-white"
-                        : "border border-[#7d5fff]/40 bg-[#241c3f] text-[#c3b6ff]"
+                        ? "bg-[var(--accent-3)] text-white"
+                        : "border border-[var(--accent)]/40 bg-[var(--surface-2)] text-[var(--accent-2)]"
                     }`}
                   >
                     {s.n}
@@ -174,7 +174,7 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
               href={DISCORD_INVITE}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7d5fff] to-[#ff5fa8] px-4 py-3 text-[13px] font-bold text-white transition-transform hover:scale-[1.02]"
+              className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--accent)] to-[var(--accent-3)] px-4 py-3 text-[13px] font-bold text-white transition-transform hover:scale-[1.02]"
             >
               <DiscordMark className="h-4 w-4" />
               Buat Tiket di Discord
