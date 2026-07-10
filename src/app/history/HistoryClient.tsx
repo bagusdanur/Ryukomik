@@ -33,7 +33,7 @@ export default function HistoryPage() {
         {history.map((item, i) => (
           <a
             key={i}
-            href={`/chapter/${item.source || "kiryuu"}/${item.lastChapterSlug ?? (item as any).slug ?? ""}`}
+            href={`/chapter/${item.source || "komiku"}/${item.lastChapterSlug ?? (item as any).slug ?? ""}`}
             className="rk-card-soft flex flex-col rounded-2xl p-3 transition hover:border-cyan-200/20 md:flex-row md:items-center md:justify-between"
           >
             {/* Title + chapter */}

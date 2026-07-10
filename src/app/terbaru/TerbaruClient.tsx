@@ -165,7 +165,7 @@ function writeListingCache(key: string, source: SourceId, data?: UpdateItem[]) {
 export default function TerbaruPage({
   initialData = [],
   initialFilters = null,
-  initialSource = "kiryuu",
+  initialSource = "komiku",
 }: TerbaruClientProps) {
   const initialListing = useMemo(
     () => normalizeListingItems(initialData, initialSource),

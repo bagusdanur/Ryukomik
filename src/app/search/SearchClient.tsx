@@ -11,8 +11,8 @@ type SearchSource = { id: SearchSourceId; label: string };
 type SearchPageResultItem = Omit<SearchResultItem, "source"> & { source: SearchSourceId };
 
 const COMIC_SOURCES: SearchSource[] = [
-  { id: "kiryuu", label: "Source 1" },
-  { id: "komiku", label: "Source 2" },
+  { id: "komiku", label: "Source 1" },
+  { id: "kiryuu", label: "Source 2" },
   { id: "luvyaa", label: "Source 3" },
   { id: "sekte", label: "Source 4" },
   { id: "doujindesu", label: "Source 5" },

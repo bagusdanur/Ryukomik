@@ -46,8 +46,8 @@ export default function HeaderBar({
   const { avatarUrl, displayName } = useUserProfile(user);
 
   const sourceMap: Record<SourceId, string> = {
-    kiryuu: "1",
-    komiku: "2",
+    komiku: "1",
+    kiryuu: "2",
     luvyaa: "3",
     sekte: "4",
     doujindesu: "5",
@@ -93,38 +93,38 @@ export default function HeaderBar({
 
         {showSource && (
           <div className="absolute top-14 right-12 mt-2 w-44 rk-card overflow-hidden rounded-2xl z-50">
-            {/* KIRYUU - jadi Source 1 */}
-            <button
-              onClick={() => {
-                setSource("kiryuu");
-                setShowSource(false);
-              }}
-              className={`flex items-center justify-between w-full px-4 py-2 text-sm transition
-    ${source === "kiryuu" ? "bg-cyan-400/10 text-cyan-200" : "text-white/75 hover:bg-white/[0.06]"}`}
-            >
-              <div className="flex items-center gap-2">
-                <FaGlobeAsia className="text-xs" />
-                <span>Source 1</span>
-              </div>
-              {source === "kiryuu" && (
-                <FaCheckCircle className="text-cyan-300 text-xs" />
-              )}
-            </button>
-
-            {/* KOMIKU - jadi Source 2 */}
+            {/* KOMIKU - jadi Source 1 */}
             <button
               onClick={() => {
                 setSource("komiku");
                 setShowSource(false);
               }}
               className={`flex items-center justify-between w-full px-4 py-2 text-sm transition
-    ${source === "komiku" ? "bg-violet-500/10 text-violet-200" : "text-white/75 hover:bg-white/[0.06]"}`}
+    ${source === "komiku" ? "bg-cyan-400/10 text-cyan-200" : "text-white/75 hover:bg-white/[0.06]"}`}
+            >
+              <div className="flex items-center gap-2">
+                <FaGlobeAsia className="text-xs" />
+                <span>Source 1</span>
+              </div>
+              {source === "komiku" && (
+                <FaCheckCircle className="text-cyan-300 text-xs" />
+              )}
+            </button>
+
+            {/* KIRYUU - jadi Source 2 */}
+            <button
+              onClick={() => {
+                setSource("kiryuu");
+                setShowSource(false);
+              }}
+              className={`flex items-center justify-between w-full px-4 py-2 text-sm transition
+    ${source === "kiryuu" ? "bg-violet-500/10 text-violet-200" : "text-white/75 hover:bg-white/[0.06]"}`}
             >
               <div className="flex items-center gap-2">
                 <FaGlobeAsia className="text-xs" />
                 <span>Source 2</span>
               </div>
-              {source === "komiku" && (
+              {source === "kiryuu" && (
                 <FaCheckCircle className="text-violet-300 text-xs" />
               )}
             </button>

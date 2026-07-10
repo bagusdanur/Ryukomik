@@ -35,7 +35,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const { avatarUrl, displayName } = useUserProfile(user);
   const userId = user?.id || null;
-  const [source, setSource] = useState<SourceKey>("kiryuu");
+  const [source, setSource] = useState<SourceKey>("komiku");
 
   const [showSource, setShowSource] = useState(false);
 
@@ -158,8 +158,8 @@ export default function Navbar() {
   };
 
   const sourceMap: Record<SourceKey, string> = {
-    kiryuu: "1",
-    komiku: "2",
+    komiku: "1",
+    kiryuu: "2",
     luvyaa: "3",
     sekte: "4",
     doujindesu: "5",
@@ -304,10 +304,10 @@ useEffect(() => {
             <div className="absolute top-14 right-12 mt-2 w-44 rk-card overflow-hidden rounded-2xl z-50">
               {/* KOMIKU */}
               <button
-                onClick={() => changeSource("kiryuu")}
+                onClick={() => changeSource("komiku")}
                 className={`flex items-center justify-between w-full px-4 py-2.5 text-sm
                   ${
-                    source === "kiryuu"
+                    source === "komiku"
                       ? "bg-[var(--accent-2)]/10 text-[var(--accent-2)]"
                       : "text-white/75 hover:bg-white/[0.06]"
                   }`}
@@ -317,17 +317,17 @@ useEffect(() => {
                   <span>Source 1</span>
                 </div>
 
-                {source === "kiryuu" && (
+                {source === "komiku" && (
                   <FaCheckCircle className="text-[var(--accent-2)] text-xs" />
                 )}
               </button>
 
               {/* KIRYUU */}
               <button
-                onClick={() => changeSource("komiku")}
+                onClick={() => changeSource("kiryuu")}
                 className={`flex items-center justify-between w-full px-4 py-2.5 text-sm
                   ${
-                    source === "komiku"
+                    source === "kiryuu"
                       ? "bg-[var(--accent)]/10 text-[var(--accent)]"
                       : "text-white/75 hover:bg-white/[0.06]"
                   }`}
@@ -337,7 +337,7 @@ useEffect(() => {
                   <span>Source 2</span>
                 </div>
 
-                {source === "komiku" && (
+                {source === "kiryuu" && (
                   <FaCheckCircle className="text-violet-300 text-xs" />
                 )}
               </button>

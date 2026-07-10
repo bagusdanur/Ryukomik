@@ -6,7 +6,7 @@ import type { Dict } from "@/types/common";
 import type { TerbaruFilters, UpdateItem } from "@/types/content";
 
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
-const INITIAL_SOURCE = "kiryuu";
+const INITIAL_SOURCE = "komiku";
 
 export const revalidate = 600;
 

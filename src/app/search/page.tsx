@@ -6,8 +6,8 @@ import type { SearchResultItem, SourceId } from "@/types/content";
 
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 const PUBLIC_SOURCES: { id: SourceId; label: string }[] = [
-  { id: "kiryuu", label: "Source 1" },
-  { id: "komiku", label: "Source 2" },
+  { id: "komiku", label: "Source 1" },
+  { id: "kiryuu", label: "Source 2" },
 ];
 
 type RawSearchItem = Dict & {
