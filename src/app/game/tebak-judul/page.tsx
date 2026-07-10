@@ -26,17 +26,17 @@ type SearchParams = {
   page?: string;
 };
 
-async function getKiryuuGameItems(page: number): Promise<GameItem[]> {
+async function getGameItems(page: number): Promise<GameItem[]> {
   try {
     const res = await fetch(
-      `https://api.ryukomik.web.id/kiryuu/pustaka?page=${page}`,
+      `https://api.ryukomik.web.id/komikid/pustaka?page=${page}`,
       { cache: "no-store" },
     );
     const json = await res.json();
 
     return Array.isArray(json?.data) ? json.data : [];
   } catch (error) {
-    console.error("getKiryuuGameItems error:", error);
+    console.error("getGameItems error:", error);
     return [];
   }
 }
@@ -55,7 +55,7 @@ export default async function TebakJudulPage({
     requestedPage <= MAX_PAGE
       ? requestedPage
       : randomPage();
-  const items = eventStatus.enabled ? await getKiryuuGameItems(page) : [];
+  const items = eventStatus.enabled ? await getGameItems(page) : [];
 
   return (
     <TebakJudulClient

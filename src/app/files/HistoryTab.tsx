@@ -95,6 +95,7 @@ const cleanTitle = useCallback((title?: string) => {
 
   return title
     .replace(/^kiryuu\//i, "")
+    .replace(/^komikid\//i, "")
     .replace(/^komiku\//i, "")
     .split("/")[0]; // ambil judul doang
 }, []);

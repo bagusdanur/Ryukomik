@@ -1,13 +1,6 @@
 const PUBLIC_PROXY_IMAGE_SOURCES = new Set(["sekte", "doujindesu"]);
 const PUBLIC_PROXY_IMAGE_HOSTS = new Set(["desu.photos"]);
 const DOUJINDESU_IMAGE_WORKER = "/api/image-proxy";
-const KIRYUU_IMAGE_WORKER = "/api/image-proxy";
-const KIRYUU_IMAGE_HOSTS = new Set([
-  "v5.kiryuu.to",
-  "v4.kiryuu.to",
-  "v3.kiryuu.to",
-  "kiryuu.io",
-]);
 
 export function getOriginalImageUrl(url?: string): string {
   if (!url) return "";
@@ -55,11 +48,6 @@ export function toDoujindesuWorkerImageUrl(url?: string) {
   return `${DOUJINDESU_IMAGE_WORKER}?url=${encodeURIComponent(url)}`;
 }
 
-export function toKiryuuWorkerImageUrl(url?: string) {
-  if (!url) return "";
-  return `${KIRYUU_IMAGE_WORKER}?url=${encodeURIComponent(url)}`;
-}
-
 export function shouldUsePublicChapterProxy(source: string, url?: string) {
   if (!url) return false;
   if (PUBLIC_PROXY_IMAGE_SOURCES.has(source)) return true;
@@ -79,28 +67,6 @@ export function getChapterImageCandidates(source: string, url?: string) {
 
   return [
     toDoujindesuWorkerImageUrl(originalUrl),
-    originalUrl,
-  ];
-}
-
-export function shouldUseKiryuuCoverProxy(source: string, url?: string) {
-  if (!url || source !== "kiryuu") return false;
-
-  try {
-    const { hostname } = new URL(url);
-    return KIRYUU_IMAGE_HOSTS.has(hostname);
-  } catch {
-    return false;
-  }
-}
-
-export function getCoverImageCandidates(source: string, url?: string) {
-  const originalUrl = getOriginalImageUrl(url);
-  if (!originalUrl) return [];
-  if (!shouldUseKiryuuCoverProxy(source, originalUrl)) return [originalUrl];
-
-  return [
-    toKiryuuWorkerImageUrl(originalUrl),
     originalUrl,
   ];
 }
@@ -131,10 +97,6 @@ export function getProxiedThumbnailUrl(url?: string, source?: string): string {
 
   if (shouldProxy) {
     return toDoujindesuWorkerImageUrl(originalUrl);
-  }
-
-  if (source === "kiryuu" && shouldUseKiryuuCoverProxy(source, originalUrl)) {
-    return toKiryuuWorkerImageUrl(originalUrl);
   }
 
   return originalUrl;

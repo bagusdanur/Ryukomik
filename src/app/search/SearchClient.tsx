@@ -12,7 +12,7 @@ type SearchPageResultItem = Omit<SearchResultItem, "source"> & { source: SearchS
 
 const COMIC_SOURCES: SearchSource[] = [
   { id: "komiku", label: "Source 1" },
-  { id: "kiryuu", label: "Source 2" },
+  { id: "komikid", label: "Source 2" },
   { id: "luvyaa", label: "Source 3" },
   { id: "sekte", label: "Source 4" },
   { id: "doujindesu", label: "Source 5" },

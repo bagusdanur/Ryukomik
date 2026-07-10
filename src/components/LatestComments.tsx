@@ -20,6 +20,7 @@ import {
 // ============================================
 const SUPPORTED_SOURCES = Object.freeze([
   "kiryuu",
+  "komikid",
   "komiku",
   "luvyaa",
   "sekte",
@@ -29,6 +30,7 @@ const SUPPORTED_SOURCES = Object.freeze([
 const ADULT_SOURCE_PREFIXES = Object.freeze(["doujindesu-", "sektedoujin-"]);
 const SLUG_PREFIXES = Object.freeze([
   "kiryuu-",
+  "komikid-",
   "komiku-",
   "luvyaa-",
   "sekte-",

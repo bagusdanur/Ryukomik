@@ -20,9 +20,10 @@ function parseSlug(slug: string | string[]) {
 }
 
 async function getChapter(source: string, slugStr: string): Promise<ReaderChapter | null> {
+  const apiSource = source === "kiryuu" ? "komikid" : source;
   try {
     const res = await fetch(
-      `https://api.ryukomik.web.id/${source}/chapter/${slugStr}`,
+      `https://api.ryukomik.web.id/${apiSource}/chapter/${slugStr}`,
       {
         next: {
           revalidate: CHAPTER_JSON_TTL,

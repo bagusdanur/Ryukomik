@@ -43,7 +43,7 @@ export default function Navbar() {
     const syncSource = () => {
       const saved = localStorage.getItem("source");
       startTransition(() => {
-        setSource((saved as SourceKey | null) || "kiryuu");
+        setSource((saved as SourceKey | null) || "komiku");
       });
     };
 
@@ -159,7 +159,8 @@ export default function Navbar() {
 
   const sourceMap: Record<SourceKey, string> = {
     komiku: "1",
-    kiryuu: "2",
+    komikid: "2",
+    kiryuu: "2 (Legacy)",
     luvyaa: "3",
     sekte: "4",
     doujindesu: "5",
@@ -173,7 +174,7 @@ export default function Navbar() {
       return { source: "komiku", slug: "" };
     }
 
-    const map: SourceKey[] = ["kiryuu", "komiku", "luvyaa", "sekte", "doujindesu"];
+    const map: SourceKey[] = ["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu"];
 
     for (const s of map) {
       const prefix = `${s}-`;
@@ -322,12 +323,12 @@ useEffect(() => {
                 )}
               </button>
 
-              {/* KIRYUU */}
+              {/* KOMIKID */}
               <button
-                onClick={() => changeSource("kiryuu")}
+                onClick={() => changeSource("komikid")}
                 className={`flex items-center justify-between w-full px-4 py-2.5 text-sm
                   ${
-                    source === "kiryuu"
+                    source === "komikid"
                       ? "bg-[var(--accent)]/10 text-[var(--accent)]"
                       : "text-white/75 hover:bg-white/[0.06]"
                   }`}
@@ -337,7 +338,7 @@ useEffect(() => {
                   <span>Source 2</span>
                 </div>
 
-                {source === "kiryuu" && (
+                {source === "komikid" && (
                   <FaCheckCircle className="text-violet-300 text-xs" />
                 )}
               </button>

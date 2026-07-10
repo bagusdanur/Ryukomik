@@ -4,10 +4,10 @@ const BASE_URL = "https://api.ryukomik.web.id";
 
 const SOURCES = [
   {
-    id: "kiryuu",
+    id: "komikid",
     label: "Source 1",
     path: "pustaka?page=1",
-    localPath: "/api/source/kiryuu/pustaka?page=1",
+    localPath: "/api/source/komikid/pustaka?page=1",
   },
   {
     id: "komiku",

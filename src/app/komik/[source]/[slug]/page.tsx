@@ -46,7 +46,8 @@ const normalizeDetail = (json: Dict): ComicDetail | null => {
 };
 
 const getDetail = async (source: string, slug: string): Promise<ComicDetail | null> => {
-  const endpoint = `https://api.ryukomik.web.id/${source}/detail/${encodeURIComponent(slug)}`;
+  const apiSource = source === "kiryuu" ? "komikid" : source;
+  const endpoint = `https://api.ryukomik.web.id/${apiSource}/detail/${encodeURIComponent(slug)}`;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {

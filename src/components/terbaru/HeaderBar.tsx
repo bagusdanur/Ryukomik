@@ -47,7 +47,8 @@ export default function HeaderBar({
 
   const sourceMap: Record<SourceId, string> = {
     komiku: "1",
-    kiryuu: "2",
+    komikid: "2",
+    kiryuu: "2 (Legacy)",
     luvyaa: "3",
     sekte: "4",
     doujindesu: "5",
@@ -111,20 +112,20 @@ export default function HeaderBar({
               )}
             </button>
 
-            {/* KIRYUU - jadi Source 2 */}
+            {/* KOMIKID - jadi Source 2 */}
             <button
               onClick={() => {
-                setSource("kiryuu");
+                setSource("komikid");
                 setShowSource(false);
               }}
               className={`flex items-center justify-between w-full px-4 py-2 text-sm transition
-    ${source === "kiryuu" ? "bg-violet-500/10 text-violet-200" : "text-white/75 hover:bg-white/[0.06]"}`}
+    ${source === "komikid" ? "bg-violet-500/10 text-violet-200" : "text-white/75 hover:bg-white/[0.06]"}`}
             >
               <div className="flex items-center gap-2">
                 <FaGlobeAsia className="text-xs" />
                 <span>Source 2</span>
               </div>
-              {source === "kiryuu" && (
+              {source === "komikid" && (
                 <FaCheckCircle className="text-violet-300 text-xs" />
               )}
             </button>

@@ -102,7 +102,7 @@ const normalizeType = (value?: string) => {
   return String(value).charAt(0).toUpperCase() + String(value).slice(1);
 };
 
-const normalizeItem = (item: RawComicItem, source = "kiryuu"): GameItem | null => {
+const normalizeItem = (item: RawComicItem, source = "komikid"): GameItem | null => {
   const title = item?.title?.trim();
   const image = item?.image || item?.thumbnail || item?.cover;
   const slug = item?.slug || slugFromLink(item?.link);

@@ -103,7 +103,7 @@ function getActiveTitleSince() {
 
 function parseSlug(slug?: string | null) {
   if (!slug || typeof slug !== "string") return { source: "komiku", realSlug: "" };
-  const sources = ["kiryuu", "komiku", "luvyaa", "sekte", "doujindesu", "meionovels"];
+  const sources = ["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu", "meionovels"];
   const found = sources.find((source) => slug.startsWith(`${source}-`));
   if (found) return { source: found, realSlug: slug.slice(found.length + 1) };
   const adultPrefix = ["doujindesu-", "sektedoujin-"].find((prefix) =>
