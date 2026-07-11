@@ -1,5 +1,5 @@
 "use client";
-import { FaCheckCircle } from "react-icons/fa";
+import { FaCheckCircle, FaBookOpen, FaExclamationTriangle, FaFolderOpen } from "react-icons/fa";
 import {
   MANGA_SOURCES,
   ADULT_SOURCES,
@@ -67,7 +67,7 @@ export default function SourcePicker({ source, onSelect, onAdultGate }: SourcePi
   return (
     <div
       className={`
-        fixed bottom-0 left-0 right-0 z-50
+        fixed bottom-0 left-0 right-0 z-[70]
         rk-card rounded-t-3xl p-4 pt-3
         animate-slideUp
         
@@ -83,8 +83,8 @@ export default function SourcePicker({ source, onSelect, onAdultGate }: SourcePi
       <div className="space-y-4">
         {/* Manga Group */}
         <div>
-          <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">
-            📚 Manga
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-2.5">
+            <FaBookOpen /> Manga
           </p>
           <div className="flex flex-wrap gap-2">
             {MANGA_SOURCES.map(config => (
@@ -100,8 +100,8 @@ export default function SourcePicker({ source, onSelect, onAdultGate }: SourcePi
 
         {/* Adult Group */}
         <div>
-          <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">
-            🔞 18+
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold text-rose-400/80 uppercase tracking-wider mb-2.5 mt-2">
+            <FaExclamationTriangle /> 18+
           </p>
           <div className="flex flex-wrap gap-2">
             {ADULT_SOURCES.map(config => (
@@ -117,8 +117,8 @@ export default function SourcePicker({ source, onSelect, onAdultGate }: SourcePi
 
         {/* Novel Group */}
         <div>
-          <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wider mb-2">
-            📖 Lainnya
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-2.5 mt-2">
+            <FaFolderOpen /> Lainnya
           </p>
           <div className="flex flex-wrap gap-2">
             {NOVEL_SOURCES.map(config => (
