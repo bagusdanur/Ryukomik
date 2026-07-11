@@ -99,7 +99,7 @@ export default function NotificationDropdown({
 
   const detectSource = (slug = ""): { source: SourceId; slug: string } => {
     if (!slug || typeof slug !== "string") return { source: DEFAULT_SOURCE, slug: "" };
-    const map: SourceId[] = ["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu", "ikiru"];
+    const map: SourceId[] = ["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu"];
 
     for (const source of map) {
       const prefix = `${source}-`;

@@ -166,7 +166,7 @@ export default function Navbar() {
       return { source: DEFAULT_SOURCE, slug: "" };
     }
 
-    const map: SourceKey[] = ["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu", "ikiru"];
+    const map: SourceKey[] = ["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu"];
 
     for (const s of map) {
       const prefix = `${s}-`;
