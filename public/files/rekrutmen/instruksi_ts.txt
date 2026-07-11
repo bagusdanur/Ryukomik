@@ -1,0 +1,75 @@
+╔══════════════════════════════════════╗
+║     🎨 TES TYPESETTER (TS)           ║
+║     Ryukomik Recruitment             ║
+╚══════════════════════════════════════╝
+
+📥 FILE YANG DIDAPAT:
+📦 TS_Test.zip (~14 MB)
+├──  instruksi_ts.txt (ini)
+├──  terjemahan_ts.txt (contoh terjemahan)
+└──  raw/ (18 halaman RAW)
+
+════════════════════════════════════════
+🖌️  LANGKAH PENGERJAAN:
+════════════════════════════════════════
+
+1. CLEANING
+   Hapus semua teks Bahasa Inggris dari
+   gelembung dialog. Gunakan:
+   • Eraser tool (tepi halus)
+   • Lasso select + Content Aware Fill
+   • Clone stamp untuk area besar
+
+2. REDRAWING
+   HANYA jika teks menutupi bagian penting
+   dari gambar (wajah, background detail).
+   Gambar ulang area yang rusak.
+
+3. TYPESETTING
+   Tempelkan teks dari terjemahan_ts.txt
+   ke dalam gelembung yang sudah dibersihkan.
+
+   Font yang digunakan:
+   • Dialog biasa  → CC Wild Words / Anime Ace
+   • Teriakan      → Anime Ace Bold
+   • SFX (efek)    → Terserah, asal rapi
+
+════════════════════════════════════════
+⚠️  ATURAN PENTING — BANNER & LOGO
+════════════════════════════════════════
+
+Halaman 18 & halaman lain yang memiliki:
+
+  ❌ "READ AT ASURASCANS.COM"
+  ❌ Logo/banner Asura Scans
+  ❌ Banner "FASTEST RELEASES"
+  ❌ watermark/site promo lainnya
+
+WAJIB:
+  ✅ Hapus total banner/logo Asura Scans
+  ✅ Ganti dengan banner Ryukomik:
+     "BACA DI RYUKOMIK.MY.ID"
+  ✅ Jika ada logo, ganti dengan logo
+     Ryukomik (icon.png)
+  ✅ Gunakan font yang sama/ mirip
+     dengan banner aslinya
+
+════════════════════════════════════════
+📋 FORMAT OUTPUT:
+════════════════════════════════════════
+
+• Format: JPEG atau PNG
+• Resolusi: HD (lebar min 825px)
+• Penamaan berurutan:
+  halaman_001.jpg
+  halaman_002.jpg
+  ...
+• Kumpulkan dalam 1 folder
+• Zip & kirim di tiket ini
+
+════════════════════════════════════════
+⏰ DEADLINE: 3 HARI
+════════════════════════════════════════
+
+Semoga berhasil! 🚀
+— Ryukomik Recruitment Team

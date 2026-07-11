@@ -1,0 +1,57 @@
+╔══════════════════════════════════════╗
+║     📖 TES TRANSLATOR (TL)          ║
+║     Ryukomik Recruitment            ║
+╚══════════════════════════════════════╝
+
+📥 FILE YANG DIDAPAT:
+📦 TL_Test.zip (~14 MB)
+├──  instruksi_tl.txt (ini)
+└──  raw/ (18 halaman RAW English)
+
+════════════════════════════════════════
+📝  TUGAS KAMU:
+════════════════════════════════════════
+
+1. Download & extract TL_Test.zip
+2. Buka halaman RAW di folder /raw/
+3. Terjemahkan seluruh dialog English → Indonesia
+4. Simpan hasil sebagai file .txt
+5. Kirim file .txt di tiket ini
+
+════════════════════════════════════════
+📋  ATURAN TERJEMAHAN:
+════════════════════════════════════════
+
+✅ WAJIB:
+• Natural & mengalir (seperti percakapan asli)
+• Nama karakter TIDAK boleh diganti
+• Istilah khusus (Hunter, Gate, Mana, dll)
+  tetap dipertahankan
+
+❌ JANGAN:
+• Terjemahan kaku/literal
+• Menambah/mengurangi dialog dari aslinya
+• Menerjemahkan nama karakter
+
+════════════════════════════════════════
+📋  FORMAT HASIL:
+════════════════════════════════════════
+
+Buat file .txt dengan format berikut:
+
+[Halaman 1]
+Panel 1 — "Terjemahan dialog panel 1"
+Panel 2 — "Terjemahan dialog panel 2"
+
+[Halaman 2]
+Panel 1 — "Terjemahan dialog panel 1"
+
+💡 TIPS: Urutkan panel dari kiri ke kanan,
+atas ke bawah (urutan baca komik).
+
+════════════════════════════════════════
+⏰ DEADLINE: 3 HARI
+════════════════════════════════════════
+
+Semoga berhasil! 🚀
+— Ryukomik Recruitment Team

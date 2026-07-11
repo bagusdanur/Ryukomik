@@ -314,6 +314,7 @@ useEffect(() => {
                     setShowSource(false);
                   }}
                   onAdultGate={(id) => {
+                    setShowSource(false);
                     if (!isAdult) {
                       setShowAgeModal(true);
                       setTargetSource(id as SourceKey);
