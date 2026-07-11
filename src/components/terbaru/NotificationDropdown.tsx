@@ -13,6 +13,7 @@ import {
   markTitleRushWeeklyNotificationRead,
   TITLE_RUSH_EVENT_TYPE,
 } from "@/utils/titleRushNotification";
+import { DEFAULT_SOURCE } from "@/config/sources";
 
 interface NotificationDropdownProps {
   user: User | null;
@@ -97,8 +98,8 @@ export default function NotificationDropdown({
   if (!user) return null;
 
   const detectSource = (slug = ""): { source: SourceId; slug: string } => {
-    if (!slug || typeof slug !== "string") return { source: "komiku", slug: "" };
-    const map: SourceId[] = ["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu"];
+    if (!slug || typeof slug !== "string") return { source: DEFAULT_SOURCE, slug: "" };
+    const map: SourceId[] = ["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu", "ikiru"];
 
     for (const source of map) {
       const prefix = `${source}-`;
@@ -117,7 +118,7 @@ export default function NotificationDropdown({
       };
     }
 
-    return { source: "komiku", slug };
+    return { source: DEFAULT_SOURCE, slug };
   };
 
   const getNotifLink = (notification: NotificationItem) => {

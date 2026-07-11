@@ -2,43 +2,23 @@ import { NextResponse } from "next/server";
 
 const BASE_URL = "https://api.ryukomik.web.id";
 
-const SOURCES = [
-  {
-    id: "komikid",
-    label: "Source 1",
-    path: "pustaka?page=1",
-    localPath: "/api/source/komikid/pustaka?page=1",
-  },
-  {
-    id: "komiku",
-    label: "Source 2",
-    path: "pustaka-filter?page=1",
-    localPath: "/api/source/komiku/pustaka-filter?page=1",
-  },
-  {
-    id: "luvyaa",
-    label: "Source 3",
-    path: "pustaka?page=1",
-    localPath: "/api/source/luvyaa/pustaka?page=1",
-  },
-  {
-    id: "sekte",
-    label: "Source 4",
-    path: "pustaka?page=1",
-    localPath: "/api/source/sekte/pustaka?page=1",
-  },
-  {
-    id: "doujindesu",
-    label: "Source 5",
-    path: "pustaka?page=1",
-    localPath: "/api/source/doujindesu/pustaka?page=1",
-  },
-];
+import { VISIBLE_SOURCES } from "@/config/sources";
+
+const SOURCES = VISIBLE_SOURCES
+  .filter(s => s.group !== "novel")
+  .map(s => ({
+    id: s.id,
+    label: `Source ${s.label}`,
+    path: s.id === "komiku" ? "pustaka-filter?page=1" : "pustaka?page=1",
+    localPath: `/api/source/${s.id}/${s.id === "komiku" ? "pustaka-filter" : "pustaka"}?page=1`,
+  }));
 
 type SourceConfig = (typeof SOURCES)[number];
 
+import { isAdultSource } from "@/config/sources";
+
 function getImageProxyMode(sourceId: string) {
-  return sourceId === "sekte" ? "always" : "on-error";
+  return isAdultSource(sourceId) ? "always" : "on-error";
 }
 
 function getItemCount(payload: unknown) {

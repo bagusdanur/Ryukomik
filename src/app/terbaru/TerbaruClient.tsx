@@ -37,7 +37,8 @@ interface SourceResponse {
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 const LISTING_CACHE_PREFIX = "rk_terbaru_listing_v3";
 const LISTING_CACHE_TTL = 5 * 60 * 1000;
-const VALID_SOURCES = new Set<SourceId>(["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu", "meionovels"]);
+import { VALID_SOURCE_IDS, DEFAULT_SOURCE } from "@/config/sources";
+const VALID_SOURCES = VALID_SOURCE_IDS;
 
 async function fetchJson<T = unknown>(url: string, options: FetchOptions = {}): Promise<T> {
   const res = await fetch(url, options);
@@ -165,7 +166,7 @@ function writeListingCache(key: string, source: SourceId, data?: UpdateItem[]) {
 export default function TerbaruPage({
   initialData = [],
   initialFilters = null,
-  initialSource = "komiku",
+  initialSource = DEFAULT_SOURCE,
 }: TerbaruClientProps) {
   const initialListing = useMemo(
     () => normalizeListingItems(initialData, initialSource),
@@ -192,7 +193,7 @@ export default function TerbaruPage({
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
 
-  const [source, setSource] = useState<SourceId>(initialSource);
+  const [source, setSource] = useState<SourceId>(() => normalizeStoredSource(initialSource ?? null, DEFAULT_SOURCE));
 
   // ✅ AUTH: dedupe session fetch
   // ✅ NOTIFIKASI: cleanup channel saat unmount / user change
@@ -550,8 +551,7 @@ export default function TerbaruPage({
       if (savedSource !== initialSource) {
         activeSource = savedSource;
         resetListing();
-        setSource(savedSource);
-        return;
+        setSource(savedSource || DEFAULT_SOURCE);
       }
     }
 

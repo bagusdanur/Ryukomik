@@ -1,5 +1,7 @@
 "use client";
 import NotificationDropdown from "@/components/terbaru/NotificationDropdown";
+import SourcePicker from "@/components/SourcePicker";
+import { SOURCE_MAP, DEFAULT_SOURCE } from "@/config/sources";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useState, useEffect, startTransition } from "react";
 import type { FormEvent } from "react";
@@ -35,7 +37,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const { avatarUrl, displayName } = useUserProfile(user);
   const userId = user?.id || null;
-  const [source, setSource] = useState<SourceKey>("komiku");
+  const [source, setSource] = useState<SourceKey>(DEFAULT_SOURCE);
 
   const [showSource, setShowSource] = useState(false);
 
@@ -43,7 +45,7 @@ export default function Navbar() {
     const syncSource = () => {
       const saved = localStorage.getItem("source");
       startTransition(() => {
-        setSource((saved as SourceKey | null) || "komiku");
+        setSource((saved as SourceKey | null) || DEFAULT_SOURCE);
       });
     };
 
@@ -67,7 +69,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const saved = localStorage.getItem("source");
-    const normalized = (saved as SourceKey | null) || "komiku";
+    const normalized = (saved as SourceKey | null) || DEFAULT_SOURCE;
     const id = requestAnimationFrame(() => {
       startTransition(() => {
         setSource(normalized);
@@ -157,24 +159,14 @@ export default function Navbar() {
     window.dispatchEvent(new Event("sourceChange"));
   };
 
-  const sourceMap: Record<SourceKey, string> = {
-    komiku: "1",
-    komikid: "2",
-    kiryuu: "2 (Legacy)",
-    luvyaa: "3",
-    sekte: "4",
-    doujindesu: "5",
-    meionovels: "Novel",
-  };
-
-  const sourceId = sourceMap[source] || "0";
+  const sourceId = SOURCE_MAP[source] || "1";
 
   const detectSource = (slug = ""): { source: SourceKey; slug: string } => {
     if (!slug || typeof slug !== "string") {
-      return { source: "komiku", slug: "" };
+      return { source: DEFAULT_SOURCE, slug: "" };
     }
 
-    const map: SourceKey[] = ["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu"];
+    const map: SourceKey[] = ["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu", "ikiru"];
 
     for (const s of map) {
       const prefix = `${s}-`;
@@ -197,9 +189,8 @@ export default function Navbar() {
       };
     }
 
-    // 🔥 DEFAULT (data lama tanpa prefix)
     return {
-      source: "komiku",
+      source: DEFAULT_SOURCE,
       slug,
     };
   };
@@ -301,170 +292,43 @@ useEffect(() => {
             />
           </form>
 
-          {showSource && (
-            <div className="absolute top-14 right-12 mt-2 w-44 rk-card overflow-hidden rounded-2xl z-50">
-              {/* KOMIKU */}
-              <button
-                onClick={() => changeSource("komiku")}
-                className={`flex items-center justify-between w-full px-4 py-2.5 text-sm
-                  ${
-                    source === "komiku"
-                      ? "bg-[var(--accent-2)]/10 text-[var(--accent-2)]"
-                      : "text-white/75 hover:bg-white/[0.06]"
-                  }`}
-              >
-                <div className="flex items-center gap-2">
-                  <FaGlobeAsia className="text-xs" />
-                  <span>Source 1</span>
-                </div>
-
-                {source === "komiku" && (
-                  <FaCheckCircle className="text-[var(--accent-2)] text-xs" />
-                )}
-              </button>
-
-              {/* KOMIKID */}
-              <button
-                onClick={() => changeSource("komikid")}
-                className={`flex items-center justify-between w-full px-4 py-2.5 text-sm
-                  ${
-                    source === "komikid"
-                      ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                      : "text-white/75 hover:bg-white/[0.06]"
-                  }`}
-              >
-                <div className="flex items-center gap-2">
-                  <FaGlobeAsia className="text-xs" />
-                  <span>Source 2</span>
-                </div>
-
-                {source === "komikid" && (
-                  <FaCheckCircle className="text-violet-300 text-xs" />
-                )}
-              </button>
-              {/* luvyaa */}
-              <button
-                onClick={() => changeSource("luvyaa")}
-                className={`flex items-center justify-between w-full px-4 py-2.5 text-sm
-                  ${
-                    source === "luvyaa"
-                      ? "bg-[var(--accent-2)]/10 text-[var(--accent-2)]"
-                      : "text-white/75 hover:bg-white/[0.06]"
-                  }`}
-              >
-                <div className="flex items-center gap-2">
-                  <FaGlobeAsia className="text-xs" />
-                  <span>Source 3</span>
-                </div>
-
-                {source === "luvyaa" && (
-                  <FaCheckCircle className="text-[var(--accent-2)] text-xs" />
-                )}
-              </button>
-              {/* sekte */}
-              <button
-                onClick={() => {
-                  if (!isAdult) {
-                    setShowAgeModal(true);
-                    setTargetSource("sekte");
-                    return;
-                  }
-
-                  if (!user) {
-                    setShowLogin(true);
-                    
-                    return;
-                  }
-
-                  changeSource("sekte");
-                  setShowSource(false);
-                }}
-                className={`flex items-center justify-between w-full px-4 py-2.5 text-sm
-        ${
-          source === "sekte"
-            ? "bg-red-500/10 text-red-400"
-            : "text-white/80 hover:bg-white/5"
-        }`}
-              >
-                <div className="flex items-center gap-2">
-                  <FaGlobeAsia className="text-xs" />
-                  <span>Source 4</span>
-                  <span className="text-red-400">18+</span>
-                </div>
-
-                {source === "sekte" && (
-                  <FaCheckCircle className="text-red-400 text-xs" />
-                )}
-              </button>
-
-              {/* doujindesu */}
-              <button
-                onClick={() => {
-                  if (!isAdult) {
-                    setShowAgeModal(true);
-                    setTargetSource("doujindesu");
-                    return;
-                  }
-
-                  if (!user) {
-                    setShowLogin(true);
-                    
-                    return;
-                  }
-
-                  changeSource("doujindesu");
-                  setShowSource(false);
-                }}
-                className={`flex items-center justify-between w-full px-4 py-2.5 text-sm
-        ${
-          source === "doujindesu"
-            ? "bg-red-500/10 text-red-400"
-            : "text-white/80 hover:bg-white/5"
-        }`}
-              >
-                <div className="flex items-center gap-2">
-                  <FaGlobeAsia className="text-xs" />
-                  <span>Source 5</span>
-                  <span className="text-red-400">18+</span>
-                </div>
-
-                {source === "doujindesu" && (
-                  <FaCheckCircle className="text-red-400 text-xs" />
-                )}
-              </button>
-
-              {/* meionovels */}
-              <button
-                onClick={() => changeSource("meionovels")}
-                className={`flex items-center justify-between w-full px-4 py-2.5 text-sm
-                  ${
-                    source === "meionovels"
-                      ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                      : "text-white/75 hover:bg-white/[0.06]"
-                  }`}
-              >
-                <div className="flex items-center gap-2">
-                  <FaGlobeAsia className="text-xs" />
-                  <span>Novel</span>
-                </div>
-
-                {source === "meionovels" && (
-                  <FaCheckCircle className="text-violet-300 text-xs" />
-                )}
-              </button>
-            </div>
-          )}
-
           <div className="relative">
             <button
               onClick={() => startTransition(() => setShowSource(!showSource))}
               className="rk-btn-ghost flex h-10 items-center gap-2 rounded-full px-3 text-sm"
             >
               <FaExchangeAlt className="text-xs" />
-
-              {/* 🔥 tampilkan source aktif */}
-              <span className="capitalize">{sourceMap[source]}</span>
+              <span className="capitalize">{SOURCE_MAP[source] || "1"}</span>
             </button>
+
+            {showSource && (
+              <>
+                <div
+                  className="fixed inset-0 z-40 bg-black/40 md:bg-transparent"
+                  onClick={() => setShowSource(false)}
+                />
+                <SourcePicker
+                  source={source}
+                  onSelect={(id) => {
+                    changeSource(id as SourceKey);
+                    setShowSource(false);
+                  }}
+                  onAdultGate={(id) => {
+                    if (!isAdult) {
+                      setShowAgeModal(true);
+                      setTargetSource(id as SourceKey);
+                      return;
+                    }
+                    if (!user) {
+                      setShowLogin(true);
+                      return;
+                    }
+                    changeSource(id as SourceKey);
+                    setShowSource(false);
+                  }}
+                />
+              </>
+            )}
           </div>
 
           <NotificationDropdown

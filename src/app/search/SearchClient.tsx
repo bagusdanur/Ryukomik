@@ -10,15 +10,16 @@ type SearchSourceId = SourceId | "doujindesu";
 type SearchSource = { id: SearchSourceId; label: string };
 type SearchPageResultItem = Omit<SearchResultItem, "source"> & { source: SearchSourceId };
 
-const COMIC_SOURCES: SearchSource[] = [
-  { id: "komiku", label: "Source 1" },
-  { id: "komikid", label: "Source 2" },
-  { id: "luvyaa", label: "Source 3" },
-  { id: "sekte", label: "Source 4" },
-  { id: "doujindesu", label: "Source 5" },
-];
+import {
+  MANGA_SOURCES,
+  ADULT_SOURCES as ADULT_SOURCE_CONFIGS,
+  ADULT_SOURCE_IDS,
+} from "@/config/sources";
 
-const ADULT_SOURCE_IDS = new Set<SearchSourceId>(["sekte", "doujindesu"]);
+const COMIC_SOURCES: SearchSource[] = [
+  ...MANGA_SOURCES.map(s => ({ id: s.id as SearchSourceId, label: `Source ${s.label}` })),
+  ...ADULT_SOURCE_CONFIGS.map(s => ({ id: s.id as SearchSourceId, label: `Source ${s.label}` })),
+];
 const PUBLIC_SOURCES = COMIC_SOURCES.filter((source) => !ADULT_SOURCE_IDS.has(source.id));
 const ADULT_SOURCES = COMIC_SOURCES.filter((source) => ADULT_SOURCE_IDS.has(source.id));
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";

@@ -18,26 +18,13 @@ import {
 // ============================================
 // CONSTANTS
 // ============================================
-const SUPPORTED_SOURCES = Object.freeze([
-  "kiryuu",
-  "komikid",
-  "komiku",
-  "luvyaa",
-  "sekte",
-  "doujindesu",
-  "meionovels",
-]);
+import { VALID_SOURCE_IDS, DEFAULT_SOURCE } from "@/config/sources";
+
+const SUPPORTED_SOURCES = Object.freeze(Array.from(VALID_SOURCE_IDS));
 const ADULT_SOURCE_PREFIXES = Object.freeze(["doujindesu-", "sektedoujin-"]);
-const SLUG_PREFIXES = Object.freeze([
-  "kiryuu-",
-  "komikid-",
-  "komiku-",
-  "luvyaa-",
-  "sekte-",
-  "doujindesu-",
-  "sektedoujin-",
-  "meionovels-",
-]);
+const SLUG_PREFIXES = Object.freeze(
+  [...SUPPORTED_SOURCES, "sektedoujin"].map(s => `${s}-`)
+);
 const IMAGE_REGEX = /\.(jpg|jpeg|png|webp|gif)$/i;
 const URL_REGEX = /^\[https?:\/\/[^\]]+\]$/;
 const CHAPTER_REGEX_1 = /\/chapter-(.+)/;
@@ -94,7 +81,7 @@ export const parseSlug = (slug?: string | null) => {
   if (adultPrefix) {
     return { source: "sekte", realSlug: slug.slice(adultPrefix.length) };
   }
-  return { source: "komiku", realSlug: slug };
+  return { source: DEFAULT_SOURCE, realSlug: slug };
 };
 
 export const getLink = (slug?: string | null) => {

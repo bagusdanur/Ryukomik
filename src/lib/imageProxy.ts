@@ -1,4 +1,6 @@
-const PUBLIC_PROXY_IMAGE_SOURCES = new Set(["sekte", "doujindesu"]);
+import { isAdultSource, ADULT_SOURCE_IDS } from "@/config/sources";
+
+const PUBLIC_PROXY_IMAGE_SOURCES = ADULT_SOURCE_IDS;
 const PUBLIC_PROXY_IMAGE_HOSTS = new Set(["desu.photos"]);
 const DOUJINDESU_IMAGE_WORKER = "/api/image-proxy";
 
@@ -26,7 +28,7 @@ export function getOriginalImageUrl(url?: string): string {
     if (!shouldExtract && parsed.origin === "https://api.ryukomik.web.id") {
       const pathParts = parsed.pathname.split("/").filter(Boolean);
       const urlSource = pathParts[0];
-      if (urlSource === "doujindesu" || urlSource === "sekte") {
+      if (urlSource && isAdultSource(urlSource)) {
         shouldExtract = true;
       }
     }
@@ -78,8 +80,7 @@ export function getProxiedThumbnailUrl(url?: string, source?: string): string {
   // Jika URL relatif (tidak dimulai http), skip — biar gak error di image proxy
   if (!originalUrl.startsWith("http")) return "";
 
-  const isAdultSource = source === "doujindesu" || source === "sekte";
-  let shouldProxy = isAdultSource;
+  let shouldProxy = source ? isAdultSource(source) : false;
 
   if (!shouldProxy) {
     try {
