@@ -456,6 +456,9 @@ export default function TerbaruPage({
         case "komikid":
           url = buildSourceUrl("komikid", "pustaka", params);
           break;
+        case "ikiru":
+          url = buildSourceUrl("ikiru", "pustaka", params);
+          break;
         case "luvyaa":
           url = buildSourceUrl("luvyaa", "pustaka", params);
           break;
