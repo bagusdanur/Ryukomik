@@ -36,6 +36,8 @@ interface SourceResponse {
 
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 const LISTING_CACHE_PREFIX = "rk_terbaru_listing_v3";
+const GLOBAL_STATE_CACHE_KEY = "rk_terbaru_global_state_v1";
+const SCROLL_CACHE_KEY = "rk_terbaru_scroll_v1";
 const LISTING_CACHE_TTL = 5 * 60 * 1000;
 import { VALID_SOURCE_IDS, DEFAULT_SOURCE } from "@/config/sources";
 const VALID_SOURCES = VALID_SOURCE_IDS;
@@ -293,6 +295,78 @@ export default function TerbaruPage({
   useEffect(() => {
     dataLengthRef.current = data.length;
   }, [data.length]);
+
+  // ✅ RESTORE GLOBAL STATE ON MOUNT
+  useEffect(() => {
+    try {
+      const cachedState = sessionStorage.getItem(GLOBAL_STATE_CACHE_KEY);
+      if (cachedState) {
+        const parsed = JSON.parse(cachedState);
+        const age = Date.now() - parsed.timestamp;
+        
+        if (
+          age < LISTING_CACHE_TTL &&
+          parsed.source === source &&
+          parsed.orderby === orderby &&
+          parsed.tipe === tipe &&
+          parsed.genre === genre &&
+          parsed.genre2 === genre2 &&
+          parsed.status === status &&
+          parsed.data && Array.isArray(parsed.data)
+        ) {
+          setData(parsed.data);
+          setPage(parsed.page);
+          pageRef.current = parsed.page;
+          dataLengthRef.current = parsed.data.length;
+          
+          const savedScrollY = sessionStorage.getItem(SCROLL_CACHE_KEY);
+          if (savedScrollY) {
+            setTimeout(() => {
+              window.scrollTo(0, parseInt(savedScrollY, 10));
+            }, 50);
+          }
+        }
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only on mount
+
+  // ✅ SAVE SCROLL POSITION
+  useEffect(() => {
+    let scrollTimeout: ReturnType<typeof setTimeout>;
+    const handleScroll = () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        try {
+          sessionStorage.setItem(SCROLL_CACHE_KEY, window.scrollY.toString());
+        } catch {}
+      }, 100);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, []);
+
+  // ✅ SAVE GLOBAL STATE WHEN IT CHANGES
+  useEffect(() => {
+    if (data.length === 0) return;
+    try {
+      const state = {
+        data,
+        page,
+        source,
+        orderby,
+        tipe,
+        genre,
+        genre2,
+        status,
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem(GLOBAL_STATE_CACHE_KEY, JSON.stringify(state));
+    } catch {}
+  }, [data, page, source, orderby, tipe, genre, genre2, status]);
 
   // ✅ FILTER: cache 24 jam + abort controller
   useEffect(() => {
