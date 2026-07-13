@@ -452,12 +452,14 @@ export default function TerbaruPage({
           if (status) params.append("status", status);
           url = buildSourceUrl("komiku", "pustaka-filter", params);
           break;
-        case "kiryuu":
         case "komikid":
           url = buildSourceUrl("komikid", "pustaka", params);
           break;
         case "ikiru":
           url = buildSourceUrl("ikiru", "pustaka", params);
+          break;
+        case "kiryuu":
+          url = buildSourceUrl("kiryuu", "pustaka", params);
           break;
         case "luvyaa":
           url = buildSourceUrl("luvyaa", "pustaka", params);

@@ -226,10 +226,10 @@ export default function SearchClient({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-bold text-rose-200">
-                Source 4 & 5 berisi konten 18+
+                Source 6 & 7 berisi konten 18+
               </p>
               <p className="mt-1 text-xs text-white/55">
-                Hasil dari Source 4 dan Source 5 tidak ditampilkan otomatis.
+                Hasil dari Source 6 dan Source 7 tidak ditampilkan otomatis.
               </p>
             </div>
 
@@ -240,16 +240,16 @@ export default function SearchClient({
               className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-400 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/45"
             >
               {adultLoading
-                ? "Memuat Source 4 & 5..."
+                ? "Memuat Source 6 & 7..."
                 : adultUnlocked
-                  ? "Source 4 & 5 Ditampilkan"
-                  : "Tampilkan Source 4 & 5 (18+)"}
+                  ? "Source 6 & 7 Ditampilkan"
+                  : "Tampilkan Source 6 & 7 (18+)"}
             </button>
           </div>
 
           {adultError && (
             <p className="mt-3 text-xs text-red-300">
-              Source 4 & 5 gagal dimuat. Coba lagi nanti.
+              Source 6 & 7 gagal dimuat. Coba lagi nanti.
             </p>
           )}
         </div>

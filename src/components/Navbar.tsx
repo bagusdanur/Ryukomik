@@ -166,7 +166,7 @@ export default function Navbar() {
       return { source: DEFAULT_SOURCE, slug: "" };
     }
 
-    const map: SourceKey[] = ["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu"];
+    const map: SourceKey[] = ["kiryuu", "komikid", "komiku", "ikiru", "luvyaa", "sekte", "doujindesu"];
 
     for (const s of map) {
       const prefix = `${s}-`;
@@ -255,6 +255,8 @@ useEffect(() => {
     pathname.startsWith("/terbaru") ||
     pathname.startsWith("/novel/chapter") ||
     pathname.startsWith("/anime") ||
+    pathname.startsWith("/hentai") ||
+    pathname.startsWith("/donghua") ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/topup")
   )
