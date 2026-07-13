@@ -1,7 +1,8 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { FaCheckCircle, FaTimesCircle, FaSpinner } from "react-icons/fa";
 import SeriesCard from "@/components/SeriesCard";
 import type { Dict } from "@/types/common";
 import type { SearchResultItem, SourceId } from "@/types/content";
@@ -91,17 +92,15 @@ export default function SearchClient({
 }) {
   const searchParams = useSearchParams();
   const q = searchParams.get("q") || "";
-  const hasInitialSearch = Boolean(q && q === initialQuery);
 
-  const [data, setData] = useState<SearchPageResultItem[]>(hasInitialSearch ? initialData : []);
-  const [loading, setLoading] = useState(Boolean(q && !hasInitialSearch));
+  const [data, setData] = useState<SearchPageResultItem[]>([]);
+  const [loading, setLoading] = useState(Boolean(q));
   const [error, setError] = useState(hasInitialSearch ? initialError : false);
   const [adultData, setAdultData] = useState<SearchPageResultItem[]>([]);
   const [adultLoading, setAdultLoading] = useState(false);
   const [adultError, setAdultError] = useState(false);
   const [adultUnlocked, setAdultUnlocked] = useState(false);
   const [sourceStatus, setSourceStatus] = useState<Record<string, "loading" | "done" | "error">>({});
-  const initialSearchUsedRef = useRef(hasInitialSearch);
 
   useEffect(() => {
     if (!q) {
@@ -112,12 +111,6 @@ export default function SearchClient({
       setAdultError(false);
       setAdultUnlocked(false);
       setSourceStatus({});
-      return;
-    }
-
-    if (initialSearchUsedRef.current && q === initialQuery) {
-      initialSearchUsedRef.current = false;
-      setLoading(false);
       return;
     }
 
@@ -195,6 +188,7 @@ export default function SearchClient({
     let failed = 0;
 
     ADULT_SOURCES.forEach(async (source) => {
+      setSourceStatus(prev => ({ ...prev, [source.id]: "loading" }));
       try {
         const json = await fetchJson<Dict & { success?: boolean; data?: RawSearchItem[] }>(buildSearchUrl(source.id, q));
 
@@ -209,8 +203,10 @@ export default function SearchClient({
             new Map(merged.map((item) => [`${item.source}:${item.slug}`, item])).values()
           );
         });
+        setSourceStatus(prev => ({ ...prev, [source.id]: "done" }));
       } catch {
         failed++;
+        setSourceStatus(prev => ({ ...prev, [source.id]: "error" }));
       } finally {
         pending--;
         if (pending === 0) {
@@ -236,23 +232,23 @@ export default function SearchClient({
 
         {/* Source Progress Indicator */}
         {q && Object.keys(sourceStatus).length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {PUBLIC_SOURCES.map(source => {
+          <div className="flex flex-wrap gap-2.5">
+            {COMIC_SOURCES.map(source => {
               const status = sourceStatus[source.id];
               if (!status) return null;
               
               return (
                 <div 
                   key={source.id} 
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
-                    status === "loading" ? "bg-white/5 border-white/10 text-white/50" :
-                    status === "done" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
-                    "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold shadow-sm transition-all duration-300 ${
+                    status === "loading" ? "bg-white/[0.08] text-white/70 animate-pulse" :
+                    status === "done" ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20" :
+                    "bg-rose-500/15 text-rose-300 border border-rose-500/20"
                   }`}
                 >
-                  {status === "loading" && <div className="w-2 h-2 rounded-full border-2 border-white/20 border-t-white/80 animate-spin" />}
-                  {status === "done" && <span>✓</span>}
-                  {status === "error" && <span>✕</span>}
+                  {status === "loading" && <FaSpinner className="animate-spin text-white/50" />}
+                  {status === "done" && <FaCheckCircle className="text-emerald-400" />}
+                  {status === "error" && <FaTimesCircle className="text-rose-400" />}
                   {source.label}
                 </div>
               );
