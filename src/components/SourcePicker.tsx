@@ -101,7 +101,7 @@ export default function SourcePicker({ source, onSelect, onAdultGate }: SourcePi
         {/* Manga Group */}
         <div>
           <p className="flex items-center gap-1.5 text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-3">
-            <FaBookOpen className="text-[11px]" /> Komik
+            <FaBookOpen className="text-[11px]" /> Manga
           </p>
           <div className="flex flex-wrap gap-3">
             {MANGA_SOURCES.map(config => (
