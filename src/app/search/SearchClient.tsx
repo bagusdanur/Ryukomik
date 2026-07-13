@@ -291,45 +291,43 @@ export default function SearchClient({
         </div>
       )}
 
-      {loading && (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-          {Array.from({ length: 9 }).map((_, index) => (
-            <div key={index} className="space-y-2">
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+        {combinedData.map((item, idx) => (
+          <SeriesCard
+            key={`${item.source}-${item.slug}-${idx}`}
+            href={`/komik/${item.source}/${item.slug}`}
+            title={item.title || "Tanpa judul"}
+            image={item.image}
+            source={item.source}
+            eyebrow={item.update || item.chapter_terbaru || item.latest_chapter}
+            corner={
+              <span className="rk-cover-badge absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold text-[var(--accent-2)]">
+                {item.sourceLabel}
+              </span>
+            }
+          />
+        ))}
+
+        {(loading || adultLoading) && (
+          Array.from({ length: combinedData.length > 0 ? 6 : 12 }).map((_, index) => (
+            <div key={`skeleton-${index}`} className="space-y-2">
               <div className="rk-cover-frame animate-pulse" />
-              <div className="h-3 rounded bg-white/10" />
+              <div className="h-3 w-3/4 rounded bg-white/10 mt-2" />
+              <div className="h-2 w-1/2 rounded bg-white/5 mt-1" />
             </div>
-          ))}
-        </div>
-      )}
-      {error && (
-        <div className="rk-state rounded-2xl px-4 py-8 text-center text-sm text-rose-300">
-          Terjadi kesalahan.
+          ))
+        )}
+      </div>
+
+      {error && combinedData.length === 0 && (
+        <div className="rk-state rounded-2xl mt-5 px-4 py-8 text-center text-sm text-rose-300">
+          Terjadi kesalahan memuat data.
         </div>
       )}
 
-      {!loading && combinedData.length === 0 && !adultLoading && (
-        <div className="rk-state rounded-2xl px-4 py-10 text-center text-sm">
+      {!loading && combinedData.length === 0 && !adultLoading && !error && (
+        <div className="rk-state rounded-2xl mt-5 px-4 py-10 text-center text-sm text-white/50">
           Tidak ada hasil ditemukan.
-        </div>
-      )}
-
-      {combinedData.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-          {combinedData.map((item, idx) => (
-            <SeriesCard
-              key={`${item.source}-${item.slug}-${idx}`}
-              href={`/komik/${item.source}/${item.slug}`}
-              title={item.title || "Tanpa judul"}
-              image={item.image}
-              source={item.source}
-              eyebrow={item.update || item.chapter_terbaru || item.latest_chapter}
-              corner={
-                <span className="rk-cover-badge absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold text-[var(--accent-2)]">
-                  {item.sourceLabel}
-                </span>
-              }
-            />
-          ))}
         </div>
       )}
       </div>
