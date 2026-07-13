@@ -100,6 +100,7 @@ export default function SearchClient({
   const [adultLoading, setAdultLoading] = useState(false);
   const [adultError, setAdultError] = useState(false);
   const [adultUnlocked, setAdultUnlocked] = useState(false);
+  const [sourceStatus, setSourceStatus] = useState<Record<string, "loading" | "done" | "error">>({});
   const initialSearchUsedRef = useRef(hasInitialSearch);
 
   useEffect(() => {
@@ -110,6 +111,7 @@ export default function SearchClient({
       setAdultLoading(false);
       setAdultError(false);
       setAdultUnlocked(false);
+      setSourceStatus({});
       return;
     }
 
@@ -130,39 +132,51 @@ export default function SearchClient({
     setAdultUnlocked(false);
 
     async function searchPublicSources() {
-      try {
-        const responses = await Promise.allSettled(
-          PUBLIC_SOURCES.map(async (source) => {
-            const json = await fetchJson<Dict & { success?: boolean; data?: RawSearchItem[] }>(buildSearchUrl(source.id, q), {
-              signal: controller.signal,
-            });
+      const initialStatus: Record<string, "loading" | "done" | "error"> = {};
+      PUBLIC_SOURCES.forEach((s) => {
+        initialStatus[s.id] = "loading";
+      });
+      setSourceStatus(initialStatus);
 
-            if (json.success === false) return [];
+      let pending = PUBLIC_SOURCES.length;
+      let failed = 0;
 
-            const items = Array.isArray(json) ? json : json.data;
-            return normalizeResults(items, source);
-          })
-        );
+      PUBLIC_SOURCES.forEach(async (source) => {
+        try {
+          const json = await fetchJson<Dict & { success?: boolean; data?: RawSearchItem[] }>(buildSearchUrl(source.id, q), {
+            signal: controller.signal,
+          });
 
-        const merged = responses
-          .filter((result) => result.status === "fulfilled")
-          .flatMap((result) => result.value);
+          if (controller.signal.aborted) return;
 
-        const uniqueResults = Array.from(
-          new Map(
-            merged.map((item) => [`${item.source}:${item.slug}`, item])
-          ).values()
-        );
+          if (json.success === false) throw new Error("Failed");
 
-        if (!controller.signal.aborted) {
-          setData(uniqueResults);
-          setError(responses.every((result) => result.status === "rejected"));
+          const items = Array.isArray(json) ? json : json.data;
+          const normalized = normalizeResults(items, source);
+
+          setData((prev) => {
+            const merged = [...prev, ...normalized];
+            return Array.from(
+              new Map(merged.map((item) => [`${item.source}:${item.slug}`, item])).values()
+            );
+          });
+
+          setSourceStatus(prev => ({ ...prev, [source.id]: "done" }));
+        } catch {
+          if (!controller.signal.aborted) {
+            failed++;
+            setSourceStatus(prev => ({ ...prev, [source.id]: "error" }));
+          }
+        } finally {
+          if (!controller.signal.aborted) {
+            pending--;
+            if (pending === 0) {
+              setLoading(false);
+              if (failed === PUBLIC_SOURCES.length) setError(true);
+            }
+          }
         }
-      } catch {
-        if (!controller.signal.aborted) setError(true);
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
+      });
     }
 
     searchPublicSources();
@@ -177,34 +191,34 @@ export default function SearchClient({
     setAdultLoading(true);
     setAdultError(false);
 
-    try {
-      const responses = await Promise.allSettled(
-        ADULT_SOURCES.map(async (source) => {
-          const json = await fetchJson<Dict & { success?: boolean; data?: RawSearchItem[] }>(buildSearchUrl(source.id, q));
+    let pending = ADULT_SOURCES.length;
+    let failed = 0;
 
-          if (json.success === false) return [];
+    ADULT_SOURCES.forEach(async (source) => {
+      try {
+        const json = await fetchJson<Dict & { success?: boolean; data?: RawSearchItem[] }>(buildSearchUrl(source.id, q));
 
-          const items = Array.isArray(json) ? json : json.data;
-          return normalizeResults(items, source);
-        })
-      );
+        if (json.success === false) throw new Error("Failed");
 
-      const merged = responses
-        .filter((result) => result.status === "fulfilled")
-        .flatMap((result) => result.value);
+        const items = Array.isArray(json) ? json : json.data;
+        const normalized = normalizeResults(items, source);
 
-      setAdultData(
-        Array.from(
-          new Map(merged.map((item) => [`${item.source}:${item.slug}`, item])).values()
-        )
-      );
-      setAdultError(responses.every((result) => result.status === "rejected"));
-    } catch {
-      setAdultData([]);
-      setAdultError(true);
-    } finally {
-      setAdultLoading(false);
-    }
+        setAdultData(prev => {
+          const merged = [...prev, ...normalized];
+          return Array.from(
+            new Map(merged.map((item) => [`${item.source}:${item.slug}`, item])).values()
+          );
+        });
+      } catch {
+        failed++;
+      } finally {
+        pending--;
+        if (pending === 0) {
+          setAdultLoading(false);
+          if (failed === ADULT_SOURCES.length) setAdultError(true);
+        }
+      }
+    });
   }
 
   const combinedData = [...data, ...adultData];
@@ -216,9 +230,35 @@ export default function SearchClient({
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200/60">
           Search Result
         </p>
-        <h1 className="text-2xl font-black">
+        <h1 className="text-2xl font-black mb-3">
           Hasil pencarian: <span className="text-cyan-200">{q}</span>
         </h1>
+
+        {/* Source Progress Indicator */}
+        {q && Object.keys(sourceStatus).length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {PUBLIC_SOURCES.map(source => {
+              const status = sourceStatus[source.id];
+              if (!status) return null;
+              
+              return (
+                <div 
+                  key={source.id} 
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                    status === "loading" ? "bg-white/5 border-white/10 text-white/50" :
+                    status === "done" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
+                    "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                  }`}
+                >
+                  {status === "loading" && <div className="w-2 h-2 rounded-full border-2 border-white/20 border-t-white/80 animate-spin" />}
+                  {status === "done" && <span>✓</span>}
+                  {status === "error" && <span>✕</span>}
+                  {source.label}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {q && (
