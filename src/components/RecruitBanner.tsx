@@ -11,12 +11,13 @@ import {
   FaBan,
   FaGamepad,
   FaRobot,
+  FaBullhorn,
 } from "react-icons/fa";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import LoginModal from "@/components/LoginModal";
 import type { IconType } from "react-icons";
 
-type SlideIconKey = "ban" | "whatsapp" | "star" | "coffee" | "gamepad" | "robot";
+type SlideIconKey = "ban" | "whatsapp" | "star" | "coffee" | "gamepad" | "robot" | "bullhorn";
 
 type Slide = {
   iconKey: SlideIconKey;
@@ -108,6 +109,20 @@ const SLIDES: Slide[] = [
     },
   },
   {
+    iconKey: "bullhorn",
+    iconBg: "bg-orange-500/20",
+    iconColor: "text-orange-400",
+    title: "Pasang Iklan",
+    badge: { label: "Ads", className: "bg-orange-500/20 text-orange-300" },
+    sub: "Jangkau ratusan ribu pembaca dengan banner iklan.",
+    btn: {
+      label: "Pasang",
+      href: "/ads",
+      className: "bg-orange-600 hover:bg-orange-500 text-white",
+      iconKey: "bullhorn",
+    },
+  },
+  {
     iconKey: "coffee",
     iconBg: "bg-yellow-500/20",
     iconColor: "text-yellow-400",
@@ -131,6 +146,7 @@ const ICONS: Record<SlideIconKey, IconType> = {
   coffee: FaCoffee,
   gamepad: FaGamepad,
   robot: FaRobot,
+  bullhorn: FaBullhorn,
 };
 
 function Icon({ name }: { name: SlideIconKey }) {

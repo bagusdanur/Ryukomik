@@ -161,31 +161,10 @@ export default function AdsClient() {
         </div>
 
         {/* STATS SECTION */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-20">
-          <div className="rk-card rounded-3xl p-6 border border-[var(--line-soft)] bg-[var(--surface-1)] flex flex-col items-center text-center group hover:bg-[var(--surface-2)] transition-colors">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-              <FaUsers />
-            </div>
-            <h3 className="text-3xl font-black mb-1">Ratusan Ribu</h3>
-            <p className="text-xs text-[var(--muted)] font-medium">Pembaca Aktif per Bulan</p>
-          </div>
-          <div className="rk-card rounded-3xl p-6 border border-[var(--line-soft)] bg-[var(--surface-1)] flex flex-col items-center text-center group hover:bg-[var(--surface-2)] transition-colors">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--accent-2)]/10 text-[var(--accent-2)] flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-              <FaEye />
-            </div>
-            <h3 className="text-3xl font-black mb-1">Jutaan</h3>
-            <p className="text-xs text-[var(--muted)] font-medium">Pageviews Halaman Komik</p>
-          </div>
-          <div className="rk-card rounded-3xl p-6 border border-[var(--line-soft)] bg-[var(--surface-1)] flex flex-col items-center text-center group hover:bg-[var(--surface-2)] transition-colors relative overflow-hidden">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--accent-3)]/10 text-[var(--accent-3)] flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-              <FaChartLine />
-            </div>
-            <h3 className="text-3xl font-black mb-1">HiStat</h3>
-            <p className="text-xs text-[var(--muted)] font-medium">Statistik Terverifikasi</p>
-            {/* Dekorasi kecil untuk Histat */}
-            <div className="absolute -bottom-4 -right-4 text-[100px] text-white/[0.02] -rotate-12 pointer-events-none">
-              <FaChartLine />
-            </div>
+        <div className="flex justify-center mb-16">
+          <div className="rk-card p-4 md:px-8 rounded-2xl bg-[var(--surface-1)] border border-[var(--line-soft)] flex flex-col items-center text-center">
+            <span className="text-xs text-[var(--muted)] font-bold uppercase tracking-wider mb-3">Statistik Pengunjung (Live)</span>
+            <div id="histats_counter" className="min-h-[30px]" />
           </div>
         </div>
 
