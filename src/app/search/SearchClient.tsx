@@ -95,7 +95,7 @@ export default function SearchClient({
 
   const [data, setData] = useState<SearchPageResultItem[]>([]);
   const [loading, setLoading] = useState(Boolean(q));
-  const [error, setError] = useState(hasInitialSearch ? initialError : false);
+  const [error, setError] = useState(false);
   const [adultData, setAdultData] = useState<SearchPageResultItem[]>([]);
   const [adultLoading, setAdultLoading] = useState(false);
   const [adultError, setAdultError] = useState(false);
