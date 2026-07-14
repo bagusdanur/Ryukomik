@@ -195,6 +195,8 @@ export default function TerbaruPage({
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
   const navigatingToComicRef = useRef(false);
+  const pendingScrollRef = useRef<number | null>(null);
+  const isFirstRenderRef = useRef(true);
 
   const [source, setSource] = useState<SourceId>(() => normalizeStoredSource(initialSource ?? null, DEFAULT_SOURCE));
 
@@ -322,15 +324,30 @@ export default function TerbaruPage({
           
           const savedScrollY = sessionStorage.getItem(SCROLL_CACHE_KEY);
           if (savedScrollY) {
-            setTimeout(() => {
-              window.scrollTo(0, parseInt(savedScrollY, 10));
-            }, 50);
+            pendingScrollRef.current = parseInt(savedScrollY, 10); // simpan dulu, jangan scroll
           }
         }
       }
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only on mount
+
+  // ✅ SCROLL SETELAH DATA SELESAI DIRENDER
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return; // skip render pertama (initial data)
+    }
+    
+    if (pendingScrollRef.current !== null) {
+      const target = pendingScrollRef.current;
+      pendingScrollRef.current = null;
+      
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: target, behavior: "instant" });
+      });
+    }
+  }, [data]);
 
   // ✅ SAVE SCROLL POSITION
   useEffect(() => {
