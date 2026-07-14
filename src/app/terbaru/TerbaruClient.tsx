@@ -194,6 +194,7 @@ export default function TerbaruPage({
   const abortRef = useRef<AbortController | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
+  const navigatingToComicRef = useRef(false);
 
   const [source, setSource] = useState<SourceId>(() => normalizeStoredSource(initialSource ?? null, DEFAULT_SOURCE));
 
@@ -334,18 +335,26 @@ export default function TerbaruPage({
   // ✅ SAVE SCROLL POSITION
   useEffect(() => {
     let scrollTimeout: ReturnType<typeof setTimeout>;
+    
+    const saveScroll = () => {
+      try {
+        sessionStorage.setItem(SCROLL_CACHE_KEY, window.scrollY.toString());
+      } catch {}
+    };
+
     const handleScroll = () => {
       clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        try {
-          sessionStorage.setItem(SCROLL_CACHE_KEY, window.scrollY.toString());
-        } catch {}
-      }, 100);
+      scrollTimeout = setTimeout(saveScroll, 100);
     };
+    
     window.addEventListener("scroll", handleScroll, { passive: true });
+    
     return () => {
       window.removeEventListener("scroll", handleScroll);
       clearTimeout(scrollTimeout);
+      if (navigatingToComicRef.current) {
+        saveScroll(); // Save synchronously only when navigating to comic
+      }
     };
   }, []);
 
@@ -449,11 +458,18 @@ export default function TerbaruPage({
     };
   }, [history, extractChapter]);
 
+  const handleComicNavigate = useCallback(() => {
+    navigatingToComicRef.current = true;
+  }, []);
+
   const resetListing = useCallback(() => {
     setData([]);
     setPage(1);
     pageRef.current = 1;
     setHasMore(true);
+    try {
+      sessionStorage.removeItem(SCROLL_CACHE_KEY);
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -810,6 +826,7 @@ export default function TerbaruPage({
             item={item}
             lastRead={getLastRead(item.slug)}
             source={source}
+            onNavigate={handleComicNavigate}
           />
         ))}
 

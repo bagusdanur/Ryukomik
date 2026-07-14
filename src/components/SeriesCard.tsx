@@ -17,6 +17,7 @@ type SeriesCardProps = {
   priority?: boolean;
   className?: string;
   source?: string;
+  onClick?: () => void;
 };
 
 export default function SeriesCard({
@@ -32,6 +33,7 @@ export default function SeriesCard({
   priority = false,
   className = "",
   source,
+  onClick,
 }: SeriesCardProps) {
   const detectedSource = useMemo(() => {
     if (source) return source;
@@ -54,7 +56,7 @@ export default function SeriesCard({
   }, [imageCandidates, image, detectedSource]);
 
   return (
-    <Link prefetch={false} href={href} className={`rk-cover-card group ${className}`}>
+    <Link prefetch={false} href={href} onClick={onClick} className={`rk-cover-card group ${className}`}>
       <div className="rk-cover-frame">
         <FallbackImage
           referrerPolicy="no-referrer"

@@ -21,9 +21,10 @@ interface ComicCardProps {
   item: UpdateItem;
   lastRead: (ReadHistoryItem & { lastChapter?: string }) | null;
   source: SourceId;
+  onNavigate?: () => void;
 }
 
-function ComicCard({ item, lastRead, source }: ComicCardProps) {
+function ComicCard({ item, lastRead, source, onNavigate }: ComicCardProps) {
   const itemSource = item.source || source;
   const slug = normalizeSlug(item.slug, itemSource);
   const href =
@@ -35,6 +36,7 @@ function ComicCard({ item, lastRead, source }: ComicCardProps) {
   return (
     <SeriesCard
       href={href}
+      onClick={onNavigate}
       title={item.title}
       image={item.image}
       eyebrow={(item.chapter_terbaru || "").replace("Chapter", "Ch.")}
