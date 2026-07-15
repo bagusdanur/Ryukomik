@@ -10,13 +10,13 @@ export interface SourceConfig {
   order: number;
 }
 
-export const DEFAULT_SOURCE = "komikid";
+export const DEFAULT_SOURCE = "ikiru";
 
 export const SOURCES: readonly SourceConfig[] = [
-  { id: "komikid",    label: "1",     group: "manga",  order: 1, activeColor: "accent"   },
+  { id: "komikid",    label: "4",     group: "manga",  order: 4, activeColor: "accent"   },
   { id: "luvyaa",     label: "2",     group: "manga",  order: 2, activeColor: "accent-2" },
   { id: "komiku",     label: "3",     group: "manga",  order: 3, activeColor: "accent"   },
-  { id: "ikiru",      label: "4",     group: "manga",  order: 4, activeColor: "accent-2" },
+  { id: "ikiru",      label: "1",     group: "manga",  order: 1, activeColor: "accent-2" },
   { id: "kiryuu",     label: "5",     group: "manga",  order: 5, activeColor: "accent"   },
   { id: "sekte",      label: "6",     group: "adult",  order: 6, activeColor: "accent-3", gate: "age+login" },
   { id: "doujindesu", label: "7",     group: "adult",  order: 7, activeColor: "accent-3", gate: "age+login" },
