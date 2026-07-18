@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, FormEvent, useRef } from "react";
-import { FiBookOpen, FiPlus, FiImage, FiUploadCloud, FiTrash2, FiChevronLeft, FiSave, FiEdit2 } from "react-icons/iconBase"; // Oops, it should be react-icons/fi
+
 import { FiBookOpen as FiBookOpenIcon, FiPlus as FiPlusIcon, FiImage as FiImageIcon, FiUploadCloud as FiUploadCloudIcon, FiTrash2 as FiTrash2Icon, FiChevronLeft as FiChevronLeftIcon, FiSave as FiSaveIcon, FiEdit2 as FiEdit2Icon } from "react-icons/fi";
 
 type Manga = {
