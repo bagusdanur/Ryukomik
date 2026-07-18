@@ -4,6 +4,7 @@ import {
   MANGA_SOURCES,
   ADULT_SOURCES,
   NOVEL_SOURCES,
+  PROJECT_SOURCES,
   type SourceConfig,
 } from "@/config/sources";
 
@@ -98,6 +99,25 @@ export default function SourcePicker({ source, onSelect, onAdultGate }: SourcePi
       </div>
 
       <div className="space-y-0">
+        {/* Translate Group (Project) */}
+        <div>
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400/80 uppercase tracking-wider mb-3">
+            <FaBookOpen className="text-[11px]" /> Project
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {PROJECT_SOURCES.map(config => (
+              <SourceChip
+                key={config.id}
+                config={config}
+                isActive={source === config.id}
+                onClick={() => handleSelect(config)}
+              />
+            ))}
+          </div>
+        </div>
+
+        <SectionDivider />
+
         {/* Manga Group */}
         <div>
           <p className="flex items-center gap-1.5 text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-3">

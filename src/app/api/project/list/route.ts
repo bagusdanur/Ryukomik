@@ -1,0 +1,28 @@
+import { NextResponse } from "next/server";
+import { supabaseServer } from "@/lib/supabaseServer";
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const offset = (page - 1) * limit;
+
+    const { data, count, error } = await supabaseServer
+      .from("project_manga")
+      .select("*", { count: "exact" })
+      .order("updated_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+
+    return NextResponse.json({
+      success: true,
+      data: data || [],
+      total: count || 0,
+      hasMore: (count || 0) > offset + limit
+    });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}

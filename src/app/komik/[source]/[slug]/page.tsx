@@ -46,6 +46,21 @@ const normalizeDetail = (json: Dict): ComicDetail | null => {
 };
 
 const getDetail = async (source: string, slug: string): Promise<ComicDetail | null> => {
+  if (source === "project") {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      const res = await fetch(`${baseUrl}/api/project/${encodeURIComponent(slug)}`, {
+        next: { revalidate: 3600 },
+        headers: { Accept: "application/json" }
+      });
+      if (!res.ok) return null;
+      const json = await res.json();
+      return normalizeDetail(json);
+    } catch {
+      return null;
+    }
+  }
+
   const apiSource = source === "kiryuu" ? "komikid" : source;
   const endpoint = `https://api.ryukomik.web.id/${apiSource}/detail/${encodeURIComponent(slug)}`;
 

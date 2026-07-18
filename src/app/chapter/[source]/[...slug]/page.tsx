@@ -20,6 +20,33 @@ function parseSlug(slug: string | string[]) {
 }
 
 async function getChapter(source: string, slugStr: string): Promise<ReaderChapter | null> {
+  if (source === "project") {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      const parts = slugStr.split("/");
+      const mangaSlug = parts[0];
+      const chapter = parts.length > 1 ? parts[1] : parts[0]; // fallback
+      
+      const res = await fetch(`${baseUrl}/api/project/chapter/${mangaSlug}/${chapter}`, {
+        next: { revalidate: 3600 },
+        headers: { Accept: "application/json" }
+      });
+      
+      if (!res.ok) return null;
+      const json = await res.json();
+      if (!json.success) return null;
+      
+      return {
+        ...json,
+        mangaId: json.mangaId || json.series?.slug || "",
+        currentChapter: json.currentChapter || json.title || "",
+        images: Array.isArray(json.images) ? json.images : [],
+      };
+    } catch {
+      return null;
+    }
+  }
+
   const apiSource = source === "kiryuu" ? "komikid" : source;
   try {
     const res = await fetch(

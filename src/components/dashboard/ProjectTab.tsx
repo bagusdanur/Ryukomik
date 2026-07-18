@@ -1,0 +1,513 @@
+"use client";
+
+import { useState, useEffect, useCallback, FormEvent, useRef } from "react";
+import { FiBookOpen, FiPlus, FiImage, FiUploadCloud, FiTrash2, FiChevronLeft, FiSave, FiEdit2 } from "react-icons/iconBase"; // Oops, it should be react-icons/fi
+import { FiBookOpen as FiBookOpenIcon, FiPlus as FiPlusIcon, FiImage as FiImageIcon, FiUploadCloud as FiUploadCloudIcon, FiTrash2 as FiTrash2Icon, FiChevronLeft as FiChevronLeftIcon, FiSave as FiSaveIcon, FiEdit2 as FiEdit2Icon } from "react-icons/fi";
+
+type Manga = {
+  id: string;
+  slug: string;
+  title: string;
+  cover_url?: string;
+  description?: string;
+  author?: string;
+  status: string;
+  type: string;
+  genres: string[];
+  created_at: string;
+};
+
+type Chapter = {
+  id: string;
+  manga_slug: string;
+  chapter_number: number;
+  title?: string;
+  image_urls: string[];
+  uploaded_at: string;
+};
+
+interface ProjectTabProps {
+  getAdminToken: () => Promise<string>;
+}
+
+export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
+  const [view, setView] = useState<"mangaList" | "mangaForm" | "chapterList" | "chapterForm">("mangaList");
+  
+  // Data
+  const [mangaList, setMangaList] = useState<Manga[]>([]);
+  const [activeManga, setActiveManga] = useState<Manga | null>(null);
+  const [chapterList, setChapterList] = useState<Chapter[]>([]);
+  const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
+  
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  // Forms
+  const [mangaForm, setMangaForm] = useState<Partial<Manga>>({});
+  const [chapterForm, setChapterForm] = useState<Partial<Chapter>>({});
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
+  // ─── MANGA ACTIONS ───────────────────────────────────────────
+  const fetchManga = useCallback(async () => {
+    setLoading(true);
+    try {
+      const token = await getAdminToken();
+      const res = await fetch("/api/admin/project/manga", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const json = await res.json();
+      setMangaList(json.data || []);
+    } finally {
+      setLoading(false);
+    }
+  }, [getAdminToken]);
+
+  useEffect(() => {
+    if (view === "mangaList") fetchManga();
+  }, [view, fetchManga]);
+
+  const saveManga = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const token = await getAdminToken();
+      const method = mangaForm.id ? "PATCH" : "POST";
+      const res = await fetch("/api/admin/project/manga", {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(mangaForm)
+      });
+      if (!res.ok) throw new Error("Gagal menyimpan manga");
+      setView("mangaList");
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteManga = async (id: string) => {
+    if (!confirm("Hapus manga ini beserta semua chapternya?")) return;
+    try {
+      const token = await getAdminToken();
+      await fetch(`/api/admin/project/manga?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchManga();
+    } catch (err) {
+      alert("Gagal menghapus manga");
+    }
+  };
+
+  const uploadCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("manga_slug", mangaForm.slug || "new-manga");
+    formData.append("type", "cover");
+
+    setUploading(true);
+    try {
+      const token = await getAdminToken();
+      const res = await fetch("/api/admin/project/upload-image", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (data.url) {
+        setMangaForm({ ...mangaForm, cover_url: data.url });
+      }
+    } catch (err) {
+      alert("Gagal upload cover");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // ─── CHAPTER ACTIONS ─────────────────────────────────────────
+  const fetchChapters = useCallback(async (slug: string) => {
+    setLoading(true);
+    try {
+      const token = await getAdminToken();
+      const res = await fetch(`/api/admin/project/chapter?manga_slug=${slug}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const json = await res.json();
+      setChapterList(json.data || []);
+    } finally {
+      setLoading(false);
+    }
+  }, [getAdminToken]);
+
+  const openChapters = (manga: Manga) => {
+    setActiveManga(manga);
+    fetchChapters(manga.slug);
+    setView("chapterList");
+  };
+
+  const saveChapter = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const token = await getAdminToken();
+      const method = chapterForm.id ? "PATCH" : "POST";
+      const payload = {
+        ...chapterForm,
+        manga_slug: activeManga?.slug,
+      };
+      
+      const res = await fetch("/api/admin/project/chapter", {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Gagal menyimpan chapter");
+      
+      setView("chapterList");
+      fetchChapters(activeManga!.slug);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteChapter = async (id: string) => {
+    if (!confirm("Hapus chapter ini?")) return;
+    try {
+      const token = await getAdminToken();
+      await fetch(`/api/admin/project/chapter?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchChapters(activeManga!.slug);
+    } catch (err) {
+      alert("Gagal menghapus chapter");
+    }
+  };
+
+  const uploadChapterImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length || !activeManga || !chapterForm.chapter_number) {
+      alert("Isi nomor chapter dulu sebelum upload gambar!");
+      return;
+    }
+    
+    // Sort files by name natively
+    const files = Array.from(e.target.files).sort((a, b) => a.name.localeCompare(b.name));
+    
+    const token = await getAdminToken();
+    const urls: string[] = [];
+    
+    setUploading(true);
+    setUploadProgress(0);
+    
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("manga_slug", activeManga.slug);
+        formData.append("chapter_number", String(chapterForm.chapter_number));
+        formData.append("type", "chapter");
+
+        const res = await fetch("/api/admin/project/upload-image", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData
+        });
+        
+        const data = await res.json();
+        if (data.url) urls.push(data.url);
+        
+        setUploadProgress(Math.round(((i + 1) / files.length) * 100));
+      }
+      
+      // Update form images
+      setChapterForm(prev => ({
+        ...prev,
+        image_urls: [...(prev.image_urls || []), ...urls]
+      }));
+    } catch (err) {
+      alert("Ada gambar yang gagal diupload");
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // ─── RENDERS ─────────────────────────────────────────────────
+  if (view === "mangaForm") {
+    return (
+      <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4">
+        <button onClick={() => setView("mangaList")} className="flex items-center gap-2 text-white/50 hover:text-white mb-4 text-sm">
+          <FiChevronLeftIcon /> Kembali
+        </button>
+        <h2 className="text-lg font-bold mb-4">{mangaForm.id ? "Edit Manga" : "Tambah Manga"}</h2>
+        
+        <form onSubmit={saveManga} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Judul</label>
+              <input required value={mangaForm.title || ""} onChange={e => {
+                const title = e.target.value;
+                const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                setMangaForm({...mangaForm, title, slug: mangaForm.id ? mangaForm.slug : slug});
+              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Slug (URL)</label>
+              <input required value={mangaForm.slug || ""} onChange={e => setMangaForm({...mangaForm, slug: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm" />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Tipe</label>
+              <select value={mangaForm.type || "manga"} onChange={e => setMangaForm({...mangaForm, type: e.target.value})} className="w-full bg-[#13131a] border border-white/10 rounded-xl px-3 py-2 text-sm text-white">
+                <option value="manga">Manga</option>
+                <option value="manhwa">Manhwa</option>
+                <option value="manhua">Manhua</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Status</label>
+              <select value={mangaForm.status || "ongoing"} onChange={e => setMangaForm({...mangaForm, status: e.target.value})} className="w-full bg-[#13131a] border border-white/10 rounded-xl px-3 py-2 text-sm text-white">
+                <option value="ongoing">Ongoing</option>
+                <option value="completed">Completed</option>
+                <option value="hiatus">Hiatus</option>
+              </select>
+            </div>
+          </div>
+          
+          <div>
+            <label className="text-xs text-white/40 mb-1 block">Genre (Pisahkan dengan koma)</label>
+            <input value={mangaForm.genres?.join(", ") || ""} onChange={e => setMangaForm({...mangaForm, genres: e.target.value.split(",").map(s => s.trim()).filter(Boolean)})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm" placeholder="Action, Fantasy, Comedy" />
+          </div>
+
+          <div>
+            <label className="text-xs text-white/40 mb-1 block">Deskripsi</label>
+            <textarea value={mangaForm.description || ""} onChange={e => setMangaForm({...mangaForm, description: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm h-24" />
+          </div>
+
+          <div>
+            <label className="text-xs text-white/40 mb-1 block">Cover URL</label>
+            <div className="flex gap-2">
+              <input value={mangaForm.cover_url || ""} onChange={e => setMangaForm({...mangaForm, cover_url: e.target.value})} className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm" />
+              <button type="button" onClick={() => coverInputRef.current?.click()} className="px-4 bg-white/10 rounded-xl text-sm flex items-center gap-2 hover:bg-white/20">
+                {uploading ? "..." : <FiUploadCloudIcon />} Upload
+              </button>
+              <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={uploadCover} />
+            </div>
+            {mangaForm.cover_url && <img src={mangaForm.cover_url} alt="Cover" className="h-32 rounded mt-2 object-cover" />}
+          </div>
+
+          <button disabled={loading} type="submit" className="w-full py-3 bg-[#7c5cfc] hover:bg-[#6b4ae6] rounded-xl font-bold flex items-center justify-center gap-2">
+            <FiSaveIcon /> Simpan Manga
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  if (view === "chapterList") {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setView("mangaList")} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10">
+            <FiChevronLeftIcon />
+          </button>
+          <div className="flex-1">
+            <h2 className="font-bold text-lg leading-tight">{activeManga?.title}</h2>
+            <p className="text-xs text-white/40">Kelola Chapter</p>
+          </div>
+          <button onClick={() => { setChapterForm({ image_urls: [] }); setView("chapterForm"); }} className="px-4 py-2 bg-[#7c5cfc] hover:bg-[#6b4ae6] rounded-xl text-sm font-bold flex items-center gap-2">
+            <FiPlusIcon /> Tambah Chapter
+          </button>
+        </div>
+
+        <div className="bg-[#13131a] border border-white/[.06] rounded-2xl overflow-hidden">
+          {loading ? (
+            <div className="p-8 text-center text-white/30 text-sm">Memuat chapter...</div>
+          ) : chapterList.length === 0 ? (
+            <div className="p-8 text-center text-white/30 text-sm">Belum ada chapter.</div>
+          ) : (
+            <div className="divide-y divide-white/5">
+              {chapterList.map(chap => (
+                <div key={chap.id} className="p-4 flex items-center justify-between hover:bg-white/[.02] transition-colors">
+                  <div>
+                    <p className="font-bold">Chapter {chap.chapter_number}</p>
+                    <p className="text-[10px] text-white/40 mt-0.5">{chap.image_urls.length} gambar</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => { setChapterForm(chap); setView("chapterForm"); }} className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center hover:bg-emerald-500/20">
+                      <FiEdit2Icon size={14} />
+                    </button>
+                    <button onClick={() => deleteChapter(chap.id)} className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center hover:bg-rose-500/20">
+                      <FiTrash2Icon size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "chapterForm") {
+    return (
+      <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4">
+        <button onClick={() => setView("chapterList")} className="flex items-center gap-2 text-white/50 hover:text-white mb-4 text-sm">
+          <FiChevronLeftIcon /> Batal
+        </button>
+        
+        <h2 className="text-lg font-bold mb-4 text-emerald-400 flex items-center gap-2">
+          {chapterForm.id ? "Edit Chapter" : "Upload Chapter Baru"} 
+        </h2>
+        
+        <form onSubmit={saveChapter} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Nomor Chapter</label>
+              <input required type="number" step="0.1" value={chapterForm.chapter_number || ""} onChange={e => setChapterForm({...chapterForm, chapter_number: Number(e.target.value)})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm" placeholder="12" />
+            </div>
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">Judul (Opsional)</label>
+              <input value={chapterForm.title || ""} onChange={e => setChapterForm({...chapterForm, title: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm" placeholder="Awal Baru" />
+            </div>
+          </div>
+
+          <div className="border border-white/10 rounded-xl p-4 bg-white/[.02]">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="font-bold text-sm">Gambar Chapter</p>
+                <p className="text-[10px] text-white/40 mt-1">
+                  Upload file berurutan. Akan diurutkan otomatis berdasarkan nama file.
+                </p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => fileInputRef.current?.click()} 
+                disabled={uploading || !chapterForm.chapter_number}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-bold flex items-center gap-2 disabled:opacity-50"
+              >
+                {uploading ? `${uploadProgress}%` : <><FiUploadCloudIcon /> Pilih Gambar</>}
+              </button>
+              <input type="file" multiple accept="image/*" ref={fileInputRef} className="hidden" onChange={uploadChapterImages} />
+            </div>
+            
+            {uploading && (
+              <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mb-4">
+                <div className="bg-emerald-400 h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+              </div>
+            )}
+            
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              {chapterForm.image_urls?.map((url, i) => (
+                <div key={i} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-white/10 group bg-black/50">
+                  <img src={url} alt={`Page ${i+1}`} className="w-full h-full object-cover" loading="lazy" />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <button type="button" onClick={() => {
+                      const urls = [...(chapterForm.image_urls || [])];
+                      urls.splice(i, 1);
+                      setChapterForm({...chapterForm, image_urls: urls});
+                    }} className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white">
+                      <FiTrash2Icon size={14} />
+                    </button>
+                  </div>
+                  <div className="absolute top-1 left-1 bg-black/80 px-1.5 rounded text-[8px] font-bold">
+                    {i + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {chapterForm.image_urls?.length === 0 && !uploading && (
+              <div className="py-8 text-center text-white/20 text-xs border border-dashed border-white/10 rounded-xl flex flex-col items-center">
+                <FiImageIcon size={24} className="mb-2 opacity-50" />
+                Belum ada gambar
+              </div>
+            )}
+          </div>
+
+          <button disabled={loading || uploading} type="submit" className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 text-white">
+            <FiSaveIcon /> Simpan Chapter
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // view === mangaList (Default)
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-bold text-lg flex items-center gap-2">
+            <FiBookOpenIcon className="text-emerald-400" /> Project
+          </h2>
+          <p className="text-[11px] text-white/40 mt-1">Upload karya mandiri kamu disini</p>
+        </div>
+        <button onClick={() => { setMangaForm({}); setView("mangaForm"); }} className="px-4 py-2 bg-[#7c5cfc] hover:bg-[#6b4ae6] rounded-xl text-sm font-bold flex items-center gap-2">
+          <FiPlusIcon /> Tambah Manga
+        </button>
+      </div>
+
+      {loading && mangaList.length === 0 ? (
+        <div className="p-8 text-center text-white/30 text-sm">Memuat data...</div>
+      ) : mangaList.length === 0 ? (
+        <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-8 text-center flex flex-col items-center">
+          <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 text-white/20">
+            <FiBookOpenIcon size={24} />
+          </div>
+          <p className="text-white/40 mb-1">Belum ada project</p>
+          <p className="text-xs text-white/30">Klik tombol Tambah Manga untuk memulai</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {mangaList.map(manga => (
+            <div key={manga.id} className="bg-[#13131a] border border-white/[.06] rounded-xl overflow-hidden group">
+              <div className="aspect-[3/4] relative cursor-pointer" onClick={() => openChapters(manga)}>
+                {manga.cover_url ? (
+                  <img src={manga.cover_url} alt={manga.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-white/5 flex items-center justify-center text-white/10">
+                    <FiImageIcon size={32} />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0 flex flex-col justify-end p-3">
+                  <h3 className="font-bold text-sm leading-tight text-white line-clamp-2">{manga.title}</h3>
+                  <p className="text-[10px] text-white/70 mt-1 capitalize">{manga.type} • {manga.status}</p>
+                </div>
+              </div>
+              <div className="p-2 flex items-center gap-2 bg-[#0f0f14]">
+                <button onClick={() => openChapters(manga)} className="flex-1 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-medium text-emerald-400">
+                  Kelola Chapter
+                </button>
+                <button onClick={() => { setMangaForm(manga); setView("mangaForm"); }} className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/50 hover:text-white">
+                  <FiEdit2Icon size={12} />
+                </button>
+                <button onClick={() => deleteManga(manga.id)} className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400 hover:bg-rose-500/20">
+                  <FiTrash2Icon size={12} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
