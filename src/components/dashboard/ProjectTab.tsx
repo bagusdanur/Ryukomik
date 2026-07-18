@@ -251,72 +251,113 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   // ─── RENDERS ─────────────────────────────────────────────────
   if (view === "mangaForm") {
     return (
-      <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4">
-        <button onClick={() => setView("mangaList")} className="flex items-center gap-2 text-white/50 hover:text-white mb-4 text-sm">
-          <FiChevronLeftIcon /> Kembali
-        </button>
-        <h2 className="text-lg font-bold mb-4">{mangaForm.id ? "Edit Manga" : "Tambah Manga"}</h2>
+      <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={() => setView("mangaList")} className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors">
+            <FiChevronLeftIcon />
+          </button>
+          <div>
+            <h2 className="text-xl font-bold">{mangaForm.id ? "Edit Project Manga" : "Tambah Project Baru"}</h2>
+            <p className="text-xs text-white/40">{mangaForm.id ? "Perbarui informasi manga" : "Upload karya mandiri kamu ke Ryukomik"}</p>
+          </div>
+        </div>
         
-        <form onSubmit={saveManga} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Judul</label>
-              <input required value={mangaForm.title || ""} onChange={e => {
-                const title = e.target.value;
-                const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                setMangaForm({...mangaForm, title, slug: mangaForm.id ? mangaForm.slug : slug});
-              }} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm" />
-            </div>
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Slug (URL)</label>
-              <input required value={mangaForm.slug || ""} onChange={e => setMangaForm({...mangaForm, slug: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm" />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Tipe</label>
-              <select value={mangaForm.type || "manga"} onChange={e => setMangaForm({...mangaForm, type: e.target.value})} className="w-full bg-[#13131a] border border-white/10 rounded-xl px-3 py-2 text-sm text-white">
-                <option value="manga">Manga</option>
-                <option value="manhwa">Manhwa</option>
-                <option value="manhua">Manhua</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-white/40 mb-1 block">Status</label>
-              <select value={mangaForm.status || "ongoing"} onChange={e => setMangaForm({...mangaForm, status: e.target.value})} className="w-full bg-[#13131a] border border-white/10 rounded-xl px-3 py-2 text-sm text-white">
-                <option value="ongoing">Ongoing</option>
-                <option value="completed">Completed</option>
-                <option value="hiatus">Hiatus</option>
-              </select>
-            </div>
-          </div>
-          
-          <div>
-            <label className="text-xs text-white/40 mb-1 block">Genre (Pisahkan dengan koma)</label>
-            <input value={mangaForm.genres?.join(", ") || ""} onChange={e => setMangaForm({...mangaForm, genres: e.target.value.split(",").map(s => s.trim()).filter(Boolean)})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm" placeholder="Action, Fantasy, Comedy" />
-          </div>
-
-          <div>
-            <label className="text-xs text-white/40 mb-1 block">Deskripsi</label>
-            <textarea value={mangaForm.description || ""} onChange={e => setMangaForm({...mangaForm, description: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm h-24" />
-          </div>
-
-          <div>
-            <label className="text-xs text-white/40 mb-1 block">Cover URL</label>
-            <div className="flex gap-2">
-              <input value={mangaForm.cover_url || ""} onChange={e => setMangaForm({...mangaForm, cover_url: e.target.value})} className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm" />
-              <button type="button" onClick={() => coverInputRef.current?.click()} className="px-4 bg-white/10 rounded-xl text-sm flex items-center gap-2 hover:bg-white/20">
-                {uploading ? "..." : <FiUploadCloudIcon />} Upload
-              </button>
+        <form onSubmit={saveManga} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Left Column: Cover */}
+          <div className="md:col-span-1 space-y-4">
+            <div className="aspect-[3/4] w-full rounded-2xl border-2 border-dashed border-white/10 bg-white/5 overflow-hidden flex flex-col items-center justify-center relative group">
+              {mangaForm.cover_url ? (
+                <>
+                  <img src={mangaForm.cover_url} alt="Cover" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 backdrop-blur-sm">
+                    <button type="button" onClick={() => coverInputRef.current?.click()} className="px-4 py-2 bg-white/20 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-white/30 text-white">
+                      <FiUploadCloudIcon /> Ganti Cover
+                    </button>
+                    <button type="button" onClick={() => setMangaForm({...mangaForm, cover_url: ""})} className="px-4 py-2 bg-rose-500/20 text-rose-400 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-rose-500/30">
+                      <FiTrash2Icon /> Hapus
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <button type="button" onClick={() => coverInputRef.current?.click()} className="flex flex-col items-center justify-center text-white/30 hover:text-white/60 transition-colors p-6">
+                  {uploading ? (
+                    <div className="w-8 h-8 border-2 border-[#7c5cfc] border-t-transparent rounded-full animate-spin mb-2" />
+                  ) : (
+                    <FiImageIcon size={32} className="mb-2 opacity-50" />
+                  )}
+                  <span className="text-sm font-medium">{uploading ? "Mengunggah..." : "Upload Cover Gambar"}</span>
+                  <span className="text-[10px] mt-1 text-center">Format JPEG/PNG max 2MB<br/>Rasio disarankan 3:4</span>
+                </button>
+              )}
               <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={uploadCover} />
             </div>
-            {mangaForm.cover_url && <img src={mangaForm.cover_url} alt="Cover" className="h-32 rounded mt-2 object-cover" />}
+
+            <div>
+              <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 block">Atau URL Gambar</label>
+              <input value={mangaForm.cover_url || ""} onChange={e => setMangaForm({...mangaForm, cover_url: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7c5cfc]/50 transition-colors" placeholder="https://..." />
+            </div>
           </div>
 
-          <button disabled={loading} type="submit" className="w-full py-3 bg-[#7c5cfc] hover:bg-[#6b4ae6] rounded-xl font-bold flex items-center justify-center gap-2">
-            <FiSaveIcon /> Simpan Manga
-          </button>
+          {/* Right Column: Details */}
+          <div className="md:col-span-2 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 block">Judul Manga *</label>
+                <input required value={mangaForm.title || ""} onChange={e => {
+                  const title = e.target.value;
+                  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                  setMangaForm({...mangaForm, title, slug: mangaForm.id ? mangaForm.slug : slug});
+                }} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7c5cfc]/50 transition-colors" placeholder="Judul karya kamu..." />
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 block">URL Slug *</label>
+                <input required value={mangaForm.slug || ""} onChange={e => setMangaForm({...mangaForm, slug: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7c5cfc]/50 transition-colors" placeholder="url-karya-kamu" />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 sm:col-span-1">
+                <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 block">Author / Pengarang</label>
+                <input value={mangaForm.author || ""} onChange={e => setMangaForm({...mangaForm, author: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7c5cfc]/50 transition-colors" placeholder="Nama Author" />
+              </div>
+              <div className="col-span-2 sm:col-span-1 grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 block">Tipe</label>
+                  <select value={mangaForm.type || "manga"} onChange={e => setMangaForm({...mangaForm, type: e.target.value})} className="w-full bg-[#13131a] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-[#7c5cfc]/50">
+                    <option value="manga">Manga</option>
+                    <option value="manhwa">Manhwa</option>
+                    <option value="manhua">Manhua</option>
+                    <option value="comic">Comic</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 block">Status</label>
+                  <select value={mangaForm.status || "ongoing"} onChange={e => setMangaForm({...mangaForm, status: e.target.value})} className="w-full bg-[#13131a] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-[#7c5cfc]/50">
+                    <option value="ongoing">Ongoing</option>
+                    <option value="completed">Completed</option>
+                    <option value="hiatus">Hiatus</option>
+                    <option value="dropped">Dropped</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 block">Genre (Pisahkan dengan koma)</label>
+              <input value={mangaForm.genres?.join(", ") || ""} onChange={e => setMangaForm({...mangaForm, genres: e.target.value.split(",").map(s => s.trim()).filter(Boolean)})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7c5cfc]/50 transition-colors" placeholder="Action, Fantasy, Comedy, Romance" />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 block">Sinopsis Cerita</label>
+              <textarea value={mangaForm.description || ""} onChange={e => setMangaForm({...mangaForm, description: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm h-28 resize-none outline-none focus:border-[#7c5cfc]/50 transition-colors" placeholder="Tuliskan sinopsis singkat cerita komik ini..." />
+            </div>
+
+            <div className="pt-2">
+              <button disabled={loading} type="submit" className="w-full py-3.5 bg-gradient-to-r from-[#7c5cfc] to-[#9b83fc] hover:from-[#6b4ae6] hover:to-[#8a72ec] rounded-xl font-bold flex items-center justify-center gap-2 text-white shadow-lg shadow-[#7c5cfc]/20 transition-all disabled:opacity-50">
+                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><FiSaveIcon /> Simpan Project Manga</>}
+              </button>
+            </div>
+          </div>
         </form>
       </div>
     );

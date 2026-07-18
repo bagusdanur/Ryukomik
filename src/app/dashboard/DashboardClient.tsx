@@ -1113,11 +1113,7 @@ export default function AdminDashboard() {
       icon: <FiActivity size={18} />,
       label: "Health",
     },
-    {
-      id: "comments",
-      icon: <FiMessageCircle size={18} />,
-      label: "Komentar",
-    },
+
     {
       id: "project",
       icon: <FiBookOpen size={18} />,
