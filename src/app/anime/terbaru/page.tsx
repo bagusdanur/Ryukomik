@@ -82,16 +82,20 @@ type AnimeUpdateResponse = {
 };
 
 async function getData(): Promise<AnimeUpdateResponse> {
-  const res = await fetch(
-    "https://apiv2.ryukomik.web.id/animeid/terbaru",
-    {
-      next: { revalidate: 120 },
-    }
-  );
+  try {
+    const res = await fetch(
+      "https://apiv2.ryukomik.web.id/animeid/terbaru",
+      {
+        next: { revalidate: 120 },
+      }
+    );
 
-  if (!res.ok) throw new Error("Gagal fetch data");
+    if (!res.ok) return { data: [], total: 0 };
 
-  return (await res.json()) as AnimeUpdateResponse;
+    return (await res.json()) as AnimeUpdateResponse;
+  } catch (error) {
+    return { data: [], total: 0 };
+  }
 }
 
 export default async function TerbaruPage() {
