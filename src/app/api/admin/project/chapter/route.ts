@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { revalidatePath } from "next/cache";
+import { deleteR2Prefix } from "@/lib/r2Storage";
 
 export async function GET(request: Request) {
   try {
@@ -11,20 +11,24 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const mangaSlug = searchParams.get("manga_slug");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const offset = (page - 1) * limit;
 
     if (!mangaSlug) {
-      return NextResponse.json({ error: "Manga slug is required" }, { status: 400 });
+      return NextResponse.json({ error: "manga_slug is required" }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, count, error } = await supabaseAdmin
       .from("project_chapters")
-      .select("*")
+      .select("*", { count: "exact" })
       .eq("manga_slug", mangaSlug)
-      .order("chapter_number", { ascending: false });
+      .order("chapter_number", { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
-    return NextResponse.json({ data });
+    return NextResponse.json({ data, total: count || 0 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
@@ -40,15 +44,15 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { manga_slug, chapter_number, title, image_urls } = body;
 
-    if (!manga_slug || chapter_number === undefined) {
-      return NextResponse.json({ error: "Manga slug and chapter number are required" }, { status: 400 });
+    if (!manga_slug || !chapter_number) {
+      return NextResponse.json({ error: "manga_slug and chapter_number are required" }, { status: 400 });
     }
 
     const { data, error } = await supabaseAdmin
       .from("project_chapters")
       .insert({
         manga_slug,
-        chapter_number: Number(chapter_number),
+        chapter_number,
         title,
         image_urls: image_urls || [],
       })
@@ -57,8 +61,11 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
-    revalidatePath(`/komik/project/${manga_slug}`);
-    revalidatePath(`/chapter/project/${manga_slug}/chapter-${chapter_number}`);
+    // Update manga updated_at
+    await supabaseAdmin
+      .from("project_manga")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("slug", manga_slug);
 
     return NextResponse.json({ data });
   } catch (err: any) {
@@ -74,7 +81,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { id, title, image_urls } = body;
+    const { id, manga_slug, chapter_number, title, image_urls } = body;
 
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
@@ -83,19 +90,16 @@ export async function PATCH(request: Request) {
     const { data, error } = await supabaseAdmin
       .from("project_chapters")
       .update({
+        manga_slug,
+        chapter_number,
         title,
-        image_urls,
+        image_urls: image_urls || [],
       })
       .eq("id", id)
       .select()
       .single();
 
     if (error) throw error;
-    
-    if (data?.manga_slug) {
-      revalidatePath(`/komik/project/${data.manga_slug}`);
-      revalidatePath(`/chapter/project/${data.manga_slug}/chapter-${data.chapter_number}`);
-    }
 
     return NextResponse.json({ data });
   } catch (err: any) {
@@ -117,8 +121,25 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    const { error } = await supabaseAdmin.from("project_chapters").delete().eq("id", id);
-    if (error) throw error;
+    // 1. Ambil data chapter untuk dapat manga_slug & chapter_number
+    const { data: chapter, error: fetchError } = await supabaseAdmin
+      .from("project_chapters")
+      .select("manga_slug, chapter_number")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // 2. Hapus R2 files untuk chapter ini
+    await deleteR2Prefix(`chapters/${chapter.manga_slug}/${chapter.chapter_number}/`);
+
+    // 3. Hapus chapter dari Supabase
+    const { error: deleteError } = await supabaseAdmin
+      .from("project_chapters")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) throw deleteError;
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

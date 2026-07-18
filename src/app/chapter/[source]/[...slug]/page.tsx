@@ -6,7 +6,7 @@ import type { ReaderChapter } from "@/types/content";
 const CHAPTER_JSON_TTL = 60 * 60 * 24 * 7;
 
 export const revalidate = 604800;
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 interface ChapterPageProps {
   params: Promise<{

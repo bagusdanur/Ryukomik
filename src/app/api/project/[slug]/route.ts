@@ -1,6 +1,28 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
+function formatRelativeDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+  const diffWeek = Math.floor(diffDay / 7);
+  const diffMonth = Math.floor(diffDay / 30);
+  const diffYear = Math.floor(diffDay / 365);
+
+  if (diffSec < 60) return "Baru saja";
+  if (diffMin < 60) return `${diffMin} menit lalu`;
+  if (diffHour < 24) return `${diffHour} jam lalu`;
+  if (diffDay < 7) return `${diffDay} hari lalu`;
+  if (diffWeek < 4) return `${diffWeek} minggu lalu`;
+  if (diffMonth < 12) return `${diffMonth} bulan lalu`;
+  return `${diffYear} tahun lalu`;
+}
+
 export async function GET(request: Request, props: { params: Promise<{ slug: string }> }) {
   try {
     const params = await props.params;
@@ -38,9 +60,9 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
         genres: manga.genres,
         description: manga.description,
         chapters: chapters?.map(c => ({
-          chapter: `Chapter ${c.chapter_number}`,
-          url: `/chapter/project/${slug}/chapter-${c.chapter_number}`,
-          time: c.uploaded_at
+          slug: `${slug}/chapter-${c.chapter_number}`,
+          title: c.title || `Chapter ${c.chapter_number}`,
+          date: formatRelativeDate(c.uploaded_at),
         })) || []
       }
     });

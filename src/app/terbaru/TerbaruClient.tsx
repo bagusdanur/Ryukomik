@@ -581,7 +581,7 @@ export default function TerbaruPage({
           url = buildSourceUrl("meionovels", "pustaka", params);
           break;
         case "project":
-          url = `/api/source/project/pustaka?${params.toString()}`;
+          url = `/api/project/pustaka?${params.toString()}`;
           break;
         default:
           console.error("Unknown source:", currentSource);

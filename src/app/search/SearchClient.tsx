@@ -15,11 +15,13 @@ import {
   MANGA_SOURCES,
   ADULT_SOURCES as ADULT_SOURCE_CONFIGS,
   ADULT_SOURCE_IDS,
+  PROJECT_SOURCES,
 } from "@/config/sources";
 
 const COMIC_SOURCES: SearchSource[] = [
   ...MANGA_SOURCES.map(s => ({ id: s.id as SearchSourceId, label: `Source ${s.label}` })),
   ...ADULT_SOURCE_CONFIGS.map(s => ({ id: s.id as SearchSourceId, label: `Source ${s.label}` })),
+  ...PROJECT_SOURCES.map(s => ({ id: s.id as SearchSourceId, label: s.label })),
 ];
 const PUBLIC_SOURCES = COMIC_SOURCES.filter((source) => !ADULT_SOURCE_IDS.has(source.id));
 const ADULT_SOURCES = COMIC_SOURCES.filter((source) => ADULT_SOURCE_IDS.has(source.id));
@@ -27,7 +29,7 @@ const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 
 const buildSearchUrl = (sourceId: SearchSourceId, query: string) => {
   if (sourceId === "project") {
-    return `/api/source/project/search?q=${encodeURIComponent(query)}`;
+    return `/api/project/search?q=${encodeURIComponent(query)}`;
   }
   return `${SOURCE_API_BASE_URL}/${sourceId}/search?q=${encodeURIComponent(query)}`;
 };
