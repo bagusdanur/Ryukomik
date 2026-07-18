@@ -26,6 +26,9 @@ const ADULT_SOURCES = COMIC_SOURCES.filter((source) => ADULT_SOURCE_IDS.has(sour
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 
 const buildSearchUrl = (sourceId: SearchSourceId, query: string) => {
+  if (sourceId === "project") {
+    return `/api/source/project/search?q=${encodeURIComponent(query)}`;
+  }
   return `${SOURCE_API_BASE_URL}/${sourceId}/search?q=${encodeURIComponent(query)}`;
 };
 
