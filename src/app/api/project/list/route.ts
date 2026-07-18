@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET(request: Request) {
   try {
@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const offset = (page - 1) * limit;
 
-    const { data, count, error } = await supabaseServer
+    const { data, count, error } = await supabaseAdmin
       .from("project_manga")
       .select("*", { count: "exact" })
       .order("updated_at", { ascending: false })

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET(request: Request, props: { params: Promise<{ slug: string, chapter: string }> }) {
   try {
@@ -24,7 +24,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
     }
 
     // Dapatkan data manga (untuk prev/next logic dan title)
-    const { data: manga, error: mangaError } = await supabaseServer
+    const { data: manga, error: mangaError } = await supabaseAdmin
       .from("project_manga")
       .select("title")
       .eq("slug", slug)
@@ -33,7 +33,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
     if (mangaError) throw mangaError;
 
     // Dapatkan data chapter aktif
-    const { data: chapData, error: chapterError } = await supabaseServer
+    const { data: chapData, error: chapterError } = await supabaseAdmin
       .from("project_chapters")
       .select("*")
       .eq("manga_slug", slug)
@@ -43,7 +43,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
     if (chapterError) throw chapterError;
 
     // Dapatkan daftar semua chapter untuk navigasi
-    const { data: allChapters } = await supabaseServer
+    const { data: allChapters } = await supabaseAdmin
       .from("project_chapters")
       .select("chapter_number")
       .eq("manga_slug", slug)

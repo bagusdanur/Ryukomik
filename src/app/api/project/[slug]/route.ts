@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET(request: Request, props: { params: Promise<{ slug: string }> }) {
   try {
@@ -10,7 +10,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
       return NextResponse.json({ success: false, error: "Slug is required" }, { status: 400 });
     }
 
-    const { data: manga, error: mangaError } = await supabaseServer
+    const { data: manga, error: mangaError } = await supabaseAdmin
       .from("project_manga")
       .select("*")
       .eq("slug", slug)
@@ -18,7 +18,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
 
     if (mangaError) throw mangaError;
 
-    const { data: chapters, error: chapterError } = await supabaseServer
+    const { data: chapters, error: chapterError } = await supabaseAdmin
       .from("project_chapters")
       .select("id, chapter_number, title, uploaded_at")
       .eq("manga_slug", slug)

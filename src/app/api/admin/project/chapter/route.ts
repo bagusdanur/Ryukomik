@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabaseServer } from "@/lib/supabaseServer";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { revalidatePath } from "next/cache";
 
 export async function GET(request: Request) {
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Manga slug is required" }, { status: 400 });
     }
 
-    const { data, error } = await supabaseServer
+    const { data, error } = await supabaseAdmin
       .from("project_chapters")
       .select("*")
       .eq("manga_slug", mangaSlug)
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Manga slug and chapter number are required" }, { status: 400 });
     }
 
-    const { data, error } = await supabaseServer
+    const { data, error } = await supabaseAdmin
       .from("project_chapters")
       .insert({
         manga_slug,
@@ -80,7 +80,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    const { data, error } = await supabaseServer
+    const { data, error } = await supabaseAdmin
       .from("project_chapters")
       .update({
         title,
@@ -117,7 +117,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    const { error } = await supabaseServer.from("project_chapters").delete().eq("id", id);
+    const { error } = await supabaseAdmin.from("project_chapters").delete().eq("id", id);
     if (error) throw error;
 
     return NextResponse.json({ success: true });
