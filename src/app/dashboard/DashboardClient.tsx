@@ -1069,19 +1069,6 @@ export default function AdminDashboard() {
       </div>
     );
 
-    return (
-      <div className="min-h-screen bg-[#0c0c10] flex items-center justify-center px-6">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <FiShield size={28} className="text-red-400" />
-          </div>
-          <p className="text-white font-bold text-lg">Akses Ditolak</p>
-          <p className="text-white/40 text-sm mt-1">
-            Halaman ini hanya untuk admin.
-          </p>
-        </div>
-      </div>
-    );
 
   const totalPages = Math.max(1, Math.ceil(userTotal / PER_PAGE));
   const setDashboardPage = (nextPage: string) => {
