@@ -34,7 +34,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
 
     const { data: manga, error: mangaError } = await supabaseAdmin
       .from("project_manga")
-      .select("*")
+      .select("title, cover_url, type, status, author, genres, description")
       .eq("slug", slug)
       .single();
 
@@ -49,7 +49,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
     if (chapterError) throw chapterError;
 
     // Normalize ke format yang diharapkan frontend (ComicDetail)
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: {
         title: manga.title,
@@ -66,6 +66,11 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
         })) || []
       }
     });
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=300, stale-while-revalidate=600",
+    );
+    return response;
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

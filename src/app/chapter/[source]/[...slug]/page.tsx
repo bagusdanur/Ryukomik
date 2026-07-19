@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import ChapterClient from "./ChapterClient";
 import type { Metadata } from "next";
 import type { ReaderChapter } from "@/types/content";
@@ -19,7 +20,9 @@ function parseSlug(slug: string | string[]) {
   return Array.isArray(slug) ? slug.join("/") : slug;
 }
 
-async function getChapter(source: string, slugStr: string): Promise<ReaderChapter | null> {
+// React cache() memastikan generateMetadata + ChapterPage SHARE SATU fetch
+// per request — tidak double hit ke DB meskipun force-dynamic aktif
+const getChapter = cache(async (source: string, slugStr: string): Promise<ReaderChapter | null> => {
   if (source === "project") {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -71,7 +74,7 @@ async function getChapter(source: string, slugStr: string): Promise<ReaderChapte
   } catch {
     return null;
   }
-}
+});
 
 function buildTitle(data: ReaderChapter | null, slugStr: string) {
   const mangaTitle = data?.mangaId

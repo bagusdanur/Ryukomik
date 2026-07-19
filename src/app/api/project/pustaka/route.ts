@@ -51,14 +51,16 @@ export async function GET(request: Request) {
     }
 
     // Ambil chapter terbaru untuk semua manga sekaligus
+    // Batasi jumlah total chapter yang diambil untuk efisiensi egress
     const mangaSlugs = mangaList.map(m => m.slug);
     const { data: allChapters } = await supabaseAdmin
       .from("project_chapters")
       .select("manga_slug, chapter_number, uploaded_at")
       .in("manga_slug", mangaSlugs)
-      .order("chapter_number", { ascending: false });
+      .order("chapter_number", { ascending: false })
+      .limit(mangaSlugs.length * 5); // Maks 5 chapter per manga untuk kebutuhan latest-only
 
-    // Build map: slug -> latest chapter
+    // Build map: slug -> latest chapter (ambil yang pertama karena sudah di-order DESC)
     const latestChapterMap = new Map<string, { chapter_number: number; uploaded_at: string }>();
     for (const ch of allChapters || []) {
       if (!latestChapterMap.has(ch.manga_slug)) {
@@ -82,12 +84,17 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: results,
       total: count || 0,
       hasMore: (count || 0) > offset + limit,
     });
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=120, stale-while-revalidate=300",
+    );
+    return response;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(

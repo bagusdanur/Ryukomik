@@ -32,22 +32,23 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
 
     if (mangaError) throw mangaError;
 
-    // Dapatkan data chapter aktif
-    const { data: chapData, error: chapterError } = await supabaseAdmin
-      .from("project_chapters")
-      .select("*")
-      .eq("manga_slug", slug)
-      .eq("chapter_number", chapterNum)
-      .single();
+    // Dapatkan data chapter aktif + daftar chapter navigasi secara paralel
+    const [{ data: chapData, error: chapterError }, { data: allChapters }] =
+      await Promise.all([
+        supabaseAdmin
+          .from("project_chapters")
+          .select("chapter_number, title, image_urls")
+          .eq("manga_slug", slug)
+          .eq("chapter_number", chapterNum)
+          .single(),
+        supabaseAdmin
+          .from("project_chapters")
+          .select("chapter_number")
+          .eq("manga_slug", slug)
+          .order("chapter_number", { ascending: false }),
+      ]);
 
     if (chapterError) throw chapterError;
-
-    // Dapatkan daftar semua chapter untuk navigasi
-    const { data: allChapters } = await supabaseAdmin
-      .from("project_chapters")
-      .select("chapter_number")
-      .eq("manga_slug", slug)
-      .order("chapter_number", { ascending: false });
 
     // Cari prev / next chapter
     let prevChapter = null;
@@ -64,7 +65,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
     }
 
     // Normalize ke format ReaderChapter
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       title: chapData.title || `Chapter ${chapData.chapter_number}`,
       currentChapter: `Chapter ${chapData.chapter_number}`,
@@ -76,6 +77,11 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
       next: nextChapter,
       images: chapData.image_urls || []
     });
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=300, stale-while-revalidate=600",
+    );
+    return response;
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

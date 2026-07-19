@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
     const { data, count, error } = await supabaseAdmin
       .from("project_chapters")
-      .select("*", { count: "exact" })
+      .select("id, manga_slug, chapter_number, title, uploaded_at", { count: "exact" })
       .eq("manga_slug", mangaSlug)
       .order("chapter_number", { ascending: false })
       .range(offset, offset + limit - 1);

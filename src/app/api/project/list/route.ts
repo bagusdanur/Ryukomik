@@ -10,18 +10,23 @@ export async function GET(request: Request) {
 
     const { data, count, error } = await supabaseAdmin
       .from("project_manga")
-      .select("*", { count: "exact" })
+      .select("id, slug, title, cover_url, type, status, author, genres, updated_at", { count: "exact" })
       .order("updated_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: data || [],
       total: count || 0,
-      hasMore: (count || 0) > offset + limit
+      hasMore: (count || 0) > offset + limit,
     });
+    response.headers.set(
+      "Cache-Control",
+      "public, s-maxage=120, stale-while-revalidate=300",
+    );
+    return response;
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
