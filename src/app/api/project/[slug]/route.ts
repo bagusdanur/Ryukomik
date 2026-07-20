@@ -59,6 +59,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
         author: manga.author,
         genres: manga.genres,
         description: manga.description,
+        synopsis: manga.description,
         chapters: chapters?.map(c => ({
           slug: `${slug}/chapter-${c.chapter_number}`,
           title: c.title || `Chapter ${c.chapter_number}`,

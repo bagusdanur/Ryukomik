@@ -13,6 +13,7 @@ import {
   FiSearch as FiSearchIcon,
   FiCheck as FiCheckIcon,
   FiX as FiXIcon,
+  FiEye as FiEyeIcon,
 } from "react-icons/fi";
 
 type Manga = {
@@ -862,28 +863,45 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               </div>
             )}
 
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-              {chapterForm.image_urls?.map((url, i) => (
-                <div key={i} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-white/10 group bg-black/50">
-                  <img src={url} alt={`Page ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const urls = [...(chapterForm.image_urls || [])];
-                        urls.splice(i, 1);
-                        setChapterForm({ ...chapterForm, image_urls: urls });
-                      }}
-                      className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white"
-                    >
-                      <FiTrash2Icon size={14} />
-                    </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {chapterForm.image_urls?.map((url, i) => {
+                const filename = url.split('/').pop() || `Page ${i + 1}`;
+                return (
+                  <div key={i} className="flex items-center justify-between bg-black/40 border border-white/10 rounded-lg p-2 group">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded">
+                        {i + 1}
+                      </span>
+                      <span className="text-xs text-white/70 truncate" title={decodeURIComponent(filename)}>
+                        {decodeURIComponent(filename)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-1.5 hover:bg-white/10 rounded text-blue-400 opacity-50 hover:opacity-100 transition-opacity"
+                        title="Preview"
+                      >
+                        <FiEyeIcon size={14} />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const urls = [...(chapterForm.image_urls || [])];
+                          urls.splice(i, 1);
+                          setChapterForm({ ...chapterForm, image_urls: urls });
+                        }}
+                        className="p-1.5 hover:bg-rose-500/20 rounded text-rose-400 opacity-50 hover:opacity-100 transition-opacity"
+                        title="Hapus"
+                      >
+                        <FiTrash2Icon size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="absolute top-1 left-1 bg-black/80 px-1.5 rounded text-[8px] font-bold">
-                    {i + 1}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             {chapterForm.image_urls?.length === 0 && !uploading && (
               <div className="py-8 text-center text-white/20 text-xs border border-dashed border-white/10 rounded-xl flex flex-col items-center">
