@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { deleteR2Prefix } from "@/lib/r2Storage";
+import { deleteR2Prefix, deleteR2File } from "@/lib/r2Storage";
 
 export async function GET(request: Request) {
   try {
@@ -87,6 +87,14 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
+    const { data: existingChapter, error: fetchError } = await supabaseAdmin
+      .from("project_chapters")
+      .select("image_urls")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
     const { data, error } = await supabaseAdmin
       .from("project_chapters")
       .update({
@@ -100,6 +108,26 @@ export async function PATCH(request: Request) {
       .single();
 
     if (error) throw error;
+
+    // Hapus orphan files di R2
+    if (existingChapter?.image_urls) {
+      const oldUrls = existingChapter.image_urls as string[];
+      const newUrls = (image_urls || []) as string[];
+      const orphanUrls = oldUrls.filter((url) => !newUrls.includes(url));
+
+      for (const url of orphanUrls) {
+        try {
+          const urlObj = new URL(url);
+          const key = urlObj.pathname.substring(1); // Hapus leading slash
+          if (key.startsWith("chapters/")) {
+            await deleteR2File(key);
+            console.log(`[R2] Deleted orphan file: ${key}`);
+          }
+        } catch (e) {
+          console.error(`[R2] Gagal memparsing URL orphan: ${url}`, e);
+        }
+      }
+    }
 
     return NextResponse.json({ data });
   } catch (err: any) {

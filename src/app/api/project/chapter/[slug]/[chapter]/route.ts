@@ -32,37 +32,40 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
 
     if (mangaError) throw mangaError;
 
-    // Dapatkan data chapter aktif + daftar chapter navigasi secara paralel
-    const [{ data: chapData, error: chapterError }, { data: allChapters }] =
-      await Promise.all([
-        supabaseAdmin
-          .from("project_chapters")
-          .select("chapter_number, title, image_urls")
-          .eq("manga_slug", slug)
-          .eq("chapter_number", chapterNum)
-          .single(),
-        supabaseAdmin
-          .from("project_chapters")
-          .select("chapter_number")
-          .eq("manga_slug", slug)
-          .order("chapter_number", { ascending: false }),
-      ]);
+    // Dapatkan data chapter aktif + navigasi secara paralel
+    const [
+      { data: chapData, error: chapterError },
+      { data: nextChapData },
+      { data: prevChapData },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("project_chapters")
+        .select("chapter_number, title, image_urls")
+        .eq("manga_slug", slug)
+        .eq("chapter_number", chapterNum)
+        .single(),
+      supabaseAdmin
+        .from("project_chapters")
+        .select("chapter_number")
+        .eq("manga_slug", slug)
+        .gt("chapter_number", chapterNum)
+        .order("chapter_number", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("project_chapters")
+        .select("chapter_number")
+        .eq("manga_slug", slug)
+        .lt("chapter_number", chapterNum)
+        .order("chapter_number", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
     if (chapterError) throw chapterError;
 
-    // Cari prev / next chapter
-    let prevChapter = null;
-    let nextChapter = null;
-    
-    if (allChapters) {
-      const idx = allChapters.findIndex(c => c.chapter_number === chapterNum);
-      if (idx > 0) {
-        nextChapter = `chapter-${allChapters[idx - 1].chapter_number}`;
-      }
-      if (idx !== -1 && idx < allChapters.length - 1) {
-        prevChapter = `chapter-${allChapters[idx + 1].chapter_number}`;
-      }
-    }
+    const nextChapter = nextChapData ? `chapter-${nextChapData.chapter_number}` : null;
+    const prevChapter = prevChapData ? `chapter-${prevChapData.chapter_number}` : null;
 
     // Normalize ke format ReaderChapter
     const response = NextResponse.json({

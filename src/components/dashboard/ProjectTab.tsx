@@ -60,6 +60,10 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadStats, setUploadStats] = useState<{ success: number; failed: number } | null>(null);
 
+  // Drag and drop
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
   // Search
   const [chapterSearch, setChapterSearch] = useState("");
   const [mangaSearch, setMangaSearch] = useState("");
@@ -867,7 +871,41 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               {chapterForm.image_urls?.map((url, i) => {
                 const filename = url.split('/').pop() || `Page ${i + 1}`;
                 return (
-                  <div key={i} className="flex items-center justify-between bg-black/40 border border-white/10 rounded-lg p-2 group">
+                  <div 
+                    key={i} 
+                    className={`flex items-center justify-between bg-black/40 border ${dragOverIdx === i ? 'border-emerald-500 scale-[1.02]' : 'border-white/10'} rounded-lg p-2 group cursor-move transition-all duration-200`}
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedIdx(i);
+                      if (e.dataTransfer) {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", i.toString());
+                      }
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverIdx(i);
+                    }}
+                    onDragLeave={() => {
+                      if (dragOverIdx === i) setDragOverIdx(null);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (draggedIdx !== null && draggedIdx !== i) {
+                        const urls = [...(chapterForm.image_urls || [])];
+                        const itemToMove = urls[draggedIdx];
+                        urls.splice(draggedIdx, 1);
+                        urls.splice(i, 0, itemToMove);
+                        setChapterForm({ ...chapterForm, image_urls: urls });
+                      }
+                      setDraggedIdx(null);
+                      setDragOverIdx(null);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedIdx(null);
+                      setDragOverIdx(null);
+                    }}
+                  >
                     <div className="flex items-center gap-2 overflow-hidden">
                       <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded">
                         {i + 1}

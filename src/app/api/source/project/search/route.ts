@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       .select("manga_slug, chapter_number")
       .in("manga_slug", slugs)
       .order("chapter_number", { ascending: false })
-      .limit(slugs.length); // 1 per manga karena ORDER DESC
+      .limit(slugs.length * 10); // Batas aman untuk mendapatkan latest chapter per manga
 
     const latestChapterMap = new Map<string, number>();
     for (const ch of chapters || []) {

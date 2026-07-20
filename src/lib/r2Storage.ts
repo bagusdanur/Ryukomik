@@ -38,3 +38,11 @@ export async function deleteR2Prefix(prefix: string): Promise<number> {
 
   return deleted;
 }
+
+export async function deleteR2File(key: string): Promise<void> {
+  try {
+    await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+  } catch (error) {
+    console.error(`[r2Storage] Failed to delete file ${key}:`, error);
+  }
+}
