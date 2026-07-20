@@ -56,6 +56,8 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const [mangaForm, setMangaForm] = useState<Partial<Manga>>({});
   const [chapterForm, setChapterForm] = useState<Partial<Chapter>>({});
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadStats, setUploadStats] = useState<{ success: number; failed: number } | null>(null);
 
   // Search
   const [chapterSearch, setChapterSearch] = useState("");
@@ -202,11 +204,15 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
         body: formData,
       });
       const data = await res.json();
+      if (!res.ok) {
+        alert(`Gagal upload cover: ${data?.error || `HTTP ${res.status}`}`);
+        return;
+      }
       if (data.url) {
         setMangaForm({ ...mangaForm, cover_url: data.url });
       }
-    } catch (err) {
-      alert("Gagal upload cover");
+    } catch (err: any) {
+      alert(`Gagal upload cover: ${err.message || "Network error"}`);
     } finally {
       setUploading(false);
     }
@@ -347,11 +353,16 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       alert(`File berikut bukan gambar:\n${invalid.map((f) => f.name).join("\n")}`);
       return;
     }
+
     const token = await getAdminToken();
     const urls: string[] = [];
+    const failedFiles: string[] = [];
+    let lastError = "";
 
     setUploading(true);
     setUploadProgress(0);
+    setUploadError(null);
+    setUploadStats(null);
 
     try {
       for (let i = 0; i < files.length; i++) {
@@ -362,24 +373,53 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
         formData.append("chapter_number", String(chapterForm.chapter_number));
         formData.append("type", "chapter");
 
-        const res = await fetch("/api/admin/project/upload-image", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        });
+        try {
+          const res = await fetch("/api/admin/project/upload-image", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+          });
 
-        const data = await res.json();
-        if (data.url) urls.push(data.url);
+          const data = await res.json();
+
+          if (!res.ok) {
+            // Upload gagal di server — catat file yang error
+            failedFiles.push(file.name);
+            lastError = data?.error || `HTTP ${res.status}`;
+            console.error(`[upload] Gagal: ${file.name} — ${lastError}`);
+          } else if (data.url) {
+            urls.push(data.url);
+          } else {
+            failedFiles.push(file.name);
+            lastError = "Server tidak mengembalikan URL";
+          }
+        } catch (fetchErr: any) {
+          // Network error pada file individual
+          failedFiles.push(file.name);
+          lastError = fetchErr.message || "Network error";
+          console.error(`[upload] Network error: ${file.name}`, fetchErr);
+        }
 
         setUploadProgress(Math.round(((i + 1) / files.length) * 100));
       }
 
-      setChapterForm((prev) => ({
-        ...prev,
-        image_urls: [...(prev.image_urls || []), ...urls],
-      }));
-    } catch (err) {
-      alert("Ada gambar yang gagal diupload");
+      // Tambahkan URL yang berhasil ke form
+      if (urls.length > 0) {
+        setChapterForm((prev) => ({
+          ...prev,
+          image_urls: [...(prev.image_urls || []), ...urls],
+        }));
+      }
+
+      // Tampilkan ringkasan hasil upload
+      setUploadStats({ success: urls.length, failed: failedFiles.length });
+      if (failedFiles.length > 0) {
+        setUploadError(
+          `${failedFiles.length} gambar gagal diupload.\nError: ${lastError}\nFile: ${failedFiles.slice(0, 3).join(", ")}${failedFiles.length > 3 ? ` (+${failedFiles.length - 3} lainnya)` : ""}`
+        );
+      }
+    } catch (err: any) {
+      setUploadError(err.message || "Terjadi kesalahan saat upload");
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -824,6 +864,33 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               </div>
             )}
           </div>
+
+          {/* Upload result notice */}
+          {uploadStats && !uploading && (
+            <div className={`rounded-xl px-4 py-3 text-sm flex items-start gap-2 ${
+              uploadStats.failed > 0
+                ? "bg-rose-500/10 border border-rose-500/20 text-rose-400"
+                : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+            }`}>
+              <span className="text-base leading-none mt-0.5">{uploadStats.failed > 0 ? "⚠️" : "✅"}</span>
+              <div>
+                <p className="font-semibold">
+                  {uploadStats.success} gambar berhasil
+                  {uploadStats.failed > 0 && `, ${uploadStats.failed} gagal`}
+                </p>
+                {uploadError && (
+                  <p className="text-xs mt-1 opacity-80 whitespace-pre-line">{uploadError}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => { setUploadStats(null); setUploadError(null); }}
+                className="ml-auto text-white/30 hover:text-white/60"
+              >
+                <FiXIcon size={14} />
+              </button>
+            </div>
+          )}
 
           <button
             disabled={loading || uploading}
