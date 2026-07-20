@@ -10,10 +10,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from("project_manga")
       .select("slug, title, cover_url, type, status, genres, updated_at")
-      .ilike("title", `%${q}%`)
+      .or(`title.ilike.%${q}%,slug.ilike.%${q}%`);
+
+    const { data, error } = await query
       .order("updated_at", { ascending: false })
       .limit(30);
 
