@@ -150,7 +150,7 @@ const nextConfig = {
     ];
   },
 
-  serverExternalPackages: ["cheerio", "@aws-sdk/client-s3"],
+  serverExternalPackages: ["cheerio", "@aws-sdk/client-s3", "@aws-sdk/s3-request-presigner"],
 };
 
 export default nextConfig;
