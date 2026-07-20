@@ -361,7 +361,9 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       return;
     }
 
-    const files = Array.from(e.target.files).sort((a, b) => a.name.localeCompare(b.name));
+    const files = Array.from(e.target.files).sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" })
+    );
     const invalid = files.filter((f) => !f.type.startsWith("image/"));
     if (invalid.length > 0) {
       alert(`File berikut bukan gambar:\n${invalid.map((f) => f.name).join("\n")}`);
