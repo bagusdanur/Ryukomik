@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { S3Client, PutObjectCommand, PutBucketCorsCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export const dynamic = "force-dynamic";
@@ -11,38 +11,10 @@ const r2 = new S3Client({
     accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
   },
-  // Matikan auto-checksum CRC32 — R2 tidak support, menyebabkan CORS preflight gagal
+  // Matikan auto-checksum CRC32 — R2 tidak support
   requestChecksumCalculation: "WHEN_REQUIRED",
   responseChecksumValidation: "WHEN_REQUIRED",
 });
-
-// Set CORS sekali saat server start — izinkan PUT dari semua origin (atau domain spesifik)
-let corsDone = false;
-async function ensureCors(bucket: string) {
-  if (corsDone) return;
-  try {
-    await r2.send(
-      new PutBucketCorsCommand({
-        Bucket: bucket,
-        CORSConfiguration: {
-          CORSRules: [
-            {
-              AllowedOrigins: ["*"],  // Bisa ganti ke ["https://ryukomik.my.id"] jika mau lebih ketat
-              AllowedMethods: ["PUT", "GET", "HEAD"],
-              AllowedHeaders: ["*"],
-              MaxAgeSeconds: 3600,
-            },
-          ],
-        },
-      })
-    );
-    corsDone = true;
-    console.log("[presign] CORS bucket berhasil diset");
-  } catch (err: any) {
-    // Jangan crash jika CORS gagal diset — lanjut saja
-    console.warn("[presign] Gagal set CORS:", err.message);
-  }
-}
 
 export async function POST(request: Request) {
   try {
@@ -68,9 +40,6 @@ export async function POST(request: Request) {
 
     const bucketName = process.env.R2_BUCKET_NAME || "ryukomik-translate";
     const cdnUrl = process.env.NEXT_PUBLIC_TRANSLATE_CDN || "https://cdn.ryukomik.my.id";
-
-    // Pastikan CORS sudah diset di bucket
-    await ensureCors(bucketName);
 
     // Tentukan path upload
     let uploadPath = "";
