@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       .eq("slug", manga_slug);
 
     revalidatePath(`/komik/project/${manga_slug}`);
-    revalidateTag("source-project-pustaka");
+    revalidateTag("source-project-pustaka", "default");
 
     return NextResponse.json({ data });
   } catch (err: unknown) {
@@ -135,7 +135,7 @@ export async function PATCH(request: Request) {
     }
 
     revalidatePath(`/komik/project/${manga_slug}`);
-    revalidateTag("source-project-pustaka");
+    revalidateTag("source-project-pustaka", "default");
 
     return NextResponse.json({ data });
   } catch (err: unknown) {
@@ -178,7 +178,7 @@ export async function DELETE(request: Request) {
     if (deleteError) throw deleteError;
 
     revalidatePath(`/komik/project/${chapter.manga_slug}`);
-    revalidateTag("source-project-pustaka");
+    revalidateTag("source-project-pustaka", "default");
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
