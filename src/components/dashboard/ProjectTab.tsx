@@ -184,6 +184,11 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const uploadCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     const file = e.target.files[0];
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      alert("Hanya JPEG, PNG, atau WebP yang diizinkan!");
+      return;
+    }
     const formData = new FormData();
     formData.append("file", file);
     formData.append("manga_slug", mangaForm.slug || "new-manga");
@@ -338,6 +343,12 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     }
 
     const files = Array.from(e.target.files).sort((a, b) => a.name.localeCompare(b.name));
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    const invalid = files.filter((f) => !allowed.includes(f.type));
+    if (invalid.length > 0) {
+      alert(`File berikut bukan JPEG/PNG/WebP:\n${invalid.map((f) => f.name).join("\n")}`);
+      return;
+    }
     const token = await getAdminToken();
     const urls: string[] = [];
 
@@ -438,7 +449,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                   <span className="text-[10px] mt-1 text-center">JPEG/PNG max 2MB, rasio 3:4</span>
                 </button>
               )}
-              <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={uploadCover} />
+              <input type="file" ref={coverInputRef} className="hidden" accept="image/jpeg,image/png,image/webp" onChange={uploadCover} />
             </div>
             <div>
               <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 block">
@@ -773,7 +784,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               >
                 {uploading ? `${uploadProgress}%` : <><FiUploadCloudIcon /> Pilih</>}
               </button>
-              <input type="file" multiple accept="image/*" ref={fileInputRef} className="hidden" onChange={uploadChapterImages} />
+              <input type="file" multiple accept="image/jpeg,image/png,image/webp" ref={fileInputRef} className="hidden" onChange={uploadChapterImages} />
             </div>
 
             {uploading && (

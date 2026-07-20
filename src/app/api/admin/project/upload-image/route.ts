@@ -29,6 +29,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowed.includes(file.type)) {
+      return NextResponse.json({ error: "Hanya JPEG, PNG, atau WebP yang diizinkan" }, { status: 400 });
+    }
+
     const bucketName = process.env.R2_BUCKET_NAME || "ryukomik-translate";
     const cdnUrl = process.env.NEXT_PUBLIC_TRANSLATE_CDN || "https://cdn.ryukomik.my.id";
 
