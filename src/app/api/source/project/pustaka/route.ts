@@ -26,7 +26,7 @@ const getPustakaPage = unstable_cache(
       .select("manga_slug, chapter_number")
       .in("manga_slug", slugs)
       .order("chapter_number", { ascending: false })
-      .limit(slugs.length); // 1 chapter per manga sudah cukup (ORDER DESC + LIMIT)
+      .limit(slugs.length * 10); // Ambil lebih banyak untuk menghindari chapter tertinggal
 
     // Karena sudah di-ORDER DESC, chapter pertama per slug = yang terbaru
     const latestChapterMap = new Map<string, number>();
@@ -68,7 +68,8 @@ export async function GET(request: Request) {
       `public, s-maxage=${CACHE_TTL}, stale-while-revalidate=${CACHE_TTL * 2}`,
     );
     return response;
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Terjadi kesalahan server";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

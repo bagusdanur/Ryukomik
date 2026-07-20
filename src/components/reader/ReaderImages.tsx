@@ -269,7 +269,10 @@ export default function ReaderImages({
       source
     );
 
-    const apiPath = `https://api.ryukomik.web.id/${nextSource}/chapter/${nextCleanSlug}`;
+    let apiPath = `https://api.ryukomik.web.id/${nextSource}/chapter/${nextCleanSlug}`;
+    if (nextSource === "project") {
+      apiPath = `/api/project/chapter/${nextCleanSlug}`;
+    }
 
     fetch(apiPath)
       .then((res) => {

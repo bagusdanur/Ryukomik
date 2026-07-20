@@ -172,12 +172,14 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     setLoading(true);
     try {
       const token = await getAdminToken();
-      for (const id of selectedManga) {
-        await fetch(`/api/admin/project/manga?id=${id}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
+      await Promise.all(
+        Array.from(selectedManga).map((id) =>
+          fetch(`/api/admin/project/manga?id=${id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        )
+      );
       setSelectedManga(new Set());
       setBulkMode(false);
       fetchManga();
@@ -326,12 +328,14 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     setLoading(true);
     try {
       const token = await getAdminToken();
-      for (const id of selectedChapters) {
-        await fetch(`/api/admin/project/chapter?id=${id}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      }
+      await Promise.all(
+        Array.from(selectedChapters).map((id) =>
+          fetch(`/api/admin/project/chapter?id=${id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        )
+      );
       setSelectedChapters(new Set());
       setBulkMode(false);
       fetchChapters(activeManga!.slug);

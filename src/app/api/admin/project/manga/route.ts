@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { revalidatePath } from "next/cache";
 import { deleteR2Prefix } from "@/lib/r2Storage";
+import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 
 export async function GET(request: Request) {
   try {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const admin = await verifyAdminRequest(request);
+    if ("error" in admin) {
+      return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
     const { searchParams } = new URL(request.url);
@@ -17,23 +18,23 @@ export async function GET(request: Request) {
 
     const { data, count, error } = await supabaseAdmin
       .from("project_manga")
-      .select("*", { count: "exact" })
+      .select("id, slug, title, cover_url, type, status, author, genres, created_at, updated_at", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
     return NextResponse.json({ data, total: count || 0 });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return adminErrorResponse(err, "Gagal mengambil data manga.");
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const admin = await verifyAdminRequest(request);
+    if ("error" in admin) {
+      return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
     const body = await request.json();
@@ -61,16 +62,16 @@ export async function POST(request: Request) {
     if (error) throw error;
 
     return NextResponse.json({ data });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return adminErrorResponse(err, "Gagal menambah data manga.");
   }
 }
 
 export async function PATCH(request: Request) {
   try {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const admin = await verifyAdminRequest(request);
+    if ("error" in admin) {
+      return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
     const body = await request.json();
@@ -101,16 +102,16 @@ export async function PATCH(request: Request) {
     revalidatePath(`/komik/project/${slug}`);
 
     return NextResponse.json({ data });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return adminErrorResponse(err, "Gagal update data manga.");
   }
 }
 
 export async function DELETE(request: Request) {
   try {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const admin = await verifyAdminRequest(request);
+    if ("error" in admin) {
+      return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
     const { searchParams } = new URL(request.url);
@@ -162,7 +163,7 @@ export async function DELETE(request: Request) {
     if (mangaDeleteError) throw mangaDeleteError;
 
     return NextResponse.json({ success: true, deletedChapters: chapters?.length || 0 });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return adminErrorResponse(err, "Gagal menghapus data manga.");
   }
 }

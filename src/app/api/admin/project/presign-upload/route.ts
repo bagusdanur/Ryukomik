@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +19,9 @@ const r2 = new S3Client({
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const admin = await verifyAdminRequest(request);
+    if ("error" in admin) {
+      return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
     if (!process.env.R2_ACCOUNT_ID || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_SECRET_ACCESS_KEY) {
@@ -34,6 +35,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Parameter tidak lengkap" }, { status: 400 });
     }
 
+    const safeMangaSlug = String(mangaSlug).replace(/[^a-zA-Z0-9\-_]/g, "");
+    if (!safeMangaSlug) {
+      return NextResponse.json({ error: "Slug manga tidak valid" }, { status: 400 });
+    }
+
     if (!contentType.startsWith("image/")) {
       return NextResponse.json({ error: "File harus berupa gambar" }, { status: 400 });
     }
@@ -41,14 +47,14 @@ export async function POST(request: Request) {
     const bucketName = process.env.R2_BUCKET_NAME || "ryukomik-translate";
     const cdnUrl = process.env.NEXT_PUBLIC_TRANSLATE_CDN || "https://cdn.ryukomik.my.id";
 
-    // Tentukan path upload
     let uploadPath = "";
     if (type === "cover") {
       const ext = filename.split(".").pop()?.toLowerCase() || "jpg";
-      uploadPath = `covers/${mangaSlug}/cover.${ext}`;
+      uploadPath = `covers/${safeMangaSlug}/cover.${ext}`;
     } else {
       const safeName = filename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-      uploadPath = `chapters/${mangaSlug}/${chapterNumber}/${safeName}`;
+      const safeChapterNumber = String(chapterNumber).replace(/[^a-zA-Z0-9.\-_]/g, "");
+      uploadPath = `chapters/${safeMangaSlug}/${safeChapterNumber}/${safeName}`;
     }
 
     // Generate presigned URL (tanpa checksum — kompatibel dengan R2)
@@ -67,8 +73,8 @@ export async function POST(request: Request) {
     console.log(`[presign] Generated presigned URL for: ${uploadPath}`);
 
     return NextResponse.json({ presignedUrl, publicUrl, uploadPath });
-  } catch (err: any) {
-    console.error("[presign] Error:", err.message);
-    return NextResponse.json({ error: err.message || "Gagal membuat presigned URL" }, { status: 500 });
+  } catch (err: unknown) {
+    console.error("[presign] Error:", err);
+    return adminErrorResponse(err, "Gagal membuat presigned URL");
   }
 }
