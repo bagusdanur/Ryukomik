@@ -10,12 +10,15 @@ import RyukomikDiscordBanner from "@/components/RyukomikDiscordBanner";
 import LatestComments from "@/components/LatestComments";
 import TitleRushNotice from "@/components/TitleRushNotice";
 import { getTitleRushEventStatus } from "@/lib/titleRushEvent";
+import ProjectUpdateList from "@/components/ProjectUpdateList";
+import { getProjectUpdates } from "@/lib/projectUpdates";
 
 export const revalidate = 600;
 
 export default async function Home() {
-  const [list, popular, banner, titleRushStatus] = await Promise.all([
+  const [list, projectUpdates, popular, banner, titleRushStatus] = await Promise.all([
     getTerbaru(),
+    getProjectUpdates(),
     getHomeKomiku(),
     getBannerKomiku(),
     getTitleRushEventStatus(),
@@ -33,6 +36,7 @@ export default async function Home() {
         <RyukomikDiscordBanner />
         {titleRushStatus.enabled && <TitleRushNotice className="pb-3" />}
         <UpdateList list={list} />
+        <ProjectUpdateList list={projectUpdates} />
         <PopularSection data={popular} />
         <LatestComments />
       </div>
