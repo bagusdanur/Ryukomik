@@ -81,6 +81,7 @@ export async function GET(request: Request) {
         info: latest ? formatRelativeDate(latest.uploaded_at) : "",
         type_genre: [item.type, ...(item.genres || [])].filter(Boolean).join(", "),
         chapter_terbaru: latest ? `Chapter ${latest.chapter_number}` : "",
+        status: item.status || "",
       };
     });
 

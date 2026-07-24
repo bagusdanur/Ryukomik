@@ -617,6 +617,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                     <option value="completed">Completed</option>
                     <option value="hiatus">Hiatus</option>
                     <option value="dropped">Dropped</option>
+                    <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
               </div>

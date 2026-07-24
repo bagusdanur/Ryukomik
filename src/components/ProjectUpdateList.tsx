@@ -49,6 +49,13 @@ export default function ProjectUpdateList({
                 badge={typeBadge(item.type_genre)}
                 eyebrow={item.chapter_terbaru?.replace("Chapter", "Ch.")}
                 meta={item.info}
+                corner={
+                  item.status?.toLowerCase() === "cancelled" ? (
+                    <span className="absolute right-2 top-2 rounded-full border border-red-300/35 bg-red-500/85 px-2 py-0.5 text-[9px] font-black tracking-wide text-white shadow-lg">
+                      CANCELLED
+                    </span>
+                  ) : null
+                }
               />
             ))}
           </div>

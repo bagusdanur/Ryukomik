@@ -55,6 +55,7 @@ export interface UpdateItem {
   info?: string;
   type_genre?: string;
   chapter_terbaru?: string;
+  status?: string;
   source?: SourceId;
 }
 

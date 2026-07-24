@@ -150,6 +150,9 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
 
   const chapters = data?.chapters ?? [];
   const proxiedThumbnail = getProxiedThumbnailUrl(data?.thumbnail, source);
+  const normalizedStatus = data?.status?.toLowerCase();
+  const statusLabel =
+    normalizedStatus === "cancelled" ? "Dibatalkan" : data?.status || "Ongoing";
 
   // ✅ Kalau data null (fetch gagal di server)
   if (!data)
@@ -229,12 +232,14 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
               <span className="text-white/80">{data.Konsep || "Aksi"}</span>
               <span
                 className={
-                  data.status?.toLowerCase() === "ongoing"
+                  normalizedStatus === "ongoing"
                     ? "text-emerald-300"
+                    : normalizedStatus === "cancelled"
+                      ? "font-bold text-red-300"
                     : "text-violet-200"
                 }
               >
-                {data.status || "Ongoing"}
+                {statusLabel}
               </span>
             </div>
             {/* TOMBOL SAVED/BOOKMARK */}
