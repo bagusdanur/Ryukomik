@@ -1,7 +1,5 @@
 "use client";
 
-import { jsPDF } from "jspdf";
-import JSZip from "jszip";
 import { useState, useEffect } from "react";
 import { FiDownload, FiX } from "react-icons/fi";
 import type { User } from "@supabase/supabase-js";
@@ -91,6 +89,7 @@ export default function DownloadButton({
       // 🔥 ZIP MODE
       // =========================
       if (type === "zip") {
+        const { default: JSZip } = await import("jszip");
         const zip = new JSZip();
         const folder = zip.folder(chapterTitle);
 
@@ -121,7 +120,8 @@ export default function DownloadButton({
       // =========================
       // 🔥 PDF MODE (DEFAULT)
       // =========================
-      let pdf: jsPDF | null = null;
+      const { jsPDF } = await import("jspdf");
+      let pdf: import("jspdf").jsPDF | null = null;
       let done = 0;
 
       for (let i = 0; i < images.length; i++) {

@@ -1,5 +1,6 @@
 // app/lib/komiku.js
 import type { Dict } from "@/types/common";
+import { CONTENT_API_URL, fetchContentJson } from "@/lib/contentApi";
 
 type KomikuListItem = {
   link: string;
@@ -28,10 +29,10 @@ const toKomikuList = (value: unknown): KomikuListItem[] => {
 
 export async function getTerbaru(): Promise<KomikuListItem[]> {
   try {
-    const res = await fetch("https://api.ryukomik.web.id/komiku/terbaru", {
-      next: { revalidate: 600 },
-    });
-    const json = await res.json();
+    const json = await fetchContentJson<unknown>(
+      `${CONTENT_API_URL}/komiku/terbaru`,
+      { revalidate: 600 },
+    );
 
     if (Array.isArray(json)) return toKomikuList(json);
     const data = json as Dict;
@@ -46,10 +47,10 @@ export async function getTerbaru(): Promise<KomikuListItem[]> {
 
 export async function getHomeKomiku(): Promise<KomikuHomeData> {
   try {
-    const res = await fetch("https://api.ryukomik.web.id/komiku/home", {
-      next: { revalidate: 600 },
-    });
-    const json = await res.json();
+    const json = await fetchContentJson<unknown>(
+      `${CONTENT_API_URL}/komiku/home`,
+      { revalidate: 600 },
+    );
 
     const d = ((json as Dict).data || {}) as Dict;
 
@@ -63,4 +64,3 @@ export async function getHomeKomiku(): Promise<KomikuHomeData> {
     return { manga: [], manhwa: [], manhua: [] };
   }
 }
-

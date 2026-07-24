@@ -40,6 +40,9 @@ export default function Navbar() {
   const [source, setSource] = useState<SourceKey>(DEFAULT_SOURCE);
 
   const [showSource, setShowSource] = useState(false);
+  const [showAgeModal, setShowAgeModal] = useState(false);
+  const [isAdult, setIsAdult] = useState(false);
+  const [targetSource, setTargetSource] = useState<SourceKey | null>(null);
 
   useEffect(() => {
     const syncSource = () => {
@@ -194,10 +197,6 @@ export default function Navbar() {
       slug,
     };
   };
-
-  const [showAgeModal, setShowAgeModal] = useState(false);
-  const [isAdult, setIsAdult] = useState(false);
-  const [targetSource, setTargetSource] = useState<SourceKey | null>(null);
 
   const handleAgeConfirm = () => {
     localStorage.setItem("isAdult", "true");

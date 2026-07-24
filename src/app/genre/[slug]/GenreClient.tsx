@@ -107,16 +107,22 @@ export default function GenreClient({ initialData, slug, title }: GenreClientPro
   // Fetch data when page changes
   useEffect(() => {
     if (currentPage === 1 && initialData) {
-      setData(initialData);
-      setLoading(false);
-      setError(false);
-      setHasNextPage(initialData.results.length > 0);
-      return;
+      const frame = requestAnimationFrame(() => {
+        setData(initialData);
+        setLoading(false);
+        setError(false);
+        setHasNextPage(initialData.results.length > 0);
+      });
+      return () => cancelAnimationFrame(frame);
     }
 
     let active = true;
-    setLoading(true);
-    setError(false);
+    const frame = requestAnimationFrame(() => {
+      if (active) {
+        setLoading(true);
+        setError(false);
+      }
+    });
 
     fetch(`https://api.ryukomik.web.id/genre/${slug}?page=${currentPage}`)
       .then((res) => {
@@ -141,6 +147,7 @@ export default function GenreClient({ initialData, slug, title }: GenreClientPro
 
     return () => {
       active = false;
+      cancelAnimationFrame(frame);
     };
   }, [currentPage, slug, initialData]);
 

@@ -1,8 +1,5 @@
 "use client";
 
-
-import { useEffect, useState } from "react";
-
 import { useHistoryStore } from "@/store/historyStore";
 
 export default function HistoryPage() {
@@ -43,7 +40,9 @@ export default function HistoryPage() {
 
             {/* Date */}
             <span className="text-xs md:text-sm text-gray-300 mt-1 md:mt-0">
-              {(item as any).date || new Date(item.updatedAt || Date.now()).toLocaleDateString("id-ID")}
+              {(item as any).date || (item.updatedAt
+                ? new Date(item.updatedAt).toLocaleDateString("id-ID")
+                : "")}
             </span>
           </a>
         ))}

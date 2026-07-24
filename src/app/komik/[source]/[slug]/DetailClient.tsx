@@ -3,7 +3,7 @@
 // TAPI hapus useEffect fetch data, ganti dengan props
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback, useLayoutEffect } from "react";
+import { useEffect, useState, useCallback, useLayoutEffect, useMemo } from "react";
 import Link from "next/link";
 import type { Chapter, Series } from "@/types/content";
 import { useHistoryStore } from "@/store/historyStore";
@@ -52,7 +52,6 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
   const [expand, setExpand] = useState(false);
 
   const historyStore = useHistoryStore((state) => state.history);
-  const [lastRead, setLastRead] = useState<(ReadHistoryItem & { displayChapter?: string }) | null>(null);
   const [isPremium, setIsPremium] = useState(false);
 
   // Premium check
@@ -120,7 +119,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
     return raw ? `Ch. ${raw}` : "Ch. 1";
   }, []);
 
-  useEffect(() => {
+  const lastRead = useMemo<(ReadHistoryItem & { displayChapter?: string }) | null>(() => {
     try {
       const historyItem = historyStore.find((h: ReadHistoryItem) => h.comicSlug === (data?.mangaId || slug));
       
@@ -141,17 +140,18 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
           }
         }
 
-        setLastRead({
+        return {
           ...historyItem,
           displayChapter: displayCh,
           lastChapterSlug: resolvedSlug,
           source: resolvedSource,
-        });
+        };
       }
     } catch (e) {
       console.error(e);
     }
-  }, [slug, extractChapter, source, data?.chapters, historyStore]);
+    return null;
+  }, [slug, extractChapter, source, data?.chapters, data?.mangaId, historyStore]);
 
   const chapters = data?.chapters ?? [];
   const proxiedThumbnail = getProxiedThumbnailUrl(data?.thumbnail, source);

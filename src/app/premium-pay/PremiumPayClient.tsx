@@ -23,7 +23,6 @@ import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 import LoginModal from "@/components/LoginModal";
 import SkPremiumModal from "@/components/SkPremiumModal";
-import QRCode from "qrcode";
 import { supabase } from "@/lib/supabaseClient";
 
 const features = [
@@ -493,6 +492,7 @@ export default function PremiumPayClient() {
 
       if (data.payment.payment_method === "qris") {
         try {
+          const { default: QRCode } = await import("qrcode");
           const url = await QRCode.toDataURL(data.payment.payment_number, {
             width: 300,
             margin: 2,

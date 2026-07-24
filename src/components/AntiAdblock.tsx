@@ -19,7 +19,8 @@ export default function AntiAdblock() {
     if (typeof window !== "undefined") {
       const dismissed = sessionStorage.getItem("adblock-dismissed");
       if (dismissed === "true") {
-        setIsDismissed(true);
+        const frame = requestAnimationFrame(() => setIsDismissed(true));
+        return () => cancelAnimationFrame(frame);
       }
     }
   }, []);

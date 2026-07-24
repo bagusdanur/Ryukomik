@@ -1,7 +1,5 @@
 "use client";
 
-import { jsPDF } from "jspdf";
-import JSZip from "jszip";
 import { useState } from "react";
 import { FiChevronDown, FiChevronUp, FiX } from "react-icons/fi";
 import { FiDownload } from "react-icons/fi";
@@ -98,6 +96,8 @@ export default function BatchDownloadButton({ source, chapters, isPremium, user 
     setLogs([]);
     setOverall(0);
 
+    const { default: JSZip } = await import("jszip");
+    const JsPdf = type === "pdf" ? (await import("jspdf")).jsPDF : null;
     const zip = new JSZip();
     let successCount = 0;
     let skippedCount = 0;
@@ -125,7 +125,7 @@ export default function BatchDownloadButton({ source, chapters, isPremium, user 
         }
 
         if (type === "pdf") {
-          let pdf: jsPDF | null = null;
+          let pdf: import("jspdf").jsPDF | null = null;
           for (let j = 0; j < images.length; j++) {
             const res = await fetch(`/api/image?url=${encodeURIComponent(images[j])}`);
             const blob = await res.blob();
@@ -138,7 +138,7 @@ export default function BatchDownloadButton({ source, chapters, isPremium, user 
                 let w = img.width, h = img.height;
                 if (w > maxWidth) { h = h * (maxWidth / w); w = maxWidth; }
                 if (!pdf) {
-                  pdf = new jsPDF({ unit: "px", format: [w, h] });
+                  pdf = new JsPdf!({ unit: "px", format: [w, h] });
                 } else {
                   pdf.addPage([w, h]);
                 }

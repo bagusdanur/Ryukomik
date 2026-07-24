@@ -3,6 +3,20 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
+function cleanupYukiWidget() {
+  document.getElementById("yuki-ai-widget-script")?.remove();
+
+  document.querySelectorAll("iframe").forEach((iframe) => {
+    if (iframe.src && (iframe.src.includes("yuki.ryukomik.web.id") || iframe.src.includes("yuki-ai"))) {
+      iframe.remove();
+    }
+  });
+
+  document.querySelectorAll('[id*="yuki" i], [class*="yuki" i]').forEach((node) => {
+    node.remove();
+  });
+}
+
 export default function YukiAiScript() {
   const pathname = usePathname() || "";
   const [enabled, setEnabled] = useState<boolean | null>(null);
@@ -69,25 +83,6 @@ export default function YukiAiScript() {
       cleanupYukiWidget();
     }
   }, [shouldShow]);
-
-  // Fungsi untuk membersihkan semua elemen sisa dari widget Yuki AI di DOM
-  function cleanupYukiWidget() {
-    // 1. Hapus tag script
-    const scriptEl = document.getElementById("yuki-ai-widget-script");
-    if (scriptEl) scriptEl.remove();
-
-    // 2. Cari dan hapus iframe yang dimuat dari domain yuki
-    document.querySelectorAll("iframe").forEach((iframe) => {
-      if (iframe.src && (iframe.src.includes("yuki.ryukomik.web.id") || iframe.src.includes("yuki-ai"))) {
-        iframe.remove();
-      }
-    });
-
-    // 3. Cari dan hapus div/button/kontainer melayang yang ID atau kelasnya mengandung kata "yuki" (optimasi selektor)
-    document.querySelectorAll('[id*="yuki" i], [class*="yuki" i]').forEach((node) => {
-      node.remove();
-    });
-  }
 
   return null;
 }

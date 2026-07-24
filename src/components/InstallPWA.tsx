@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -44,7 +45,13 @@ export default function InstallPWA() {
     <div className="fixed top-4 inset-x-0 z-[9999] flex justify-center px-3">
       <div className="relative w-full max-w-3xl bg-[#282828] text-white rounded-xl shadow-lg px-5 py-4 flex items-center gap-4">
         {/* Icon */}
-        <img src="/icon.png?v=20260523" alt="Ryukomik" className="w-10 h-10 rounded-lg" />
+        <Image
+          src="/icon.png?v=20260523"
+          alt="Ryukomik"
+          width={40}
+          height={40}
+          className="h-10 w-10 rounded-lg"
+        />
 
         {/* Text */}
         <div className="flex-1">

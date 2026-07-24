@@ -93,15 +93,6 @@ const nextConfig = {
           },
         ],
       },
-      {
-        source: "/sw.js",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=0, s-maxage=0, must-revalidate",
-          },
-        ],
-      },
       ...[
         "/dashboard/:path*",
         "/setting/:path*",
