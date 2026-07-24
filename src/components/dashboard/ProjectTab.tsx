@@ -601,6 +601,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                     <option value="manhwa">Manhwa</option>
                     <option value="manhua">Manhua</option>
                     <option value="comic">Comic</option>
+                    <option value="18+">18+</option>
                   </select>
                 </div>
                 <div>

@@ -2,10 +2,11 @@ import SeriesCard from "@/components/SeriesCard";
 import type { UpdateItem } from "@/types/content";
 
 const typeBadge = (typeGenre?: string) => {
-  const type = typeGenre?.split(",")[0]?.trim();
-  if (type === "Manhwa") return "KR";
-  if (type === "Manhua") return "CN";
-  if (type === "Manga") return "JP";
+  const type = typeGenre?.split(",")[0]?.trim().toLowerCase();
+  if (type === "manhwa") return "KR";
+  if (type === "manhua") return "CN";
+  if (type === "manga") return "JP";
+  if (type === "18+" || type === "adult") return "18+";
   return type?.slice(0, 3).toUpperCase();
 };
 
