@@ -17,6 +17,7 @@ import { useHistoryStore } from "@/store/historyStore";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import type { NotificationItem, SourceId, TerbaruFilters, UpdateItem } from "@/types/content";
 import type { ReadHistoryItem } from "@/types/user";
+import ComicDetailSkeleton from "@/components/ComicDetailSkeleton";
 
 type FetchOptions = RequestInit & {
   signal?: AbortSignal;
@@ -197,6 +198,9 @@ export default function TerbaruPage({
   const navigatingToComicRef = useRef(false);
   const pendingScrollRef = useRef<number | null>(null);
   const isFirstRenderRef = useRef(true);
+  const restoredSourceRef = useRef<SourceId | null>(null);
+  const skipNextStateSaveRef = useRef(false);
+  const [navigatingHref, setNavigatingHref] = useState<string | null>(null);
 
   const [source, setSource] = useState<SourceId>(() => normalizeStoredSource(initialSource ?? null, DEFAULT_SOURCE));
 
@@ -307,9 +311,9 @@ export default function TerbaruPage({
         const parsed = JSON.parse(cachedState);
         const age = Date.now() - parsed.timestamp;
         
+        const cachedSource = normalizeStoredSource(parsed.source ?? null, source);
         if (
           age < LISTING_CACHE_TTL &&
-          parsed.source === source &&
           parsed.orderby === orderby &&
           parsed.tipe === tipe &&
           parsed.genre === genre &&
@@ -317,10 +321,15 @@ export default function TerbaruPage({
           parsed.status === status &&
           parsed.data && Array.isArray(parsed.data)
         ) {
-          setData(parsed.data);
-          setPage(parsed.page);
-          pageRef.current = parsed.page;
-          dataLengthRef.current = parsed.data.length;
+          const restoredData = normalizeListingItems(parsed.data, cachedSource);
+          const restoredPage = Number(parsed.page) || 1;
+          restoredSourceRef.current = cachedSource;
+          skipNextStateSaveRef.current = true;
+          setSource(cachedSource);
+          setData(restoredData);
+          setPage(restoredPage);
+          pageRef.current = restoredPage;
+          dataLengthRef.current = restoredData.length;
           
           const savedScrollY = sessionStorage.getItem(SCROLL_CACHE_KEY);
           if (savedScrollY) {
@@ -378,6 +387,10 @@ export default function TerbaruPage({
   // ✅ SAVE GLOBAL STATE WHEN IT CHANGES
   useEffect(() => {
     if (data.length === 0) return;
+    if (skipNextStateSaveRef.current) {
+      skipNextStateSaveRef.current = false;
+      return;
+    }
     try {
       const state = {
         data,
@@ -475,9 +488,24 @@ export default function TerbaruPage({
     };
   }, [history, extractChapter]);
 
-  const handleComicNavigate = useCallback(() => {
+  const handleComicNavigate = useCallback((href: string) => {
     navigatingToComicRef.current = true;
-  }, []);
+    setNavigatingHref(href);
+    try {
+      sessionStorage.setItem(SCROLL_CACHE_KEY, window.scrollY.toString());
+      sessionStorage.setItem(GLOBAL_STATE_CACHE_KEY, JSON.stringify({
+        data,
+        page,
+        source,
+        orderby,
+        tipe,
+        genre,
+        genre2,
+        status,
+        timestamp: Date.now(),
+      }));
+    } catch {}
+  }, [data, page, source, orderby, tipe, genre, genre2, status]);
 
   const resetListing = useCallback(() => {
     setData([]);
@@ -662,12 +690,26 @@ export default function TerbaruPage({
 
     if (!isInitialized.current) {
       isInitialized.current = true;
-      const savedSource = normalizeStoredSource(localStorage.getItem("source"), initialSource);
-      if (savedSource !== initialSource) {
-        activeSource = savedSource;
-        resetListing();
-        setSource(savedSource || DEFAULT_SOURCE);
+      if (restoredSourceRef.current) {
+        activeSource = restoredSourceRef.current;
+        if (source !== activeSource) setSource(activeSource);
+      } else {
+        const savedSource = normalizeStoredSource(localStorage.getItem("source"), initialSource);
+        if (savedSource !== initialSource) {
+          activeSource = savedSource;
+          resetListing();
+          setSource(savedSource || DEFAULT_SOURCE);
+        }
       }
+    }
+
+    if (
+      restoredSourceRef.current === activeSource &&
+      dataLengthRef.current > 0
+    ) {
+      restoredSourceRef.current = null;
+      initialListingUsedRef.current = false;
+      return;
     }
 
     const canUseInitialListing =
@@ -702,6 +744,15 @@ export default function TerbaruPage({
   useEffect(() => {
     localStorage.setItem("source", source);
   }, [source]);
+
+  useEffect(() => {
+    const clearPendingNavigation = () => {
+      navigatingToComicRef.current = false;
+      setNavigatingHref(null);
+    };
+    window.addEventListener("pageshow", clearPendingNavigation);
+    return () => window.removeEventListener("pageshow", clearPendingNavigation);
+  }, []);
 
   const [showAgeModal, setShowAgeModal] = useState(false);
   const [isAdult, setIsAdult] = useState(false);
@@ -801,6 +852,8 @@ export default function TerbaruPage({
           onClose={() => setShowAgeModal(false)}
         />
       )}
+
+      {navigatingHref && <ComicDetailSkeleton overlay />}
 
       <main className="rk-shell px-4 pt-20 pb-24">
       <FilterPanel

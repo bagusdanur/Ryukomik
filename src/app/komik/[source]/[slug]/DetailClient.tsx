@@ -14,6 +14,7 @@ import ChapterList from "@/components/ChapterList";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
+import ComicDetailSkeleton from "@/components/ComicDetailSkeleton";
 
 type ComicDetail = Series & {
   thumbnail: string;
@@ -172,7 +173,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
 
  
 
-  if (!mounted) return null;
+  if (!mounted) return <ComicDetailSkeleton />;
 
   return (
     <div className="rk-page rk-app-surface w-full pb-28 text-white">

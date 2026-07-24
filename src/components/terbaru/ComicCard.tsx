@@ -21,7 +21,7 @@ interface ComicCardProps {
   item: UpdateItem;
   lastRead: (ReadHistoryItem & { lastChapter?: string }) | null;
   source: SourceId;
-  onNavigate?: () => void;
+  onNavigate?: (href: string) => void;
 }
 
 function ComicCard({ item, lastRead, source, onNavigate }: ComicCardProps) {
@@ -36,7 +36,7 @@ function ComicCard({ item, lastRead, source, onNavigate }: ComicCardProps) {
   return (
     <SeriesCard
       href={href}
-      onClick={onNavigate}
+      onClick={() => onNavigate?.(href)}
       title={item.title}
       image={item.image}
       eyebrow={(item.chapter_terbaru || "").replace("Chapter", "Ch.")}
