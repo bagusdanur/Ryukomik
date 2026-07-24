@@ -14,7 +14,6 @@ import ChapterList from "@/components/ChapterList";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
-import ComicDetailSkeleton from "@/components/ComicDetailSkeleton";
 
 type ComicDetail = Series & {
   thumbnail: string;
@@ -36,16 +35,11 @@ type DetailClientProps = {
 
 export default function DetailClient({ data, slug, source }: DetailClientProps) {
   const { user } = useSupabaseUser();
-  const [mounted, setMounted] = useState(false);
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [source, slug]);
 
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
   const router = useRouter();
 
   // ✅ Tidak perlu loading state untuk data utama — sudah dari server
@@ -172,8 +166,6 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
 
 
  
-
-  if (!mounted) return <ComicDetailSkeleton />;
 
   return (
     <div className="rk-page rk-app-surface w-full pb-28 text-white">

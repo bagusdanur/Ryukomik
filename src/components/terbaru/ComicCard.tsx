@@ -21,7 +21,7 @@ interface ComicCardProps {
   item: UpdateItem;
   lastRead: (ReadHistoryItem & { lastChapter?: string }) | null;
   source: SourceId;
-  onNavigate?: (href: string) => void;
+  onNavigate?: (href: string, anchorId: string, viewportTop: number) => void;
 }
 
 function ComicCard({ item, lastRead, source, onNavigate }: ComicCardProps) {
@@ -31,12 +31,16 @@ function ComicCard({ item, lastRead, source, onNavigate }: ComicCardProps) {
     source === "meionovels"
       ? `/novel/${slug}`
       : `/komik/${itemSource}/${slug}`;
+  const anchorId = `terbaru-card-${encodeURIComponent(itemSource)}-${encodeURIComponent(slug)}`;
   const flag = typeFlag(item.type_genre?.split(" ")[0]);
 
   return (
     <SeriesCard
       href={href}
-      onClick={() => onNavigate?.(href)}
+      anchorId={anchorId}
+      onClick={(event) =>
+        onNavigate?.(href, anchorId, event.currentTarget.getBoundingClientRect().top)
+      }
       title={item.title}
       image={item.image}
       eyebrow={(item.chapter_terbaru || "").replace("Chapter", "Ch.")}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useMemo } from "react";
-import type { ReactNode } from "react";
+import type { MouseEventHandler, ReactNode } from "react";
 import FallbackImage from "@/components/FallbackImage";
 import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 
@@ -17,7 +17,8 @@ type SeriesCardProps = {
   priority?: boolean;
   className?: string;
   source?: string;
-  onClick?: () => void;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
+  anchorId?: string;
 };
 
 export default function SeriesCard({
@@ -34,6 +35,7 @@ export default function SeriesCard({
   className = "",
   source,
   onClick,
+  anchorId,
 }: SeriesCardProps) {
   const detectedSource = useMemo(() => {
     if (source) return source;
@@ -56,7 +58,13 @@ export default function SeriesCard({
   }, [imageCandidates, image, detectedSource]);
 
   return (
-    <Link prefetch={false} href={href} onClick={onClick} className={`rk-cover-card group ${className}`}>
+    <Link
+      id={anchorId}
+      prefetch={false}
+      href={href}
+      onClick={onClick}
+      className={`rk-cover-card group ${className}`}
+    >
       <div className="rk-cover-frame">
         <FallbackImage
           referrerPolicy="no-referrer"

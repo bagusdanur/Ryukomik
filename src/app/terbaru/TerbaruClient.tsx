@@ -39,6 +39,7 @@ const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 const LISTING_CACHE_PREFIX = "rk_terbaru_listing_v3";
 const GLOBAL_STATE_CACHE_KEY = "rk_terbaru_global_state_v1";
 const SCROLL_CACHE_KEY = "rk_terbaru_scroll_v1";
+const ANCHOR_CACHE_KEY = "rk_terbaru_anchor_v1";
 const LISTING_CACHE_TTL = 5 * 60 * 1000;
 import { VALID_SOURCE_IDS, DEFAULT_SOURCE } from "@/config/sources";
 const VALID_SOURCES = VALID_SOURCE_IDS;
@@ -197,6 +198,12 @@ export default function TerbaruPage({
   const requestIdRef = useRef(0);
   const navigatingToComicRef = useRef(false);
   const pendingScrollRef = useRef<number | null>(null);
+  const pendingAnchorRef = useRef<{
+    id: string;
+    viewportTop: number;
+    scrollY: number;
+  } | null>(null);
+  const restoreFrameRef = useRef<number | null>(null);
   const isFirstRenderRef = useRef(true);
   const restoredSourceRef = useRef<SourceId | null>(null);
   const skipNextStateSaveRef = useRef(false);
@@ -335,6 +342,17 @@ export default function TerbaruPage({
           if (savedScrollY) {
             pendingScrollRef.current = parseInt(savedScrollY, 10); // simpan dulu, jangan scroll
           }
+          const savedAnchor = sessionStorage.getItem(ANCHOR_CACHE_KEY);
+          if (savedAnchor) {
+            const anchor = JSON.parse(savedAnchor);
+            if (
+              typeof anchor.id === "string" &&
+              Number.isFinite(anchor.viewportTop) &&
+              Number.isFinite(anchor.scrollY)
+            ) {
+              pendingAnchorRef.current = anchor;
+            }
+          }
         }
       }
     } catch {}
@@ -342,21 +360,52 @@ export default function TerbaruPage({
   }, []); // Run only on mount
 
   // ✅ SCROLL SETELAH DATA SELESAI DIRENDER
+  const restoreLatestPosition = useCallback(() => {
+    if (restoreFrameRef.current !== null) {
+      cancelAnimationFrame(restoreFrameRef.current);
+    }
+
+    let attempts = 0;
+    const restore = () => {
+      const anchor = pendingAnchorRef.current;
+      const element = anchor ? document.getElementById(anchor.id) : null;
+
+      if (anchor && element) {
+        const delta = element.getBoundingClientRect().top - anchor.viewportTop;
+        if (Math.abs(delta) > 1) {
+          window.scrollBy({ top: delta, behavior: "instant" });
+        }
+      } else if (pendingScrollRef.current !== null) {
+        window.scrollTo({ top: pendingScrollRef.current, behavior: "instant" });
+      }
+
+      attempts += 1;
+      if (attempts < 12 && (anchor || pendingScrollRef.current !== null)) {
+        restoreFrameRef.current = requestAnimationFrame(restore);
+        return;
+      }
+
+      pendingAnchorRef.current = null;
+      pendingScrollRef.current = null;
+      restoreFrameRef.current = null;
+    };
+
+    restoreFrameRef.current = requestAnimationFrame(restore);
+  }, []);
+
   useEffect(() => {
     if (isFirstRenderRef.current) {
       isFirstRenderRef.current = false;
-      return; // skip render pertama (initial data)
     }
-    
-    if (pendingScrollRef.current !== null) {
-      const target = pendingScrollRef.current;
-      pendingScrollRef.current = null;
-      
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: target, behavior: "instant" });
-      });
+    if (pendingAnchorRef.current || pendingScrollRef.current !== null) {
+      restoreLatestPosition();
     }
-  }, [data]);
+    return () => {
+      if (restoreFrameRef.current !== null) {
+        cancelAnimationFrame(restoreFrameRef.current);
+      }
+    };
+  }, [data, restoreLatestPosition]);
 
   // ✅ SAVE SCROLL POSITION
   useEffect(() => {
@@ -488,11 +537,21 @@ export default function TerbaruPage({
     };
   }, [history, extractChapter]);
 
-  const handleComicNavigate = useCallback((href: string) => {
+  const handleComicNavigate = useCallback((
+    href: string,
+    anchorId: string,
+    viewportTop: number,
+  ) => {
     navigatingToComicRef.current = true;
     setNavigatingHref(href);
     try {
-      sessionStorage.setItem(SCROLL_CACHE_KEY, window.scrollY.toString());
+      const scrollY = window.scrollY;
+      sessionStorage.setItem(SCROLL_CACHE_KEY, scrollY.toString());
+      sessionStorage.setItem(ANCHOR_CACHE_KEY, JSON.stringify({
+        id: anchorId,
+        viewportTop,
+        scrollY,
+      }));
       sessionStorage.setItem(GLOBAL_STATE_CACHE_KEY, JSON.stringify({
         data,
         page,
@@ -514,6 +573,7 @@ export default function TerbaruPage({
     setHasMore(true);
     try {
       sessionStorage.removeItem(SCROLL_CACHE_KEY);
+      sessionStorage.removeItem(ANCHOR_CACHE_KEY);
     } catch {}
   }, []);
 
@@ -749,10 +809,21 @@ export default function TerbaruPage({
     const clearPendingNavigation = () => {
       navigatingToComicRef.current = false;
       setNavigatingHref(null);
+      try {
+        const savedAnchor = sessionStorage.getItem(ANCHOR_CACHE_KEY);
+        const savedScrollY = sessionStorage.getItem(SCROLL_CACHE_KEY);
+        if (savedAnchor) pendingAnchorRef.current = JSON.parse(savedAnchor);
+        if (savedScrollY) pendingScrollRef.current = Number(savedScrollY);
+      } catch {}
+      restoreLatestPosition();
     };
     window.addEventListener("pageshow", clearPendingNavigation);
-    return () => window.removeEventListener("pageshow", clearPendingNavigation);
-  }, []);
+    window.addEventListener("popstate", clearPendingNavigation);
+    return () => {
+      window.removeEventListener("pageshow", clearPendingNavigation);
+      window.removeEventListener("popstate", clearPendingNavigation);
+    };
+  }, [restoreLatestPosition]);
 
   const [showAgeModal, setShowAgeModal] = useState(false);
   const [isAdult, setIsAdult] = useState(false);
