@@ -16,7 +16,6 @@ import AdBanner from "@/components/AdBanner";
 import AntiAdblock from "@/components/AntiAdblock";
 import YukiAiScript from "@/components/YukiAiScript";
 import NotificationPrompt from "@/components/NotificationPrompt";
-import TerbaruScrollRestorer from "@/components/TerbaruScrollRestorer";
 
 export const viewport: Viewport = {
   themeColor: "#090a12",
@@ -117,7 +116,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         
         <SWRegister />
         <ThemeColorProvider />
-        <TerbaruScrollRestorer />
         <AutoBackup />
         <Navbar />
         {children}

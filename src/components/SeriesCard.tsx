@@ -18,7 +18,6 @@ type SeriesCardProps = {
   className?: string;
   source?: string;
   onClick?: MouseEventHandler<HTMLAnchorElement>;
-  anchorId?: string;
 };
 
 export default function SeriesCard({
@@ -35,7 +34,6 @@ export default function SeriesCard({
   className = "",
   source,
   onClick,
-  anchorId,
 }: SeriesCardProps) {
   const detectedSource = useMemo(() => {
     if (source) return source;
@@ -59,7 +57,6 @@ export default function SeriesCard({
 
   return (
     <Link
-      id={anchorId}
       prefetch={false}
       href={href}
       onClick={onClick}
