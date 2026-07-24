@@ -64,8 +64,9 @@ export default function ChapterList({
         c.title?.toLowerCase().includes(keyword.toLowerCase()),
       )
       : chapters;
-    return reverse ? [...filtered].reverse() : filtered;
-  }, [data.chapters, keyword, reverse]);
+    const shouldReverse = source === "project" ? !reverse : reverse;
+    return shouldReverse ? [...filtered].reverse() : filtered;
+  }, [data.chapters, keyword, reverse, source]);
 
   const toggleSelect = (slug: string) => {
     setSelected((prev) => {
