@@ -46,7 +46,7 @@ export default function InstallPWA() {
       <div className="relative w-full max-w-3xl bg-[#282828] text-white rounded-xl shadow-lg px-5 py-4 flex items-center gap-4">
         {/* Icon */}
         <Image
-          src="/icon.png?v=20260523"
+          src="/icon.png"
           alt="Ryukomik"
           width={40}
           height={40}
