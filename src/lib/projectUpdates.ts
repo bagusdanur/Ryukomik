@@ -13,7 +13,7 @@ export async function getProjectUpdates(): Promise<UpdateItem[]> {
   try {
     const response = await fetchContentJson<ProjectUpdatesResponse>(
       `${siteUrl}/api/project/pustaka?page=1&limit=12`,
-      { revalidate: 600 },
+      { revalidate: 600, tags: ["source-project-pustaka"] },
     );
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {

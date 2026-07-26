@@ -1,8 +1,18 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { deleteR2Prefix } from "@/lib/r2Storage";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
+
+function revalidateProjectContent(slug?: string) {
+  revalidateTag("source-project-pustaka", { expire: 0 });
+  revalidatePath("/", "page");
+  revalidatePath("/api/project/pustaka", "page");
+  if (slug) {
+    revalidateTag(`project-detail:${slug}`, { expire: 0 });
+    revalidatePath(`/komik/project/${slug}`, "page");
+  }
+}
 
 export async function GET(request: Request) {
   try {
@@ -61,6 +71,7 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
+    revalidateProjectContent(slug);
     return NextResponse.json({ data });
   } catch (err: unknown) {
     return adminErrorResponse(err, "Gagal menambah data manga.");
@@ -99,7 +110,7 @@ export async function PATCH(request: Request) {
 
     if (error) throw error;
 
-    revalidatePath(`/komik/project/${slug}`);
+    revalidateProjectContent(slug);
 
     return NextResponse.json({ data });
   } catch (err: unknown) {
@@ -162,6 +173,7 @@ export async function DELETE(request: Request) {
 
     if (mangaDeleteError) throw mangaDeleteError;
 
+    revalidateProjectContent(mangaSlug);
     return NextResponse.json({ success: true, deletedChapters: chapters?.length || 0 });
   } catch (err: unknown) {
     return adminErrorResponse(err, "Gagal menghapus data manga.");

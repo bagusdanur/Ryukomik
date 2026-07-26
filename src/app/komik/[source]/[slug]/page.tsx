@@ -50,7 +50,10 @@ const getDetail = async (source: string, slug: string): Promise<ComicDetail | nu
     try {
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
       const res = await fetch(`${baseUrl}/api/project/${encodeURIComponent(slug)}`, {
-        next: { revalidate: 3600 },
+        next: {
+          revalidate: 3600,
+          tags: [`project-detail:${slug}`],
+        },
         headers: { Accept: "application/json" }
       });
       if (!res.ok) return null;

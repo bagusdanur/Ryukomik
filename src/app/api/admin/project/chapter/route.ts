@@ -4,6 +4,14 @@ import { deleteR2Prefix, deleteR2File } from "@/lib/r2Storage";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 import { revalidatePath, revalidateTag } from "next/cache";
 
+function revalidateProjectContent(mangaSlug: string) {
+  revalidateTag("source-project-pustaka", { expire: 0 });
+  revalidateTag(`project-detail:${mangaSlug}`, { expire: 0 });
+  revalidatePath("/", "page");
+  revalidatePath(`/komik/project/${mangaSlug}`, "page");
+  revalidatePath("/api/project/pustaka", "page");
+}
+
 export async function GET(request: Request) {
   try {
     const admin = await verifyAdminRequest(request);
@@ -69,8 +77,7 @@ export async function POST(request: Request) {
       .update({ updated_at: new Date().toISOString() })
       .eq("slug", manga_slug);
 
-    revalidatePath(`/komik/project/${manga_slug}`);
-    revalidateTag("source-project-pustaka", "default");
+    revalidateProjectContent(manga_slug);
 
     return NextResponse.json({ data });
   } catch (err: unknown) {
@@ -134,8 +141,7 @@ export async function PATCH(request: Request) {
       }
     }
 
-    revalidatePath(`/komik/project/${manga_slug}`);
-    revalidateTag("source-project-pustaka", "default");
+    revalidateProjectContent(manga_slug);
 
     return NextResponse.json({ data });
   } catch (err: unknown) {
@@ -177,8 +183,7 @@ export async function DELETE(request: Request) {
 
     if (deleteError) throw deleteError;
 
-    revalidatePath(`/komik/project/${chapter.manga_slug}`);
-    revalidateTag("source-project-pustaka", "default");
+    revalidateProjectContent(chapter.manga_slug);
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {

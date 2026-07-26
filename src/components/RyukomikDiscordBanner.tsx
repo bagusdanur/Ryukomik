@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FaDiscord, FaPen, FaPalette } from "react-icons/fa";
+import { FaBolt, FaDiscord, FaPen, FaPalette, FaUsers } from "react-icons/fa";
 
 /**
  * RyukomikStaffRecruitmentBanner (compact, mobile-first)
@@ -30,30 +30,44 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
   const [showSteps, setShowSteps] = useState(false);
 
   return (
-    <div className={`px-3 pt-2 pb-1 sm:px-6 ${className}`}>
+    <div className={`px-3 pb-2 pt-3 sm:px-6 ${className}`}>
       <div
-        className={`group relative overflow-hidden rounded-2xl border border-[var(--accent)]/20 bg-gradient-to-br from-[var(--background)] via-[var(--surface-0)] to-[var(--surface-1)] px-4 py-3 transition-all duration-300 hover:border-[var(--accent)]/50`}
+        className="group relative overflow-hidden rounded-3xl border border-violet-300/30 bg-gradient-to-br from-violet-950/80 via-[var(--surface-0)] to-cyan-950/60 px-4 py-4 shadow-[0_18px_60px_rgba(124,92,252,0.16)] transition-all duration-300 hover:border-cyan-200/45 sm:px-5"
       >
+        <div className="pointer-events-none absolute -left-16 -top-20 h-44 w-44 rounded-full bg-violet-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 right-20 h-48 w-48 rounded-full bg-cyan-400/15 blur-3xl" />
+
         {/* watermark icon */}
         <FaDiscord
-          className="pointer-events-none absolute -right-5 -top-3 h-32 w-32 opacity-10 transition-transform duration-500 group-hover:scale-110 text-[var(--accent)]"
+          className="pointer-events-none absolute -right-5 -top-3 h-36 w-36 text-indigo-300 opacity-[0.12] transition-transform duration-500 group-hover:scale-110"
         />
+
+        <div className="relative mb-3 flex items-center gap-2 rounded-xl border border-red-300/20 bg-red-500/10 px-3 py-2">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-300 opacity-70" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-400" />
+          </span>
+          <FaBolt className="text-xs text-amber-300" />
+          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-red-100 sm:text-[11px]">
+            Urgent — Ryukomik sedang kekurangan staff
+          </p>
+        </div>
 
         <div className="relative flex flex-wrap items-center gap-3">
           {/* Logo + wordmark + badge */}
-          <div className="flex min-w-[130px] items-center gap-2">
-            <div className="flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-[8px] border border-white/10 bg-black">
-              <FaDiscord className="h-[16px] w-[16px] text-[var(--accent-2)]" />
+          <div className="flex min-w-[145px] items-center gap-2.5">
+            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-indigo-300/25 bg-indigo-500/20 shadow-lg shadow-indigo-500/10">
+              <FaDiscord className="h-5 w-5 text-indigo-200" />
             </div>
-            <div className="flex items-center gap-1.5">
+            <div>
               <span
-                className="text-[12px] font-bold leading-tight tracking-wide text-white"
+                className="block text-[13px] font-black leading-tight tracking-wide text-white"
                 style={{ fontFamily: "'Orbitron', sans-serif" }}
               >
                 RYUKOMIK
               </span>
-              <span className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/15 px-1.5 py-[1px] text-[8px] font-semibold tracking-wide text-[var(--accent-2)]">
-                STAFF RECRUITMENT
+              <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-2 py-0.5 text-[8px] font-bold tracking-wide text-emerald-200">
+                <FaUsers className="text-[8px]" /> OPEN RECRUITMENT
               </span>
             </div>
           </div>
@@ -64,8 +78,11 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
               className="text-[13px] font-bold leading-snug text-white"
               style={{ fontFamily: "'Syne', sans-serif" }}
             >
-              Gabung Tim Scanlation Ryukomik!
+              Bantu chapter favoritmu rilis lebih cepat!
             </div>
+            <p className="mt-0.5 text-[10px] text-white/55">
+              Terbuka untuk pemula yang mau belajar dan berkembang bersama.
+            </p>
             <div className="mt-1 flex flex-wrap gap-1">
               {POSITIONS.map((p) => {
                 const Icon = p.icon;
@@ -75,7 +92,8 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
                     className="flex items-center gap-1.5 rounded-full border border-[var(--accent)]/20 bg-[var(--accent)]/10 px-2 py-[2px] text-[9.5px] text-[var(--accent-2)]"
                   >
                     <Icon className="h-[11px] w-[11px] flex-shrink-0" />
-                    <span>{p.role}</span>
+                    <span className="font-bold">{p.role}</span>
+                    <span className="hidden text-white/40 md:inline">• {p.desc}</span>
                   </span>
                 );
               })}
@@ -89,7 +107,7 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
               onClick={() => setShowSteps(true)}
               className="whitespace-nowrap rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-2 text-[11.5px] font-bold text-[var(--accent-2)] transition-colors hover:bg-[var(--accent)]/20"
             >
-              Lihat Alur
+              Cara Daftar
             </button>
             <a
               href={DISCORD_INVITE}
@@ -97,7 +115,7 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }) {
               rel="noopener noreferrer"
               className="whitespace-nowrap rounded-lg bg-gradient-to-r from-[var(--accent)] to-[var(--accent-3)] px-3 py-2 text-[11.5px] font-bold text-white transition-transform duration-300 hover:scale-105"
             >
-              Gabung →
+              Gabung Discord →
             </a>
           </div>
         </div>
