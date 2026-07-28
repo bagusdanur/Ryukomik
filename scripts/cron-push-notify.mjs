@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
 
-// Konfigurasi Environment Variables (Pastikan diset di PM2/Server)
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -12,154 +11,188 @@ const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.web.id";
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-  console.error("❌ Environment variables belum lengkap!");
+  console.error("Environment variables belum lengkap!");
   process.exit(1);
 }
 
-// Inisialisasi Supabase dengan Service Key (untuk bypass RLS)
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
-// Setup Web Push
 webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
-const SOURCES = ["komiku", "kiryuu", "sekte", "doujindesu"];
+
+const CONTENT_API_URL = "https://api.ryukomik.web.id";
+const LOCAL_APP_URL = process.env.PUSH_NOTIFY_LOCAL_URL || "http://127.0.0.1:3000";
+
+// Mencakup semua source aktif di src/config/sources.ts.
+// Project memakai aplikasi lokal agar cron tidak menambah egress eksternal.
+const SOURCES = [
+  { id: "ikiru", apiUrl: `${CONTENT_API_URL}/ikiru/pustaka?page=1`, path: "comic" },
+  { id: "komikid", apiUrl: `${CONTENT_API_URL}/komikid/pustaka?page=1`, path: "comic" },
+  { id: "luvyaa", apiUrl: `${CONTENT_API_URL}/luvyaa/pustaka?page=1`, path: "comic" },
+  { id: "komiku", apiUrl: `${CONTENT_API_URL}/komiku/pustaka?page=1`, path: "comic" },
+  { id: "kiryuu", apiUrl: `${CONTENT_API_URL}/kiryuu/pustaka?page=1`, path: "comic" },
+  { id: "sekte", apiUrl: `${CONTENT_API_URL}/sekte/pustaka?page=1`, path: "comic", isNSFW: true },
+  { id: "doujindesu", apiUrl: `${CONTENT_API_URL}/doujindesu/pustaka?page=1`, path: "comic", isNSFW: true },
+  { id: "meionovels", apiUrl: `${CONTENT_API_URL}/meionovels/pustaka?page=1`, path: "novel" },
+  { id: "project", apiUrl: `${LOCAL_APP_URL}/api/project/pustaka?limit=50`, path: "project" },
+];
+
+function getList(json) {
+  if (Array.isArray(json)) return json;
+  if (Array.isArray(json?.data)) return json.data;
+  return Object.values(json || {}).find((value) => Array.isArray(value)) || [];
+}
+
+function getSlug(item, source) {
+  let slug = item.slug || item.link || item.detail_link;
+  if (!slug || typeof slug !== "string") return null;
+
+  const sourcePath = new RegExp(`/${source.id}/`, "i");
+  if (sourcePath.test(slug)) slug = slug.split(sourcePath)[1];
+  else if (slug.includes("/manga/")) slug = slug.split("/manga/")[1];
+  else if (slug.includes("/series/")) slug = slug.split("/series/")[1];
+  else if (slug.includes("/novel/")) slug = slug.split("/novel/")[1];
+
+  return slug.replace(/^\/+|\/$/g, "");
+}
+
+function getPushUrl(source, slug, item) {
+  if (source.path === "novel") {
+    return item.chapter_slug ? `/novel/chapter/${item.chapter_slug}` : `/novel/${slug}`;
+  }
+
+  if (source.path === "project") {
+    const chapterNumber = String(item.chapter_terbaru || "").match(/[\d.]+/i)?.[0];
+    return chapterNumber
+      ? `/chapter/project/${slug}/chapter-${chapterNumber}`
+      : `/komik/project/${slug}`;
+  }
+
+  return `/komik/${source.id}/${slug}`;
+}
+
+async function markNotified(comicSlug, chapter) {
+  const { error } = await supabase.from("notified_chapters").insert({ comic_slug: comicSlug, chapter });
+  if (error) console.error("Gagal menandai chapter sebagai terkirim:", error.message);
+}
 
 async function runCron() {
-  console.log(`[${new Date().toISOString()}] 🚀 Memulai pengecekan chapter terbaru...`);
-
+  console.log(`[${new Date().toISOString()}] Memulai pengecekan chapter terbaru...`);
   let notifSentCount = 0;
 
   for (const source of SOURCES) {
     try {
-      const API_URL = `https://api.ryukomik.web.id/${source}/pustaka`;
-      console.log(`\n🔍 Mengecek source: ${source}`);
-
-      // 1. Fetch API
-      const res = await fetch(API_URL);
+      console.log(`Memeriksa source: ${source.id}`);
+      const res = await fetch(source.apiUrl, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(20_000),
+      });
       if (!res.ok) {
-        console.error(`⚠️ HTTP Error di ${source}: ${res.status}`);
+        console.error(`HTTP error di ${source.id}: ${res.status}`);
         continue;
       }
-      const json = await res.json();
-      
-      // Support berbagai format response
-      const list = Array.isArray(json) 
-        ? json 
-        : (Array.isArray(json.data) ? json.data : Object.values(json).find((v) => Array.isArray(v)) || []);
 
+      const list = getList(await res.json());
       if (list.length === 0) {
-        console.log(`ℹ️ Tidak ada data dari API ${source}.`);
+        console.log(`Tidak ada data pustaka dari ${source.id}.`);
         continue;
       }
 
-      const isNSFW = source === "sekte" || source === "doujindesu";
-
-      // 2. Loop setiap item
       for (const item of list) {
-        // pustaka API menggunakan `slug` langsung (bukan link)
         if (!item.chapter_terbaru || (!item.slug && !item.link && !item.detail_link)) continue;
 
-        // Extract slug
-        let slug = item.slug || item.link || item.detail_link;
-        if (slug.includes(".org/manga/")) slug = slug.split(".org/manga/")[1];
-        if (slug.includes("/komiku/")) slug = slug.split("/komiku/")[1];
-        if (slug.includes("/kiryuu/")) slug = slug.split("/kiryuu/")[1];
-        if (slug.includes("/sekte/")) slug = slug.split("/sekte/")[1];
-        slug = slug.replace(/\/$/, ""); // Hapus trailing slash
-        
+        const slug = getSlug(item, source);
+        if (!slug) continue;
+
         const chapter = item.chapter_terbaru;
         const title = item.title || "Chapter Baru";
-        
-        console.log(`Cek: [${source}] ${title} (${slug}) - ${chapter}`);
-        // Jika 18+, kita tidak mengirimkan cover image ke notifikasi agar aman dilihat di publik
-        const image = isNSFW ? undefined : item.image;
+        const notificationKey = `${source.id}:${slug}`;
+        console.log(`Cek: [${source.id}] ${title} (${slug}) - ${chapter}`);
 
-        // Cek apakah chapter ini sudah dinotifikasi sebelumnya
-        const { data: alreadyNotified } = await supabase
+        // Key lama (slug polos) ikut dicek agar deploy ini tidak mengirim ulang
+        // semua update yang sudah pernah tercatat oleh cron sebelumnya.
+        const { data: alreadyNotified, error: notifiedError } = await supabase
           .from("notified_chapters")
           .select("id")
-          .eq("comic_slug", slug)
+          .in("comic_slug", [notificationKey, slug])
           .eq("chapter", chapter)
-          .single();
+          .limit(1)
+          .maybeSingle();
 
-        if (alreadyNotified) {
-          continue; // Skip, sudah dikirim
+        if (notifiedError) {
+          console.error(`Gagal membaca penanda notifikasi ${source.id}/${slug}:`, notifiedError.message);
+          continue;
         }
+        if (alreadyNotified) continue;
 
-        // 3. Query siapa saja yang bookmark komik ini
-        const { data: bookmarks } = await supabase
+        // Bookmark wajib cocok pada slug DAN source. Sebelumnya slug yang sama
+        // dari source lain dapat menerima notifikasi yang salah.
+        const { data: bookmarks, error: bookmarkError } = await supabase
           .from("bookmark_sync")
           .select("user_id")
-          .eq("comic_slug", slug);
+          .eq("comic_slug", slug)
+          .eq("source", source.id);
 
+        if (bookmarkError) {
+          console.error(`Gagal membaca bookmark ${source.id}/${slug}:`, bookmarkError.message);
+          continue;
+        }
         if (!bookmarks || bookmarks.length === 0) {
-          // Tandai sebagai notified meskipun tidak ada yang bookmark (biar tidak dicek berulang)
-          await supabase.from("notified_chapters").insert({ comic_slug: slug, chapter });
+          await markNotified(notificationKey, chapter);
           continue;
         }
 
-        const userIds = bookmarks.map((b) => b.user_id);
-
-        // 4. Ambil subscription untuk user-user tersebut
-        const { data: subscriptions } = await supabase
+        const userIds = [...new Set(bookmarks.map((bookmark) => bookmark.user_id))];
+        const { data: subscriptions, error: subscriptionError } = await supabase
           .from("push_subscriptions")
           .select("id, endpoint, p256dh, auth, user_id")
           .in("user_id", userIds);
 
+        if (subscriptionError) {
+          console.error(`Gagal membaca subscription ${source.id}/${slug}:`, subscriptionError.message);
+          continue;
+        }
         if (!subscriptions || subscriptions.length === 0) {
-          // Tandai sebagai notified
-          await supabase.from("notified_chapters").insert({ comic_slug: slug, chapter });
+          await markNotified(notificationKey, chapter);
           continue;
         }
 
-        // 5. Kirim Push Notification
-        const pushUrl = `/komik/${source}/${slug}`;
-        const bodyText = isNSFW 
-          ? `${chapter} (18+) sudah rilis! Yuk baca sekarang.`
-          : `${chapter} sudah rilis! Yuk baca sekarang.`;
-
+        const pushUrl = getPushUrl(source, slug, item);
         const payload = JSON.stringify({
-          title: title,
-          body: bodyText,
+          title,
+          body: source.isNSFW
+            ? `${chapter} (18+) sudah rilis! Yuk baca sekarang.`
+            : `${chapter} sudah rilis! Yuk baca sekarang.`,
           url: pushUrl,
-          tag: slug,
-          image: image,
+          tag: notificationKey,
+          image: source.isNSFW ? undefined : item.image,
         });
 
-        console.log(`📤 Mengirim notif [${slug} - ${chapter}] ke ${subscriptions.length} device via ${pushUrl}`);
-
-        const sendPromises = subscriptions.map(async (sub) => {
+        console.log(`Mengirim ${source.id}/${slug} ${chapter} ke ${subscriptions.length} perangkat via ${pushUrl}`);
+        await Promise.all(subscriptions.map(async (sub) => {
           const pushSubscription = {
             endpoint: sub.endpoint,
-            keys: {
-              p256dh: sub.p256dh,
-              auth: sub.auth,
-            },
+            keys: { p256dh: sub.p256dh, auth: sub.auth },
           };
 
           try {
             await webPush.sendNotification(pushSubscription, payload);
-            notifSentCount++;
+            notifSentCount += 1;
           } catch (error) {
             if (error.statusCode === 404 || error.statusCode === 410) {
               await supabase.from("push_subscriptions").delete().eq("id", sub.id);
             } else {
-              console.error("Gagal kirim ke endpoint:", error);
+              console.error("Gagal mengirim ke endpoint push:", error);
             }
           }
-        });
+        }));
 
-        await Promise.all(sendPromises);
-
-        // 6. Tandai sebagai selesai (Anti duplikat)
-        await supabase.from("notified_chapters").insert({ comic_slug: slug, chapter });
+        await markNotified(notificationKey, chapter);
       }
-    } catch (err) {
-      console.error(`❌ Terjadi kesalahan pada source ${source}:`, err);
+    } catch (error) {
+      console.error(`Terjadi kesalahan pada source ${source.id}:`, error);
     }
   }
 
-  console.log(`\n[${new Date().toISOString()}] ✅ Selesai! Total push notif terkirim: ${notifSentCount}`);
+  console.log(`[${new Date().toISOString()}] Selesai. Total push terkirim: ${notifSentCount}`);
 }
 
-// Jalankan
 runCron();
