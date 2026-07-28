@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { deleteR2Prefix, deleteR2File } from "@/lib/r2Storage";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { enqueueProjectDiscordEvent } from "@/lib/projectDiscordEvents";
 
 function revalidateProjectContent(mangaSlug: string) {
   revalidateTag("source-project-pustaka", { expire: 0 });
@@ -76,6 +77,19 @@ export async function POST(request: Request) {
       .from("project_manga")
       .update({ updated_at: new Date().toISOString() })
       .eq("slug", manga_slug);
+
+    const { data: manga, error: mangaError } = await supabaseAdmin
+      .from("project_manga")
+      .select("slug,title,cover_url,type,status,genres,is_published")
+      .eq("slug", manga_slug)
+      .single();
+    if (mangaError) throw mangaError;
+    if (manga.is_published && !["dropped", "cancelled"].includes(manga.status || "")) {
+      await enqueueProjectDiscordEvent("chapter_published", manga, {
+        chapter_number: data.chapter_number,
+        chapter_title: data.title || "",
+      });
+    }
 
     revalidateProjectContent(manga_slug);
 

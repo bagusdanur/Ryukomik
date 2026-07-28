@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { deleteR2Prefix } from "@/lib/r2Storage";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
+import { enqueueProjectDiscordEvent } from "@/lib/projectDiscordEvents";
 
 function revalidateProjectContent(slug?: string) {
   revalidateTag("source-project-pustaka", { expire: 0 });
@@ -103,7 +104,7 @@ export async function PATCH(request: Request) {
 
     const { data: existingManga, error: existingMangaError } = await supabaseAdmin
       .from("project_manga")
-      .select("slug")
+      .select("slug,title,cover_url,type,status,genres,is_published")
       .eq("id", id)
       .single();
 
@@ -117,6 +118,22 @@ export async function PATCH(request: Request) {
       .single();
 
     if (error) throw error;
+
+    const wasPublished = existingManga.is_published === true;
+    const isPublished = data.is_published === true;
+    if (!wasPublished && isPublished) {
+      await enqueueProjectDiscordEvent("project_published", data);
+    } else if (
+      wasPublished && isPublished &&
+      typeof status === "string" &&
+      status !== existingManga.status &&
+      ["dropped", "cancelled"].includes(status)
+    ) {
+      await enqueueProjectDiscordEvent("project_status_changed", data, {
+        previous_status: existingManga.status || "",
+        status,
+      });
+    }
 
     revalidateProjectContent(existingManga.slug);
     if (slug && slug !== existingManga.slug) {
