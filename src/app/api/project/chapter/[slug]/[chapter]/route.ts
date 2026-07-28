@@ -28,9 +28,13 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
       .from("project_manga")
       .select("title")
       .eq("slug", slug)
-      .single();
+      .eq("is_published", true)
+      .maybeSingle();
 
     if (mangaError) throw mangaError;
+    if (!manga) {
+      return NextResponse.json({ success: false, error: "Project tidak ditemukan" }, { status: 404 });
+    }
 
     // Dapatkan data chapter aktif + navigasi secara paralel
     const [

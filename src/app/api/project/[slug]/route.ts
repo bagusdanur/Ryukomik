@@ -36,9 +36,13 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
       .from("project_manga")
       .select("title, cover_url, type, status, author, genres, description")
       .eq("slug", slug)
-      .single();
+      .eq("is_published", true)
+      .maybeSingle();
 
     if (mangaError) throw mangaError;
+    if (!manga) {
+      return NextResponse.json({ success: false, error: "Project tidak ditemukan" }, { status: 404 });
+    }
 
     const { data: chapters, error: chapterError } = await supabaseAdmin
       .from("project_chapters")

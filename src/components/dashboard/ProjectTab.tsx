@@ -26,6 +26,7 @@ type Manga = {
   status: string;
   type: string;
   genres: string[];
+  is_published: boolean;
   created_at: string;
 };
 
@@ -54,7 +55,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const [uploading, setUploading] = useState(false);
 
   // Forms
-  const [mangaForm, setMangaForm] = useState<Partial<Manga>>({});
+  const [mangaForm, setMangaForm] = useState<Partial<Manga>>({ is_published: false });
   const [chapterForm, setChapterForm] = useState<Partial<Chapter>>({});
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -158,6 +159,31 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       fetchManga();
     } catch (err) {
       alert("Gagal menghapus manga");
+    }
+  };
+
+  const togglePublishManga = async (manga: Manga) => {
+    const nextPublished = !manga.is_published;
+    const action = nextPublished ? "mempublikasikan" : "menjadikan draft";
+    if (!confirm(`Yakin ingin ${action} \"${manga.title}\"?`)) return;
+
+    setLoading(true);
+    try {
+      const token = await getAdminToken();
+      const res = await fetch("/api/admin/project/manga", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id: manga.id, is_published: nextPublished }),
+      });
+      if (!res.ok) throw new Error("Gagal mengubah publikasi manga");
+      await fetchManga();
+    } catch (err: any) {
+      alert(err.message || "Gagal mengubah publikasi manga");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1038,7 +1064,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               </button>
               <button
                 onClick={() => {
-                  setMangaForm({});
+                  setMangaForm({ is_published: false });
                   setView("mangaForm");
                 }}
                 className="px-3 py-2 bg-[#7c5cfc] hover:bg-[#6b4ae6] rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1"
@@ -1102,6 +1128,13 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0 flex flex-col justify-end p-3">
+                  <span className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-[9px] font-black tracking-wide ${
+                    manga.is_published
+                      ? "bg-emerald-500/90 text-white"
+                      : "bg-amber-400/90 text-black"
+                  }`}>
+                    {manga.is_published ? "PUBLIK" : "DRAFT"}
+                  </span>
                   <h3 className="font-bold text-xs sm:text-sm leading-tight text-white line-clamp-2">{manga.title}</h3>
                   <p className="text-[10px] text-white/70 mt-1 capitalize">
                     {manga.type} • {manga.status}
@@ -1115,6 +1148,17 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                     className="flex-1 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-[10px] sm:text-xs font-medium text-emerald-400"
                   >
                     Kelola Chapter
+                  </button>
+                  <button
+                    onClick={() => togglePublishManga(manga)}
+                    className={`py-1.5 px-2 rounded-lg text-[10px] sm:text-xs font-medium ${
+                      manga.is_published
+                        ? "bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
+                        : "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                    }`}
+                    title={manga.is_published ? "Jadikan draft" : "Publikasikan"}
+                  >
+                    {manga.is_published ? "Draft" : "Publik"}
                   </button>
                   <button
                     onClick={() => {

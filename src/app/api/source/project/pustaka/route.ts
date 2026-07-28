@@ -13,6 +13,7 @@ const getPustakaPage = unstable_cache(
     const { data: projects, error } = await supabaseAdmin
       .from("project_manga")
       .select("slug, title, cover_url, type, status, created_at")
+      .eq("is_published", true)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 

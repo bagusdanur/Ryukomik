@@ -36,6 +36,7 @@ export async function GET(request: Request) {
       .select("slug, title, cover_url, type, status, author, genres, updated_at", {
         count: "exact",
       })
+      .eq("is_published", true)
       .order("updated_at", { ascending: false })
       .range(offset, offset + limit - 1);
 

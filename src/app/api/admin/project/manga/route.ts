@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
     const { data, count, error } = await supabaseAdmin
       .from("project_manga")
-      .select("id, slug, title, cover_url, type, status, author, genres, created_at, updated_at", { count: "exact" })
+      .select("id, slug, title, cover_url, type, status, author, genres, is_published, created_at, updated_at", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -86,31 +86,42 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { id, slug, title, cover_url, description, author, status, type, genres } = body;
+    const { id, slug, title, cover_url, description, author, status, type, genres, is_published } = body;
 
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
+    const update = Object.fromEntries(
+      Object.entries({ slug, title, cover_url, description, author, status, type, genres, is_published })
+        .filter(([, value]) => value !== undefined),
+    );
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ error: "Tidak ada perubahan untuk disimpan" }, { status: 400 });
+    }
+
+    const { data: existingManga, error: existingMangaError } = await supabaseAdmin
+      .from("project_manga")
+      .select("slug")
+      .eq("id", id)
+      .single();
+
+    if (existingMangaError) throw existingMangaError;
+
     const { data, error } = await supabaseAdmin
       .from("project_manga")
-      .update({
-        slug,
-        title,
-        cover_url,
-        description,
-        author,
-        status,
-        type,
-        genres,
-      })
+      .update(update)
       .eq("id", id)
       .select()
       .single();
 
     if (error) throw error;
 
-    revalidateProjectContent(slug);
+    revalidateProjectContent(existingManga.slug);
+    if (slug && slug !== existingManga.slug) {
+      revalidateProjectContent(slug);
+    }
 
     return NextResponse.json({ data });
   } catch (err: unknown) {

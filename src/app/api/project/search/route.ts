@@ -13,6 +13,7 @@ export async function GET(request: Request) {
     let query = supabaseAdmin
       .from("project_manga")
       .select("slug, title, cover_url, type, status, genres, updated_at")
+      .eq("is_published", true)
       .or(`title.ilike.%${q}%,slug.ilike.%${q}%`);
 
     const { data, error } = await query
