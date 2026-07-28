@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { FiArrowDown, FiRefreshCw } from "react-icons/fi";
 import { getChapterImageCandidates } from "@/lib/imageProxy";
 import type { ImageScaling, PageSpacing, ReadingMode } from "@/store/readerStore";
+import RecruitmentBanner from "./RecruitmentBanner";
 
 const BOTTOM_ZONE = 0.35;
 const EAGER_IMAGE_COUNT = 1;
@@ -349,6 +350,8 @@ export default function ReaderImages({
           />
         ))}
       </div>
+
+      <RecruitmentBanner />
 
       <div
         data-no-tap
