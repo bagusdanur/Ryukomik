@@ -498,27 +498,28 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   // ─── MANGA FORM VIEW ────────────────────────────────────────
   if (view === "mangaForm") {
     return (
-      <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 sm:p-6">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-white/[.07] bg-[#111116] shadow-2xl shadow-black/20">
+        <div className="mb-0 flex items-center gap-3 border-b border-white/[.06] bg-gradient-to-r from-[#7c5cfc]/14 via-[#17151f] to-[#111116] px-4 py-5 sm:px-6 lg:px-8">
           <button
             onClick={() => setView("mangaList")}
-            className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[.08] bg-white/[.05] text-white/60 transition hover:bg-white/[.1] hover:text-white"
           >
             <FiChevronLeftIcon />
           </button>
           <div>
-            <h2 className="text-lg sm:text-xl font-bold">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-[.16em] text-[#b5a8ff]">Project editor</p>
+            <h2 className="text-xl font-black tracking-tight sm:text-2xl">
               {mangaForm.id ? "Edit Project Manga" : "Tambah Project Baru"}
             </h2>
-            <p className="text-xs text-white/40">
+            <p className="mt-1 text-xs text-white/45">
               {mangaForm.id ? "Perbarui informasi manga" : "Upload karya mandiri kamu ke Ryukomik"}
             </p>
           </div>
         </div>
 
-        <form onSubmit={saveManga} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <form onSubmit={saveManga} className="grid grid-cols-1 gap-6 p-4 sm:p-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:p-8">
           {/* Cover */}
-          <div className="md:col-span-1 space-y-4">
+          <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
             <div className="aspect-[3/4] w-full rounded-2xl border-2 border-dashed border-white/10 bg-white/5 overflow-hidden flex flex-col items-center justify-center relative group">
               {mangaForm.cover_url ? (
                 <>
@@ -571,7 +572,16 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           </div>
 
           {/* Details */}
-          <div className="md:col-span-2 space-y-4">
+          <div className="space-y-5 rounded-2xl border border-white/[.07] bg-white/[.025] p-4 sm:p-5 lg:p-6">
+            <div className="flex items-center justify-between border-b border-white/[.06] pb-4">
+              <div>
+                <p className="text-sm font-bold">Informasi manga</p>
+                <p className="mt-0.5 text-xs text-white/40">Data ini ditampilkan pada halaman detail karya.</p>
+              </div>
+              <span className={`rounded-lg px-2.5 py-1 text-[10px] font-black tracking-wide ${mangaForm.is_published ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-200"}`}>
+                {mangaForm.is_published ? "PUBLIK" : "DRAFT"}
+              </span>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 block">
@@ -686,11 +696,12 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               />
             </div>
 
-            <div className="pt-2">
+            <div className="flex items-center justify-end gap-3 border-t border-white/[.06] pt-5">
+              <button type="button" onClick={() => setView("mangaList")} className="rounded-xl px-4 py-3 text-sm font-bold text-white/50 transition hover:bg-white/[.06] hover:text-white">Batal</button>
               <button
                 disabled={loading}
                 type="submit"
-                className="w-full py-3.5 bg-gradient-to-r from-[#7c5cfc] to-[#9b83fc] hover:from-[#6b4ae6] hover:to-[#8a72ec] rounded-xl font-bold flex items-center justify-center gap-2 text-white shadow-lg shadow-[#7c5cfc]/20 transition-all disabled:opacity-50"
+                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7c5cfc] to-[#9b83fc] px-5 py-3 text-sm font-black text-white shadow-lg shadow-[#7c5cfc]/20 transition-all hover:from-[#6b4ae6] hover:to-[#8a72ec] disabled:opacity-50"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -841,19 +852,22 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   // ─── CHAPTER FORM VIEW ──────────────────────────────────────
   if (view === "chapterForm") {
     return (
-      <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4">
+      <div className="mx-auto max-w-5xl overflow-hidden rounded-3xl border border-white/[.07] bg-[#111116] shadow-2xl shadow-black/20">
+        <div className="border-b border-white/[.06] bg-gradient-to-r from-emerald-500/[.12] via-[#15171a] to-[#111116] px-4 py-5 sm:px-6">
         <button
           onClick={() => setView("chapterList")}
-          className="flex items-center gap-2 text-white/50 hover:text-white mb-4 text-sm"
+          className="mb-4 flex items-center gap-2 text-sm font-bold text-white/50 transition hover:text-white"
         >
           <FiChevronLeftIcon /> Batal
         </button>
 
-        <h2 className="text-lg font-bold mb-4 text-emerald-400 flex items-center gap-2">
+        <h2 className="flex items-center gap-2 text-xl font-black tracking-tight text-white">
           {chapterForm.id ? "Edit Chapter" : "Upload Chapter Baru"}
         </h2>
+        <p className="mt-1 text-xs text-white/45">Tambahkan detail chapter, lalu unggah halaman secara berurutan.</p>
+        </div>
 
-        <form onSubmit={saveChapter} className="space-y-4">
+        <form onSubmit={saveChapter} className="space-y-5 p-4 sm:p-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs text-white/40 mb-1 block">Nomor Chapter</label>
@@ -878,7 +892,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             </div>
           </div>
 
-          <div className="border border-white/10 rounded-xl p-4 bg-white/[.02]">
+          <div className="rounded-2xl border border-white/[.08] bg-white/[.025] p-4 sm:p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="font-bold text-sm">Gambar Chapter</p>
@@ -888,7 +902,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading || !chapterForm.chapter_number}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-bold flex items-center gap-2 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-xl bg-emerald-400/[.12] px-4 py-2.5 text-sm font-bold text-emerald-300 transition hover:bg-emerald-400/[.2] disabled:opacity-50"
               >
                 {uploading ? `${uploadProgress}%` : <><FiUploadCloudIcon /> Pilih</>}
               </button>
@@ -1013,13 +1027,15 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             </div>
           )}
 
-          <button
-            disabled={loading || uploading}
-            type="submit"
-            className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 text-white"
-          >
-            <FiSaveIcon /> Simpan Chapter
-          </button>
+          <div className="flex justify-end border-t border-white/[.06] pt-5">
+            <button
+              disabled={loading || uploading}
+              type="submit"
+              className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 disabled:opacity-50"
+            >
+              <FiSaveIcon /> Simpan Chapter
+            </button>
+          </div>
         </form>
       </div>
     );
@@ -1194,33 +1210,35 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 <div className="flex items-center gap-2 border-t border-white/[.05] bg-[#101015] p-2.5">
                   <button
                     onClick={() => openChapters(manga)}
-                    className="flex-1 rounded-xl bg-emerald-400/[.09] px-2 py-2 text-[10px] font-bold text-emerald-300 transition hover:bg-emerald-400/[.16] sm:text-xs"
+                    className="flex-1 rounded-xl bg-emerald-400/[.1] px-3 py-2.5 text-[11px] font-black text-emerald-300 transition hover:bg-emerald-400/[.18]"
                   >
-                    Kelola Chapter
+                    Kelola chapter
                   </button>
                   <button
                     onClick={() => togglePublishManga(manga)}
-                    className={`rounded-xl px-2.5 py-2 text-[10px] font-bold sm:text-xs ${
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl text-[10px] font-black transition ${
                       manga.is_published
                         ? "bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
                         : "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
                     }`}
                     title={manga.is_published ? "Jadikan draft" : "Publikasikan"}
                   >
-                    {manga.is_published ? "Draft" : "Publik"}
+                    {manga.is_published ? "D" : "P"}
                   </button>
                   <button
                     onClick={() => {
                       setMangaForm(manga);
                       setView("mangaForm");
                     }}
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/50 hover:text-white"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[.06] text-white/50 transition hover:bg-white/[.12] hover:text-white"
+                    title="Edit manga"
                   >
                     <FiEdit2Icon size={12} />
                   </button>
                   <button
                     onClick={() => deleteManga(manga.id)}
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400 hover:bg-rose-500/20"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 transition hover:bg-rose-500/20"
+                    title="Hapus manga"
                   >
                     <FiTrash2Icon size={12} />
                   </button>
