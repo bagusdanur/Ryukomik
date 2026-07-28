@@ -99,6 +99,11 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     );
   }, [chapterList, chapterSearch]);
 
+  const publicationSummary = useMemo(() => ({
+    published: mangaList.filter((manga) => manga.is_published).length,
+    drafts: mangaList.filter((manga) => !manga.is_published).length,
+  }), [mangaList]);
+
   // ─── MANGA ACTIONS ──────────────────────────────────────────
   const fetchManga = useCallback(async () => {
     setLoading(true);
@@ -1022,8 +1027,51 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
 
   // ─── MANGA LIST VIEW (Default) ──────────────────────────────
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Header */}
+      <div className="rounded-2xl border border-emerald-400/10 bg-gradient-to-br from-emerald-500/[.11] via-[#13131a] to-[#13131a] p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-300/70">Content studio</p>
+            <h2 className="flex items-center gap-2 text-xl font-black tracking-tight sm:text-2xl">
+              <FiBookOpenIcon className="text-emerald-400" /> Project manga
+            </h2>
+            <p className="mt-1 text-xs text-white/45">Kelola judul, chapter, dan status publikasi dalam satu tempat.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded-xl border border-emerald-400/15 bg-emerald-400/[.08] px-3 py-2 text-xs font-bold text-emerald-300">{publicationSummary.published} publik</span>
+            <span className="rounded-xl border border-amber-300/15 bg-amber-300/[.08] px-3 py-2 text-xs font-bold text-amber-200">{publicationSummary.drafts} draft</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-2xl border border-white/[.06] bg-[#13131a]/80 p-3 sm:flex-row sm:items-center sm:p-4">
+        <div className="relative flex-1">
+          <FiSearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={15} />
+          <input
+            value={mangaSearch}
+            onChange={(e) => setMangaSearch(e.target.value)}
+            className="w-full rounded-xl border border-white/10 bg-black/20 py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-emerald-400/45 focus:bg-black/30"
+            placeholder="Cari judul, slug, atau author..."
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="mr-auto text-xs text-white/40 sm:mr-1">{filteredManga.length} dari {mangaList.length} manga</span>
+          {bulkMode ? (
+            <>
+              <button onClick={bulkDeleteManga} disabled={selectedManga.size === 0} className="rounded-xl bg-rose-500/15 px-3 py-2.5 text-xs font-bold text-rose-400 transition hover:bg-rose-500/25 disabled:opacity-50">Hapus ({selectedManga.size})</button>
+              <button onClick={() => { setBulkMode(false); setSelectedManga(new Set()); }} className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[.06] text-white/50 hover:text-white"><FiXIcon size={15} /></button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setBulkMode(true)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[.08] bg-white/[.04] text-white/55 transition hover:bg-white/[.09] hover:text-white" title="Pilih banyak"><FiCheckIcon size={15} /></button>
+              <button onClick={() => { setMangaForm({ is_published: false }); setView("mangaForm"); }} className="flex items-center gap-1.5 rounded-xl bg-[#7c5cfc] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#7c5cfc]/20 transition hover:bg-[#6b4ae6]"><FiPlusIcon size={15} /> Tambah manga</button>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="hidden">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-bold text-base sm:text-lg flex items-center gap-2">
@@ -1086,6 +1134,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           placeholder="Cari manga..."
         />
       </div>
+      </div>
 
       {/* Manga Grid */}
       {loading && mangaList.length === 0 ? (
@@ -1099,12 +1148,12 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           {!mangaSearch && <p className="text-xs text-white/30">Klik tombol Tambah untuk memulai</p>}
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
           {filteredManga.map((manga) => (
-            <div key={manga.id} className="bg-[#13131a] border border-white/[.06] rounded-xl overflow-hidden group">
-              <div className="aspect-[3/4] relative cursor-pointer" onClick={() => !bulkMode && openChapters(manga)}>
+            <div key={manga.id} className="group overflow-hidden rounded-2xl border border-white/[.07] bg-[#13131a] shadow-sm transition duration-200 hover:-translate-y-1 hover:border-emerald-400/30 hover:shadow-xl hover:shadow-black/25">
+              <div className="relative aspect-[4/5] cursor-pointer overflow-hidden" onClick={() => !bulkMode && openChapters(manga)}>
                 {manga.cover_url ? (
-                  <img src={manga.cover_url} alt={manga.title} className="w-full h-full object-cover" />
+                  <img src={manga.cover_url} alt={manga.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                 ) : (
                   <div className="w-full h-full bg-white/5 flex items-center justify-center text-white/10">
                     <FiImageIcon size={32} />
@@ -1127,31 +1176,31 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                     </button>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0 flex flex-col justify-end p-3">
-                  <span className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-[9px] font-black tracking-wide ${
+                <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-[#0d0d12] via-[#0d0d12]/15 to-transparent p-3.5">
+                  <span className={`absolute right-2.5 top-2.5 rounded-full px-2 py-1 text-[9px] font-black tracking-wide shadow-lg ${
                     manga.is_published
                       ? "bg-emerald-500/90 text-white"
                       : "bg-amber-400/90 text-black"
                   }`}>
                     {manga.is_published ? "PUBLIK" : "DRAFT"}
                   </span>
-                  <h3 className="font-bold text-xs sm:text-sm leading-tight text-white line-clamp-2">{manga.title}</h3>
-                  <p className="text-[10px] text-white/70 mt-1 capitalize">
+                  <h3 className="line-clamp-2 text-sm font-black leading-tight text-white sm:text-[15px]">{manga.title}</h3>
+                  <p className="mt-1 text-[10px] font-medium text-white/65 capitalize">
                     {manga.type} • {manga.status}
                   </p>
                 </div>
               </div>
               {!bulkMode && (
-                <div className="p-2 flex items-center gap-2 bg-[#0f0f14]">
+                <div className="flex items-center gap-2 border-t border-white/[.05] bg-[#101015] p-2.5">
                   <button
                     onClick={() => openChapters(manga)}
-                    className="flex-1 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-[10px] sm:text-xs font-medium text-emerald-400"
+                    className="flex-1 rounded-xl bg-emerald-400/[.09] px-2 py-2 text-[10px] font-bold text-emerald-300 transition hover:bg-emerald-400/[.16] sm:text-xs"
                   >
                     Kelola Chapter
                   </button>
                   <button
                     onClick={() => togglePublishManga(manga)}
-                    className={`py-1.5 px-2 rounded-lg text-[10px] sm:text-xs font-medium ${
+                    className={`rounded-xl px-2.5 py-2 text-[10px] font-bold sm:text-xs ${
                       manga.is_published
                         ? "bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
                         : "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"

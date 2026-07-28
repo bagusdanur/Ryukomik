@@ -1124,15 +1124,13 @@ export default function AdminDashboard() {
   // ── render ─────────────────────────────────────────────────────────────
   return (
     <div
-      className="min-h-screen bg-[#0c0c10] text-white"
+      className="min-h-screen bg-[#0c0c10] text-white lg:pl-64"
       style={{
         fontFamily: "'Plus Jakarta Sans', sans-serif",
-        maxWidth: 480,
-        margin: "0 auto",
       }}
     >
       {/* ── TOPBAR ── */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-[#0c0c10]/95 backdrop-blur border-b border-white/[.06]">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[.06] bg-[#0c0c10]/95 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
         <div className="flex items-center gap-2">
           <span className="text-xl">⚡</span>
           <span className="font-bold text-[15px]">Ryukomik</span>
@@ -1164,7 +1162,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* ── CONTENT ── */}
-      <main className="px-4 py-4 pb-24 space-y-4">
+      <main className="mx-auto w-full max-w-7xl space-y-4 px-4 py-5 pb-24 sm:px-6 lg:px-8 lg:py-8 lg:pb-10">
         {/* ══ DASHBOARD PAGE ══ */}
         {page === "dashboard" && (
           <DashboardHomeTab
@@ -1315,15 +1313,22 @@ export default function AdminDashboard() {
       </main>
 
       {/* ── BOTTOM NAV ── */}
-      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-[#0f0f14]/95 backdrop-blur border-t border-white/[.07] flex z-30">
+      <nav className="fixed bottom-0 left-1/2 z-30 flex w-full -translate-x-1/2 border-t border-white/[.07] bg-[#0f0f14]/95 backdrop-blur lg:inset-y-0 lg:left-0 lg:w-64 lg:translate-x-0 lg:flex-col lg:border-r lg:border-t-0 lg:px-3 lg:py-5">
+        <div className="hidden px-3 pb-6 lg:flex lg:items-center lg:gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#7c5cfc]/15 text-xl">⚡</span>
+          <div>
+            <p className="text-sm font-black tracking-tight">Ryukomik</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#a997ff]">Admin Console</p>
+          </div>
+        </div>
         {navItems.map((nav) => (
           <button
             key={nav.id}
             onClick={() => setPage(nav.id)}
-            className={`flex-1 flex flex-col items-center py-3 gap-1 transition-colors ${page === nav.id ? "text-[#7c5cfc]" : "text-white/25 hover:text-white/50"}`}
+            className={`flex flex-1 flex-col items-center gap-1 py-3 transition-colors lg:flex-none lg:flex-row lg:gap-3 lg:rounded-xl lg:px-3 lg:py-2.5 lg:text-left ${page === nav.id ? "text-[#7c5cfc] lg:bg-[#7c5cfc]/12" : "text-white/25 hover:text-white/50 lg:hover:bg-white/[.04]"}`}
           >
             {nav.icon}
-            <span className="text-[10px] font-semibold">{nav.label}</span>
+            <span className="text-[10px] font-semibold lg:text-sm">{nav.label}</span>
           </button>
         ))}
       </nav>
