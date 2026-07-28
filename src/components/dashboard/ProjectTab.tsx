@@ -39,6 +39,11 @@ type Chapter = {
   uploaded_at: string;
 };
 
+type MangaConfirmation = {
+  action: "publish" | "draft" | "delete";
+  manga: Manga;
+};
+
 interface ProjectTabProps {
   getAdminToken: () => Promise<string>;
 }
@@ -73,6 +78,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const [selectedManga, setSelectedManga] = useState<Set<string>>(new Set());
   const [selectedChapters, setSelectedChapters] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
+  const [mangaConfirmation, setMangaConfirmation] = useState<MangaConfirmation | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -190,6 +196,55 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const performDeleteManga = async (id: string) => {
+    setLoading(true);
+    try {
+      const token = await getAdminToken();
+      const res = await fetch(`/api/admin/project/manga?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Gagal menghapus manga");
+      await fetchManga();
+    } catch (err: any) {
+      alert(err.message || "Gagal menghapus manga");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const performPublicationChange = async (manga: Manga) => {
+    setLoading(true);
+    try {
+      const token = await getAdminToken();
+      const res = await fetch("/api/admin/project/manga", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id: manga.id, is_published: !manga.is_published }),
+      });
+      if (!res.ok) throw new Error("Gagal mengubah publikasi manga");
+      await fetchManga();
+    } catch (err: any) {
+      alert(err.message || "Gagal mengubah publikasi manga");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmMangaAction = async () => {
+    if (!mangaConfirmation) return;
+    const { action, manga } = mangaConfirmation;
+    setMangaConfirmation(null);
+    if (action === "delete") {
+      await performDeleteManga(manga.id);
+      return;
+    }
+    await performPublicationChange(manga);
   };
 
   const bulkDeleteManga = async () => {
@@ -1207,45 +1262,79 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 </div>
               </div>
               {!bulkMode && (
-                <div className="flex items-center gap-2 border-t border-white/[.05] bg-[#101015] p-2.5">
+                <div className="grid grid-cols-2 gap-2 border-t border-white/[.05] bg-[#101015] p-2.5">
                   <button
                     onClick={() => openChapters(manga)}
-                    className="flex-1 rounded-xl bg-emerald-400/[.1] px-3 py-2.5 text-[11px] font-black text-emerald-300 transition hover:bg-emerald-400/[.18]"
+                    className="rounded-xl bg-emerald-400/[.1] px-3 py-2.5 text-[11px] font-black text-emerald-300 transition hover:bg-emerald-400/[.18]"
                   >
                     Kelola chapter
                   </button>
                   <button
-                    onClick={() => togglePublishManga(manga)}
-                    className={`flex h-9 w-9 items-center justify-center rounded-xl text-[10px] font-black transition ${
+                    onClick={() => setMangaConfirmation({ action: manga.is_published ? "draft" : "publish", manga })}
+                    className={`rounded-xl px-2 py-2.5 text-[11px] font-black transition ${
                       manga.is_published
                         ? "bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
                         : "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
                     }`}
-                    title={manga.is_published ? "Jadikan draft" : "Publikasikan"}
                   >
-                    {manga.is_published ? "D" : "P"}
+                    {manga.is_published ? "Jadikan draft" : "Publikasikan"}
                   </button>
                   <button
                     onClick={() => {
                       setMangaForm(manga);
                       setView("mangaForm");
                     }}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[.06] text-white/50 transition hover:bg-white/[.12] hover:text-white"
-                    title="Edit manga"
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-white/[.07] bg-white/[.04] px-3 py-2.5 text-[11px] font-bold text-white/60 transition hover:bg-white/[.1] hover:text-white"
                   >
-                    <FiEdit2Icon size={12} />
+                    <FiEdit2Icon size={13} /> Edit
                   </button>
                   <button
-                    onClick={() => deleteManga(manga.id)}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 transition hover:bg-rose-500/20"
-                    title="Hapus manga"
+                    onClick={() => setMangaConfirmation({ action: "delete", manga })}
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-rose-500/10 px-3 py-2.5 text-[11px] font-bold text-rose-300 transition hover:bg-rose-500/20"
                   >
-                    <FiTrash2Icon size={12} />
+                    <FiTrash2Icon size={13} /> Hapus
                   </button>
                 </div>
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {mangaConfirmation && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-[#16161d] shadow-2xl shadow-black/60">
+            <div className={`h-1.5 ${mangaConfirmation.action === "delete" ? "bg-rose-500" : mangaConfirmation.action === "publish" ? "bg-emerald-400" : "bg-amber-400"}`} />
+            <div className="p-5 sm:p-6">
+              <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl ${mangaConfirmation.action === "delete" ? "bg-rose-500/12 text-rose-300" : mangaConfirmation.action === "publish" ? "bg-emerald-400/12 text-emerald-300" : "bg-amber-400/12 text-amber-200"}`}>
+                {mangaConfirmation.action === "delete" ? <FiTrash2Icon size={19} /> : <FiCheckIcon size={20} />}
+              </div>
+              <p className="text-lg font-black tracking-tight">
+                {mangaConfirmation.action === "delete"
+                  ? "Hapus project ini?"
+                  : mangaConfirmation.action === "publish"
+                    ? "Publikasikan project?"
+                    : "Jadikan project sebagai draft?"}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-white/55">
+                <span className="font-bold text-white/85">{mangaConfirmation.manga.title}</span>{" "}
+                {mangaConfirmation.action === "delete"
+                  ? "beserta seluruh chapter dan gambar terkait akan dihapus permanen. Tindakan ini tidak dapat dibatalkan."
+                  : mangaConfirmation.action === "publish"
+                    ? "akan langsung tampil pada listing, pencarian, dan halaman publik Ryukomik."
+                    : "tidak lagi tampil pada listing, pencarian, detail, maupun reader publik."}
+              </p>
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button onClick={() => setMangaConfirmation(null)} className="rounded-xl px-4 py-2.5 text-sm font-bold text-white/55 transition hover:bg-white/[.06] hover:text-white">Batal</button>
+                <button
+                  onClick={confirmMangaAction}
+                  className={`rounded-xl px-4 py-2.5 text-sm font-black text-white transition ${mangaConfirmation.action === "delete" ? "bg-rose-500 hover:bg-rose-400" : mangaConfirmation.action === "publish" ? "bg-emerald-500 hover:bg-emerald-400" : "bg-amber-400 text-black hover:bg-amber-300"}`}
+                >
+                  {mangaConfirmation.action === "delete" ? "Ya, hapus permanen" : mangaConfirmation.action === "publish" ? "Ya, publikasikan" : "Ya, jadikan draft"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
