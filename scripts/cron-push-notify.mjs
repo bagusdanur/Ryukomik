@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import webPush from "web-push";
 import dotenv from "dotenv";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
 dotenv.config({ path: ".env.local" });
 
@@ -20,6 +23,12 @@ webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 const CONTENT_API_URL = "https://api.ryukomik.web.id";
 const LOCAL_APP_URL = process.env.PUSH_NOTIFY_LOCAL_URL || "http://127.0.0.1:3000";
+const configuredProjectCacheTtl = Number.parseInt(process.env.PUSH_NOTIFY_PROJECT_CACHE_TTL_MS || "3600000", 10);
+const PROJECT_CACHE_TTL_MS = Number.isFinite(configuredProjectCacheTtl) && configuredProjectCacheTtl > 0
+  ? configuredProjectCacheTtl
+  : 3_600_000;
+const PROJECT_CACHE_PATH = process.env.PUSH_NOTIFY_PROJECT_CACHE_PATH
+  || path.join(tmpdir(), "ryukomik-push-notify-project.json");
 
 // Mencakup semua source aktif di src/config/sources.ts.
 // Project memakai aplikasi lokal agar cron tidak menambah egress eksternal.
@@ -39,6 +48,55 @@ function getList(json) {
   if (Array.isArray(json)) return json;
   if (Array.isArray(json?.data)) return json.data;
   return Object.values(json || {}).find((value) => Array.isArray(value)) || [];
+}
+
+async function readProjectCache() {
+  try {
+    const cache = JSON.parse(await readFile(PROJECT_CACHE_PATH, "utf8"));
+    if (!cache || !Number.isFinite(cache.cachedAt) || !cache.data) return null;
+    return cache;
+  } catch {
+    return null;
+  }
+}
+
+async function writeProjectCache(data) {
+  try {
+    await mkdir(path.dirname(PROJECT_CACHE_PATH), { recursive: true });
+    const temporaryPath = `${PROJECT_CACHE_PATH}.tmp`;
+    await writeFile(temporaryPath, JSON.stringify({ cachedAt: Date.now(), data }), "utf8");
+    await rename(temporaryPath, PROJECT_CACHE_PATH);
+  } catch (error) {
+    // Cache bersifat optimasi saja; kegagalan menulis tidak boleh menghentikan push.
+    console.warn("Gagal menyimpan cache Project:", error.message);
+  }
+}
+
+async function getSourcePayload(source) {
+  const existingCache = source.id === "project" ? await readProjectCache() : null;
+  if (existingCache && Date.now() - existingCache.cachedAt < PROJECT_CACHE_TTL_MS) {
+    console.log("Memakai cache Project lokal.");
+    return existingCache.data;
+  }
+
+  try {
+    const res = await fetch(source.apiUrl, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const payload = await res.json();
+    if (source.id === "project") await writeProjectCache(payload);
+    return payload;
+  } catch (error) {
+    // Jika Supabase/endpoint Project sementara bermasalah, gunakan cache lama.
+    if (existingCache) {
+      console.warn("Endpoint Project gagal, memakai cache lama:", error.message);
+      return existingCache.data;
+    }
+    throw error;
+  }
 }
 
 function getSlug(item, source) {
@@ -81,16 +139,7 @@ async function runCron() {
   for (const source of SOURCES) {
     try {
       console.log(`Memeriksa source: ${source.id}`);
-      const res = await fetch(source.apiUrl, {
-        headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(20_000),
-      });
-      if (!res.ok) {
-        console.error(`HTTP error di ${source.id}: ${res.status}`);
-        continue;
-      }
-
-      const list = getList(await res.json());
+      const list = getList(await getSourcePayload(source));
       if (list.length === 0) {
         console.log(`Tidak ada data pustaka dari ${source.id}.`);
         continue;
