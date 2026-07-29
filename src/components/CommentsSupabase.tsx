@@ -10,7 +10,7 @@ import UserBadges from "@/components/UserBadges";
 import ProfilePopover from "@/components/profile/ProfilePopover";
 import { stickers } from "@/data/stickers";
 import { RiEmojiStickerLine } from "react-icons/ri";
-import { loadCachedProfile } from "@/utils/profileCache";
+import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 
 // ============================================
 // CONSTANTS
@@ -93,6 +93,8 @@ type CommentItemProps = {
 
 const IMAGE_REGEX = /\.(jpg|jpeg|png|webp|gif)$/i;
 const URL_REGEX = /^\[https?:\/\/[^\]]+\]$/;
+const PREMIUM_PROMO_DISMISS_KEY = "rk-premium-comment-promo-dismissed-until";
+const PREMIUM_PROMO_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
 // ============================================
 // UTILITY FUNCTIONS (outside component)
 // ============================================
@@ -479,6 +481,76 @@ const CommentItem = memo(({
 });
 CommentItem.displayName = "CommentItem";
 
+const PremiumPromoComment = memo(() => {
+  const [dismissed, setDismissed] = useState(true);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const dismissedUntil = Number(localStorage.getItem(PREMIUM_PROMO_DISMISS_KEY) || "0");
+      setDismissed(Number.isFinite(dismissedUntil) && dismissedUntil > Date.now());
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  const dismissPromo = () => {
+    localStorage.setItem(
+      PREMIUM_PROMO_DISMISS_KEY,
+      String(Date.now() + PREMIUM_PROMO_DISMISS_MS),
+    );
+    setDismissed(true);
+  };
+
+  if (dismissed) return null;
+
+  return (
+    <div className="relative overflow-visible rounded-2xl border border-[var(--accent)]/35 p-4 rk-card-soft">
+      <ExclusiveCommentWallpaper type="premium" />
+      <div className="relative z-[1] flex gap-3">
+        <div className="shrink-0 flex flex-col items-center">
+          <CommentAvatar avatar_url="/icon.png" author_name="Ryukomik" />
+          <span className="mt-1 text-[9px] font-black text-[var(--accent-2)]">OFFICIAL</span>
+          <div className="mt-1 h-1 w-11 overflow-hidden rounded-full border border-white/5 bg-white/10">
+            <div className="h-full w-full bg-[var(--accent)]" />
+          </div>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-[13px] font-black text-white">Ryukomik</span>
+              <CommentBadge role={null} isPremium={true} />
+              <span className="rounded-full border border-[var(--accent-2)]/25 bg-[var(--accent-2)]/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-[var(--accent-2)]">
+                Disematkan
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={dismissPromo}
+              className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black text-white/35 transition hover:bg-white/10 hover:text-white"
+              aria-label="Tutup promo premium selama 7 hari"
+              title="Nanti saja"
+            >
+              ×
+            </button>
+          </div>
+
+          <p className="py-1 text-[14px] font-medium leading-relaxed text-gray-300">
+            Mau baca lebih nyaman tanpa iklan? Aktifkan Ryukomik Premium dan bantu kami terus update setiap hari.
+          </p>
+
+          <a
+            href="https://ryukomik.my.id/premium-pay"
+            className="rk-btn-primary mt-3 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-wide"
+          >
+            <span>✦</span> Lihat Premium
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+});
+PremiumPromoComment.displayName = "PremiumPromoComment";
+
 // ============================================
 // MAIN COMPONENT
 // ============================================
@@ -492,8 +564,9 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
   const [showLogin, setShowLogin] = useState(false);
   const [replying, setReplying] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
-  const { user } = useSupabaseUser();
+  const { user, loading: userLoading } = useSupabaseUser();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [isSpoiler, setIsSpoiler] = useState(false);
   const [sending, setSending] = useState(false);
   const [showSticker, setShowSticker] = useState(false);
@@ -507,14 +580,20 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
     let mounted = true;
 
     async function loadProfile() {
+      if (userLoading) return;
       if (!user?.id) {
         setProfile(null);
+        setProfileLoading(false);
         return;
       }
 
-      const data = await loadCachedProfile(user.id);
-
-      if (mounted) setProfile(data || null);
+      setProfileLoading(true);
+      try {
+        const data = await loadCachedProfile(user.id);
+        if (mounted) setProfile(data || null);
+      } finally {
+        if (mounted) setProfileLoading(false);
+      }
     }
 
     loadProfile();
@@ -522,7 +601,7 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
     return () => {
       mounted = false;
     };
-  }, [user?.id]);
+  }, [user?.id, userLoading]);
 
   // ---- Build comment map for O(1) lookup ----
   const commentMap = useMemo(() => {
@@ -681,6 +760,7 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
   // ---- Memoized values ----
   const isLoggedIn = !!user;
   const canSubmit = !sending && content.trim().length > 0;
+  const showPremiumPromo = !userLoading && !profileLoading && !isActivePremiumProfile(profile);
 
   // ---- Sticker handlers ----
   const toggleSticker = useCallback(() => setShowSticker((p) => !p), []);
@@ -762,6 +842,8 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
           </div>
         </div>
       </div>
+
+      {showPremiumPromo && <PremiumPromoComment />}
 
       {/* FILTER & COUNT */}
       <div className="flex items-center justify-between mb-6">
