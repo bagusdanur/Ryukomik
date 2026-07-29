@@ -4,8 +4,8 @@ const BASE_URL = "https://api.ryukomik.web.id";
 
 import { VISIBLE_SOURCES } from "@/config/sources";
 
-const SOURCES = VISIBLE_SOURCES
-  .filter(s => s.group !== "novel")
+const EXTERNAL_SOURCES = VISIBLE_SOURCES
+  .filter(s => s.group !== "novel" && s.group !== "project")
   .map(s => ({
     id: s.id,
     label: `Source ${s.label}`,
@@ -13,7 +13,26 @@ const SOURCES = VISIBLE_SOURCES
     localPath: `/api/source/${s.id}/${s.id === "komiku" ? "pustaka-filter" : "pustaka"}?page=1`,
   }));
 
-type SourceConfig = (typeof SOURCES)[number];
+type SourceConfig = (typeof EXTERNAL_SOURCES)[number];
+
+// Project memakai Supabase melalui endpoint internal yang sudah di-cache. Jangan
+// memanggilnya dari health check: selain menambah query database, API eksternal
+// memang tidak memiliki route /project sehingga sebelumnya selalu tercatat 404.
+const PROJECT_SOURCE = {
+  id: "project",
+  label: "Source Project",
+  ok: true,
+  status: "CACHE",
+  latencyMs: null,
+  itemCount: null,
+  empty: false,
+  imageProxy: "on-error",
+  endpoint: "/api/source/project/pustaka?page=1",
+  checkedAt: null,
+  error: null,
+  mode: "internal-cache",
+  note: "Endpoint internal; tidak diprober agar tidak menambah query Supabase.",
+} as const;
 
 import { isAdultSource } from "@/config/sources";
 
@@ -89,12 +108,17 @@ async function probeSource(source: SourceConfig) {
 }
 
 export async function GET() {
-  const results = await Promise.all(SOURCES.map(probeSource));
+  const externalResults = await Promise.all(EXTERNAL_SOURCES.map(probeSource));
+  const checkedAt = new Date().toISOString();
+  const results = [
+    ...externalResults,
+    { ...PROJECT_SOURCE, checkedAt },
+  ];
   const degraded = results.filter((source) => !source.ok).length;
 
   return NextResponse.json(
     {
-      checkedAt: new Date().toISOString(),
+      checkedAt,
       degraded,
       sources: results,
     },

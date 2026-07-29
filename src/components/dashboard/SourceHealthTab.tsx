@@ -1,6 +1,18 @@
 "use client";
 
-import { FiRefreshCw } from "react-icons/fi";
+import {
+  FiActivity,
+  FiAlertCircle,
+  FiCheck,
+  FiClock,
+  FiCopy,
+  FiDatabase,
+  FiExternalLink,
+  FiImage,
+  FiRefreshCw,
+  FiShield,
+  FiZap,
+} from "react-icons/fi";
 
 type SourceHealthItem = {
   id: string;
@@ -8,11 +20,13 @@ type SourceHealthItem = {
   ok?: boolean;
   imageProxy?: "always" | "fallback" | string;
   status?: string | number;
-  latencyMs?: number;
-  itemCount?: number;
+  latencyMs?: number | null;
+  itemCount?: number | null;
   empty?: boolean;
-  error?: string;
+  error?: string | null;
   endpoint: string;
+  mode?: "internal-cache" | string;
+  note?: string;
 };
 
 type SourceHealth = {
@@ -43,22 +57,25 @@ type SourceHealthTabProps = {
 };
 
 function timeAgo(dateStr?: string) {
-  if (!dateStr) return "-";
-
-  let ds = dateStr;
-  if (typeof ds === "string" && !ds.endsWith("Z") && !ds.includes("+")) {
-    ds = ds.replace(" ", "T") + "Z";
-  }
-
-  const date = new Date(ds);
-  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
-
+  if (!dateStr) return "Belum diperiksa";
+  const date = new Date(dateStr);
+  const diff = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
   if (diff < 60) return "Baru saja";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m lalu`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}j lalu`;
-  const days = Math.floor(diff / 86400);
-  if (days < 7) return `${days}h lalu`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} menit lalu`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
   return date.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+}
+
+function latencyLabel(value?: number | null) {
+  if (typeof value !== "number") return "Cached";
+  return `${value.toLocaleString("id-ID")} ms`;
+}
+
+function latencyTone(value?: number | null) {
+  if (typeof value !== "number") return "text-sky-300";
+  if (value < 1000) return "text-emerald-300";
+  if (value < 4000) return "text-amber-300";
+  return "text-red-300";
 }
 
 export default function SourceHealthTab({
@@ -78,243 +95,126 @@ export default function SourceHealthTab({
   openCacheSourceTest,
   refreshChapterCache,
   openSourceEndpoint,
-  copyText,
 }: SourceHealthTabProps) {
+  const sources = sourceHealth?.sources ?? [];
+  const healthy = sources.filter((source) => source.ok).length;
+  const externalSources = sources.filter((source) => source.mode !== "internal-cache");
+  const internalSources = sources.filter((source) => source.mode === "internal-cache");
+  const isHealthy = Boolean(sourceHealth) && (sourceHealth?.degraded ?? 0) === 0;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-1">
-        <div>
-          <p className="text-[15px] font-bold text-white">Source Health</p>
-          <p className="text-[11px] text-white/30">
-            Probe ringan untuk API source dan policy proxy gambar
-          </p>
-        </div>
-        <button
-          onClick={fetchSourceHealth}
-          disabled={sourceHealthLoading}
-          className="w-8 h-8 rounded-lg bg-white/[.05] border border-white/[.08] flex items-center justify-center text-white/40 hover:text-white transition-colors"
-        >
-          <FiRefreshCw
-            size={13}
-            className={sourceHealthLoading ? "animate-spin" : ""}
-          />
-        </button>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4">
-          <p className="text-[10px] text-white/30 uppercase font-semibold">
-            Bermasalah
-          </p>
-          <p
-            className={`mt-2 text-2xl font-bold ${
-              sourceHealth?.degraded ? "text-red-400" : "text-green-400"
-            }`}
-            style={{ fontFamily: "Space Mono, monospace" }}
-          >
-            {sourceHealth?.degraded ?? 0}
-          </p>
-        </div>
-        <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4">
-          <p className="text-[10px] text-white/30 uppercase font-semibold">
-            Terakhir cek
-          </p>
-          <p className="mt-2 text-[12px] text-white/70">
-            {sourceHealth?.checkedAt ? timeAgo(sourceHealth.checkedAt) : "Belum dicek"}
-          </p>
-        </div>
-      </div>
-
-      {sourceHealth?.error && (
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-[12px] text-red-300">
-          {sourceHealth.error}
-        </div>
-      )}
-
-      <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[12px] font-semibold text-white/70">
-              Quick Actions
-            </p>
-            <p className="text-[10px] text-white/30">
-              Copy report, buka endpoint, dan test proxy gambar
-            </p>
-          </div>
-          {healthNotice && (
-            <span className="text-[10px] text-green-400 bg-green-500/10 rounded-full px-2 py-1">
-              {healthNotice}
-            </span>
-          )}
-        </div>
-
-        <button
-          onClick={copyHealthReport}
-          disabled={!sourceHealth}
-          className="w-full rounded-xl border border-white/[.08] bg-white/[.04] px-3 py-2 text-left text-[12px] text-white/60 transition hover:border-white/20 hover:text-white disabled:opacity-40"
-        >
-          Copy health report
-        </button>
-
-        <div className="flex gap-2">
-          <input
-            value={imageProxyTestUrl}
-            onChange={(event) => setImageProxyTestUrl(event.target.value)}
-            placeholder="Paste URL gambar untuk test proxy"
-            className="min-w-0 flex-1 rounded-xl border border-white/[.08] bg-white/[.04] px-3 py-2 text-[12px] text-white/70 outline-none placeholder:text-white/25 focus:border-sky-500/40"
-          />
-          <button
-            onClick={openImageProxyTest}
-            disabled={!imageProxyTestUrl.trim()}
-            className="shrink-0 rounded-xl border border-sky-500/20 bg-sky-500/10 px-3 py-2 text-[12px] font-semibold text-sky-300 transition hover:bg-sky-500/20 disabled:opacity-40"
-          >
-            Test
-          </button>
-        </div>
-
-        <div className="rounded-xl border border-white/[.06] bg-white/[.03] p-3">
-          <p className="mb-2 text-[10px] font-semibold uppercase text-white/25">
-            Cache TTL
-          </p>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-lg bg-black/20 px-2 py-2">
-              <p className="text-[10px] text-white/25">Chapter JSON</p>
-              <p className="text-[11px] font-semibold text-white/70">7 hari</p>
+    <div className="mx-auto w-full max-w-6xl space-y-5 pb-8">
+      <section className="relative overflow-hidden rounded-3xl border border-white/[.08] bg-[#11121a] px-5 py-5 sm:px-7 sm:py-6">
+        <div className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-1/3 h-px w-1/2 bg-gradient-to-r from-transparent via-violet-400/50 to-transparent" />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl border ${isHealthy ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-300" : "border-amber-400/25 bg-amber-400/10 text-amber-300"}`}>
+              <FiActivity size={20} />
             </div>
-            <div className="rounded-lg bg-black/20 px-2 py-2">
-              <p className="text-[10px] text-white/25">Image Proxy</p>
-              <p className="text-[11px] font-semibold text-white/70">7 hari</p>
-            </div>
-            <div className="rounded-lg bg-black/20 px-2 py-2">
-              <p className="text-[10px] text-white/25">Search</p>
-              <p className="text-[11px] font-semibold text-white/70">5 menit</p>
+            <div>
+              <div className="mb-1 flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-bold tracking-tight text-white">Source Health</h2>
+                {sourceHealth && (
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isHealthy ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300" : "border-amber-400/20 bg-amber-400/10 text-amber-300"}`}>
+                    {isHealthy ? "Semua operasional" : "Perlu perhatian"}
+                  </span>
+                )}
+              </div>
+              <p className="max-w-xl text-xs leading-relaxed text-white/45">
+                Pantau koneksi source eksternal, respons endpoint, dan kebijakan proxy gambar tanpa menambah beban Project/Supabase.
+              </p>
             </div>
           </div>
-        </div>
-
-        <div className="flex gap-2">
-          <input
-            value={cacheSourcePath}
-            onChange={(event) => setCacheSourcePath(event.target.value)}
-            className="min-w-0 flex-1 rounded-xl border border-white/[.08] bg-white/[.04] px-3 py-2 text-[12px] text-white/70 outline-none placeholder:text-white/25 focus:border-sky-500/40"
-          />
-          <button
-            onClick={openCacheSourceTest}
-            disabled={!cacheSourcePath.trim()}
-            className="shrink-0 rounded-xl border border-white/[.08] bg-white/[.04] px-3 py-2 text-[12px] font-semibold text-white/60 transition hover:border-white/20 hover:text-white disabled:opacity-40"
-          >
-            Buka
-          </button>
-        </div>
-
-        <div className="rounded-xl border border-amber-500/15 bg-amber-500/[.04] p-3">
-          <p className="mb-2 text-[10px] font-semibold uppercase text-amber-200/50">
-            Refresh Chapter Cache
-          </p>
-          <div className="flex gap-2">
-            <input
-              value={chapterRefreshPath}
-              onChange={(event) => setChapterRefreshPath(event.target.value)}
-              placeholder="/chapter/komiku/solo-leveling-chapter-152"
-              className="min-w-0 flex-1 rounded-xl border border-white/[.08] bg-black/20 px-3 py-2 text-[12px] text-white/70 outline-none placeholder:text-white/25 focus:border-amber-500/40"
-            />
-            <button
-              onClick={refreshChapterCache}
-              disabled={!chapterRefreshPath.trim() || chapterRefreshLoading}
-              className="shrink-0 rounded-xl border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[12px] font-semibold text-amber-200 transition hover:bg-amber-500/20 disabled:opacity-40"
-            >
-              {chapterRefreshLoading ? "..." : "Refresh"}
+          <div className="flex shrink-0 items-center gap-2">
+            <button onClick={copyHealthReport} disabled={!sourceHealth} className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[.09] bg-white/[.04] px-3 text-xs font-semibold text-white/65 transition hover:border-white/20 hover:bg-white/[.07] hover:text-white disabled:cursor-not-allowed disabled:opacity-40">
+              <FiCopy size={14} /> <span className="hidden sm:inline">Salin laporan</span>
+            </button>
+            <button onClick={fetchSourceHealth} disabled={sourceHealthLoading} className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-xs font-bold text-white shadow-lg shadow-violet-950/30 transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-60">
+              <FiRefreshCw size={14} className={sourceHealthLoading ? "animate-spin" : ""} />
+              {sourceHealthLoading ? "Memeriksa..." : "Periksa sekarang"}
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="space-y-2">
-        {(sourceHealth?.sources ?? []).map((source) => (
-          <div
-            key={source.id}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`w-2.5 h-2.5 rounded-full ${
-                      source.ok ? "bg-green-400" : "bg-red-400"
-                    }`}
-                  />
-                  <p className="text-[13px] font-bold text-white truncate">
-                    {source.label}
-                  </p>
+      {sourceHealth?.error && (
+        <div className="flex items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-200">
+          <FiAlertCircle className="shrink-0" size={17} /> {sourceHealth.error}
+        </div>
+      )}
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Metric icon={<FiCheck size={16} />} label="Source sehat" value={sourceHealth ? `${healthy}/${sources.length}` : "-"} detail="Endpoint aktif" tone="emerald" />
+        <Metric icon={<FiAlertCircle size={16} />} label="Gangguan" value={sourceHealth ? String(sourceHealth.degraded ?? 0) : "-"} detail="Butuh tindak lanjut" tone={(sourceHealth?.degraded ?? 0) > 0 ? "red" : "emerald"} />
+        <Metric icon={<FiZap size={16} />} label="Source eksternal" value={String(externalSources.length)} detail="Diuji lewat API backend" tone="violet" />
+        <Metric icon={<FiClock size={16} />} label="Pemeriksaan terakhir" value={timeAgo(sourceHealth?.checkedAt)} detail="Cache laporan 60 detik" tone="sky" />
+      </section>
+
+      <section className="rounded-3xl border border-white/[.07] bg-[#101119] p-4 sm:p-5">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-bold text-white">Status endpoint</h3>
+            <p className="mt-1 text-[11px] text-white/35">Klik endpoint bila perlu melihat respons mentah.</p>
+          </div>
+          <span className="text-[10px] font-medium text-white/30">{externalSources.length} external · {internalSources.length} internal</span>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {sources.map((source) => (
+            <article key={source.id} className={`rounded-2xl border p-4 ${source.ok ? "border-white/[.075] bg-white/[.025]" : "border-red-500/20 bg-red-500/[.045]"}`}>
+              <div className="flex gap-3">
+                <div className={`mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl ${source.ok ? "bg-emerald-400/10 text-emerald-300" : "bg-red-400/10 text-red-300"}`}>
+                  {source.mode === "internal-cache" ? <FiDatabase size={16} /> : source.ok ? <FiCheck size={17} /> : <FiAlertCircle size={17} />}
                 </div>
-                <p className="text-[10px] text-white/25 mt-1">
-                  {source.id} / gambar:{" "}
-                  {source.imageProxy === "always" ? "proxy selalu" : "proxy saat error"}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0"><h4 className="truncate text-[13px] font-bold text-white">{source.label}</h4><p className="mt-0.5 text-[10px] uppercase tracking-wider text-white/30">{source.mode === "internal-cache" ? "Internal · Cache managed" : `External · ${source.id}`}</p></div>
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${source.ok ? "bg-emerald-400/10 text-emerald-300" : "bg-red-400/10 text-red-300"}`}>{source.ok ? source.mode === "internal-cache" ? "TERKELOLA" : "ONLINE" : "ERROR"}</span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 overflow-hidden rounded-xl border border-white/[.06] bg-black/15 text-center">
+                    <StatusDatum label="Status" value={String(source.status ?? "-")} />
+                    <StatusDatum label="Respons" value={latencyLabel(source.latencyMs)} className={latencyTone(source.latencyMs)} />
+                    <StatusDatum label="Item" value={source.itemCount == null ? "-" : String(source.itemCount)} />
+                  </div>
+                  <p className={`mt-3 min-h-4 text-[11px] leading-relaxed ${source.ok ? "text-white/35" : "text-red-200/80"}`}>{source.error || source.note || `Proxy gambar: ${source.imageProxy === "always" ? "selalu aktif" : "saat gagal"}`}</p>
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <code className="min-w-0 truncate text-[10px] text-white/25">{source.endpoint}</code>
+                    <button onClick={() => openSourceEndpoint(source.endpoint)} className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-white/[.08] px-2 py-1.5 text-[10px] font-semibold text-white/55 transition hover:border-white/20 hover:text-white"><FiExternalLink size={11} /> API</button>
+                  </div>
+                </div>
               </div>
-              <span
-                className={`text-[10px] font-bold rounded-full px-2 py-1 ${
-                  source.ok
-                    ? "bg-green-500/10 text-green-400"
-                    : "bg-red-500/10 text-red-400"
-                }`}
-              >
-                {source.ok ? "OK" : "ERROR"}
-              </span>
-            </div>
+            </article>
+          ))}
+          {sourceHealthLoading && !sourceHealth && <div className="col-span-full rounded-2xl border border-white/[.06] bg-white/[.02] p-10 text-center text-xs text-white/40">Mengecek kesehatan source...</div>}
+        </div>
+      </section>
 
-            <div className="grid grid-cols-3 gap-2 mt-4">
-              <div className="rounded-xl bg-white/[.04] px-3 py-2">
-                <p className="text-[10px] text-white/25">HTTP</p>
-                <p className="text-[12px] text-white/70 font-semibold">
-                  {source.status || "-"}
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/[.04] px-3 py-2">
-                <p className="text-[10px] text-white/25">Latency</p>
-                <p className="text-[12px] text-white/70 font-semibold">
-                  {source.latencyMs}ms
-                </p>
-              </div>
-              <div className="rounded-xl bg-white/[.04] px-3 py-2">
-                <p className="text-[10px] text-white/25">Items</p>
-                <p className="text-[12px] text-white/70 font-semibold">
-                  {source.itemCount}
-                </p>
-              </div>
-            </div>
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-3xl border border-white/[.07] bg-[#101119] p-5">
+          <div className="mb-4 flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-xl bg-sky-400/10 text-sky-300"><FiImage size={16} /></div><div><h3 className="text-sm font-bold text-white">Tools diagnostik</h3><p className="text-[11px] text-white/35">Uji proxy gambar atau buka endpoint cache.</p></div></div>
+          <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-white/30">URL gambar melalui proxy</label>
+          <div className="flex gap-2"><input value={imageProxyTestUrl} onChange={(event) => setImageProxyTestUrl(event.target.value)} placeholder="https://.../cover.webp" className="min-w-0 flex-1 rounded-xl border border-white/[.08] bg-black/20 px-3 py-2.5 text-xs text-white/75 outline-none placeholder:text-white/20 focus:border-sky-400/40" /><button onClick={openImageProxyTest} disabled={!imageProxyTestUrl.trim()} className="rounded-xl border border-sky-400/20 bg-sky-400/10 px-3 text-xs font-bold text-sky-200 disabled:opacity-40">Uji</button></div>
+          <label className="mb-2 mt-4 block text-[10px] font-semibold uppercase tracking-wider text-white/30">Buka endpoint cache</label>
+          <div className="flex gap-2"><input value={cacheSourcePath} onChange={(event) => setCacheSourcePath(event.target.value)} className="min-w-0 flex-1 rounded-xl border border-white/[.08] bg-black/20 px-3 py-2.5 text-xs text-white/75 outline-none focus:border-sky-400/40" /><button onClick={openCacheSourceTest} disabled={!cacheSourcePath.trim()} className="rounded-xl border border-white/[.08] bg-white/[.04] px-3 text-xs font-bold text-white/65 disabled:opacity-40">Buka</button></div>
+        </div>
+        <div className="rounded-3xl border border-amber-400/15 bg-gradient-to-br from-amber-500/[.06] to-transparent p-5">
+          <div className="mb-4 flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-xl bg-amber-400/10 text-amber-200"><FiShield size={16} /></div><div><h3 className="text-sm font-bold text-white">Pemeliharaan cache</h3><p className="text-[11px] text-white/35">Invalidate JSON chapter yang perlu diperbarui.</p></div></div>
+          <label className="mb-2 block text-[10px] font-semibold uppercase tracking-wider text-white/30">Path chapter</label>
+          <div className="flex gap-2"><input value={chapterRefreshPath} onChange={(event) => setChapterRefreshPath(event.target.value)} placeholder="/chapter/komiku/slug-chapter-1" className="min-w-0 flex-1 rounded-xl border border-white/[.08] bg-black/20 px-3 py-2.5 text-xs text-white/75 outline-none placeholder:text-white/20 focus:border-amber-400/40" /><button onClick={refreshChapterCache} disabled={!chapterRefreshPath.trim() || chapterRefreshLoading} className="rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 text-xs font-bold text-amber-100 disabled:opacity-40">{chapterRefreshLoading ? "..." : "Refresh"}</button></div>
+          <p className="mt-4 text-[11px] leading-relaxed text-amber-100/40">Project tidak diuji ulang dari panel ini; data Project memakai cache endpoint 120 detik agar pemeriksaan tidak menambah egress Supabase.</p>
+        </div>
+      </section>
 
-            {(source.empty || source.error) && (
-              <p className="mt-3 text-[11px] text-red-300/80">
-                {source.empty ? "Response kosong" : source.error}
-              </p>
-            )}
-
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button
-                onClick={() => openSourceEndpoint(source.endpoint)}
-                className="rounded-xl border border-white/[.08] bg-white/[.04] px-3 py-2 text-[11px] font-semibold text-white/55 transition hover:border-white/20 hover:text-white"
-              >
-                Buka API
-              </button>
-              <button
-                onClick={() =>
-                  copyText(JSON.stringify(source, null, 2), `${source.label} disalin`)
-                }
-                className="rounded-xl border border-white/[.08] bg-white/[.04] px-3 py-2 text-[11px] font-semibold text-white/55 transition hover:border-white/20 hover:text-white"
-              >
-                Copy Detail
-              </button>
-            </div>
-          </div>
-        ))}
-
-        {sourceHealthLoading && !sourceHealth && (
-          <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-6 text-center text-[12px] text-white/40">
-            Mengecek source...
-          </div>
-        )}
-      </div>
+      {healthNotice && <div className="fixed bottom-20 left-1/2 z-50 -translate-x-1/2 rounded-full border border-emerald-400/20 bg-[#171722] px-4 py-2 text-xs text-emerald-200 shadow-2xl">{healthNotice}</div>}
     </div>
   );
+}
+
+function Metric({ icon, label, value, detail, tone }: { icon: React.ReactNode; label: string; value: string; detail: string; tone: "emerald" | "red" | "violet" | "sky" }) {
+  const tones = { emerald: "bg-emerald-400/10 text-emerald-300", red: "bg-red-400/10 text-red-300", violet: "bg-violet-400/10 text-violet-300", sky: "bg-sky-400/10 text-sky-300" };
+  return <div className="rounded-2xl border border-white/[.07] bg-[#11121a] p-4"><div className="flex items-center justify-between"><p className="text-[10px] font-semibold uppercase tracking-wider text-white/35">{label}</p><span className={`grid h-7 w-7 place-items-center rounded-lg ${tones[tone]}`}>{icon}</span></div><p className="mt-3 text-xl font-bold tracking-tight text-white">{value}</p><p className="mt-1 text-[10px] text-white/30">{detail}</p></div>;
+}
+
+function StatusDatum({ label, value, className = "" }: { label: string; value: string; className?: string }) {
+  return <div className="border-r border-white/[.06] px-1 py-2.5 last:border-r-0"><p className="text-[9px] uppercase tracking-wide text-white/25">{label}</p><p className={`mt-1 truncate text-[11px] font-bold text-white/70 ${className}`}>{value}</p></div>;
 }
