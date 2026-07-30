@@ -1,5 +1,5 @@
 const PREFIX = "rk";
-const CACHE_VERSION = "v18";
+const CACHE_VERSION = "v19";
 const STATIC_CACHE = `${PREFIX}-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `${PREFIX}-images-${CACHE_VERSION}`;
 const CHAPTER_CACHE = `${PREFIX}-chapter-${CACHE_VERSION}`;
@@ -214,6 +214,12 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (sameOrigin && url.pathname.startsWith("/api")) return;
+
+  // Chapter Project berisi URL navigasi yang dapat berubah saat admin mengatur
+  // chapter. Jangan layani dari PWA cache agar Next/Prev tidak tertinggal.
+  if (url.pathname.startsWith("/chapter/project/")) {
+    return;
+  }
 
   if (url.pathname.startsWith("/chapter")) {
     event.respondWith(
