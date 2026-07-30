@@ -1,5 +1,5 @@
 const PREFIX = "rk";
-const CACHE_VERSION = "v19";
+const CACHE_VERSION = "v20";
 const STATIC_CACHE = `${PREFIX}-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `${PREFIX}-images-${CACHE_VERSION}`;
 const CHAPTER_CACHE = `${PREFIX}-chapter-${CACHE_VERSION}`;

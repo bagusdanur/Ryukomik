@@ -10,7 +10,8 @@ const ANON_RPG_URL = "https://t.me/anonrpg_bot?start=ryukomik_chapter";
 const TOTAL_SLIDES = 2;
 
 export default function RecruitmentBanner() {
-  const [activeSlide, setActiveSlide] = useState(0);
+  // Tampilkan promo baru terlebih dahulu; recruitment Discord tetap slide berikutnya.
+  const [activeSlide, setActiveSlide] = useState(1);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
