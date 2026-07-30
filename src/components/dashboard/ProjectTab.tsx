@@ -27,6 +27,7 @@ type Manga = {
   type: string;
   genres: string[];
   is_published: boolean;
+  view_count?: number;
   created_at: string;
 };
 
@@ -44,6 +45,12 @@ type MangaConfirmation = {
   manga: Manga;
 };
 
+type ProjectViewStats = {
+  readersToday: number;
+  readers7d: number;
+  bySlug: Record<string, number>;
+};
+
 interface ProjectTabProps {
   getAdminToken: () => Promise<string>;
 }
@@ -55,6 +62,11 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const [mangaList, setMangaList] = useState<Manga[]>([]);
   const [activeManga, setActiveManga] = useState<Manga | null>(null);
   const [chapterList, setChapterList] = useState<Chapter[]>([]);
+  const [viewStats, setViewStats] = useState<ProjectViewStats>({
+    readersToday: 0,
+    readers7d: 0,
+    bySlug: {},
+  });
 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -110,16 +122,30 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     drafts: mangaList.filter((manga) => !manga.is_published).length,
   }), [mangaList]);
 
+  const totalViews = useMemo(
+    () => mangaList.reduce((total, manga) => total + (Number(manga.view_count) || 0), 0),
+    [mangaList],
+  );
+
   // ─── MANGA ACTIONS ──────────────────────────────────────────
   const fetchManga = useCallback(async () => {
     setLoading(true);
     try {
       const token = await getAdminToken();
-      const res = await fetch("/api/admin/project/manga", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = await res.json();
+      const headers = { Authorization: `Bearer ${token}` };
+      const [res, statsRes] = await Promise.all([
+        fetch("/api/admin/project/manga", { headers }),
+        fetch("/api/admin/project/view-stats", { headers }),
+      ]);
+      const [json, statsJson] = await Promise.all([res.json(), statsRes.json()]);
       setMangaList(json.data || []);
+      if (statsRes.ok) {
+        setViewStats({
+          readersToday: Number(statsJson.readersToday) || 0,
+          readers7d: Number(statsJson.readers7d) || 0,
+          bySlug: statsJson.bySlug || {},
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -1109,7 +1135,10 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             </h2>
             <p className="mt-1 text-xs text-white/45">Kelola judul, chapter, dan status publikasi dalam satu tempat.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-xl border border-sky-400/15 bg-sky-400/[.08] px-3 py-2 text-xs font-bold text-sky-200">{totalViews.toLocaleString("id-ID")} views</span>
+            <span className="rounded-xl border border-violet-400/15 bg-violet-400/[.08] px-3 py-2 text-xs font-bold text-violet-200">{viewStats.readers7d.toLocaleString("id-ID")} pembaca / 7 hari</span>
+            <span className="rounded-xl border border-white/10 bg-white/[.04] px-3 py-2 text-xs font-bold text-white/65">{viewStats.readersToday.toLocaleString("id-ID")} hari ini</span>
             <span className="rounded-xl border border-emerald-400/15 bg-emerald-400/[.08] px-3 py-2 text-xs font-bold text-emerald-300">{publicationSummary.published} publik</span>
             <span className="rounded-xl border border-amber-300/15 bg-amber-300/[.08] px-3 py-2 text-xs font-bold text-amber-200">{publicationSummary.drafts} draft</span>
           </div>

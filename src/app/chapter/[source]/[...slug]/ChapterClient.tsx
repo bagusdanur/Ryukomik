@@ -12,6 +12,7 @@ import { useHistoryStore } from "@/store/historyStore";
 import { useScrollBehavior } from "@/components/reader/hooks/useScrollBehavior";
 import { useTapScroll } from "@/components/reader/hooks/useTapScroll";
 import { useXpRead, useXpQueueFlush } from "@/hooks/useXpRead";
+import { useProjectViewCounter } from "@/hooks/useProjectViewCounter";
 
 import ReaderTopBar from "@/components/reader/ReaderTopBar";
 import ReaderImages from "@/components/reader/ReaderImages";
@@ -38,6 +39,7 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
 
   useXpQueueFlush();
   useXpRead({ user, slugStr });
+  useProjectViewCounter(source, data?.mangaId);
 
   const settings = useReaderStore();
   const addHistory = useHistoryStore((state) => state.addHistory);
