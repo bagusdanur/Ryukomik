@@ -68,8 +68,15 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
 
     if (chapterError) throw chapterError;
 
-    const nextChapter = nextChapData ? `chapter-${nextChapData.chapter_number}` : null;
-    const prevChapter = prevChapData ? `chapter-${prevChapData.chapter_number}` : null;
+    // Reader Project memakai URL /chapter/project/{manga-slug}/chapter-{nomor}.
+    // Sertakan manga slug di respons navigasi agar tombol, auto-next, dan
+    // prefetch tidak membentuk /chapter/project/chapter-{nomor} (404).
+    const nextChapter = nextChapData
+      ? `${slug}/chapter-${nextChapData.chapter_number}`
+      : null;
+    const prevChapter = prevChapData
+      ? `${slug}/chapter-${prevChapData.chapter_number}`
+      : null;
 
     // Normalize ke format ReaderChapter
     const response = NextResponse.json({
