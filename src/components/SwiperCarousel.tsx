@@ -57,7 +57,7 @@ export default function SwiperCarousel({ data }: { data: BannerItem[] }) {
 
                 <Link
                   prefetch={false}
-                  href={`/komik/komiku/${item.slug}`}
+                  href={`/komik/project/${item.slug}`}
                   className="rk-btn-primary mt-5 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold"
                 >
                   Baca Sekarang

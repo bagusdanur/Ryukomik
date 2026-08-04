@@ -12,11 +12,7 @@ interface BannerItem {
 
 export async function getBannerKomiku(): Promise<BannerItem[]> {
   const slugs = [
-    "youre-the-only-one-i-can-see",
-    "resurrection-boy",
-    "the-demon-king-overrun-by-heroes",
-    "became-the-patron-of-villains",
-    "academy-of-card",
+    "you-like-someone-with-that-face",
   ];
 
   const convert = (detail: Dict = {}, slug = ""): BannerItem => ({
@@ -30,12 +26,17 @@ export async function getBannerKomiku(): Promise<BannerItem[]> {
   });
 
   try {
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+      "https://ryukomik.my.id";
+
     const results = await Promise.all(
       slugs.map(async (slug) => {
         const res = await fetch(
-          `https://api.ryukomik.web.id/komiku/detail/${slug}`,
-          { next: { revalidate: 86400 } } // ⬅️ penting
+          `${siteUrl}/api/project/${encodeURIComponent(slug)}`,
+          { next: { revalidate: 3600, tags: [`project-detail:${slug}`] } }
         );
+        if (!res.ok) throw new Error(`Project banner gagal dimuat: ${slug}`);
         const json = await res.json();
         return convert((json as Dict).data as Dict, slug);
       })
