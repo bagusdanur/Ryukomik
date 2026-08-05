@@ -93,7 +93,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
     });
     response.headers.set(
       "Cache-Control",
-      "public, s-maxage=300, stale-while-revalidate=600",
+      "no-store, max-age=0",
     );
     return response;
   } catch (err: any) {

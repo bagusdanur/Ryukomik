@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { randomUUID } from "node:crypto";
 
 // Paksa route ini selalu dynamic (tidak di-cache)
 export const dynamic = "force-dynamic";
@@ -64,8 +65,9 @@ export async function POST(request: Request) {
       filename = `cover.${ext}`;
       uploadPath = `covers/${mangaSlug}/${filename}`;
     } else {
-      // Chapter: pakai nama file asli (sudah diurutkan di frontend)
-      uploadPath = `chapters/${mangaSlug}/${chapterNumber}/${filename}`;
+      // Path revisi unik memastikan browser/CDN tidak memakai gambar lama saat
+      // sebuah halaman dikoreksi dan diunggah ulang dengan nama file yang sama.
+      uploadPath = `chapters/${mangaSlug}/${chapterNumber}/${randomUUID()}-${filename}`;
     }
 
     console.log(`[upload-image] Uploading ${type}: ${uploadPath} (${file.type}, ${buffer.length} bytes) → bucket: ${bucketName}`);

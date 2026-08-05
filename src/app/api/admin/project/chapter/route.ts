@@ -13,6 +13,13 @@ function revalidateProjectContent(mangaSlug: string) {
   revalidatePath("/api/project/pustaka", "page");
 }
 
+function revalidateProjectChapter(mangaSlug: string, chapterNumber: string | number) {
+  const chapter = `chapter-${chapterNumber}`;
+  revalidateTag(`project-chapter:${mangaSlug}:${chapter}`, { expire: 0 });
+  revalidatePath(`/chapter/project/${mangaSlug}/${chapter}`, "page");
+  revalidatePath(`/api/project/chapter/${mangaSlug}/${chapter}`);
+}
+
 export async function GET(request: Request) {
   try {
     const admin = await verifyAdminRequest(request);
@@ -92,6 +99,7 @@ export async function POST(request: Request) {
     }
 
     revalidateProjectContent(manga_slug);
+    revalidateProjectChapter(manga_slug, data.chapter_number);
 
     return NextResponse.json({ data });
   } catch (err: unknown) {
@@ -115,7 +123,7 @@ export async function PATCH(request: Request) {
 
     const { data: existingChapter, error: fetchError } = await supabaseAdmin
       .from("project_chapters")
-      .select("image_urls")
+      .select("manga_slug, chapter_number, image_urls")
       .eq("id", id)
       .single();
 
@@ -156,6 +164,8 @@ export async function PATCH(request: Request) {
     }
 
     revalidateProjectContent(manga_slug);
+    revalidateProjectChapter(existingChapter.manga_slug, existingChapter.chapter_number);
+    revalidateProjectChapter(manga_slug, data.chapter_number);
 
     return NextResponse.json({ data });
   } catch (err: unknown) {
@@ -198,6 +208,7 @@ export async function DELETE(request: Request) {
     if (deleteError) throw deleteError;
 
     revalidateProjectContent(chapter.manga_slug);
+    revalidateProjectChapter(chapter.manga_slug, chapter.chapter_number);
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
