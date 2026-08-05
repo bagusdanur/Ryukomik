@@ -57,6 +57,7 @@ export async function GET(request: Request) {
     const { data: allChapters } = await supabaseAdmin
       .from("project_chapters")
       .select("manga_slug, chapter_number, uploaded_at")
+      .eq("is_published", true)
       .in("manga_slug", mangaSlugs)
       .order("chapter_number", { ascending: false })
       .limit(mangaSlugs.length * 5); // Maks 5 chapter per manga untuk kebutuhan latest-only

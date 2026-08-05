@@ -48,6 +48,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
       .from("project_chapters")
       .select("id, chapter_number, title, uploaded_at")
       .eq("manga_slug", slug)
+      .eq("is_published", true)
       .order("chapter_number", { ascending: false });
 
     if (chapterError) throw chapterError;

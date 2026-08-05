@@ -5,3 +5,4 @@ export interface ApiResult<T> {
   error?: string;
   success?: boolean;
 }
+

@@ -13,6 +13,7 @@ interface BannerItem {
 export async function getBannerKomiku(): Promise<BannerItem[]> {
   const slugs = [
     "you-like-someone-with-that-face",
+    "the-old-man-vows-revenge-against-his-demon-wife",
   ];
 
   const convert = (detail: Dict = {}, slug = ""): BannerItem => ({

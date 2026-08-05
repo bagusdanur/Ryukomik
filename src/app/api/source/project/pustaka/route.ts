@@ -25,6 +25,7 @@ const getPustakaPage = unstable_cache(
     const { data: chapters } = await supabaseAdmin
       .from("project_chapters")
       .select("manga_slug, chapter_number")
+      .eq("is_published", true)
       .in("manga_slug", slugs)
       .order("chapter_number", { ascending: false })
       .limit(slugs.length * 10); // Ambil lebih banyak untuk menghindari chapter tertinggal

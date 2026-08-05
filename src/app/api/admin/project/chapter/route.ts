@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 
     const { data, count, error } = await supabaseAdmin
       .from("project_chapters")
-      .select("id, manga_slug, chapter_number, title, image_urls, uploaded_at", { count: "exact" })
+      .select("id, manga_slug, chapter_number, title, image_urls, is_published, uploaded_at", { count: "exact" })
       .eq("manga_slug", mangaSlug)
       .order("chapter_number", { ascending: false })
       .range(offset, offset + limit - 1);
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { manga_slug, chapter_number, title, image_urls } = body;
+    const { manga_slug, chapter_number, title, image_urls, is_published = false } = body;
 
     if (!manga_slug || !chapter_number) {
       return NextResponse.json({ error: "manga_slug and chapter_number are required" }, { status: 400 });
@@ -73,6 +73,7 @@ export async function POST(request: Request) {
         chapter_number,
         title,
         image_urls: image_urls || [],
+        is_published: Boolean(is_published),
       })
       .select()
       .single();
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
       .eq("slug", manga_slug)
       .single();
     if (mangaError) throw mangaError;
-    if (manga.is_published && !["dropped", "cancelled"].includes(manga.status || "")) {
+    if (data.is_published && manga.is_published && !["dropped", "cancelled"].includes(manga.status || "")) {
       await enqueueProjectDiscordEvent("chapter_published", manga, {
         chapter_number: data.chapter_number,
         chapter_title: data.title || "",
@@ -115,7 +116,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { id, manga_slug, chapter_number, title, image_urls } = body;
+    const { id, manga_slug, chapter_number, title, image_urls, is_published } = body;
 
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
@@ -123,7 +124,7 @@ export async function PATCH(request: Request) {
 
     const { data: existingChapter, error: fetchError } = await supabaseAdmin
       .from("project_chapters")
-      .select("manga_slug, chapter_number, image_urls")
+      .select("manga_slug, chapter_number, image_urls, is_published")
       .eq("id", id)
       .single();
 
@@ -136,12 +137,27 @@ export async function PATCH(request: Request) {
         chapter_number,
         title,
         image_urls: image_urls || [],
+        is_published: Boolean(is_published),
       })
       .eq("id", id)
       .select()
       .single();
 
     if (error) throw error;
+
+    if (!existingChapter.is_published && data.is_published) {
+      const { data: manga } = await supabaseAdmin
+        .from("project_manga")
+        .select("slug,title,cover_url,type,status,genres,is_published")
+        .eq("slug", manga_slug)
+        .maybeSingle();
+      if (manga?.is_published && !["dropped", "cancelled"].includes(manga.status || "")) {
+        await enqueueProjectDiscordEvent("chapter_published", manga, {
+          chapter_number: data.chapter_number,
+          chapter_title: data.title || "",
+        });
+      }
+    }
 
     // Hapus orphan files di R2
     if (existingChapter?.image_urls) {

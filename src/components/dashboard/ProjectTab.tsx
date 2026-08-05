@@ -38,6 +38,7 @@ type Chapter = {
   title?: string;
   image_urls: string[];
   uploaded_at: string;
+  is_published: boolean;
 };
 
 type MangaConfirmation = {
@@ -56,7 +57,7 @@ interface ProjectTabProps {
 }
 
 export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
-  const [view, setView] = useState<"mangaList" | "mangaForm" | "chapterList" | "chapterForm">("mangaList");
+  const [view, setView] = useState<"mangaList" | "mangaForm" | "chapterList" | "chapterForm" | "chapterPreview">("mangaList");
 
   // Data
   const [mangaList, setMangaList] = useState<Manga[]>([]);
@@ -73,7 +74,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
 
   // Forms
   const [mangaForm, setMangaForm] = useState<Partial<Manga>>({ is_published: false });
-  const [chapterForm, setChapterForm] = useState<Partial<Chapter>>({});
+  const [chapterForm, setChapterForm] = useState<Partial<Chapter>>({ is_published: false });
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadStats, setUploadStats] = useState<{ success: number; failed: number } | null>(null);
@@ -95,7 +96,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  // ─── FILTERED DATA ──────────────────────────────────────────
+  // â”€â”€â”€ FILTERED DATA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const filteredManga = useMemo(() => {
     if (!mangaSearch.trim()) return mangaList;
     const q = mangaSearch.toLowerCase();
@@ -127,7 +128,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     [mangaList],
   );
 
-  // ─── MANGA ACTIONS ──────────────────────────────────────────
+  // â”€â”€â”€ MANGA ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const fetchManga = useCallback(async () => {
     setLoading(true);
     try {
@@ -183,7 +184,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     const title = manga?.title || "ini";
     if (
       !confirm(
-        `⚠️ HAPUS PERMANEN?\n\n"${title}"\n\nYang akan dihapus:\n• Data manga dari database\n• Semua chapter terkait\n• Cover image dari R2 storage\n• Semua gambar chapter dari R2\n\nTindakan ini TIDAK BISA dibatalkan!`
+        `âš ï¸ HAPUS PERMANEN?\n\n"${title}"\n\nYang akan dihapus:\nâ€¢ Data manga dari database\nâ€¢ Semua chapter terkait\nâ€¢ Cover image dari R2 storage\nâ€¢ Semua gambar chapter dari R2\n\nTindakan ini TIDAK BISA dibatalkan!`
       )
     )
       return;
@@ -277,7 +278,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     if (selectedManga.size === 0) return;
     if (
       !confirm(
-        `⚠️ HAPUS ${selectedManga.size} MANGA?\n\nSemua manga terpilih, chapter, dan R2 files akan dihapus permanen!`
+        `âš ï¸ HAPUS ${selectedManga.size} MANGA?\n\nSemua manga terpilih, chapter, dan R2 files akan dihapus permanen!`
       )
     )
       return;
@@ -331,7 +332,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
         return;
       }
 
-      // 2. Upload file langsung ke R2 dari browser (bypass Next.js — tidak ada 413)
+      // 2. Upload file langsung ke R2 dari browser (bypass Next.js â€” tidak ada 413)
       const uploadRes = await fetch(presignData.presignedUrl, {
         method: "PUT",
         headers: { "Content-Type": file.type },
@@ -351,7 +352,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     }
   };
 
-  // ─── CHAPTER ACTIONS ────────────────────────────────────────
+  // â”€â”€â”€ CHAPTER ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const fetchChapters = useCallback(
     async (slug: string) => {
       setLoading(true);
@@ -408,12 +409,30 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     }
   };
 
+  const togglePublishChapter = async (chapter: Chapter) => {
+    setLoading(true);
+    try {
+      const token = await getAdminToken();
+      const res = await fetch("/api/admin/project/chapter", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...chapter, is_published: !chapter.is_published }),
+      });
+      if (!res.ok) throw new Error("Gagal mengubah status chapter");
+      await fetchChapters(activeManga!.slug);
+    } catch (err: any) {
+      alert(err.message || "Gagal mengubah status chapter");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const deleteChapter = async (id: string) => {
     const chap = chapterList.find((c) => c.id === id);
     const label = chap ? `Chapter ${chap.chapter_number}` : "ini";
     if (
       !confirm(
-        `⚠️ HAPUS PERMANEN?\n\n"${label}"\n\nYang akan dihapus:\n• Data chapter dari database\n• Semua gambar chapter dari R2 storage\n\nTindakan ini TIDAK BISA dibatalkan!`
+        `âš ï¸ HAPUS PERMANEN?\n\n"${label}"\n\nYang akan dihapus:\nâ€¢ Data chapter dari database\nâ€¢ Semua gambar chapter dari R2 storage\n\nTindakan ini TIDAK BISA dibatalkan!`
       )
     )
       return;
@@ -433,7 +452,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     if (selectedChapters.size === 0) return;
     if (
       !confirm(
-        `⚠️ HAPUS ${selectedChapters.size} CHAPTER?\n\nSemua chapter terpilih dan gambar R2 akan dihapus permanen!`
+        `âš ï¸ HAPUS ${selectedChapters.size} CHAPTER?\n\nSemua chapter terpilih dan gambar R2 akan dihapus permanen!`
       )
     )
       return;
@@ -523,12 +542,12 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           if (!presignRes.ok) {
             failedFiles.push(file.name);
             lastError = presignData?.error || `HTTP ${presignRes.status}`;
-            console.error(`[upload] Gagal presign: ${file.name} — ${lastError}`);
+            console.error(`[upload] Gagal presign: ${file.name} â€” ${lastError}`);
             setUploadProgress(Math.round(((i + 1) / files.length) * 100));
             continue;
           }
 
-          // 2. Upload langsung ke R2 dari browser (tidak melalui Next.js — tidak ada 413)
+          // 2. Upload langsung ke R2 dari browser (tidak melalui Next.js â€” tidak ada 413)
           const uploadRes = await fetch(presignData.presignedUrl, {
             method: "PUT",
             headers: { "Content-Type": file.type },
@@ -538,7 +557,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           if (!uploadRes.ok) {
             failedFiles.push(file.name);
             lastError = `Upload ke storage gagal: HTTP ${uploadRes.status}`;
-            console.error(`[upload] R2 PUT gagal: ${file.name} — ${uploadRes.status}`);
+            console.error(`[upload] R2 PUT gagal: ${file.name} â€” ${uploadRes.status}`);
           } else {
             // 3. Simpan URL publik
             urls.push(presignData.publicUrl);
@@ -576,7 +595,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     }
   };
 
-  // ─── MANGA FORM VIEW ────────────────────────────────────────
+  // â”€â”€â”€ MANGA FORM VIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (view === "mangaForm") {
     return (
       <div className="mx-auto max-w-6xl overflow-hidden rounded-3xl border border-white/[.07] bg-[#111116] shadow-2xl shadow-black/20">
@@ -799,7 +818,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     );
   }
 
-  // ─── CHAPTER LIST VIEW ──────────────────────────────────────
+  // â”€â”€â”€ CHAPTER LIST VIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (view === "chapterList") {
     return (
       <div className="space-y-4">
@@ -815,7 +834,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             <h2 className="font-bold text-base sm:text-lg leading-tight truncate">{activeManga?.title}</h2>
             <p className="text-xs text-white/40">
               {chapterList.length} chapter
-              {bulkMode && selectedChapters.size > 0 && ` • ${selectedChapters.size} dipilih`}
+              {bulkMode && selectedChapters.size > 0 && ` â€¢ ${selectedChapters.size} dipilih`}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -849,7 +868,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 </button>
                 <button
                   onClick={() => {
-                    setChapterForm({ image_urls: [] });
+                    setChapterForm({ image_urls: [], is_published: false });
                     setView("chapterForm");
                   }}
                   className="px-3 py-2 bg-[#7c5cfc] hover:bg-[#6b4ae6] rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1"
@@ -897,13 +916,31 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                     </button>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm">Chapter {chap.chapter_number}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-sm">Chapter {chap.chapter_number}</p>
+                      <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${chap.is_published ? "bg-emerald-400/10 text-emerald-300" : "bg-amber-400/10 text-amber-200"}`}>
+                        {chap.is_published ? "PUBLIK" : "DRAFT"}
+                      </span>
+                    </div>
                     <p className="text-[10px] text-white/40 mt-0.5">
-                      {chap.image_urls.length} gambar{chap.title ? ` • ${chap.title}` : ""}
+                      {chap.image_urls.length} gambar{chap.title ? ` â€¢ ${chap.title}` : ""}
                     </p>
                   </div>
                   {!bulkMode && (
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => { setChapterForm(chap); setView("chapterPreview"); }}
+                        className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center hover:bg-sky-500/20"
+                        title="Preview scroll"
+                      >
+                        <FiEyeIcon size={14} />
+                      </button>
+                      <button
+                        onClick={() => togglePublishChapter(chap)}
+                        className={`rounded-lg px-2.5 h-8 text-[10px] font-bold ${chap.is_published ? "bg-amber-500/10 text-amber-300" : "bg-emerald-500/10 text-emerald-300"}`}
+                      >
+                        {chap.is_published ? "Draft" : "Publish"}
+                      </button>
                       <button
                         onClick={() => {
                           setChapterForm(chap);
@@ -930,7 +967,29 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     );
   }
 
-  // ─── CHAPTER FORM VIEW ──────────────────────────────────────
+  // â”€â”€â”€ CHAPTER FORM VIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  if (view === "chapterPreview") {
+    return (
+      <div className="min-h-screen bg-black">
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 bg-black/90 px-3 py-3 backdrop-blur">
+          <button onClick={() => setView("chapterList")} className="flex items-center gap-2 text-sm font-bold text-white/70 hover:text-white">
+            <FiChevronLeftIcon /> Kembali
+          </button>
+          <div className="text-right">
+            <p className="text-sm font-bold">Chapter {chapterForm.chapter_number}</p>
+            <p className="text-[10px] text-amber-300">Preview draft - {chapterForm.image_urls?.length || 0} halaman</p>
+          </div>
+        </div>
+        <div className="mx-auto max-w-4xl">
+          {chapterForm.image_urls?.map((url, index) => (
+            <img key={url + index} src={url} alt={`Halaman ${index + 1}`} className="block h-auto w-full" loading={index < 2 ? "eager" : "lazy"} />
+          ))}
+          {!chapterForm.image_urls?.length && <p className="p-12 text-center text-sm text-white/40">Belum ada gambar untuk dipreview.</p>}
+        </div>
+      </div>
+    );
+  }
+
   if (view === "chapterForm") {
     return (
       <div className="mx-auto max-w-5xl overflow-hidden rounded-3xl border border-white/[.07] bg-[#111116] shadow-2xl shadow-black/20">
@@ -972,6 +1031,14 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               />
             </div>
           </div>
+
+          <label className="flex items-center justify-between gap-4 rounded-2xl border border-white/[.08] bg-white/[.025] p-4">
+            <div>
+              <p className="text-sm font-bold">Status publikasi</p>
+              <p className="mt-1 text-[10px] text-white/40">Biarkan draft selama pengecekan scroll dan revisi.</p>
+            </div>
+            <input type="checkbox" checked={Boolean(chapterForm.is_published)} onChange={(e) => setChapterForm({ ...chapterForm, is_published: e.target.checked })} className="h-5 w-5 accent-emerald-500" />
+          </label>
 
           <div className="rounded-2xl border border-white/[.08] bg-white/[.025] p-4 sm:p-5">
             <div className="flex items-center justify-between mb-4">
@@ -1088,7 +1155,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 ? "bg-rose-500/10 border border-rose-500/20 text-rose-400"
                 : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
             }`}>
-              <span className="text-base leading-none mt-0.5">{uploadStats.failed > 0 ? "⚠️" : "✅"}</span>
+              <span className="text-base leading-none mt-0.5">{uploadStats.failed > 0 ? "âš ï¸" : "âœ…"}</span>
               <div>
                 <p className="font-semibold">
                   {uploadStats.success} gambar berhasil
@@ -1122,7 +1189,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     );
   }
 
-  // ─── MANGA LIST VIEW (Default) ──────────────────────────────
+  // â”€â”€â”€ MANGA LIST VIEW (Default) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -1178,7 +1245,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             <FiBookOpenIcon className="text-emerald-400" /> Project
           </h2>
           <p className="text-[11px] text-white/40 mt-1">
-            {mangaList.length} manga{bulkMode && selectedManga.size > 0 ? ` • ${selectedManga.size} dipilih` : ""}
+            {mangaList.length} manga{bulkMode && selectedManga.size > 0 ? ` â€¢ ${selectedManga.size} dipilih` : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -1286,7 +1353,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                   </span>
                   <h3 className="line-clamp-2 text-sm font-black leading-tight text-white sm:text-[15px]">{manga.title}</h3>
                   <p className="mt-1 text-[10px] font-medium text-white/65 capitalize">
-                    {manga.type} • {manga.status}
+                    {manga.type} â€¢ {manga.status}
                   </p>
                 </div>
               </div>

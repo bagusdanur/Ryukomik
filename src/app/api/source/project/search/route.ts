@@ -33,6 +33,7 @@ export async function GET(request: Request) {
     const { data: chapters } = await supabaseAdmin
       .from("project_chapters")
       .select("manga_slug, chapter_number")
+      .eq("is_published", true)
       .in("manga_slug", slugs)
       .order("chapter_number", { ascending: false })
       .limit(slugs.length * 10); // Batas aman untuk mendapatkan latest chapter per manga

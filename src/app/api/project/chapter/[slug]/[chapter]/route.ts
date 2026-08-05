@@ -47,11 +47,13 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
         .select("chapter_number, title, image_urls")
         .eq("manga_slug", slug)
         .eq("chapter_number", chapterNum)
+        .eq("is_published", true)
         .single(),
       supabaseAdmin
         .from("project_chapters")
         .select("chapter_number")
         .eq("manga_slug", slug)
+        .eq("is_published", true)
         .gt("chapter_number", chapterNum)
         .order("chapter_number", { ascending: true })
         .limit(1)
@@ -60,6 +62,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
         .from("project_chapters")
         .select("chapter_number")
         .eq("manga_slug", slug)
+        .eq("is_published", true)
         .lt("chapter_number", chapterNum)
         .order("chapter_number", { ascending: false })
         .limit(1)
