@@ -1344,16 +1344,22 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                   </div>
                 )}
                 <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-[#0d0d12] via-[#0d0d12]/15 to-transparent p-3.5">
-                  <span className={`absolute right-2.5 top-2.5 rounded-full px-2 py-1 text-[9px] font-black tracking-wide shadow-lg ${
-                    manga.is_published
-                      ? "bg-emerald-500/90 text-white"
-                      : "bg-amber-400/90 text-black"
-                  }`}>
-                    {manga.is_published ? "PUBLIK" : "DRAFT"}
-                  </span>
+                  <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5">
+                    <span className="flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-sm px-2 py-1 text-[9px] font-bold text-white/80">
+                      <FiEyeIcon size={10} />
+                      {(manga.view_count || 0).toLocaleString("id-ID")}
+                    </span>
+                    <span className={`rounded-full px-2 py-1 text-[9px] font-black tracking-wide shadow-lg ${
+                      manga.is_published
+                        ? "bg-emerald-500/90 text-white"
+                        : "bg-amber-400/90 text-black"
+                    }`}>
+                      {manga.is_published ? "PUBLIK" : "DRAFT"}
+                    </span>
+                  </div>
                   <h3 className="line-clamp-2 text-sm font-black leading-tight text-white sm:text-[15px]">{manga.title}</h3>
                   <p className="mt-1 text-[10px] font-medium text-white/65 capitalize">
-                    {manga.type} â€¢ {manga.status}
+                    {manga.type} • {manga.status}
                   </p>
                 </div>
               </div>

@@ -170,10 +170,16 @@ export function MyStatsSection({ stats }: { stats: Profile }) {
           className={`text-xs font-semibold px-2 py-1 rounded-full ${
             stats.role === "admin"
               ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-              : "bg-white/10 text-white/55 border border-white/10"
+              : stats.role === "staff"
+                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                : "bg-white/10 text-white/55 border border-white/10"
           }`}
         >
-          {stats.role === "admin" ? "Admin" : "Member"}
+          {stats.role === "admin"
+            ? "Admin"
+            : stats.role === "staff"
+              ? "Staff"
+              : "Member"}
         </span>
       </div>
     </Section>

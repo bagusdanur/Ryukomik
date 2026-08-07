@@ -18,6 +18,7 @@ type DashboardUser = {
   avatar_url?: string | null;
   premium_until?: string | null;
   is_premium?: boolean;
+  role?: string | null;
   level?: number | null;
   xp?: number | null;
 };
@@ -36,6 +37,7 @@ type UsersTabProps = {
   setUserPage: (page: number | ((page: number) => number)) => void;
   givePremium: (userId: string, days?: number) => void;
   removePremium: (userId: string) => void;
+  setUserRole: (userId: string, role: string | null) => void;
 };
 
 type AvatarProps = {
@@ -94,10 +96,12 @@ export default function UsersTab({
   setUserPage,
   givePremium,
   removePremium,
+  setUserRole,
 }: UsersTabProps) {
   const [now] = useState(() => Date.now());
   const [premiumTarget, setPremiumTarget] = useState<DashboardUser | null>(null);
   const [customDays, setCustomDays] = useState(30);
+  const [roleTarget, setRoleTarget] = useState<DashboardUser | null>(null);
 
   function openPremiumModal(user: DashboardUser, days = 30) {
     setCustomDays(days);
@@ -158,6 +162,8 @@ export default function UsersTab({
           { key: "all", label: "Semua" },
           { key: "premium", label: "Premium" },
           { key: "reguler", label: "Reguler" },
+          { key: "staff", label: "Staff" },
+          { key: "admin", label: "Admin" },
         ].map((item) => (
           <button
             key={item.key}
@@ -211,56 +217,83 @@ export default function UsersTab({
               >
                 <Avatar name={user.username} url={user.avatar_url} size={38} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold text-white/85 truncate">
-                    {user.username ?? "-"}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[13px] font-semibold text-white/85 truncate">
+                      {user.username ?? "-"}
+                    </p>
+                    {user.role === "admin" && (
+                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase">
+                        Admin
+                      </span>
+                    )}
+                    {user.role === "staff" && (
+                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase">
+                        Staff
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[10px] text-white/30">
                     Lv {user.level ?? 0} - XP{" "}
                     {(user.xp ?? 0).toLocaleString("id-ID")}
                   </p>
                 </div>
-                {user.is_premium ? (
-                  <div className="flex flex-col items-end gap-1 min-w-[80px]">
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                        isActivePremium
-                          ? "bg-amber-500/10 text-amber-400"
-                          : "bg-gray-500/20 text-gray-400"
-                      }`}
-                    >
-                      <RiVipCrownLine size={9} />
-                      {isActivePremium ? "Aktif" : "Expired"}
-                    </span>
-                    {isActivePremium && daysLeft > 0 && (
-                      <span className="text-[9px] font-bold text-[#7d5fff] bg-[#7d5fff]/10 px-1.5 py-0.5 rounded-full">
-                        {daysLeft} hari lagi
+                <div className="flex flex-col items-end gap-1">
+                  {user.is_premium ? (
+                    <div className="flex flex-col items-end gap-1">
+                      <span
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                          isActivePremium
+                            ? "bg-amber-500/10 text-amber-400"
+                            : "bg-gray-500/20 text-gray-400"
+                        }`}
+                      >
+                        <RiVipCrownLine size={9} />
+                        {isActivePremium ? "Aktif" : "Expired"}
                       </span>
-                    )}
-                    <div className="flex gap-1 self-end">
-                      <button
-                        onClick={() => openPremiumModal(user, 7)}
-                        className="w-7 h-7 rounded-lg bg-[#7c5cfc]/10 text-[#a78bfa] flex items-center justify-center hover:bg-[#7c5cfc]/20 transition-colors"
-                        title="Tambah hari premium"
-                      >
-                        <FiPlus size={12} />
-                      </button>
-                      <button
-                        onClick={() => removePremium(user.id)}
-                        className="w-7 h-7 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/20 transition-colors"
-                        title="Hapus premium"
-                      >
-                        <FiTrash2 size={12} />
-                      </button>
+                      {isActivePremium && daysLeft > 0 && (
+                        <span className="text-[9px] font-bold text-[#7d5fff] bg-[#7d5fff]/10 px-1.5 py-0.5 rounded-full">
+                          {daysLeft} hari lagi
+                        </span>
+                      )}
                     </div>
+                  ) : (
+                    <button
+                      onClick={() => openPremiumModal(user)}
+                      className="flex items-center gap-1 text-[10px] font-semibold bg-[#7c5cfc]/15 text-[#a78bfa] px-2.5 py-1 rounded-full hover:bg-[#7c5cfc]/25 transition-colors"
+                    >
+                      <FiPlus size={10} /> Premium
+                    </button>
+                  )}
+                  <div className="flex gap-1">
+                    {user.role !== "admin" && (
+                      <button
+                        onClick={() => setRoleTarget(user)}
+                        className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center hover:bg-emerald-500/20 transition-colors"
+                        title="Ubah role"
+                      >
+                        <FiUsers size={11} />
+                      </button>
+                    )}
+                    {user.is_premium && (
+                      <>
+                        <button
+                          onClick={() => openPremiumModal(user, 7)}
+                          className="w-7 h-7 rounded-lg bg-[#7c5cfc]/10 text-[#a78bfa] flex items-center justify-center hover:bg-[#7c5cfc]/20 transition-colors"
+                          title="Tambah hari premium"
+                        >
+                          <FiPlus size={12} />
+                        </button>
+                        <button
+                          onClick={() => removePremium(user.id)}
+                          className="w-7 h-7 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center hover:bg-red-500/20 transition-colors"
+                          title="Hapus premium"
+                        >
+                          <FiTrash2 size={12} />
+                        </button>
+                      </>
+                    )}
                   </div>
-                ) : (
-                  <button
-                    onClick={() => openPremiumModal(user)}
-                    className="flex items-center gap-1 text-[10px] font-semibold bg-[#7c5cfc]/15 text-[#a78bfa] px-2.5 py-1 rounded-full hover:bg-[#7c5cfc]/25 transition-colors"
-                  >
-                    <FiPlus size={10} /> Premium
-                  </button>
-                )}
+                </div>
               </div>
             );
           })
@@ -350,6 +383,68 @@ export default function UsersTab({
                 Tambahkan
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {roleTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 py-4"
+          onClick={() => setRoleTarget(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-white/[.08] bg-[#13131a] p-4 text-white shadow-2xl shadow-black/40"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4">
+              <p className="text-[15px] font-bold text-white">Ubah Role</p>
+              <p className="mt-1 text-[11px] text-white/35">
+                {roleTarget.username || "User"} — role saat ini:{" "}
+                <span className="font-semibold text-white/60">
+                  {roleTarget.role === "admin"
+                    ? "Admin"
+                    : roleTarget.role === "staff"
+                      ? "Staff"
+                      : "Member"}
+                </span>
+              </p>
+            </div>
+
+            <div className="mb-4 grid grid-cols-3 gap-2">
+              {[
+                { key: null, label: "Member", active: "border-white/45 bg-white/10 text-white/70" },
+                { key: "staff", label: "Staff", active: "border-emerald-400/50 bg-emerald-400/20 text-emerald-400" },
+                { key: "admin", label: "Admin", active: "border-rose-400/50 bg-rose-400/20 text-rose-400" },
+              ].map((item) => {
+                const isActive =
+                  roleTarget.role === item.key || (!roleTarget.role && !item.key);
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      setUserRole(roleTarget.id, item.key);
+                      setRoleTarget(null);
+                    }}
+                    className={`rounded-xl border py-2.5 text-xs font-bold transition ${
+                      isActive
+                        ? item.active
+                        : "border-white/[.08] bg-white/[.04] text-white/45 hover:text-white/70"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setRoleTarget(null)}
+              className="w-full rounded-xl border border-white/[.08] bg-white/[.04] py-2.5 text-xs font-bold text-white/55"
+            >
+              Batal
+            </button>
           </div>
         </div>
       )}

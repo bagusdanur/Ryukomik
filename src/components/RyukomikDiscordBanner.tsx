@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { FaBolt, FaDiscord, FaPen, FaPalette, FaTelegramPlane, FaUsers } from "react-icons/fa";
-import { FiChevronLeft, FiChevronRight, FiShield, FiUsers as FiUsersIcon } from "react-icons/fi";
+import { useState } from "react";
+import { FaBolt, FaDiscord, FaPen, FaPalette, FaUsers } from "react-icons/fa";
 
 const STEPS = [
   { n: "01", text: 'Klik tombol "Buat Tiket Pendaftaran" di channel #staff-rekrutmen' },
@@ -20,63 +19,36 @@ const POSITIONS = [
 ];
 
 const DISCORD_INVITE = "https://discord.gg/Sf8pPRq4aj";
-const ANON_RPG_URL = "https://t.me/anonrpg_bot?start=ryukomik_home";
 
 export default function RyukomikStaffRecruitmentBanner({
   className = "",
 }) {
   const [showSteps, setShowSteps] = useState(false);
-  const [activeSlide, setActiveSlide] = useState(0);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setActiveSlide((current) => (current + 1) % 2);
-    }, 8000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   return (
     <div className={`px-3 pb-1 pt-2 sm:px-6 ${className}`}>
       <div className="relative overflow-hidden rounded-2xl border border-[var(--accent)]/25 bg-[var(--surface-1)] transition-colors hover:border-[var(--accent)]/45">
-        <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${activeSlide * 100}%)` }}>
-          <div className="rk-card group relative flex w-full shrink-0 items-center gap-2.5 overflow-hidden px-3 py-3 sm:px-4">
-            <FaDiscord className="pointer-events-none absolute -right-3 -top-4 h-24 w-24 text-[var(--accent)] opacity-[0.08]" />
-            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/25 bg-[var(--accent)]/10 text-[var(--accent-2)]">
-              <FaDiscord className="h-4 w-4" />
-            </div>
-            <div className="relative min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.12em] text-[var(--accent-2)]"><FaBolt className="text-[8px]" /> Urgent recruitment</span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-[var(--accent)]/25 bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-black text-[var(--accent-2)]"><FaUsers className="text-[8px]" /> Semua posisi dibayar</span>
-              </div>
-              <p className="mt-0.5 truncate text-[12px] font-extrabold text-white sm:text-[13px]">Ryukomik butuh Translator & Typesetter</p>
-              <div className="mt-1 flex flex-wrap items-center gap-1">
-                {POSITIONS.map((position) => {
-                  const Icon = position.icon;
-                  return <span key={position.role} className="inline-flex items-center gap-1 rounded-full bg-white/[0.045] px-1.5 py-0.5 text-[8.5px] font-semibold text-white/65"><Icon className="text-[9px] text-[var(--accent-2)]" />{position.role}</span>;
-                })}
-                <button type="button" onClick={() => setShowSteps(true)} className="px-1 text-[9px] font-bold text-[var(--accent-2)] hover:underline">Lihat alur</button>
-              </div>
-            </div>
-            <a href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer" className="rk-btn-primary relative shrink-0 whitespace-nowrap rounded-xl px-2.5 py-2 text-[10px] font-bold text-white transition-transform active:scale-95 sm:px-3 sm:text-[11px]">Gabung</a>
+        <div className="rk-card group relative flex w-full items-center gap-2.5 overflow-hidden px-3 py-3 sm:px-4">
+          <FaDiscord className="pointer-events-none absolute -right-3 -top-4 h-24 w-24 text-[var(--accent)] opacity-[0.08]" />
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/25 bg-[var(--accent)]/10 text-[var(--accent-2)]">
+            <FaDiscord className="h-4 w-4" />
           </div>
-
-          <a href={ANON_RPG_URL} target="_blank" rel="noopener noreferrer" className="group relative flex w-full shrink-0 items-center gap-2.5 overflow-hidden bg-[linear-gradient(110deg,#101028,#1b1040_55%,#092333)] px-3 py-3 sm:px-4">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_83%_0%,rgba(77,215,255,.25),transparent_35%),radial-gradient(circle_at_70%_100%,rgba(154,99,255,.27),transparent_42%)]" />
-            <FaTelegramPlane className="pointer-events-none absolute -right-3 -top-5 h-24 w-24 text-cyan-200 opacity-[0.1]" />
-            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-200/35 bg-cyan-300/15 text-cyan-100 shadow-[0_0_24px_rgba(103,232,249,.16)]"><FaTelegramPlane className="h-5 w-5" /></div>
-            <div className="relative min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-1.5"><span className="text-[9px] font-black uppercase tracking-[0.12em] text-cyan-200">Telegram game</span><span className="rounded-full border border-violet-200/25 bg-violet-300/10 px-1.5 py-0.5 text-[8px] font-black text-violet-100">ANON RPG</span></div>
-              <p className="mt-0.5 text-[12px] font-extrabold text-white sm:text-[13px]">Ngobrol anonim, lalu taklukkan dungeon berdua</p>
-              <div className="mt-1 flex flex-wrap gap-1 text-[8.5px] font-semibold text-white/70"><span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-1.5 py-0.5"><FiShield className="text-cyan-200" /> Identitas aman</span><span className="inline-flex items-center gap-1 rounded-full bg-black/15 px-1.5 py-0.5"><FiUsersIcon className="text-violet-200" /> Co-op turn-based</span></div>
+          <div className="relative min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.12em] text-[var(--accent-2)]"><FaBolt className="text-[8px]" /> Urgent recruitment</span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-[var(--accent)]/25 bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-black text-[var(--accent-2)]"><FaUsers className="text-[8px]" /> Semua posisi dibayar</span>
             </div>
-            <span className="relative inline-flex shrink-0 items-center gap-1 rounded-xl bg-cyan-300 px-2.5 py-2 text-[10px] font-black text-slate-950 shadow-lg shadow-cyan-300/15 transition-transform group-hover:scale-105 sm:px-3 sm:text-[11px]"><FaTelegramPlane /> Main</span>
-          </a>
+            <p className="mt-0.5 truncate text-[12px] font-extrabold text-white sm:text-[13px]">Ryukomik butuh Translator & Typesetter</p>
+            <div className="mt-1 flex flex-wrap items-center gap-1">
+              {POSITIONS.map((position) => {
+                const Icon = position.icon;
+                return <span key={position.role} className="inline-flex items-center gap-1 rounded-full bg-white/[0.045] px-1.5 py-0.5 text-[8.5px] font-semibold text-white/65"><Icon className="text-[9px] text-[var(--accent-2)]" />{position.role}</span>;
+              })}
+              <button type="button" onClick={() => setShowSteps(true)} className="px-1 text-[9px] font-bold text-[var(--accent-2)] hover:underline">Lihat alur</button>
+            </div>
+          </div>
+          <a href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer" className="rk-btn-primary relative shrink-0 whitespace-nowrap rounded-xl px-2.5 py-2 text-[10px] font-bold text-white transition-transform active:scale-95 sm:px-3 sm:text-[11px]">Gabung</a>
         </div>
-
-        <button type="button" aria-label="Slide sebelumnya" onClick={() => setActiveSlide((current) => (current + 1) % 2)} className="absolute bottom-1.5 right-8 z-10 grid h-5 w-5 place-items-center rounded-full bg-black/25 text-white/60 hover:bg-black/45"><FiChevronLeft size={12} /></button>
-        <button type="button" aria-label="Slide berikutnya" onClick={() => setActiveSlide((current) => (current + 1) % 2)} className="absolute bottom-1.5 right-2 z-10 grid h-5 w-5 place-items-center rounded-full bg-black/25 text-white/60 hover:bg-black/45"><FiChevronRight size={12} /></button>
-        <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1">{[0, 1].map((index) => <button key={index} type="button" aria-label={`Buka slide ${index + 1}`} onClick={() => setActiveSlide(index)} className={`h-1.5 rounded-full transition-all ${activeSlide === index ? "w-4 bg-white" : "w-1.5 bg-white/40"}`} />)}</div>
       </div>
 
       {showSteps && (

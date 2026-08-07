@@ -24,6 +24,13 @@ export default function UserBadges({
           ADMIN
         </span>
       )}
+      {role === "staff" && (
+        <span
+          className={`inline-flex items-center rounded-full border border-emerald-400/25 bg-emerald-400/12 px-2 py-0.5 text-[9px] font-black uppercase leading-none tracking-widest text-emerald-400 ${className}`}
+        >
+          STAFF
+        </span>
+      )}
       {isPremium && <VipBadge className={className} />}
       <XpLeaderboardBadge rank={xpRank} className={className} />
       <TitleRushWinnerBadge rank={titleRushRank} className={className} />

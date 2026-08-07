@@ -2,6 +2,7 @@
 
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
@@ -69,6 +70,7 @@ type DashboardUser = {
   username?: string | null;
   avatar_url?: string | null;
   is_premium?: boolean;
+  role?: string | null;
   level?: number | null;
   xp?: number | null;
   created_at?: string | null;
@@ -150,11 +152,17 @@ type ActivityToday = {
 
 // ── helpers ────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { user: authUser, loading: authLoading } = useSupabaseUser();
   const [authed, setAuthed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const [page, setPage] = useState<DashboardPage>("dashboard");
+  const [page, setPage] = useState<DashboardPage>(() => {
+    const urlPage = searchParams.get("page");
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "yuki-ai"];
+    return validPages.includes(urlPage as DashboardPage) ? (urlPage as DashboardPage) : "dashboard";
+  });
   const [premiumCodes, setPremiumCodes] = useState<PremiumCode[]>([]);
   const [codeDays, setCodeDays] = useState(30);
   const [codesLoading, setCodesLoading] = useState(false);
@@ -296,6 +304,19 @@ export default function AdminDashboard() {
   useEffect(() => {
     init();
   }, [init]);
+
+  // Sync page state with URL on back/forward navigation
+  useEffect(() => {
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "yuki-ai"];
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlPage = params.get("page");
+      const resolved = validPages.includes(urlPage as DashboardPage) ? (urlPage as DashboardPage) : "dashboard";
+      setPage(resolved);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const fetchComments = useCallback(async () => {
     setCommentsLoading(true);
@@ -997,6 +1018,33 @@ export default function AdminDashboard() {
     }
   }
 
+  async function setUserRole(userId: string, role: string | null) {
+    try {
+      const token = await getAdminToken();
+      if (!token) return;
+
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId, role }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        alert(`Error: ${json?.error || "Gagal mengubah role."}`);
+        return;
+      }
+      clearCachedProfile(userId);
+      await Promise.all([fetchUsers(), fetchStats()]);
+      const label = role === "admin" ? "Admin" : role === "staff" ? "Staff" : "Member";
+      alert(`✅ Role diubah ke ${label}.`);
+    } catch {
+      alert("❌ Gagal mengubah role.");
+    }
+  }
+
   // ── premium codes ─────────────────────────────────────────────────────
   const fetchPremiumCodes = useCallback(async () => {
     setCodesLoading(true);
@@ -1085,6 +1133,14 @@ export default function AdminDashboard() {
       nextPage === "yuki-ai"
     ) {
       setPage(nextPage);
+      const params = new URLSearchParams(searchParams.toString());
+      if (nextPage === "dashboard") {
+        params.delete("page");
+      } else {
+        params.set("page", nextPage);
+      }
+      const qs = params.toString();
+      router.push(`/dashboard${qs ? `?${qs}` : ""}`, { scroll: false });
     }
   };
   const navItems: Array<{
@@ -1217,6 +1273,7 @@ export default function AdminDashboard() {
             setUserPage={setUserPage}
             givePremium={givePremium}
             removePremium={removePremium}
+            setUserRole={setUserRole}
           />
         )}
         {/* ══ CODES PAGE ══ */}

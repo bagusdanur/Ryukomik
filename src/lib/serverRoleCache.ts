@@ -12,6 +12,7 @@ type RoleRow = {
 export type CachedRole = {
   role: string | null;
   isAdmin: boolean;
+  isStaff: boolean;
 };
 
 export type AuthenticatedRole = CachedRole & {
@@ -41,6 +42,7 @@ export async function getCachedRole(userId: string): Promise<CachedRole> {
   return {
     role,
     isAdmin: role === "admin",
+    isStaff: role === "staff",
   };
 }
 

@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
     const { data, count, error } = await supabaseAdmin
       .from("project_manga")
-      .select("id, slug, title, cover_url, type, status, author, genres, is_published, view_count, created_at, updated_at", { count: "exact" })
+      .select("id, slug, title, cover_url, description, type, status, author, genres, is_published, view_count, created_at, updated_at", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
