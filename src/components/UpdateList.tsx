@@ -41,7 +41,7 @@ export default function UpdateList({ list = [] }: { list?: UpdateListItem[] }) {
         <button
           type="button"
           onClick={() => {
-            setPendingSource("komiku");
+            setPendingSource("ikiru");
             router.push("/terbaru");
           }}
           className="rk-chip rounded-full px-3 py-1.5 text-xs font-bold hover:border-cyan-200/40 hover:text-cyan-100"
