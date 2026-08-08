@@ -40,6 +40,7 @@ const LISTING_CACHE_PREFIX = "rk_terbaru_listing_v3";
 const GLOBAL_STATE_CACHE_KEY = "rk_terbaru_global_state_v1";
 const LISTING_CACHE_TTL = 5 * 60 * 1000;
 import { VALID_SOURCE_IDS, DEFAULT_SOURCE } from "@/config/sources";
+import { getAndClearPendingSource } from "@/store/pendingSource";
 const VALID_SOURCES = VALID_SOURCE_IDS;
 
 async function fetchJson<T = unknown>(url: string, options: FetchOptions = {}): Promise<T> {
@@ -302,14 +303,11 @@ export default function TerbaruPage({
   // ✅ RESTORE GLOBAL STATE ON MOUNT
   useEffect(() => {
     try {
-      // 1. URL param ?source=X takes highest priority (from home page "View All")
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlSource = urlParams.get("source");
-      if (urlSource && VALID_SOURCES.has(urlSource as SourceId)) {
-        localStorage.setItem("source", urlSource);
+      // 1. Pending source from home page "View All" buttons (highest priority)
+      const pending = getAndClearPendingSource();
+      if (pending && VALID_SOURCES.has(pending as SourceId)) {
+        localStorage.setItem("source", pending);
         sessionStorage.removeItem(GLOBAL_STATE_CACHE_KEY);
-        // Clean URL without reload
-        window.history.replaceState({}, "", window.location.pathname);
         return; // Skip sessionStorage restore — init useEffect will handle source switch
       }
 

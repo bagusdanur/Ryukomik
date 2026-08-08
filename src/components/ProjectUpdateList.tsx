@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import SeriesCard from "@/components/SeriesCard";
+import { setPendingSource } from "@/store/pendingSource";
 import type { UpdateItem } from "@/types/content";
 
 const typeBadge = (typeGenre?: string) => {
@@ -31,7 +32,10 @@ export default function ProjectUpdateList({
         </div>
         <button
           type="button"
-          onClick={() => router.push("/terbaru?source=project")}
+          onClick={() => {
+            setPendingSource("project");
+            router.push("/terbaru");
+          }}
           className="rk-chip rounded-full px-3 py-1.5 text-xs font-bold hover:border-violet-200/40 hover:text-violet-100"
         >
           View All

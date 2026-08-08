@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import SeriesCard from "@/components/SeriesCard";
+import { setPendingSource } from "@/store/pendingSource";
 
 type UpdateListItem = {
   link: string;
@@ -39,7 +40,10 @@ export default function UpdateList({ list = [] }: { list?: UpdateListItem[] }) {
         </div>
         <button
           type="button"
-          onClick={() => router.push("/terbaru?source=komiku")}
+          onClick={() => {
+            setPendingSource("komiku");
+            router.push("/terbaru");
+          }}
           className="rk-chip rounded-full px-3 py-1.5 text-xs font-bold hover:border-cyan-200/40 hover:text-cyan-100"
         >
           View All
