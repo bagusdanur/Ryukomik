@@ -302,6 +302,18 @@ export default function TerbaruPage({
   // ✅ RESTORE GLOBAL STATE ON MOUNT
   useEffect(() => {
     try {
+      // 1. URL param ?source=X takes highest priority (from home page "View All")
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlSource = urlParams.get("source");
+      if (urlSource && VALID_SOURCES.has(urlSource as SourceId)) {
+        localStorage.setItem("source", urlSource);
+        sessionStorage.removeItem(GLOBAL_STATE_CACHE_KEY);
+        // Clean URL without reload
+        window.history.replaceState({}, "", window.location.pathname);
+        return; // Skip sessionStorage restore — init useEffect will handle source switch
+      }
+
+      // 2. Fall back to sessionStorage cache
       const cachedState = sessionStorage.getItem(GLOBAL_STATE_CACHE_KEY);
       if (cachedState) {
         const parsed = JSON.parse(cachedState);

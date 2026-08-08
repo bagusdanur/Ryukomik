@@ -336,6 +336,8 @@ export default function ReaderImages({
 
   return (
     <>
+      <RecruitmentBanner />
+
       <div className={containerClass}>
         {images.map((src, i) => (
           <ReaderImage

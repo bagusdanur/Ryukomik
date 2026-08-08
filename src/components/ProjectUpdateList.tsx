@@ -1,3 +1,6 @@
+"use client";
+
+import { useRouter } from "next/navigation";
 import SeriesCard from "@/components/SeriesCard";
 import type { UpdateItem } from "@/types/content";
 
@@ -15,6 +18,8 @@ export default function ProjectUpdateList({
 }: {
   list?: UpdateItem[];
 }) {
+  const router = useRouter();
+
   return (
     <section className="mt-6 px-3">
       <div className="mb-4 flex items-center justify-between">
@@ -24,12 +29,13 @@ export default function ProjectUpdateList({
           </p>
           <h2 className="rk-section-title text-xl font-black">Project Update</h2>
         </div>
-        <a
-          href="/terbaru"
+        <button
+          type="button"
+          onClick={() => router.push("/terbaru?source=project")}
           className="rk-chip rounded-full px-3 py-1.5 text-xs font-bold hover:border-violet-200/40 hover:text-violet-100"
         >
           View All
-        </a>
+        </button>
       </div>
 
       {list.length === 0 ? (
