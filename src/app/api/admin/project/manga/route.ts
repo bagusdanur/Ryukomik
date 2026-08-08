@@ -7,6 +7,7 @@ import { enqueueProjectDiscordEvent } from "@/lib/projectDiscordEvents";
 
 function revalidateProjectContent(slug?: string) {
   revalidateTag("source-project-pustaka", { expire: 0 });
+  revalidateTag("home-banner", { expire: 0 });
   revalidatePath("/", "page");
   revalidatePath("/api/project/pustaka", "page");
   if (slug) {

@@ -8,6 +8,7 @@ import { enqueueProjectDiscordEvent } from "@/lib/projectDiscordEvents";
 function revalidateProjectContent(mangaSlug: string) {
   revalidateTag("source-project-pustaka", { expire: 0 });
   revalidateTag(`project-detail:${mangaSlug}`, { expire: 0 });
+  revalidateTag("home-banner", { expire: 0 });
   revalidatePath("/", "page");
   revalidatePath(`/komik/project/${mangaSlug}`, "page");
   revalidatePath("/api/project/pustaka", "page");

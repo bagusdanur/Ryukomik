@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
 interface BannerItem {
@@ -10,8 +11,10 @@ interface BannerItem {
   slug: string;
 }
 
-export async function getBannerKomiku(): Promise<BannerItem[]> {
-  try {
+export const BANNER_CACHE_SECONDS = 600;
+
+const getCachedBannerKomiku = unstable_cache(
+  async (): Promise<BannerItem[]> => {
     const { data: mangaList, error } = await supabaseAdmin
       .from("project_manga")
       .select("slug, title, cover_url, type, status, genres")
@@ -50,6 +53,17 @@ export async function getBannerKomiku(): Promise<BannerItem[]> {
         : "",
       slug: item.slug,
     }));
+  },
+  ["home-banner-v1"],
+  {
+    revalidate: BANNER_CACHE_SECONDS,
+    tags: ["home-banner"],
+  },
+);
+
+export async function getBannerKomiku(): Promise<BannerItem[]> {
+  try {
+    return await getCachedBannerKomiku();
   } catch (e) {
     console.error("getBannerKomiku error:", e);
     return [];

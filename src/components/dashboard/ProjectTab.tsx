@@ -14,7 +14,60 @@ import {
   FiCheck as FiCheckIcon,
   FiX as FiXIcon,
   FiEye as FiEyeIcon,
+  FiDownloadCloud as FiDownloadCloudIcon,
 } from "react-icons/fi";
+import { MANGA_SOURCES } from "@/config/sources";
+
+function parseSourceInput(
+  raw: string,
+  fallbackSource: string,
+  mode: "detail" | "chapter"
+): { source: string; slug: string } | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const url = new URL(trimmed);
+      const parts = url.pathname.split("/").filter(Boolean);
+      const prefix = mode === "detail" ? "komik" : "chapter";
+      if (parts[0] === prefix && parts.length >= 3) {
+        return { source: parts[1], slug: parts.slice(2).join("/") };
+      }
+    } catch {
+      // Bukan URL valid — perlakukan sebagai slug mentah di bawah
+    }
+  }
+
+  return { source: fallbackSource, slug: trimmed.replace(/^\/+|\/+$/g, "") };
+}
+
+type SourceSearchItem = { slug: string; title: string; image?: string };
+type SourceChapterItem = { slug: string; label: string };
+
+function extractSourceItemSlug(item: Record<string, unknown>): string {
+  if (item.slug) return String(item.slug);
+  const link = String(item.detail_link || item.link || "");
+  const parts = link.split("/").filter(Boolean);
+  return parts.at(-1) || parts.at(-2) || "";
+}
+
+function normalizeSourceSearchItems(items: unknown, sourceId: string): SourceSearchItem[] {
+  if (!Array.isArray(items)) return [];
+  const prefix = `${sourceId}-`;
+  return items
+    .filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null)
+    .map((item) => {
+      let slug = extractSourceItemSlug(item);
+      if (slug.startsWith(prefix)) slug = slug.slice(prefix.length);
+      return {
+        slug,
+        title: String(item.title || slug),
+        image: item.image ? String(item.image) : undefined,
+      };
+    })
+    .filter((item) => item.slug);
+}
 
 type Manga = {
   id: string;
@@ -80,6 +133,27 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadStats, setUploadStats] = useState<{ success: number; failed: number } | null>(null);
 
+  // Import dari source
+  const [importCoverSource, setImportCoverSource] = useState(MANGA_SOURCES[0]?.id || "komiku");
+  const [importCoverSlug, setImportCoverSlug] = useState("");
+  const [importingCover, setImportingCover] = useState(false);
+  const [importChapterSource, setImportChapterSource] = useState(MANGA_SOURCES[0]?.id || "komiku");
+  const [importChapterSlug, setImportChapterSlug] = useState("");
+  const [importingChapterImages, setImportingChapterImages] = useState(false);
+
+  // Search dropdown untuk import cover
+  const [coverSearchFocused, setCoverSearchFocused] = useState(false);
+  const [coverSearchResults, setCoverSearchResults] = useState<SourceSearchItem[]>([]);
+  const [coverSearchLoading, setCoverSearchLoading] = useState(false);
+
+  // Search dropdown + pemilihan chapter untuk import gambar chapter
+  const [chapterSearchFocused, setChapterSearchFocused] = useState(false);
+  const [chapterSearchResults, setChapterSearchResults] = useState<SourceSearchItem[]>([]);
+  const [chapterSearchLoading, setChapterSearchLoading] = useState(false);
+  const [chapterPickerManga, setChapterPickerManga] = useState<{ slug: string; title: string } | null>(null);
+  const [chapterPickerList, setChapterPickerList] = useState<SourceChapterItem[]>([]);
+  const [chapterPickerLoading, setChapterPickerLoading] = useState(false);
+
   // Drag and drop
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
@@ -128,6 +202,98 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     () => mangaList.reduce((total, manga) => total + (Number(manga.view_count) || 0), 0),
     [mangaList],
   );
+
+  // â”€â”€â”€ SEARCH DARI SOURCE (autocomplete pengganti input slug manual) â”€â”€â”€
+  useEffect(() => {
+    const query = importCoverSlug.trim();
+    if (!coverSearchFocused || query.length < 2 || /^https?:\/\//i.test(query)) {
+      setCoverSearchResults([]);
+      setCoverSearchLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setCoverSearchLoading(true);
+      try {
+        const apiSource = importCoverSource === "kiryuu" ? "komikid" : importCoverSource;
+        const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/search?q=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        });
+        const json = await res.json();
+        const items = Array.isArray(json) ? json : json?.data;
+        setCoverSearchResults(normalizeSourceSearchItems(items, importCoverSource));
+      } catch {
+        if (!controller.signal.aborted) setCoverSearchResults([]);
+      } finally {
+        if (!controller.signal.aborted) setCoverSearchLoading(false);
+      }
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [importCoverSlug, importCoverSource, coverSearchFocused]);
+
+  useEffect(() => {
+    const query = importChapterSlug.trim();
+    if (!chapterSearchFocused || chapterPickerManga || query.length < 2 || /^https?:\/\//i.test(query)) {
+      setChapterSearchResults([]);
+      setChapterSearchLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setChapterSearchLoading(true);
+      try {
+        const apiSource = importChapterSource === "kiryuu" ? "komikid" : importChapterSource;
+        const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/search?q=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        });
+        const json = await res.json();
+        const items = Array.isArray(json) ? json : json?.data;
+        setChapterSearchResults(normalizeSourceSearchItems(items, importChapterSource));
+      } catch {
+        if (!controller.signal.aborted) setChapterSearchResults([]);
+      } finally {
+        if (!controller.signal.aborted) setChapterSearchLoading(false);
+      }
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [importChapterSlug, importChapterSource, chapterSearchFocused, chapterPickerManga]);
+
+  const pickChapterManga = async (item: SourceSearchItem) => {
+    setChapterSearchResults([]);
+    setChapterSearchFocused(false);
+    setChapterPickerManga({ slug: item.slug, title: item.title });
+    setChapterPickerList([]);
+    setChapterPickerLoading(true);
+    try {
+      const apiSource = importChapterSource === "kiryuu" ? "komikid" : importChapterSource;
+      const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/detail/${encodeURIComponent(item.slug)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const detail = json?.data ?? (json?.success ? json : null);
+      const chapters = Array.isArray(detail?.chapters) ? detail.chapters : [];
+      const list: SourceChapterItem[] = chapters
+        .map((c: Record<string, unknown>) => ({
+          slug: String(c.slug || ""),
+          label: c.chapter_number
+            ? `Chapter ${c.chapter_number}`
+            : String(c.chapter || c.title || c.slug || ""),
+        }))
+        .filter((c: SourceChapterItem) => c.slug);
+      setChapterPickerList(list);
+      if (list.length === 0) alert("Manga ini belum punya chapter di source.");
+    } catch (err: any) {
+      alert(`Gagal ambil daftar chapter: ${err.message || "Terjadi kesalahan"}`);
+      setChapterPickerManga(null);
+    } finally {
+      setChapterPickerLoading(false);
+    }
+  };
 
   // â”€â”€â”€ MANGA ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const fetchManga = useCallback(async () => {
@@ -374,6 +540,43 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     }
   };
 
+  const importCoverFromSource = async (directSlug?: string) => {
+    const parsed = directSlug
+      ? { source: importCoverSource, slug: directSlug }
+      : parseSourceInput(importCoverSlug, importCoverSource, "detail");
+    if (!parsed || !parsed.slug) {
+      alert("Cari judul atau isi slug/link source dulu");
+      return;
+    }
+
+    setImportingCover(true);
+    try {
+      const apiSource = parsed.source === "kiryuu" ? "komikid" : parsed.source;
+      const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/detail/${encodeURIComponent(parsed.slug)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const detail = json?.data ?? (json?.success ? json : null);
+      const cover = detail?.thumbnail || detail?.image;
+      if (!cover || typeof cover !== "string") throw new Error("Source tidak mengembalikan gambar cover");
+      setMangaForm((prev) => ({ ...prev, cover_url: cover }));
+    } catch (err: any) {
+      alert(`Gagal import cover: ${err.message || "Terjadi kesalahan"}`);
+    } finally {
+      setImportingCover(false);
+    }
+  };
+
+  const pickCoverResult = (item: SourceSearchItem) => {
+    setCoverSearchResults([]);
+    setCoverSearchFocused(false);
+    setImportCoverSlug(item.slug);
+    if (item.image) {
+      setMangaForm((prev) => ({ ...prev, cover_url: item.image! }));
+    } else {
+      importCoverFromSource(item.slug);
+    }
+  };
+
   // â”€â”€â”€ CHAPTER ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const fetchChapters = useCallback(
     async (slug: string) => {
@@ -617,6 +820,46 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     }
   };
 
+  const importChapterImagesFromSource = async (directSlug?: string) => {
+    if (!chapterForm.chapter_number) {
+      alert("Isi nomor chapter dulu sebelum import gambar!");
+      return;
+    }
+    const parsed = directSlug
+      ? { source: importChapterSource, slug: directSlug }
+      : parseSourceInput(importChapterSlug, importChapterSource, "chapter");
+    if (!parsed || !parsed.slug) {
+      alert("Cari chapter atau isi slug/link source dulu");
+      return;
+    }
+
+    setImportingChapterImages(true);
+    try {
+      const apiSource = parsed.source === "kiryuu" ? "komikid" : parsed.source;
+      const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/chapter/${parsed.slug}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (!json?.success) throw new Error("Chapter tidak ditemukan di source");
+      const images: string[] = Array.isArray(json.images)
+        ? json.images.filter((u: unknown): u is string => typeof u === "string" && /^https?:\/\//.test(u))
+        : [];
+      if (images.length === 0) throw new Error("Tidak ada gambar ditemukan di chapter ini");
+      setChapterForm((prev) => ({ ...prev, image_urls: [...(prev.image_urls || []), ...images] }));
+      setImportChapterSlug("");
+      setChapterPickerManga(null);
+      setChapterPickerList([]);
+    } catch (err: any) {
+      alert(`Gagal import gambar: ${err.message || "Terjadi kesalahan"}`);
+    } finally {
+      setImportingChapterImages(false);
+    }
+  };
+
+  const pickChapterSlug = (slug: string) => {
+    setImportChapterSlug(slug);
+    importChapterImagesFromSource(slug);
+  };
+
   // â”€â”€â”€ MANGA FORM VIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (view === "mangaForm") {
     return (
@@ -690,6 +933,70 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7c5cfc]/50 transition-colors"
                 placeholder="https://..."
               />
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/[.03] p-3 space-y-2">
+              <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider block">
+                Import Cover dari Source
+              </label>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <select
+                  value={importCoverSource}
+                  onChange={(e) => setImportCoverSource(e.target.value)}
+                  className="bg-[#13131a] border border-white/10 rounded-lg px-2 py-2.5 text-xs text-white outline-none focus:border-[#7c5cfc]/50 sm:w-24"
+                >
+                  {MANGA_SOURCES.map((s) => (
+                    <option key={s.id} value={s.id}>{s.id}</option>
+                  ))}
+                </select>
+                <div className="relative flex-1 min-w-0">
+                  <input
+                    value={importCoverSlug}
+                    onChange={(e) => setImportCoverSlug(e.target.value)}
+                    onFocus={() => setCoverSearchFocused(true)}
+                    onBlur={() => setTimeout(() => setCoverSearchFocused(false), 150)}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-2.5 text-xs outline-none focus:border-[#7c5cfc]/50"
+                    placeholder="Cari judul, atau tempel slug/link..."
+                  />
+                  {coverSearchFocused && (coverSearchLoading || coverSearchResults.length > 0) && (
+                    <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-white/10 bg-[#17171f] shadow-xl shadow-black/40">
+                      {coverSearchLoading && (
+                        <div className="px-3 py-3 text-xs text-white/40 flex items-center gap-2">
+                          <div className="w-3 h-3 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                          Mencari...
+                        </div>
+                      )}
+                      {!coverSearchLoading && coverSearchResults.map((item) => (
+                        <button
+                          key={item.slug}
+                          type="button"
+                          onClick={() => pickCoverResult(item)}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-white/[.06] transition-colors min-h-[44px]"
+                        >
+                          {item.image ? (
+                            <img src={item.image} alt="" className="h-9 w-7 flex-shrink-0 rounded object-cover bg-white/10" />
+                          ) : (
+                            <div className="h-9 w-7 flex-shrink-0 rounded bg-white/10" />
+                          )}
+                          <span className="text-xs text-white/80 truncate">{item.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => importCoverFromSource()}
+                disabled={importingCover || !importCoverSlug.trim()}
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-white/[.06] px-3 py-2.5 text-xs font-bold text-white/80 transition hover:bg-white/[.1] disabled:opacity-50"
+              >
+                {importingCover ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <FiDownloadCloudIcon size={14} />
+                )}
+                {importingCover ? "Mengambil..." : "Ambil Cover"}
+              </button>
             </div>
           </div>
 
@@ -1077,6 +1384,117 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 {uploading ? `${uploadProgress}%` : <><FiUploadCloudIcon /> Pilih</>}
               </button>
               <input type="file" multiple accept="image/*" ref={fileInputRef} className="hidden" onChange={uploadChapterImages} />
+            </div>
+
+            <div className="mb-4 rounded-xl border border-white/10 bg-white/[.03] p-3 space-y-2">
+              <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider block">
+                Import Gambar dari Source
+              </label>
+
+              {chapterPickerManga ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="min-w-0 flex-1 truncate text-xs text-white/70">
+                      <span className="text-white/40">Manga: </span>{chapterPickerManga.title}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setChapterPickerManga(null); setChapterPickerList([]); }}
+                      className="flex-shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold text-white/40 hover:bg-white/[.06] hover:text-white/70"
+                    >
+                      Ganti
+                    </button>
+                  </div>
+                  {chapterPickerLoading ? (
+                    <div className="flex items-center gap-2 px-1 py-2 text-xs text-white/40">
+                      <div className="w-3 h-3 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                      Memuat daftar chapter...
+                    </div>
+                  ) : (
+                    <div className="max-h-48 overflow-y-auto rounded-lg border border-white/10 divide-y divide-white/5">
+                      {chapterPickerList.map((c) => (
+                        <button
+                          key={c.slug}
+                          type="button"
+                          onClick={() => pickChapterSlug(c.slug)}
+                          disabled={importingChapterImages}
+                          className="flex w-full min-h-[44px] items-center justify-between px-3 py-2.5 text-left text-xs text-white/80 transition-colors hover:bg-white/[.06] disabled:opacity-50"
+                        >
+                          {c.label}
+                          {importingChapterImages && importChapterSlug === c.slug ? (
+                            <div className="w-3 h-3 flex-shrink-0 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <FiDownloadCloudIcon size={12} className="flex-shrink-0 opacity-40" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <select
+                      value={importChapterSource}
+                      onChange={(e) => setImportChapterSource(e.target.value)}
+                      className="bg-[#13131a] border border-white/10 rounded-lg px-2 py-2.5 text-xs text-white outline-none focus:border-[#7c5cfc]/50 sm:w-24"
+                    >
+                      {MANGA_SOURCES.map((s) => (
+                        <option key={s.id} value={s.id}>{s.id}</option>
+                      ))}
+                    </select>
+                    <div className="relative flex-1 min-w-0">
+                      <input
+                        value={importChapterSlug}
+                        onChange={(e) => setImportChapterSlug(e.target.value)}
+                        onFocus={() => setChapterSearchFocused(true)}
+                        onBlur={() => setTimeout(() => setChapterSearchFocused(false), 150)}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-2.5 text-xs outline-none focus:border-[#7c5cfc]/50"
+                        placeholder="Cari judul, atau tempel link chapter..."
+                      />
+                      {chapterSearchFocused && (chapterSearchLoading || chapterSearchResults.length > 0) && (
+                        <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-white/10 bg-[#17171f] shadow-xl shadow-black/40">
+                          {chapterSearchLoading && (
+                            <div className="px-3 py-3 text-xs text-white/40 flex items-center gap-2">
+                              <div className="w-3 h-3 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                              Mencari...
+                            </div>
+                          )}
+                          {!chapterSearchLoading && chapterSearchResults.map((item) => (
+                            <button
+                              key={item.slug}
+                              type="button"
+                              onClick={() => pickChapterManga(item)}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-white/[.06] transition-colors min-h-[44px]"
+                            >
+                              {item.image ? (
+                                <img src={item.image} alt="" className="h-9 w-7 flex-shrink-0 rounded object-cover bg-white/10" />
+                              ) : (
+                                <div className="h-9 w-7 flex-shrink-0 rounded bg-white/10" />
+                              )}
+                              <span className="text-xs text-white/80 truncate">{item.title}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => importChapterImagesFromSource()}
+                      disabled={importingChapterImages || !importChapterSlug.trim() || !chapterForm.chapter_number}
+                      className="flex items-center justify-center gap-2 rounded-lg bg-white/[.06] px-3 py-2.5 text-xs font-bold text-white/80 transition hover:bg-white/[.1] disabled:opacity-50 whitespace-nowrap"
+                    >
+                      {importingChapterImages ? (
+                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <FiDownloadCloudIcon size={14} />
+                      )}
+                      {importingChapterImages ? "Mengambil..." : "Ambil"}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-white/30">Cari judul untuk pilih chapter otomatis, atau tempel slug/link chapter langsung. Gambar hotlink dari source asli.</p>
+                </>
+              )}
             </div>
 
             {uploading && (
