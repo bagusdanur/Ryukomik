@@ -1,4 +1,4 @@
-import type { Dict } from "@/types/common";
+import { supabaseAdmin } from "@/lib/supabaseServer";
 
 interface BannerItem {
   title: string;
@@ -11,39 +11,45 @@ interface BannerItem {
 }
 
 export async function getBannerKomiku(): Promise<BannerItem[]> {
-  const slugs = [
-    "you-like-someone-with-that-face",
-    "the-old-man-vows-revenge-against-his-demon-wife",
-  ];
-
-  const convert = (detail: Dict = {}, slug = ""): BannerItem => ({
-    title: String(detail.title || "").replace("Komik ", ""),
-    image: String(detail.thumbnail || ""),
-    genre: Array.isArray(detail.genres) ? detail.genres.join(", ") : "",
-    type: String(detail.type || ""),
-    status: String(detail.status || ""),
-    chapter: String(detail.chapter || ""),
-    slug,
-  });
-
   try {
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-      "https://ryukomik.my.id";
+    const { data: mangaList, error } = await supabaseAdmin
+      .from("project_manga")
+      .select("slug, title, cover_url, type, status, genres")
+      .eq("is_spotlight", true)
+      .eq("is_published", true)
+      .order("updated_at", { ascending: false });
 
-    const results = await Promise.all(
-      slugs.map(async (slug) => {
-        const res = await fetch(
-          `${siteUrl}/api/project/${encodeURIComponent(slug)}`,
-          { next: { revalidate: 3600, tags: [`project-detail:${slug}`] } }
-        );
-        if (!res.ok) throw new Error(`Project banner gagal dimuat: ${slug}`);
-        const json = await res.json();
-        return convert((json as Dict).data as Dict, slug);
-      })
-    );
+    if (error) throw error;
+    if (!mangaList || mangaList.length === 0) return [];
 
-    return results;
+    // Get latest chapter for each spotlight manga
+    const slugs = mangaList.map((m) => m.slug);
+    const { data: allChapters } = await supabaseAdmin
+      .from("project_chapters")
+      .select("manga_slug, chapter_number")
+      .eq("is_published", true)
+      .in("manga_slug", slugs)
+      .order("chapter_number", { ascending: false })
+      .limit(slugs.length * 3);
+
+    const latestChapterMap = new Map<string, number>();
+    for (const ch of allChapters || []) {
+      if (!latestChapterMap.has(ch.manga_slug)) {
+        latestChapterMap.set(ch.manga_slug, ch.chapter_number);
+      }
+    }
+
+    return mangaList.map((item) => ({
+      title: item.title,
+      image: item.cover_url || "",
+      genre: Array.isArray(item.genres) ? item.genres.join(", ") : "",
+      type: item.type || "",
+      status: item.status || "",
+      chapter: latestChapterMap.has(item.slug)
+        ? `Chapter ${latestChapterMap.get(item.slug)}`
+        : "",
+      slug: item.slug,
+    }));
   } catch (e) {
     console.error("getBannerKomiku error:", e);
     return [];

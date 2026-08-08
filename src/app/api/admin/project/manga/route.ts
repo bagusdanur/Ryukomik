@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
     const { data, count, error } = await supabaseAdmin
       .from("project_manga")
-      .select("id, slug, title, cover_url, description, type, status, author, genres, is_published, view_count, created_at, updated_at", { count: "exact" })
+      .select("id, slug, title, cover_url, description, type, status, author, genres, is_published, is_spotlight, view_count, created_at, updated_at", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -87,14 +87,14 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { id, slug, title, cover_url, description, author, status, type, genres, is_published } = body;
+    const { id, slug, title, cover_url, description, author, status, type, genres, is_published, is_spotlight } = body;
 
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
     const update = Object.fromEntries(
-      Object.entries({ slug, title, cover_url, description, author, status, type, genres, is_published })
+      Object.entries({ slug, title, cover_url, description, author, status, type, genres, is_published, is_spotlight })
         .filter(([, value]) => value !== undefined),
     );
 
@@ -104,7 +104,7 @@ export async function PATCH(request: Request) {
 
     const { data: existingManga, error: existingMangaError } = await supabaseAdmin
       .from("project_manga")
-      .select("slug,title,cover_url,type,status,genres,is_published")
+      .select("slug,title,cover_url,type,status,genres,is_published,is_spotlight")
       .eq("id", id)
       .single();
 
@@ -138,6 +138,11 @@ export async function PATCH(request: Request) {
     revalidateProjectContent(existingManga.slug);
     if (slug && slug !== existingManga.slug) {
       revalidateProjectContent(slug);
+    }
+
+    // Revalidate banner when spotlight status changes
+    if (is_spotlight !== undefined && existingManga.is_spotlight !== data.is_spotlight) {
+      revalidatePath("/", "page");
     }
 
     return NextResponse.json({ data });
