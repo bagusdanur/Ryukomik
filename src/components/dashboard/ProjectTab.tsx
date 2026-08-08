@@ -1367,11 +1367,18 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 )}
                 <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-[#0d0d12] via-[#0d0d12]/15 to-transparent p-3.5">
                   <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5">
-                    {manga.is_spotlight && (
-                      <span className="rounded-full bg-yellow-500/90 px-2 py-1 text-[9px] font-black text-black shadow-lg">
-                        ★ SPOTLIGHT
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); toggleSpotlight(manga); }}
+                      className={`flex items-center justify-center rounded-full w-6 h-6 text-[11px] transition ${
+                        manga.is_spotlight
+                          ? "bg-yellow-500/90 text-black shadow-lg"
+                          : "bg-black/50 text-white/40 hover:text-yellow-300"
+                      }`}
+                      title={manga.is_spotlight ? "Hapus dari spotlight" : "Jadikan spotlight"}
+                    >
+                      ★
+                    </button>
                     <span className="flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-sm px-2 py-1 text-[9px] font-bold text-white/80">
                       <FiEyeIcon size={10} />
                       {(manga.view_count || 0).toLocaleString("id-ID")}
@@ -1391,32 +1398,12 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 </div>
               </div>
               {!bulkMode && (
-                <div className="grid grid-cols-3 gap-2 border-t border-white/[.05] bg-[#101015] p-2.5">
-                  <button
-                    onClick={() => toggleSpotlight(manga)}
-                    className={`flex items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-[11px] font-black transition ${
-                      manga.is_spotlight
-                        ? "bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30"
-                        : "bg-white/[.04] text-white/40 hover:bg-white/[.08] hover:text-white/60"
-                    }`}
-                    title={manga.is_spotlight ? "Hapus dari spotlight" : "Jadikan spotlight"}
-                  >
-                    ★ {manga.is_spotlight ? "Spotlight" : "Spotlight"}
-                  </button>
+                <div className="grid grid-cols-2 gap-2 border-t border-white/[.05] bg-[#101015] p-2.5">
                   <button
                     onClick={() => openChapters(manga)}
                     className="rounded-xl bg-emerald-400/[.1] px-3 py-2.5 text-[11px] font-black text-emerald-300 transition hover:bg-emerald-400/[.18]"
                   >
-                    Chapter
-                  </button>
-                  <button
-                    onClick={() => {
-                      setMangaForm(manga);
-                      setView("mangaForm");
-                    }}
-                    className="flex items-center justify-center gap-1.5 rounded-xl border border-white/[.07] bg-white/[.04] px-3 py-2.5 text-[11px] font-bold text-white/60 transition hover:bg-white/[.1] hover:text-white"
-                  >
-                    <FiEdit2Icon size={13} /> Edit
+                    Kelola chapter
                   </button>
                   <button
                     onClick={() => setMangaConfirmation({ action: manga.is_published ? "draft" : "publish", manga })}
@@ -1426,7 +1413,16 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                         : "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
                     }`}
                   >
-                    {manga.is_published ? "Draft" : "Publish"}
+                    {manga.is_published ? "Jadikan draft" : "Publikasikan"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMangaForm(manga);
+                      setView("mangaForm");
+                    }}
+                    className="flex items-center justify-center gap-1.5 rounded-xl border border-white/[.07] bg-white/[.04] px-3 py-2.5 text-[11px] font-bold text-white/60 transition hover:bg-white/[.1] hover:text-white"
+                  >
+                    <FiEdit2Icon size={13} /> Edit
                   </button>
                   <button
                     onClick={() => setMangaConfirmation({ action: "delete", manga })}
