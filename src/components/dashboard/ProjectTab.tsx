@@ -1520,9 +1520,14 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 </div>
 
                 {autoImportComparing && (
-                  <div className="flex items-center gap-2 text-xs text-white/40">
-                    <div className="w-3 h-3 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-                    Membandingkan chapter...
+                  <div className="flex items-center gap-3 rounded-xl border border-emerald-400/20 bg-emerald-400/[.06] px-3 py-3">
+                    <div className="w-5 h-5 flex-shrink-0 border-2 border-emerald-400/30 border-t-emerald-300 rounded-full animate-spin" />
+                    <div>
+                      <p className="text-xs font-bold text-emerald-200">Mengambil daftar chapter dari source...</p>
+                      <p className="text-[10px] text-white/40 mt-0.5">
+                        Sedang jalan, bukan macet — untuk manga dengan banyak chapter ini bisa makan waktu beberapa detik.
+                      </p>
+                    </div>
                   </div>
                 )}
 
