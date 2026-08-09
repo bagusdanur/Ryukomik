@@ -44,6 +44,17 @@ function parseSourceInput(
 
 type SourceSearchItem = { slug: string; title: string; image?: string };
 type SourceChapterItem = { slug: string; label: string };
+type AutoImportCandidate = { number: number; slug: string; label: string };
+type AutoImportDiff = { missing: AutoImportCandidate[]; existingCount: number; unparsedCount: number };
+type AutoImportProgress = { done: number; total: number; success: number; failed: number; currentLabel: string };
+
+function extractChapterNumber(raw: unknown): number | null {
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  const match = String(raw ?? "").match(/(\d+(?:\.\d+)?)/);
+  if (!match) return null;
+  const num = parseFloat(match[1]);
+  return Number.isFinite(num) ? num : null;
+}
 
 function extractSourceItemSlug(item: Record<string, unknown>): string {
   if (item.slug) return String(item.slug);
@@ -154,6 +165,21 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const [chapterPickerList, setChapterPickerList] = useState<SourceChapterItem[]>([]);
   const [chapterPickerLoading, setChapterPickerLoading] = useState(false);
 
+  // Auto-import sisa chapter dari source (bulk, dari Chapter List view)
+  const [autoImportOpen, setAutoImportOpen] = useState(false);
+  const [autoImportSource, setAutoImportSource] = useState(MANGA_SOURCES[0]?.id || "komiku");
+  const [autoImportSlug, setAutoImportSlug] = useState("");
+  const [autoImportSearchFocused, setAutoImportSearchFocused] = useState(false);
+  const [autoImportSearchResults, setAutoImportSearchResults] = useState<SourceSearchItem[]>([]);
+  const [autoImportSearchLoading, setAutoImportSearchLoading] = useState(false);
+  const [autoImportManga, setAutoImportManga] = useState<{ slug: string; title: string } | null>(null);
+  const [autoImportComparing, setAutoImportComparing] = useState(false);
+  const [autoImportDiff, setAutoImportDiff] = useState<AutoImportDiff | null>(null);
+  const [autoImportRunning, setAutoImportRunning] = useState(false);
+  const [autoImportProgress, setAutoImportProgress] = useState<AutoImportProgress | null>(null);
+  const [autoImportSummary, setAutoImportSummary] = useState<{ success: number; failed: number } | null>(null);
+  const autoImportAbortRef = useRef(false);
+
   // Drag and drop
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
@@ -263,6 +289,192 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       controller.abort();
     };
   }, [importChapterSlug, importChapterSource, chapterSearchFocused, chapterPickerManga]);
+
+  useEffect(() => {
+    const query = autoImportSlug.trim();
+    if (!autoImportSearchFocused || autoImportManga || query.length < 2 || /^https?:\/\//i.test(query)) {
+      setAutoImportSearchResults([]);
+      setAutoImportSearchLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setAutoImportSearchLoading(true);
+      try {
+        const apiSource = autoImportSource === "kiryuu" ? "komikid" : autoImportSource;
+        const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/search?q=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        });
+        const json = await res.json();
+        const items = Array.isArray(json) ? json : json?.data;
+        setAutoImportSearchResults(normalizeSourceSearchItems(items, autoImportSource));
+      } catch {
+        if (!controller.signal.aborted) setAutoImportSearchResults([]);
+      } finally {
+        if (!controller.signal.aborted) setAutoImportSearchLoading(false);
+      }
+    }, 400);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [autoImportSlug, autoImportSource, autoImportSearchFocused, autoImportManga]);
+
+  const pickAutoImportManga = async (item: SourceSearchItem) => {
+    setAutoImportSearchResults([]);
+    setAutoImportSearchFocused(false);
+    setAutoImportManga({ slug: item.slug, title: item.title });
+    setAutoImportDiff(null);
+    setAutoImportSummary(null);
+    setAutoImportComparing(true);
+    try {
+      const apiSource = autoImportSource === "kiryuu" ? "komikid" : autoImportSource;
+      const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/detail/${encodeURIComponent(item.slug)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const detail = json?.data ?? (json?.success ? json : null);
+      const chapters = Array.isArray(detail?.chapters) ? detail.chapters : [];
+
+      const existingNumbers = new Set(chapterList.map((c) => c.chapter_number));
+      const seen = new Set<number>();
+      const missing: AutoImportCandidate[] = [];
+      let unparsedCount = 0;
+
+      for (const raw of chapters as Record<string, unknown>[]) {
+        const slug = String(raw.slug || "");
+        if (!slug) continue;
+        const number = extractChapterNumber(raw.chapter_number ?? raw.chapter ?? raw.title ?? slug);
+        if (number === null) {
+          unparsedCount += 1;
+          continue;
+        }
+        if (seen.has(number)) continue; // source kadang punya entry duplikat
+        seen.add(number);
+        if (existingNumbers.has(number)) continue;
+        const label = raw.chapter_number
+          ? `Chapter ${raw.chapter_number}`
+          : String(raw.chapter || raw.title || slug);
+        missing.push({ number, slug, label });
+      }
+
+      missing.sort((a, b) => a.number - b.number);
+      setAutoImportDiff({ missing, existingCount: chapterList.length, unparsedCount });
+      if (chapters.length === 0) alert("Manga ini belum punya chapter di source.");
+    } catch (err: any) {
+      alert(`Gagal ambil daftar chapter: ${err.message || "Terjadi kesalahan"}`);
+      setAutoImportManga(null);
+    } finally {
+      setAutoImportComparing(false);
+    }
+  };
+
+  const closeAutoImport = () => {
+    if (autoImportRunning) return;
+    setAutoImportOpen(false);
+    setAutoImportManga(null);
+    setAutoImportDiff(null);
+    setAutoImportSlug("");
+    setAutoImportSummary(null);
+    setAutoImportProgress(null);
+  };
+
+  const resetAutoImportTarget = () => {
+    setAutoImportManga(null);
+    setAutoImportDiff(null);
+    setAutoImportSummary(null);
+    setAutoImportSlug("");
+  };
+
+  const stopAutoImport = () => {
+    autoImportAbortRef.current = true;
+  };
+
+  const runAutoImport = async () => {
+    if (!activeManga || !autoImportDiff?.missing.length) return;
+    const items = autoImportDiff.missing;
+    const apiSource = autoImportSource === "kiryuu" ? "komikid" : autoImportSource;
+
+    autoImportAbortRef.current = false;
+    setAutoImportRunning(true);
+    setAutoImportSummary(null);
+    setAutoImportProgress({ done: 0, total: items.length, success: 0, failed: 0, currentLabel: items[0]?.label || "" });
+
+    const token = await getAdminToken();
+    let success = 0;
+    let failed = 0;
+
+    for (let i = 0; i < items.length; i++) {
+      if (autoImportAbortRef.current) break;
+      const item = items[i];
+      setAutoImportProgress({ done: i, total: items.length, success, failed, currentLabel: item.label });
+
+      try {
+        const chapRes = await fetch(`https://api.ryukomik.web.id/${apiSource}/chapter/${item.slug}`);
+        if (!chapRes.ok) throw new Error(`HTTP ${chapRes.status}`);
+        const chapJson = await chapRes.json();
+        if (!chapJson?.success) throw new Error("Chapter tidak ditemukan di source");
+        const images: string[] = Array.isArray(chapJson.images)
+          ? chapJson.images.filter((u: unknown): u is string => typeof u === "string" && /^https?:\/\//.test(u))
+          : [];
+        if (images.length === 0) throw new Error("Tidak ada gambar ditemukan");
+
+        const saveRes = await fetch("/api/admin/project/chapter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            manga_slug: activeManga.slug,
+            chapter_number: item.number,
+            image_urls: images,
+            is_published: false,
+          }),
+        });
+        if (!saveRes.ok) {
+          const errJson = await saveRes.json().catch(() => ({}));
+          throw new Error(errJson?.error || `HTTP ${saveRes.status}`);
+        }
+        success += 1;
+      } catch (err) {
+        failed += 1;
+        console.error(`[auto-import] Gagal chapter ${item.number} (${item.slug})`, err);
+      }
+
+      setAutoImportProgress({ done: i + 1, total: items.length, success, failed, currentLabel: item.label });
+
+      if (i < items.length - 1 && !autoImportAbortRef.current) {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+      }
+    }
+
+    setAutoImportSummary({ success, failed });
+    setAutoImportRunning(false);
+    await fetchChapters(activeManga.slug);
+  };
+
+  const bulkPublishChapters = async () => {
+    if (selectedChapters.size === 0) return;
+    if (!confirm(`Publish ${selectedChapters.size} chapter terpilih?`)) return;
+    setLoading(true);
+    try {
+      const token = await getAdminToken();
+      const targets = chapterList.filter((c) => selectedChapters.has(c.id));
+      await Promise.all(
+        targets.map((chap) =>
+          fetch("/api/admin/project/chapter", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ ...chap, is_published: true }),
+          })
+        )
+      );
+      setSelectedChapters(new Set());
+      setBulkMode(false);
+      await fetchChapters(activeManga!.slug);
+    } catch (err) {
+      alert("Gagal publish chapter");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const pickChapterManga = async (item: SourceSearchItem) => {
     setChapterSearchResults([]);
@@ -1170,6 +1382,13 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             {bulkMode ? (
               <>
                 <button
+                  onClick={bulkPublishChapters}
+                  disabled={selectedChapters.size === 0}
+                  className="px-3 py-2 bg-emerald-500/20 text-emerald-300 rounded-xl text-xs font-bold disabled:opacity-50"
+                >
+                  Publish ({selectedChapters.size})
+                </button>
+                <button
                   onClick={bulkDeleteChapters}
                   disabled={selectedChapters.size === 0}
                   className="px-3 py-2 bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold disabled:opacity-50"
@@ -1196,6 +1415,13 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                   <FiCheckIcon size={14} />
                 </button>
                 <button
+                  onClick={() => setAutoImportOpen((v) => !v)}
+                  className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1 ${autoImportOpen ? "bg-emerald-400/20 text-emerald-300" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
+                  title="Auto-import sisa chapter dari source"
+                >
+                  <FiDownloadCloudIcon /> <span className="hidden sm:inline">Auto-Import</span>
+                </button>
+                <button
                   onClick={() => {
                     setChapterForm({ image_urls: [], is_published: false });
                     setView("chapterForm");
@@ -1208,6 +1434,162 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             )}
           </div>
         </div>
+
+        {/* Panel Auto-Import Sisa Chapter dari Source */}
+        {autoImportOpen && (
+          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[.04] p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-emerald-200">Auto-Import Sisa Chapter</p>
+                <p className="text-[10px] text-white/40 mt-0.5">
+                  Bandingkan chapter project ini dengan source, lalu import semua yang belum ada (masuk sebagai draft).
+                </p>
+              </div>
+              <button
+                onClick={closeAutoImport}
+                disabled={autoImportRunning}
+                className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/50 hover:text-white disabled:opacity-30"
+              >
+                <FiXIcon size={14} />
+              </button>
+            </div>
+
+            {!autoImportManga && (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <select
+                  value={autoImportSource}
+                  onChange={(e) => setAutoImportSource(e.target.value)}
+                  className="bg-[#13131a] border border-white/10 rounded-lg px-2 py-2.5 text-xs text-white outline-none focus:border-emerald-400/50 sm:w-24"
+                >
+                  {MANGA_SOURCES.map((s) => (
+                    <option key={s.id} value={s.id}>{s.id}</option>
+                  ))}
+                </select>
+                <div className="relative flex-1 min-w-0">
+                  <input
+                    value={autoImportSlug}
+                    onChange={(e) => setAutoImportSlug(e.target.value)}
+                    onFocus={() => setAutoImportSearchFocused(true)}
+                    onBlur={() => setTimeout(() => setAutoImportSearchFocused(false), 150)}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-2.5 text-xs outline-none focus:border-emerald-400/50"
+                    placeholder="Cari judul manga di source ini..."
+                  />
+                  {autoImportSearchFocused && (autoImportSearchLoading || autoImportSearchResults.length > 0) && (
+                    <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-white/10 bg-[#17171f] shadow-xl shadow-black/40">
+                      {autoImportSearchLoading && (
+                        <div className="px-3 py-3 text-xs text-white/40 flex items-center gap-2">
+                          <div className="w-3 h-3 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                          Mencari...
+                        </div>
+                      )}
+                      {!autoImportSearchLoading && autoImportSearchResults.map((item) => (
+                        <button
+                          key={item.slug}
+                          type="button"
+                          onClick={() => pickAutoImportManga(item)}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-white/[.06] transition-colors min-h-[44px]"
+                        >
+                          {item.image ? (
+                            <img src={item.image} alt="" className="h-9 w-7 flex-shrink-0 rounded object-cover bg-white/10" />
+                          ) : (
+                            <div className="h-9 w-7 flex-shrink-0 rounded bg-white/10" />
+                          )}
+                          <span className="text-xs text-white/80 truncate">{item.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {autoImportManga && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="min-w-0 flex-1 truncate text-xs text-white/70">
+                    <span className="text-white/40">Source: </span>{autoImportManga.title}
+                  </p>
+                  {!autoImportRunning && (
+                    <button
+                      onClick={resetAutoImportTarget}
+                      className="flex-shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold text-white/40 hover:bg-white/[.06] hover:text-white/70"
+                    >
+                      Ganti
+                    </button>
+                  )}
+                </div>
+
+                {autoImportComparing && (
+                  <div className="flex items-center gap-2 text-xs text-white/40">
+                    <div className="w-3 h-3 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                    Membandingkan chapter...
+                  </div>
+                )}
+
+                {autoImportDiff && !autoImportRunning && !autoImportSummary && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-white/60">
+                      <span className="font-bold text-emerald-300">{autoImportDiff.missing.length} chapter baru</span> ditemukan
+                      {autoImportDiff.missing.length > 0 && (
+                        <> (Chapter {autoImportDiff.missing[0].number}–{autoImportDiff.missing[autoImportDiff.missing.length - 1].number})</>
+                      )}
+                      {" "}&bull; {autoImportDiff.existingCount} sudah ada di project
+                      {autoImportDiff.unparsedCount > 0 && <> &bull; {autoImportDiff.unparsedCount} tidak bisa diproses</>}
+                    </p>
+                    <button
+                      onClick={runAutoImport}
+                      disabled={autoImportDiff.missing.length === 0}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-2.5 text-xs font-bold text-black transition hover:bg-emerald-300 disabled:opacity-40 disabled:hover:bg-emerald-400"
+                    >
+                      <FiDownloadCloudIcon size={14} />
+                      {autoImportDiff.missing.length === 0 ? "Tidak ada chapter baru" : `Import ${autoImportDiff.missing.length} Chapter`}
+                    </button>
+                  </div>
+                )}
+
+                {autoImportProgress && (autoImportRunning || autoImportSummary) && (
+                  <div className="space-y-2">
+                    <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-400 transition-all"
+                        style={{ width: `${autoImportProgress.total ? Math.round((autoImportProgress.done / autoImportProgress.total) * 100) : 0}%` }}
+                      />
+                    </div>
+                    <p className="text-[11px] text-white/50">
+                      {autoImportProgress.done}/{autoImportProgress.total}
+                      {" "}&bull; berhasil {autoImportProgress.success} &bull; gagal {autoImportProgress.failed}
+                      {autoImportRunning && <> &bull; proses: {autoImportProgress.currentLabel}</>}
+                    </p>
+                    {autoImportRunning ? (
+                      <button
+                        onClick={stopAutoImport}
+                        className="w-full rounded-xl bg-rose-500/20 px-4 py-2.5 text-xs font-bold text-rose-300 hover:bg-rose-500/30"
+                      >
+                        Stop
+                      </button>
+                    ) : (
+                      autoImportSummary && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-white/70">
+                            Selesai &bull; <span className="text-emerald-300 font-bold">{autoImportSummary.success} berhasil</span>
+                            {autoImportSummary.failed > 0 && <span className="text-rose-300 font-bold"> &bull; {autoImportSummary.failed} gagal</span>}
+                            {" "}&mdash; masuk sebagai draft, review lalu publish lewat mode pilih.
+                          </p>
+                          <button
+                            onClick={closeAutoImport}
+                            className="w-full rounded-xl bg-white/[.06] px-4 py-2.5 text-xs font-bold text-white/80 hover:bg-white/[.1]"
+                          >
+                            Tutup
+                          </button>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Search */}
         <div className="relative">
