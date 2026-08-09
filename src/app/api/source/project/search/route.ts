@@ -9,6 +9,21 @@ export async function GET(request: Request) {
     const limit = 20;
     const offset = (page - 1) * limit;
 
+    // Cek total dulu -- Supabase/PostgREST bisa balikin HTTP 416 (body gak
+    // konsisten, gak bisa diandalkan lewat error.code) kalau range yang
+    // diminta melebihi total baris yang ada.
+    let countQuery = supabaseAdmin
+      .from("project_manga")
+      .select("*", { count: "exact", head: true })
+      .eq("is_published", true);
+    if (q) countQuery = countQuery.ilike("title", `%${q}%`);
+
+    const { count: totalCount, error: countError } = await countQuery;
+    if (countError) throw countError;
+    if (offset >= (totalCount || 0)) {
+      return NextResponse.json({ data: [], success: true });
+    }
+
     // Query 1: Search manga — kolom spesifik, TANPA JOIN
     let query = supabaseAdmin
       .from("project_manga")
@@ -22,13 +37,7 @@ export async function GET(request: Request) {
     }
 
     const { data: projects, error } = await query;
-    if (error) {
-      // Offset yang diminta melebihi total data yang ada -> anggap halaman kosong.
-      if (error.code === "PGRST103") {
-        return NextResponse.json({ data: [], success: true });
-      }
-      throw error;
-    }
+    if (error) throw error;
 
     if (!projects || projects.length === 0) {
       return NextResponse.json({ data: [], success: true });

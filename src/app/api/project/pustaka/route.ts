@@ -30,37 +30,42 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get("limit") || "30", 10);
     const offset = (page - 1) * limit;
 
-    // Ambil manga + total count
-    const { data: mangaList, count, error } = await supabaseAdmin
+    // Cek dulu total datanya sebelum query ber-range. Supabase/PostgREST
+    // balikin HTTP 416 (dengan body yang gak konsisten bentuknya, gak bisa
+    // diandalkan buat deteksi lewat error.code) kalau offset yang diminta
+    // melebihi total baris yang ada -- jadi range-nya jangan sampai
+    // ditembak sama sekali kalau memang sudah di luar jangkauan.
+    const { count: totalCount, error: countError } = await supabaseAdmin
       .from("project_manga")
-      .select("slug, title, cover_url, type, status, author, genres, updated_at", {
-        count: "exact",
-      })
+      .select("*", { count: "exact", head: true })
+      .eq("is_published", true);
+
+    if (countError) throw countError;
+
+    if (offset >= (totalCount || 0)) {
+      return NextResponse.json({
+        success: true,
+        data: [],
+        total: totalCount || 0,
+        hasMore: false,
+      });
+    }
+
+    // Ambil manga untuk halaman ini
+    const { data: mangaList, error } = await supabaseAdmin
+      .from("project_manga")
+      .select("slug, title, cover_url, type, status, author, genres, updated_at")
       .eq("is_published", true)
       .order("updated_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (error) {
-      // Supabase/PostgREST balikin error (bukan array kosong) kalau offset
-      // yang diminta melebihi total data yang ada (mis. infinite-scroll
-      // minta halaman berikutnya setelah data sudah habis). Perlakukan
-      // sebagai "halaman kosong", bukan error 500.
-      if (error.code === "PGRST103") {
-        return NextResponse.json({
-          success: true,
-          data: [],
-          total: count || 0,
-          hasMore: false,
-        });
-      }
-      throw error;
-    }
+    if (error) throw error;
 
     if (!mangaList || mangaList.length === 0) {
       return NextResponse.json({
         success: true,
         data: [],
-        total: count || 0,
+        total: totalCount || 0,
         hasMore: false,
       });
     }
@@ -104,8 +109,8 @@ export async function GET(request: Request) {
     const response = NextResponse.json({
       success: true,
       data: results,
-      total: count || 0,
-      hasMore: (count || 0) > offset + limit,
+      total: totalCount || 0,
+      hasMore: (totalCount || 0) > offset + limit,
     });
     response.headers.set(
       "Cache-Control",

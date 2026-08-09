@@ -9,6 +9,17 @@ const getPustakaPage = unstable_cache(
     const limit = 20;
     const offset = (page - 1) * limit;
 
+    // Cek total dulu -- Supabase/PostgREST bisa balikin HTTP 416 (body gak
+    // konsisten, gak bisa diandalkan lewat error.code) kalau range yang
+    // diminta melebihi total baris yang ada.
+    const { count: totalCount, error: countError } = await supabaseAdmin
+      .from("project_manga")
+      .select("*", { count: "exact", head: true })
+      .eq("is_published", true);
+
+    if (countError) throw countError;
+    if (offset >= (totalCount || 0)) return { data: [] };
+
     // Query 1: Ambil manga list — kolom spesifik, TANPA JOIN
     const { data: projects, error } = await supabaseAdmin
       .from("project_manga")
@@ -17,11 +28,7 @@ const getPustakaPage = unstable_cache(
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (error) {
-      // Offset yang diminta melebihi total data yang ada -> anggap halaman kosong.
-      if (error.code === "PGRST103") return { data: [] };
-      throw error;
-    }
+    if (error) throw error;
     if (!projects || projects.length === 0) return { data: [] };
 
     // Query 2: Ambil latest chapter per manga — RPC DISTINCT ON per
