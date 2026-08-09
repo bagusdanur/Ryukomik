@@ -40,7 +40,21 @@ export async function GET(request: Request) {
       .order("updated_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (error) throw error;
+    if (error) {
+      // Supabase/PostgREST balikin error (bukan array kosong) kalau offset
+      // yang diminta melebihi total data yang ada (mis. infinite-scroll
+      // minta halaman berikutnya setelah data sudah habis). Perlakukan
+      // sebagai "halaman kosong", bukan error 500.
+      if (error.code === "PGRST103") {
+        return NextResponse.json({
+          success: true,
+          data: [],
+          total: count || 0,
+          hasMore: false,
+        });
+      }
+      throw error;
+    }
 
     if (!mangaList || mangaList.length === 0) {
       return NextResponse.json({
@@ -99,7 +113,10 @@ export async function GET(request: Request) {
     );
     return response;
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
+    const message =
+      err instanceof Error
+        ? err.message
+        : (err as { message?: string } | null)?.message || "Unknown error";
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 }

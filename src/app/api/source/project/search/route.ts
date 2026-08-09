@@ -22,7 +22,13 @@ export async function GET(request: Request) {
     }
 
     const { data: projects, error } = await query;
-    if (error) throw error;
+    if (error) {
+      // Offset yang diminta melebihi total data yang ada -> anggap halaman kosong.
+      if (error.code === "PGRST103") {
+        return NextResponse.json({ data: [], success: true });
+      }
+      throw error;
+    }
 
     if (!projects || projects.length === 0) {
       return NextResponse.json({ data: [], success: true });

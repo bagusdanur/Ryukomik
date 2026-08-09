@@ -17,7 +17,11 @@ const getPustakaPage = unstable_cache(
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (error) throw error;
+    if (error) {
+      // Offset yang diminta melebihi total data yang ada -> anggap halaman kosong.
+      if (error.code === "PGRST103") return { data: [] };
+      throw error;
+    }
     if (!projects || projects.length === 0) return { data: [] };
 
     // Query 2: Ambil latest chapter per manga — RPC DISTINCT ON per
