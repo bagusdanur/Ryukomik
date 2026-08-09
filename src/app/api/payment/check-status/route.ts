@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getVerifiedUserId } from "@/lib/serverRoleCache";
 
 export async function GET(request: Request) {
   try {
@@ -15,8 +16,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
     }
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !authData.user) {
+    let userId: string;
+    try {
+      userId = await getVerifiedUserId(token);
+    } catch {
       return NextResponse.json({ error: "Sesi login tidak valid." }, { status: 401 });
     }
 
@@ -24,7 +27,7 @@ export async function GET(request: Request) {
       .from("payment_transactions")
       .select("status, completed_at")
       .eq("order_id", order_id)
-      .eq("user_id", authData.user.id)
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (error || !data) {

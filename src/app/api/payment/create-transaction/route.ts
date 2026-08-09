@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getVerifiedUserId } from "@/lib/serverRoleCache";
 
 const PROJECT_SLUG = process.env.PAYMENT_GATEWAY_PROJECT_SLUG;
 const API_KEY = process.env.PAYMENT_GATEWAY_API_KEY;
@@ -12,8 +13,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
     }
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !authData.user) {
+    let userId: string;
+    try {
+      userId = await getVerifiedUserId(token);
+    } catch {
       return NextResponse.json({ error: "Sesi login tidak valid." }, { status: 401 });
     }
 
@@ -57,7 +60,7 @@ export async function POST(request: Request) {
     const { error: dbError } = await supabaseAdmin
       .from("payment_transactions")
       .insert({
-        user_id: authData.user.id,
+        user_id: userId,
         order_id,
         package_name,
         duration_days,

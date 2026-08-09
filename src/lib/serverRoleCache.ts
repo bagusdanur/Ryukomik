@@ -19,6 +19,39 @@ export type AuthenticatedRole = CachedRole & {
   userId: string;
 };
 
+// auth.getUser() hits Supabase Auth's server (sessions, identities, mfa_*
+// tables) on every call. Server-side callers (verifyAdminRequest,
+// /api/me/role) can fire this many times within seconds — e.g. a dashboard
+// page that calls several admin endpoints in parallel — so we reuse a
+// validated token for a short window instead of re-verifying it every time.
+const AUTH_USER_CACHE_MS = 45 * 1000;
+const authUserCache = new Map<string, { at: number; userId: string }>();
+
+function pruneAuthUserCache(now: number) {
+  for (const [token, entry] of authUserCache) {
+    if (now - entry.at >= AUTH_USER_CACHE_MS) {
+      authUserCache.delete(token);
+    }
+  }
+}
+
+export async function getVerifiedUserId(token: string): Promise<string> {
+  const now = Date.now();
+  const cached = authUserCache.get(token);
+  if (cached && now - cached.at < AUTH_USER_CACHE_MS) {
+    return cached.userId;
+  }
+
+  const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
+  if (authError || !authData.user) {
+    throw new Error("Sesi login tidak valid.");
+  }
+
+  pruneAuthUserCache(now);
+  authUserCache.set(token, { at: now, userId: authData.user.id });
+  return authData.user.id;
+}
+
 const getCachedRoleByUserId = unstable_cache(
   async (userId: string): Promise<string | null> => {
     const { data, error } = await supabaseAdmin
@@ -47,14 +80,10 @@ export async function getCachedRole(userId: string): Promise<CachedRole> {
 }
 
 export async function getRoleFromBearerToken(token: string): Promise<AuthenticatedRole> {
-  const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
-  if (authError || !authData.user) {
-    throw new Error("Sesi login tidak valid.");
-  }
-
-  const role = await getCachedRole(authData.user.id);
+  const userId = await getVerifiedUserId(token);
+  const role = await getCachedRole(userId);
   return {
-    userId: authData.user.id,
+    userId,
     ...role,
   };
 }
