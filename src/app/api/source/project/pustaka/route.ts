@@ -20,15 +20,14 @@ const getPustakaPage = unstable_cache(
     if (error) throw error;
     if (!projects || projects.length === 0) return { data: [] };
 
-    // Query 2: Ambil latest chapter per manga — satu query, LIMIT ketat
+    // Query 2: Ambil latest chapter per manga — RPC DISTINCT ON per
+    // manga_slug, jadi tiap manga pasti kebagian baris chapter terbarunya
+    // sendiri (gak keserobot manga lain yang nomor chapternya lebih tinggi).
     const slugs = projects.map((p) => p.slug);
-    const { data: chapters } = await supabaseAdmin
-      .from("project_chapters")
-      .select("manga_slug, chapter_number")
-      .eq("is_published", true)
-      .in("manga_slug", slugs)
-      .order("chapter_number", { ascending: false })
-      .limit(slugs.length * 10); // Ambil lebih banyak untuk menghindari chapter tertinggal
+    const { data: chapters } = await supabaseAdmin.rpc(
+      "get_latest_project_chapters",
+      { p_manga_slugs: slugs },
+    );
 
     // Karena sudah di-ORDER DESC, chapter pertama per slug = yang terbaru
     const latestChapterMap = new Map<string, number>();

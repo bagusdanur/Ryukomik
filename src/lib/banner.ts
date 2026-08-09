@@ -25,15 +25,12 @@ const getCachedBannerKomiku = unstable_cache(
     if (error) throw error;
     if (!mangaList || mangaList.length === 0) return [];
 
-    // Get latest chapter for each spotlight manga
+    // Get latest chapter for each spotlight manga — RPC DISTINCT ON per manga_slug
     const slugs = mangaList.map((m) => m.slug);
-    const { data: allChapters } = await supabaseAdmin
-      .from("project_chapters")
-      .select("manga_slug, chapter_number")
-      .eq("is_published", true)
-      .in("manga_slug", slugs)
-      .order("chapter_number", { ascending: false })
-      .limit(slugs.length * 3);
+    const { data: allChapters } = await supabaseAdmin.rpc(
+      "get_latest_project_chapters",
+      { p_manga_slugs: slugs },
+    );
 
     const latestChapterMap = new Map<string, number>();
     for (const ch of allChapters || []) {

@@ -28,15 +28,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ data: [], success: true });
     }
 
-    // Query 2: Latest chapter per manga — efisien dengan LIMIT ketat
+    // Query 2: Latest chapter per manga — RPC DISTINCT ON per manga_slug
     const slugs = projects.map((p) => p.slug);
-    const { data: chapters } = await supabaseAdmin
-      .from("project_chapters")
-      .select("manga_slug, chapter_number")
-      .eq("is_published", true)
-      .in("manga_slug", slugs)
-      .order("chapter_number", { ascending: false })
-      .limit(slugs.length * 10); // Batas aman untuk mendapatkan latest chapter per manga
+    const { data: chapters } = await supabaseAdmin.rpc(
+      "get_latest_project_chapters",
+      { p_manga_slugs: slugs },
+    );
 
     const latestChapterMap = new Map<string, number>();
     for (const ch of chapters || []) {
