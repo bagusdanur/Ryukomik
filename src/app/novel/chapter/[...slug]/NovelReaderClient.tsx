@@ -101,7 +101,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
   };
 
   if (!data) return (
-    <div className="p-4 text-center text-white bg-[#282828] min-h-screen">
+    <div className="p-4 text-center text-white bg-[var(--surface-1)] min-h-screen">
       Chapter tidak ditemukan.{" "}
       <button onClick={() => router.refresh()} className="underline">Coba lagi</button>
     </div>
@@ -109,19 +109,19 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
 
   return (
     <div
-      className="bg-[#282828] text-gray-200 min-h-screen transition-all duration-300"
+      className="bg-[var(--surface-1)] text-gray-200 min-h-screen transition-all duration-300"
       onClick={() => setShowUI(!showUI)} // Toggle UI saat layar di-tap
     >
       {/* 1. TOP NAVBAR (Floating & Auto-hide) */}
       <nav
-        className={`fixed top-0 left-0 right-0 z- bg-[#1a1a1a]/90 backdrop-blur-md border-b border-white/5 h-14 flex items-center justify-between px-4 transition-transform duration-500 ${showUI ? "translate-y-0" : "-translate-y-full"}`}
+        className={`fixed top-0 left-0 right-0 z- bg-[var(--surface-1)]/90 backdrop-blur-md border-b border-white/5 h-14 flex items-center justify-between px-4 transition-transform duration-500 ${showUI ? "translate-y-0" : "-translate-y-full"}`}
       >
         <button
           onClick={(e) => {
             e.stopPropagation();
             router.push(`/novel/${data.series}`);
           }}
-          className="flex items-center gap-2 text-xs font-bold text-[#7d5fff] hover:bg-[#7d5fff]/10 px-3 py-2 rounded-lg transition"
+          className="flex items-center gap-2 text-xs font-bold text-[#67e8f9] hover:bg-[var(--accent)]/10 px-3 py-2 rounded-lg transition"
         >
           <svg
             className="w-4 h-4"
@@ -145,7 +145,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
           </h1>
         </div>
         <button
-          className={`p-2 rounded-full transition ${showComment ? "bg-[#7d5fff] text-white" : "hover:bg-white/10"}`}
+          className={`p-2 rounded-full transition ${showComment ? "bg-[var(--accent)] text-white" : "hover:bg-white/10"}`}
           onClick={() => setShowComment(true)}
         >
           <FiMessageCircle size={20} />{" "}
@@ -155,7 +155,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
             e.stopPropagation();
             setShowSettings(!showSettings);
           }}
-          className={`p-2 rounded-full transition ${showSettings ? "bg-[#7d5fff] text-white" : "hover:bg-white/10"}`}
+          className={`p-2 rounded-full transition ${showSettings ? "bg-[var(--accent)] text-white" : "hover:bg-white/10"}`}
         >
           <svg
             className="w-5 h-5"
@@ -183,7 +183,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
       {showSettings && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="fixed top-16 right-4 z- bg-[#1a1a1a] border border-white/10 p-5 rounded-2xl shadow-2xl w-72 animate-in fade-in zoom-in duration-200"
+          className="fixed top-16 right-4 z- bg-[var(--surface-1)] border border-white/10 p-5 rounded-2xl shadow-2xl w-72 animate-in fade-in zoom-in duration-200"
         >
           <div className="space-y-5">
             <div>
@@ -193,13 +193,13 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
               <div className="flex gap-2">
                 <button
                   onClick={() => setFontSize((f) => Math.max(12, f - 2))}
-                  className="flex-1 bg-white/5 hover:bg-[#7d5fff]/20 py-2 rounded-xl border border-white/5"
+                  className="flex-1 bg-white/5 hover:bg-[var(--accent)]/20 py-2 rounded-xl border border-white/5"
                 >
                   -
                 </button>
                 <button
                   onClick={() => setFontSize((f) => Math.min(32, f + 2))}
-                  className="flex-1 bg-white/5 hover:bg-[#7d5fff]/20 py-2 rounded-xl border border-white/5"
+                  className="flex-1 bg-white/5 hover:bg-[var(--accent)]/20 py-2 rounded-xl border border-white/5"
                 >
                   +
                 </button>
@@ -215,7 +215,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
                   <button
                     key={v}
                     onClick={() => setLineHeight(v)}
-                    className={`flex-1 py-1 rounded-md text-xs ${lineHeight === v ? "bg-[#7d5fff]" : "bg-white/5"}`}
+                    className={`flex-1 py-1 rounded-md text-xs ${lineHeight === v ? "bg-[var(--accent)]" : "bg-white/5"}`}
                   >
                     {v === 1.5 ? "Rapat" : v === 1.8 ? "Normal" : "Lebar"}
                   </button>
@@ -233,11 +233,11 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
                   max="10"
                   value={scrollSpeed}
                   onChange={(e) => setScrollSpeed(Number(e.target.value))}
-                  className="flex-1 accent-[#7d5fff]"
+                  className="flex-1 accent-[var(--accent)]"
                 />
                 <button
                   onClick={() => setIsAutoScrolling(!isAutoScrolling)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${isAutoScrolling ? "bg-red-500 text-white" : "bg-[#7d5fff] text-white"}`}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${isAutoScrolling ? "bg-red-500 text-white" : "bg-[var(--accent)] text-white"}`}
                 >
                   {isAutoScrolling ? "STOP" : "START"}
                 </button>
@@ -256,7 +256,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
           <h2 className="text-2xl font-serif font-black text-white mb-4 leading-tight italic">
             {data.title}
           </h2>
-          <div className="h-1.5 w-16 bg-[#7d5fff] mx-auto rounded-full"></div>
+          <div className="h-1.5 w-16 bg-[var(--accent)] mx-auto rounded-full"></div>
         </header>
 
         <article
@@ -269,7 +269,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
       </main>
 
       <div
-        className={`fixed bottom-4 left-1/2 -translate-x-1/2 z- flex items-center gap-1 sm:gap-3 px-2 py-1.5 sm:p-2 bg-[#1a1a1a]/80 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-2xl shadow-xl transition-all duration-500 ${
+        className={`fixed bottom-4 left-1/2 -translate-x-1/2 z- flex items-center gap-1 sm:gap-3 px-2 py-1.5 sm:p-2 bg-[var(--surface-1)]/80 backdrop-blur-xl border border-white/10 rounded-xl sm:rounded-2xl shadow-xl transition-all duration-500 ${
           showUI ? "translate-y-0 opacity-100" : "translate-y-20 opacity-0"
         }`}
       >
@@ -280,7 +280,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
             e.stopPropagation();
             router.push(`/novel/chapter/${data.prev}`);
           }}
-          className="flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-6 sm:py-3 bg-[#7d5fff] text-white rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-bold active:scale-95 disabled:opacity-30"
+          className="flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-6 sm:py-3 bg-[var(--accent)] text-white rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-bold active:scale-95 disabled:opacity-30"
         >
           <svg
             className="w-3 h-3 sm:w-5 sm:h-5"
@@ -306,7 +306,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
             e.stopPropagation();
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
-          className="px-2 py-1 sm:px-6 sm:py-3 text-[10px] sm:text-base font-bold text-[#7d5fff] active:opacity-50"
+          className="px-2 py-1 sm:px-6 sm:py-3 text-[10px] sm:text-base font-bold text-[#67e8f9] active:opacity-50"
         >
           TOP
         </button>
@@ -320,7 +320,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
             e.stopPropagation();
             router.push(`/novel/chapter/${data.next}`);
           }}
-          className="flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-6 sm:py-3 bg-[#7d5fff] text-white rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-bold active:scale-95 disabled:opacity-30"
+          className="flex items-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-6 sm:py-3 bg-[var(--accent)] text-white rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-bold active:scale-95 disabled:opacity-30"
         >
           <span className=" sm:inline">NEXT</span>
           <svg
@@ -342,7 +342,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
       
       {showComment && (
         <div className="fixed inset-0 bg-black/80 z-20 flex items-end">
-          <div className="bg-[#111] w-full max-h-[90vh] rounded-t-2xl shadow-2xl flex flex-col">
+          <div className="bg-[var(--surface-1)] w-full max-h-[90vh] rounded-t-2xl shadow-2xl flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
               <span className="font-bold text-lg">Komentar</span>
               <button

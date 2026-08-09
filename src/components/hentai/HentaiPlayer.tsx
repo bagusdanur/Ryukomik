@@ -436,7 +436,7 @@ export default function HentaiPlayer({ src }: { src?: string }) {
             {/* Settings Overlay Center Mobile */}
             {isSettingsOpen && (
               <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm sm:hidden pointer-events-auto p-2" onClick={() => setIsSettingsOpen(false)}>
-                <div className="bg-[#1e1e1e] border border-white/10 rounded-xl p-3 w-[180px] max-h-full overflow-y-auto no-scrollbar shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="bg-[var(--surface-1)] border border-white/10 rounded-xl p-3 w-[180px] max-h-full overflow-y-auto no-scrollbar shadow-2xl" onClick={e => e.stopPropagation()}>
                   <div className="text-[10px] font-black text-[#ff5078] mb-2 text-center uppercase tracking-widest">Pilih Kualitas</div>
                   <div className="flex flex-col gap-1.5">
                     <button
@@ -482,7 +482,7 @@ export default function HentaiPlayer({ src }: { src?: string }) {
                 
                 {/* Desktop Settings Popover */}
                 {isSettingsOpen && (
-                  <div className="hidden sm:block absolute right-4 bottom-[calc(100%+10px)] bg-[#1e1e1e]/95 border border-white/10 rounded-xl p-2 w-40 backdrop-blur-md z-50 shadow-2xl">
+                  <div className="hidden sm:block absolute right-4 bottom-[calc(100%+10px)] bg-[var(--surface-1)]/95 border border-white/10 rounded-xl p-2 w-40 backdrop-blur-md z-50 shadow-2xl">
                     <div className="text-[10px] font-bold text-white/50 mb-2 px-2 uppercase tracking-wider">Kualitas</div>
                     <button
                       onClick={() => changeQuality(-1)}

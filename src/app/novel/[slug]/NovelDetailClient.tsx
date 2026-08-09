@@ -159,7 +159,7 @@ export default function NovelDetailClient({ data, slug }: NovelDetailClientProps
         <p className={`text-white/70 text-sm leading-relaxed transition-all ${!expand && "line-clamp-3"}`}>
           {data.synopsis}
         </p>
-        <button onClick={() => setExpand(!expand)} className="text-sm text-[#7d5fff] font-medium mt-2">
+        <button onClick={() => setExpand(!expand)} className="text-sm text-[#67e8f9] font-medium mt-2">
           {expand ? "Tutup" : "Lihat selengkapnya"}
         </button>
       </div>
@@ -177,14 +177,14 @@ export default function NovelDetailClient({ data, slug }: NovelDetailClientProps
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1">
               <h2 className="text-base font-bold whitespace-nowrap">Chapters</h2>
-              <span className="bg-[#7d5fff] text-[10px] px-2 py-0.5 rounded-full border">
+              <span className="bg-[var(--accent)] text-[10px] px-2 py-0.5 rounded-full border">
                 {data.chapters?.length ?? 0}
               </span>
             </div>
             {lastRead?.lastChapterSlug && (
               <a
                 href={`/novel/chapter/${lastRead.lastChapterSlug}`}
-                className="text-[10px] bg-[#7d5fff] hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg font-bold transition-colors"
+                className="text-[10px] bg-[var(--accent)] hover:bg-[var(--accent)] text-white px-3 py-1.5 rounded-lg font-bold transition-colors"
               >
                 Lanjut {lastRead.displayChapter}
               </a>
@@ -195,7 +195,7 @@ export default function NovelDetailClient({ data, slug }: NovelDetailClientProps
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               placeholder="Cari chapter..."
-              className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-xs focus:border-blue-500/50 outline-none transition-all placeholder:text-white/30"
+              className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-1.5 text-xs focus:border-[var(--accent-2)]/50 outline-none transition-all placeholder:text-white/30"
             />
             <button
               onClick={() => setReverse(!reverse)}
@@ -214,11 +214,11 @@ export default function NovelDetailClient({ data, slug }: NovelDetailClientProps
               <div
                 key={i}
                 onClick={() => router.push(`/novel/chapter/${chSlug}`)}
-                className={`flex justify-between items-center rounded-xl p-4 transition border cursor-pointer ${isLastRead ? "border-[#7d5fff]" : "bg-white/5 border-transparent hover:bg-white/10"}`}
+                className={`flex justify-between items-center rounded-xl p-4 transition border cursor-pointer ${isLastRead ? "border-[rgba(34,211,238,0.35)]" : "bg-white/5 border-transparent hover:bg-white/10"}`}
               >
                 <span className="text-sm">{(ch.title ?? "").replace("Chapter", "Ch.")}</span>
                 {isLastRead && (
-                  <span className="text-[10px] text-[#7d5fff] uppercase tracking-wider font-bold">
+                  <span className="text-[10px] text-[#67e8f9] uppercase tracking-wider font-bold">
                     Terakhir dibaca
                   </span>
                 )}

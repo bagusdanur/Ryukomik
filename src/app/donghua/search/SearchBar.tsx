@@ -72,7 +72,7 @@ export default function SearchBar({ initialQuery = "" }: { initialQuery?: string
             <button
               type="button"
               onClick={handleClear}
-              className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-white/30 hover:text-white/50"
+              className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-white/30 transition-colors duration-200 hover:text-white/50"
             >
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
                 <path d="M18 6 6 18M6 6l12 12" />
@@ -84,7 +84,7 @@ export default function SearchBar({ initialQuery = "" }: { initialQuery?: string
           <button
             type="submit"
             disabled={!query.trim() || query.trim().length < 2 || isSearching}
-            className="w-7 h-7 rounded-lg bg-[#ff9f1c] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#ffb547] active:scale-90"
+            className="w-7 h-7 rounded-lg bg-[#ff9f1c] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#ffb547] active:scale-90 transition-colors duration-200"
           >
             {isSearching ? (
               <div className="w-3 h-3 rounded-full bg-black/60 animate-pulse" />
@@ -112,7 +112,7 @@ export default function SearchBar({ initialQuery = "" }: { initialQuery?: string
                   setQuery(tag);
                   router.push(`/donghua/search?q=${encodeURIComponent(tag)}`);
                 }}
-                className="px-2 py-1 rounded-md bg-[#16162a] border border-white/[0.06] text-[10px] text-white/30 hover:text-white/50 hover:border-white/10"
+                className="px-2 py-1 rounded-md bg-[#16162a] border border-white/[0.06] text-[10px] text-white/30 hover:text-white/50 hover:border-white/10 transition-colors duration-200"
               >
                 {tag}
               </button>

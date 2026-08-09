@@ -65,7 +65,7 @@ export default async function HentaiSearchPage({
 
   return (
     <div
-      className="min-h-screen bg-[#282828] text-white pb-24"
+      className="min-h-screen bg-[var(--surface-1)] text-white pb-24"
       style={{ fontFamily: "'Outfit', sans-serif" }}
     >
       <div className="max-w-lg mx-auto">
@@ -121,7 +121,7 @@ export default async function HentaiSearchPage({
                     prefetch={false}
                     href={`/hentai/episode/${item.slug}`}
                     key={item.slug}
-                    className="group block rounded-2xl overflow-hidden border border-white/5 bg-[#1c1c1c]"
+                    className="group block rounded-2xl overflow-hidden border border-white/5 bg-[var(--surface-1)]"
                   >
                     <div className="relative" style={{ aspectRatio: "2/3" }}>
                       <img
@@ -184,7 +184,7 @@ export default async function HentaiSearchPage({
               </div>
             ) : (
               <div className="px-5 py-16 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#1c1c1c] border border-white/5 flex items-center justify-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--surface-1)] border border-white/5 flex items-center justify-center">
                   <svg
                     width="24"
                     height="24"
@@ -213,7 +213,7 @@ export default async function HentaiSearchPage({
                 {pagination.hasPrev ? (
                   <Link
                     href={`/hentai/search?q=${encodeURIComponent(query)}&page=${pagination.prevPage}`}
-                    className="px-3 py-2 rounded-lg bg-[#1c1c1c] border border-white/5 text-[10px] font-bold text-white/40 hover:text-white/70 hover:border-[#ff5078]/30"
+                    className="px-3 py-2 rounded-lg bg-[var(--surface-1)] border border-white/5 text-[10px] font-bold text-white/40 hover:text-white/70 hover:border-[#ff5078]/30 transition-colors duration-200"
                   >
                     ← Prev
                   </Link>
@@ -224,7 +224,7 @@ export default async function HentaiSearchPage({
                 {pagination.hasNext ? (
                   <Link
                     href={`/hentai/search?q=${encodeURIComponent(query)}&page=${pagination.nextPage}`}
-                    className="px-3 py-2 rounded-lg bg-[#1c1c1c] border border-white/5 text-[10px] font-bold text-white/40 hover:text-white/70 hover:border-[#ff5078]/30"
+                    className="px-3 py-2 rounded-lg bg-[var(--surface-1)] border border-white/5 text-[10px] font-bold text-white/40 hover:text-white/70 hover:border-[#ff5078]/30 transition-colors duration-200"
                   >
                     Next →
                   </Link>

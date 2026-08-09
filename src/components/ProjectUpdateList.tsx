@@ -36,7 +36,7 @@ export default function ProjectUpdateList({
             setPendingSource("project");
             router.push("/terbaru");
           }}
-          className="rk-chip rounded-full px-3 py-1.5 text-xs font-bold hover:border-violet-200/40 hover:text-violet-100"
+          className="rk-chip rounded-full px-3 py-1.5 text-xs font-bold hover:border-violet-200/40 hover:text-violet-100 transition-colors duration-200"
         >
           View All
         </button>

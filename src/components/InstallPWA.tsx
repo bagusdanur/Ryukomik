@@ -43,7 +43,7 @@ export default function InstallPWA() {
 
   return (
     <div className="fixed top-4 inset-x-0 z-[9999] flex justify-center px-3">
-      <div className="relative w-full max-w-3xl bg-[#282828] text-white rounded-xl shadow-lg px-5 py-4 flex items-center gap-4">
+      <div className="relative w-full max-w-3xl bg-[var(--surface-1)] text-white rounded-xl shadow-lg px-5 py-4 flex items-center gap-4">
         {/* Icon */}
         <Image
           src="/icon.png"

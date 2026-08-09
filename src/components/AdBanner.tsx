@@ -55,7 +55,7 @@ export default function AdBanner() {
 
           <Link
             href="/premium-pay"
-            className="flex shrink-0 items-center gap-1 rounded-xl bg-[var(--accent-2)] px-2.5 py-2 text-[10px] font-bold text-[#071018] hover:bg-sky-300 sm:gap-1.5 sm:px-3 sm:text-[11px]"
+            className="flex shrink-0 items-center gap-1 rounded-xl bg-[var(--accent-2)] px-2.5 py-2 text-[10px] font-bold text-[#071018] hover:bg-sky-300 sm:gap-1.5 sm:px-3 sm:text-[11px] transition-colors duration-200"
           >
             <FaStar className="text-[12px]" />
             <span className="hidden min-[380px]:inline">Tanpa Iklan</span>
@@ -66,7 +66,7 @@ export default function AdBanner() {
         <button
           type="button"
           onClick={closeForSession}
-          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-white/35 hover:bg-white/10 hover:text-white/80"
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg text-white/35 hover:bg-white/10 hover:text-white/80 transition-colors duration-200"
           aria-label="Tutup banner premium untuk sesi ini"
           title="Tutup untuk sesi ini"
         >

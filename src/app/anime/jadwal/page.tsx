@@ -128,10 +128,10 @@ export default function JadwalPage() {
           <div className="flex flex-col px-5 gap-3">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="flex gap-3 items-center">
-                <div className="w-12 h-16 rounded-xl bg-[#1c1c1c] flex-shrink-0" />
+                <div className="w-12 h-16 rounded-xl bg-[var(--surface-1)] flex-shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-3 bg-[#1c1c1c] rounded w-3/4" />
-                  <div className="h-2.5 bg-[#1c1c1c] rounded w-1/2" />
+                  <div className="h-3 bg-[var(--surface-1)] rounded w-3/4" />
+                  <div className="h-2.5 bg-[var(--surface-1)] rounded w-1/2" />
                 </div>
               </div>
             ))}
@@ -150,7 +150,7 @@ export default function JadwalPage() {
                 <Link
                   href={`/anime/detail/${anime.slug}`}
                   key={i}
-                  className="group flex items-center gap-3 rounded-2xl border border-transparent px-2 py-3 hover:border-cyan-200/15 hover:bg-white/[0.04]"
+                  className="group flex items-center gap-3 rounded-2xl border border-transparent px-2 py-3 transition-colors duration-200 hover:border-cyan-200/15 hover:bg-white/[0.04]"
                 >
                   {/* thumbnail */}
                   <div className="w-12 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/5 relative">

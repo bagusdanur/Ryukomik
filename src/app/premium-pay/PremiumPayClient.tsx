@@ -1000,7 +1000,7 @@ export default function PremiumPayClient() {
                                       {method.type === 'qris' ? (
                                         <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-black">QRIS</span>
                                       ) : (
-                                        <span className="bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded font-black">VA</span>
+                                        <span className="bg-[var(--accent-2)] text-white text-[10px] px-1.5 py-0.5 rounded font-black">VA</span>
                                       )}
                                       {method.name}
                                     </div>

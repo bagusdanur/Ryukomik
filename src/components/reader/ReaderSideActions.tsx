@@ -17,7 +17,7 @@ export default function ReaderSideActions({ autoScroll, onToggleAutoScroll, onCo
       <NavBtn
         icon={autoScroll ? <FiPause /> : <FiPlay />}
         onClick={onToggleAutoScroll}
-        className={autoScroll ? "animate-pulse border-cyan-300/70 bg-cyan-500 text-black hover:bg-cyan-400 hover:text-black" : ""}
+        className={autoScroll ? "animate-pulse border-cyan-300/70 bg-cyan-500 text-black transition-colors duration-200 hover:bg-cyan-400 hover:text-black" : ""}
       />
       <NavBtn
         icon={<FiArrowUp />}

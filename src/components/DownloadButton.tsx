@@ -272,7 +272,7 @@ export default function DownloadButton({
               handleDownload("pdf");
               setOpen(false);
             }}
-            className="text-sm hover:bg-white/10 px-3 py-1 rounded text-left border border-[#282828]"
+            className="text-sm hover:bg-white/10 px-3 py-1 rounded text-left border border-[var(--line-soft)]"
           >
             DL PDF
           </button>
@@ -282,7 +282,7 @@ export default function DownloadButton({
               handleDownload("zip");
               setOpen(false);
             }}
-            className="text-sm hover:bg-white/10 px-3 py-1 rounded text-left border border-[#282828]"
+            className="text-sm hover:bg-white/10 px-3 py-1 rounded text-left border border-[var(--line-soft)]"
           >
             DL ZIP
           </button>

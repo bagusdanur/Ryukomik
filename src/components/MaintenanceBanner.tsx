@@ -87,19 +87,19 @@ export default function MaintenanceBanner({
       >
         <div
           className="rounded-2xl w-full max-w-md overflow-hidden"
-          style={{ backgroundColor: "#282828", border: "1px solid rgba(125,95,255,0.35)" }}
+          style={{ backgroundColor: "var(--surface-1)", border: "1px solid color-mix(in srgb, var(--accent) 35%, transparent)" }}
         >
           {/* Top accent bar */}
-          <div className="h-1 w-full" style={{ background: "#7d5fff" }} />
+          <div className="h-1 w-full" style={{ background: "var(--accent)" }} />
 
           {/* Header */}
           <div
             className="px-6 py-5 flex items-center gap-3"
-            style={{ borderBottom: "1px solid rgba(125,95,255,0.2)" }}
+            style={{ borderBottom: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)" }}
           >
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0"
-              style={{ backgroundColor: "rgba(125,95,255,0.2)" }}
+              style={{ backgroundColor: "color-mix(in srgb, var(--accent) 20%, transparent)" }}
             >
               📢
             </div>
@@ -117,27 +117,27 @@ export default function MaintenanceBanner({
           <div className="flex justify-center pt-6 pb-2">
             <svg width="130" height="105" viewBox="0 0 130 105" fill="none" xmlns="http://www.w3.org/2000/svg">
               {/* Monitor body */}
-              <rect x="18" y="14" width="84" height="54" rx="6" fill="#1e1b2e" stroke="#7d5fff" strokeWidth="2"/>
+              <rect x="18" y="14" width="84" height="54" rx="6" fill="#1e1b2e" stroke="var(--accent)" strokeWidth="2"/>
               <rect x="25" y="21" width="70" height="40" rx="3" fill="#252035"/>
-              <ellipse cx="60" cy="41" rx="22" ry="16" fill="#7d5fff" opacity="0.07"/>
+              <ellipse cx="60" cy="41" rx="22" ry="16" fill="var(--accent)" opacity="0.07"/>
               {/* Warning triangle on screen */}
-              <path d="M60 30 L71 50 L49 50 Z" fill="rgba(125,95,255,0.25)" stroke="#7d5fff" strokeWidth="1.5" strokeLinejoin="round"/>
-              <rect x="59" y="37" width="2" height="6" rx="1" fill="#a78fff"/>
-              <rect x="59" y="45" width="2" height="2" rx="1" fill="#a78fff"/>
+              <path d="M60 30 L71 50 L49 50 Z" fill="color-mix(in srgb, var(--accent) 25%, transparent)" stroke="var(--accent)" strokeWidth="1.5" strokeLinejoin="round"/>
+              <rect x="59" y="37" width="2" height="6" rx="1" fill="var(--accent)"/>
+              <rect x="59" y="45" width="2" height="2" rx="1" fill="var(--accent)"/>
               {/* Monitor stand */}
               <rect x="54" y="68" width="12" height="6" rx="1.5" fill="#3d3560"/>
               <rect x="44" y="74" width="32" height="4" rx="2" fill="#4a3f7a"/>
               {/* Clock floating */}
-              <circle cx="106" cy="22" r="11" fill="#1e1b2e" stroke="#7d5fff" strokeWidth="1.5"/>
+              <circle cx="106" cy="22" r="11" fill="#1e1b2e" stroke="var(--accent)" strokeWidth="1.5"/>
               <circle cx="106" cy="22" r="7" fill="#252035"/>
-              <line x1="106" y1="16" x2="106" y2="22" stroke="#7d5fff" strokeWidth="1.5" strokeLinecap="round"/>
-              <line x1="106" y1="22" x2="111" y2="22" stroke="#a78fff" strokeWidth="1.5" strokeLinecap="round"/>
-              <circle cx="106" cy="22" r="1.5" fill="#7d5fff"/>
+              <line x1="106" y1="16" x2="106" y2="22" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="106" y1="22" x2="111" y2="22" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round"/>
+              <circle cx="106" cy="22" r="1.5" fill="var(--accent)"/>
               {/* Floating dots */}
-              <circle cx="14" cy="32" r="3" fill="#7d5fff" opacity="0.4"/>
-              <circle cx="9" cy="52" r="2" fill="#7d5fff" opacity="0.25"/>
-              <circle cx="116" cy="58" r="2.5" fill="#7d5fff" opacity="0.3"/>
-              <circle cx="22" cy="72" r="1.5" fill="#a78fff" opacity="0.35"/>
+              <circle cx="14" cy="32" r="3" fill="var(--accent)" opacity="0.4"/>
+              <circle cx="9" cy="52" r="2" fill="var(--accent)" opacity="0.25"/>
+              <circle cx="116" cy="58" r="2.5" fill="var(--accent)" opacity="0.3"/>
+              <circle cx="22" cy="72" r="1.5" fill="var(--accent)" opacity="0.35"/>
             </svg>
           </div>
 
@@ -153,10 +153,10 @@ export default function MaintenanceBanner({
 
             <div
               className="rounded-xl px-4 py-3 flex items-center justify-between"
-              style={{ backgroundColor: "rgba(125,95,255,0.1)", border: "1px solid rgba(125,95,255,0.25)" }}
+              style={{ backgroundColor: "color-mix(in srgb, var(--accent) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--accent) 25%, transparent)" }}
             >
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#7d5fff" }}>
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--accent)" }}>
                   Jadwal Maintenance
                 </p>
                 <p className="font-bold text-base mt-0.5" style={{ color: "#c4b5fd" }}>
@@ -164,10 +164,10 @@ export default function MaintenanceBanner({
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#7d5fff" }}>
+                <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--accent)" }}>
                   Dimulai dalam
                 </p>
-                <p className="font-bold text-2xl font-mono tabular-nums mt-0.5" style={{ color: "#a78fff" }}>
+                <p className="font-bold text-2xl font-mono tabular-nums mt-0.5" style={{ color: "var(--accent)" }}>
                   {timeLeft}
                 </p>
               </div>
@@ -183,9 +183,9 @@ export default function MaintenanceBanner({
             <button
               onClick={() => startTransition(() => setPopupDismissed(true))}
               className="w-full font-semibold text-sm py-3 rounded-xl"
-              style={{ backgroundColor: "#7d5fff", color: "#fff" }}
+              style={{ backgroundColor: "var(--accent)", color: "#fff" }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#6b4fe0")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#7d5fff")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--accent)")}
             >
               Siap, Mengerti!
             </button>
@@ -204,12 +204,12 @@ export default function MaintenanceBanner({
       >
         <div
           className="relative rounded-2xl w-full max-w-md overflow-hidden"
-          style={{ backgroundColor: "#282828", border: "1px solid rgba(125,95,255,0.3)" }}
+          style={{ backgroundColor: "var(--surface-1)", border: "1px solid color-mix(in srgb, var(--accent) 30%, transparent)" }}
         >
           {/* Top accent bar */}
           <div
             className="h-1 w-full"
-            style={{ background: "#7d5fff" }}
+            style={{ background: "var(--accent)" }}
           />
 
           {/* SVG Illustration */}
@@ -222,26 +222,26 @@ export default function MaintenanceBanner({
                 .gear-ccw { transform-box: fill-box; transform-origin: center; animation: spinCCW 4s linear infinite; }
               `}</style>
               <g className="gear-cw">
-                <circle cx="55" cy="44" r="18" fill="#1e1b2e" stroke="#7d5fff" strokeWidth="2"/>
-                <circle cx="55" cy="44" r="8" fill="#282828" stroke="#7d5fff" strokeWidth="1.5"/>
-                <rect x="52" y="20" width="6" height="9" rx="2" fill="#7d5fff"/>
-                <rect x="52" y="59" width="6" height="9" rx="2" fill="#7d5fff"/>
-                <rect x="31" y="41" width="9" height="6" rx="2" fill="#7d5fff"/>
-                <rect x="70" y="41" width="9" height="6" rx="2" fill="#7d5fff"/>
-                <rect x="37" y="26" width="9" height="6" rx="2" fill="#7d5fff" transform="rotate(45 37 26)"/>
-                <rect x="64" y="56" width="9" height="6" rx="2" fill="#7d5fff" transform="rotate(45 64 56)"/>
-                <rect x="37" y="56" width="9" height="6" rx="2" fill="#7d5fff" transform="rotate(-45 37 56)"/>
-                <rect x="64" y="26" width="9" height="6" rx="2" fill="#7d5fff" transform="rotate(-45 64 26)"/>
+                <circle cx="55" cy="44" r="18" fill="#1e1b2e" stroke="var(--accent)" strokeWidth="2"/>
+                <circle cx="55" cy="44" r="8" fill="var(--surface-1)" stroke="var(--accent)" strokeWidth="1.5"/>
+                <rect x="52" y="20" width="6" height="9" rx="2" fill="var(--accent)"/>
+                <rect x="52" y="59" width="6" height="9" rx="2" fill="var(--accent)"/>
+                <rect x="31" y="41" width="9" height="6" rx="2" fill="var(--accent)"/>
+                <rect x="70" y="41" width="9" height="6" rx="2" fill="var(--accent)"/>
+                <rect x="37" y="26" width="9" height="6" rx="2" fill="var(--accent)" transform="rotate(45 37 26)"/>
+                <rect x="64" y="56" width="9" height="6" rx="2" fill="var(--accent)" transform="rotate(45 64 56)"/>
+                <rect x="37" y="56" width="9" height="6" rx="2" fill="var(--accent)" transform="rotate(-45 37 56)"/>
+                <rect x="64" y="26" width="9" height="6" rx="2" fill="var(--accent)" transform="rotate(-45 64 26)"/>
               </g>
               <g className="gear-ccw">
-                <circle cx="88" cy="28" r="11" fill="#1e1b2e" stroke="#a78fff" strokeWidth="1.5"/>
-                <circle cx="88" cy="28" r="5" fill="#282828" stroke="#a78fff" strokeWidth="1.5"/>
-                <rect x="85" y="13" width="4" height="7" rx="1.5" fill="#a78fff" transform="rotate(0 88 28)"/>
-                <rect x="85" y="13" width="4" height="7" rx="1.5" fill="#a78fff" transform="rotate(60 88 28)"/>
-                <rect x="85" y="13" width="4" height="7" rx="1.5" fill="#a78fff" transform="rotate(120 88 28)"/>
-                <rect x="85" y="13" width="4" height="7" rx="1.5" fill="#a78fff" transform="rotate(180 88 28)"/>
-                <rect x="85" y="13" width="4" height="7" rx="1.5" fill="#a78fff" transform="rotate(240 88 28)"/>
-                <rect x="85" y="13" width="4" height="7" rx="1.5" fill="#a78fff" transform="rotate(300 88 28)"/>
+                <circle cx="88" cy="28" r="11" fill="#1e1b2e" stroke="var(--accent)" strokeWidth="1.5"/>
+                <circle cx="88" cy="28" r="5" fill="var(--surface-1)" stroke="var(--accent)" strokeWidth="1.5"/>
+                <rect x="85" y="13" width="4" height="7" rx="1.5" fill="var(--accent)" transform="rotate(0 88 28)"/>
+                <rect x="85" y="13" width="4" height="7" rx="1.5" fill="var(--accent)" transform="rotate(60 88 28)"/>
+                <rect x="85" y="13" width="4" height="7" rx="1.5" fill="var(--accent)" transform="rotate(120 88 28)"/>
+                <rect x="85" y="13" width="4" height="7" rx="1.5" fill="var(--accent)" transform="rotate(180 88 28)"/>
+                <rect x="85" y="13" width="4" height="7" rx="1.5" fill="var(--accent)" transform="rotate(240 88 28)"/>
+                <rect x="85" y="13" width="4" height="7" rx="1.5" fill="var(--accent)" transform="rotate(300 88 28)"/>
               </g>
               <g transform="translate(22,58) rotate(-35)">
                 <rect x="0" y="0" width="7" height="26" rx="3.5" fill="#3d3560"/>
@@ -253,7 +253,7 @@ export default function MaintenanceBanner({
               <circle cx="108" cy="50" r="2" fill="#c4b5fd" opacity="0.6"/>
               <circle cx="115" cy="36" r="1.5" fill="#c4b5fd" opacity="0.4"/>
               <rect x="20" y="80" width="90" height="5" rx="2.5" fill="#1e1b2e"/>
-              <rect x="20" y="80" width="40" height="5" rx="2.5" fill="#7d5fff" opacity="0.8">
+              <rect x="20" y="80" width="40" height="5" rx="2.5" fill="var(--accent)" opacity="0.8">
                 <animate attributeName="width" values="10;80;10" dur="2.5s" repeatCount="indefinite"/>
               </rect>
             </svg>
@@ -272,12 +272,12 @@ export default function MaintenanceBanner({
           {/* Timer */}
           <div
             className="mx-6 mb-4 rounded-xl px-4 py-4 text-center"
-            style={{ backgroundColor: "rgba(125,95,255,0.1)", border: "1px solid rgba(125,95,255,0.25)" }}
+            style={{ backgroundColor: "color-mix(in srgb, var(--accent) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--accent) 25%, transparent)" }}
           >
-            <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "#7d5fff" }}>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--accent)" }}>
               Estimasi selesai dalam
             </p>
-            <p className="text-4xl font-bold font-mono tabular-nums" style={{ color: "#a78fff" }}>
+            <p className="text-4xl font-bold font-mono tabular-nums" style={{ color: "var(--accent)" }}>
               {timeLeft}
             </p>
             <p className="text-xs mt-1" style={{ color: "rgba(162,140,255,0.4)" }}>
@@ -291,7 +291,7 @@ export default function MaintenanceBanner({
               {
                 text: "Optimasi kecepatan loading chapter",
                 icon: (
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="#7d5fff" strokeWidth={2}>
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="var(--accent)" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                   </svg>
                 ),
@@ -299,7 +299,7 @@ export default function MaintenanceBanner({
               {
                 text: "Penambahan komik & chapter terbaru",
                 icon: (
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="#7d5fff" strokeWidth={2}>
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="var(--accent)" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                   </svg>
                 ),
@@ -307,7 +307,7 @@ export default function MaintenanceBanner({
               {
                 text: "Perbaikan bug & peningkatan stabilitas",
                 icon: (
-                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="#7d5fff" strokeWidth={2}>
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="var(--accent)" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                   </svg>
                 ),
@@ -321,8 +321,8 @@ export default function MaintenanceBanner({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4" style={{ borderTop: "1px solid rgba(125,95,255,0.15)" }}>
-            <p className="text-center text-xs" style={{ color: "rgba(125,95,255,0.45)" }}>
+          <div className="px-6 py-4" style={{ borderTop: "1px solid color-mix(in srgb, var(--accent) 15%, transparent)" }}>
+            <p className="text-center text-xs" style={{ color: "color-mix(in srgb, var(--accent) 45%, transparent)" }}>
               Ryukomik akan kembali normal setelah maintenance selesai. Terima kasih sudah sabar, Reader! 🙏
             </p>
           </div>

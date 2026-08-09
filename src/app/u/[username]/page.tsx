@@ -428,7 +428,7 @@ function CommentPreview({ comment, profile }: { comment: CommentRow; profile: Pr
   const type = getProfileType(profile);
   const profileHref = `/u/${encodeURIComponent(profile.username)}`;
   const cardClass = [
-    "rk-card-soft group relative overflow-visible rounded-2xl border",
+    "rk-card-soft group relative overflow-visible rounded-2xl border transition-colors duration-200",
     type === "admin"
       ? "border-[var(--accent-3)]/30 hover:border-[var(--accent-3)]/40"
       : type === "premium"
@@ -451,7 +451,7 @@ function CommentPreview({ comment, profile }: { comment: CommentRow; profile: Pr
             <div className="flex min-w-0 flex-wrap items-center gap-1.5">
               <ProfilePopover profile={profile} href={profileHref}>
                 <span
-                  className={`truncate text-[13px] font-black leading-none hover:text-[var(--accent-2)] ${
+                  className={`truncate text-[13px] font-black leading-none transition-colors duration-200 hover:text-[var(--accent-2)] ${
                   type === "admin"
                     ? "text-[var(--accent-3)]"
                     : type === "premium"
@@ -523,7 +523,7 @@ function CommentPreview({ comment, profile }: { comment: CommentRow; profile: Pr
             />
             <Link
               href={getContentLink(comment)}
-              className="flex max-w-[180px] items-center gap-1 truncate text-[11px] font-medium capitalize text-[var(--accent)]/80 opacity-75 hover:opacity-100"
+              className="flex max-w-[180px] items-center gap-1 truncate text-[11px] font-medium capitalize text-[var(--accent)]/80 opacity-75 transition-opacity duration-200 hover:opacity-100"
             >
               <FiBookOpen className="h-3 w-3 shrink-0" />
               {formatTitle(comment.slug)}

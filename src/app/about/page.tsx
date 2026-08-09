@@ -55,7 +55,7 @@ export default function AboutPage() {
 
             <a
               href="mailto:ryuzunime17@gmail.com"
-              className="mt-2 inline-block font-bold text-cyan-200 hover:underline"
+              className="mt-2 inline-block font-bold text-cyan-200 transition-colors duration-200 hover:underline"
             >
               ryuzunime17@gmail.com
             </a>

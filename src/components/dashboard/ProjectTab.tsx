@@ -1945,7 +1945,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                         href={url}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-1.5 hover:bg-white/10 rounded text-blue-400 opacity-50 hover:opacity-100 transition-opacity"
+                        className="p-1.5 hover:bg-white/10 rounded text-[var(--accent-2)] opacity-50 hover:opacity-100 transition-opacity"
                         title="Preview"
                       >
                         <FiEyeIcon size={14} />

@@ -182,7 +182,7 @@ const StickerPicker = memo(({ onSelect, onClose }: StickerPickerProps) => {
           <button
             key={tab}
             onClick={() => { setStickerTab(tab); setErrorMsg(""); }}
-            className={`flex-1 text-xs py-1 rounded ${
+            className={`flex-1 text-xs py-1 rounded transition-colors duration-200 ${
               stickerTab === tab ? "bg-[var(--accent)]/25 text-[var(--accent-2)]" : "text-gray-400 hover:text-gray-200"
             }`}
           >
@@ -254,12 +254,12 @@ const CommentContent = memo(({ text, isSpoiler, openSpoiler, onOpenSpoiler }: Co
     return (
       <div
         onClick={onOpenSpoiler}
-        className="bg-black/60 border border-orange-500/20 rounded-xl p-3 cursor-pointer hover:bg-black/80 text-center group"
+        className="bg-black/60 border border-orange-500/20 rounded-xl p-3 cursor-pointer hover:bg-black/80 text-center group transition-colors duration-200"
       >
         <span className="text-orange-500 text-[10px] font-black uppercase tracking-widest block">
           ⚠️ Konten Spoiler
         </span>
-        <span className="text-[8px] text-gray-500 group-hover:text-white">
+        <span className="text-[8px] text-gray-500 transition-colors duration-200 group-hover:text-white">
           Klik untuk melihat
         </span>
       </div>
@@ -397,7 +397,7 @@ const CommentItem = memo(({
               <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                 {profileHref ? (
                   <ProfilePopover profile={profile} href={profileHref}>
-                    <span className="truncate text-[13px] font-black text-white hover:text-cyan-200">
+                    <span className="truncate text-[13px] font-black text-white transition-colors duration-200 hover:text-cyan-200">
                     {displayName}
                     </span>
                   </ProfilePopover>
@@ -438,7 +438,7 @@ const CommentItem = memo(({
               {!isReply && (
                 <button
                   onClick={handleReplyToggle}
-                  className="text-[10px] font-black text-[var(--accent-2)] hover:text-white uppercase tracking-tighter"
+                  className="text-[10px] font-black text-[var(--accent-2)] hover:text-white uppercase tracking-tighter transition-colors duration-200"
                 >
                   Balas
                 </button>
@@ -446,7 +446,7 @@ const CommentItem = memo(({
               {hasReplies && (
                 <button
                   onClick={() => setShowReplies(!showReplies)}
-                  className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-tighter"
+                  className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-tighter transition-colors duration-200"
                 >
                   {showReplies ? "Tutup" : `${data.replies?.length ?? 0} Balasan`}
                 </button>
@@ -467,7 +467,7 @@ const CommentItem = memo(({
           <div className="flex justify-end mt-2 gap-2">
             <button
               onClick={() => setReplying(null)}
-              className="text-[10px] font-bold text-gray-500 hover:text-gray-300 uppercase px-3"
+              className="text-[10px] font-bold text-gray-500 hover:text-gray-300 uppercase px-3 transition-colors duration-200"
             >
               Batal
             </button>
@@ -810,7 +810,7 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
             {!isLoggedIn && (
               <button
                 onClick={() => setShowLogin(true)}
-                className="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white"
+                className="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white transition-colors duration-200"
               >
                 Login
               </button>
@@ -840,7 +840,7 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
             <button
               key={key}
               onClick={() => setSort(key)}
-              className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase ${
+              className={`px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-colors duration-200 ${
                 sort === key
                   ? "bg-[var(--accent)]/20 text-[var(--accent-2)]"
                   : "text-gray-500 hover:text-gray-300"

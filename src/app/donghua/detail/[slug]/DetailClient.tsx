@@ -118,7 +118,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
           <Link
             prefetch={false}
             href="/donghua/terbaru"
-            className="inline-flex items-center gap-2 text-[10px] font-semibold tracking-[.15em] uppercase text-white/30 hover:text-[#ffbf5e]"
+            className="inline-flex items-center gap-2 text-[10px] font-semibold tracking-[.15em] uppercase text-white/30 transition-colors duration-200 hover:text-[#ffbf5e]"
           >
             <svg
               className="w-3 h-3"
@@ -239,7 +239,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
             href={`/donghua/episode/${firstEpisodeSlug}`}
             className="rk-btn-ghost group flex items-center justify-center gap-2 rounded-2xl py-3.5 active:scale-95"
           >
-            <div className="w-2 h-2 bg-white/20 rounded-full group-hover:bg-white/50" />
+            <div className="w-2 h-2 bg-white/20 rounded-full transition-colors duration-200 group-hover:bg-white/50" />
             <span
               className="text-[11px] font-black uppercase tracking-wider"
               style={{ fontFamily: "'Syne', sans-serif" }}
@@ -300,7 +300,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
           </div>
           <button
             onClick={() => setSynopsisOpen((v) => !v)}
-            className="text-[10px] font-bold mt-2 uppercase tracking-widest hover:opacity-70"
+            className="text-[10px] font-bold mt-2 uppercase tracking-widest transition-opacity duration-200 hover:opacity-70"
             style={{ color: "#ff9f1c" }}
           >
             {synopsisOpen ? "Tutup ↑" : "Selengkapnya ↓"}
@@ -428,9 +428,9 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                   className="rk-card-soft group flex items-center gap-3 rounded-2xl p-3"
                 >
                   {/* Number box */}
-                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 group-hover:bg-[#ff9f1c] shrink-0">
+                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 transition-colors duration-200 group-hover:bg-[#ff9f1c] shrink-0">
                     <span
-                      className="text-[11px] font-black text-white/60 group-hover:text-[#1a0900]"
+                      className="text-[11px] font-black text-white/60 transition-colors duration-200 group-hover:text-[#1a0900]"
                       style={{ fontFamily: "'Syne', sans-serif" }}
                     >
                       {ep.displayNum}
@@ -440,7 +440,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p
-                      className="text-[11px] font-black text-white/80 group-hover:text-white truncate uppercase tracking-tight"
+                      className="text-[11px] font-black text-white/80 group-hover:text-white truncate uppercase tracking-tight transition-colors duration-200"
                       style={{ fontFamily: "'Syne', sans-serif" }}
                     >
                       Episode {ep.num}
@@ -460,7 +460,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                   </div>
 
                   {/* Play button */}
-                  <div className="opacity-0 group-hover:opacity-100 shrink-0">
+                  <div className="opacity-0 group-hover:opacity-100 shrink-0 transition-opacity duration-200">
                     <div
                       className="w-7 h-7 rounded-full flex items-center justify-center"
                       style={{

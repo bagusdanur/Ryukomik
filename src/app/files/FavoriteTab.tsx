@@ -78,7 +78,7 @@ useEffect(() => {
             <div className="aspect-[3/4] overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04]">
               <img referrerPolicy="no-referrer" src={getProxiedThumbnailUrl(item.image, item.source)} className="h-full w-full object-cover" alt={item.title ?? "Bookmark"} />
             </div>
-            <p className="mt-2 text-sm font-bold leading-snug text-white/90 line-clamp-2 group-hover:text-cyan-100">{item.title}</p>
+            <p className="mt-2 text-sm font-bold leading-snug text-white/90 line-clamp-2 transition-colors duration-200 group-hover:text-cyan-100">{item.title}</p>
           </a>
         </div>
       ))}

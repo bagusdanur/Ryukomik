@@ -134,7 +134,7 @@ export default function AnimeHeader() {
           </span>
           <button
             onClick={() => setOpen(false)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/70 active:scale-90"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/70 active:scale-90 transition-colors duration-200"
           >
             <svg
               width="14"
@@ -159,26 +159,26 @@ export default function AnimeHeader() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl active:scale-95 ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl active:scale-95 transition-colors duration-200 ${
                   isActive
-                    ? "bg-[#7d5fff]/15 border border-[#7d5fff]/30"
+                    ? "bg-[var(--accent)]/15 border border-[rgba(34,211,238,0.35)]"
                     : "hover:bg-white/5 border border-transparent"
                 }`}
               >
                 <div
                   className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                   style={{
-                    background: isActive ? "#7d5fff" : "rgba(255,255,255,0.15)",
+                    background: isActive ? "var(--accent)" : "rgba(255,255,255,0.15)",
                   }}
                 />
                 <span
-                  className={`text-[13px] font-bold ${isActive ? "text-[#b59bff]" : "text-white/50"}`}
+                  className={`text-[13px] font-bold ${isActive ? "text-[#67e8f9]" : "text-white/50"}`}
                   style={{ fontFamily: "'Syne', sans-serif" }}
                 >
                   {item.label}
                 </span>
                 {isActive && (
-                  <span className="ml-auto text-[9px] font-bold text-[#7d5fff]/60 tracking-widest uppercase">
+                  <span className="ml-auto text-[9px] font-bold text-[#67e8f9]/60 tracking-widest uppercase">
                     Aktif
                   </span>
                 )}
@@ -193,14 +193,14 @@ export default function AnimeHeader() {
           <Link
             href="/donghua/terbaru"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:bg-[#ff9f1c]/8 active:scale-95"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:bg-[#ff9f1c]/8 active:scale-95 transition-colors duration-200"
           >
             <div
               className="w-1.5 h-1.5 rounded-full flex-shrink-0"
               style={{ background: "#ff9f1c" }}
             />
             <span
-              className="text-[13px] font-bold text-white/30 hover:text-[#ffbf5e]"
+              className="text-[13px] font-bold text-white/30 hover:text-[#ffbf5e] transition-colors duration-200"
               style={{ fontFamily: "'Syne', sans-serif" }}
             >
               Donghua →
@@ -211,14 +211,14 @@ export default function AnimeHeader() {
           <Link
             href="/hentai/terbaru"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#ff5078]/8 border border-transparent active:scale-95"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#ff5078]/8 border border-transparent active:scale-95 transition-colors duration-200"
           >
             <div
               className="w-1.5 h-1.5 rounded-full flex-shrink-0"
               style={{ background: "#ff5078" }}
             />
             <span
-              className="text-[13px] font-bold text-white/30 hover:text-[#ffb3c6]"
+              className="text-[13px] font-bold text-white/30 hover:text-[#ffb3c6] transition-colors duration-200"
               style={{ fontFamily: "'Syne', sans-serif" }}
             >
               Hentai →

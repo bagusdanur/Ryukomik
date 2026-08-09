@@ -612,7 +612,7 @@ export default function TebakJudulClient({
                           key={title}
                           onClick={() => chooseAnswer(title)}
                           disabled={answered}
-                          className={`flex min-h-12 items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-left text-[12px] font-semibold leading-snug sm:min-h-14 sm:px-4 sm:py-3 sm:text-sm ${
+                          className={`flex min-h-12 items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-left text-[12px] font-semibold leading-snug transition-colors duration-200 sm:min-h-14 sm:px-4 sm:py-3 sm:text-sm ${
                             correctOption
                               ? "border-green-400/70 bg-green-500/20 text-green-100"
                               : wrongOption

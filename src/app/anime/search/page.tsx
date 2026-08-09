@@ -59,15 +59,15 @@ export default async function SearchPage({
 
   return (
     <div
-      className="min-h-screen bg-[#282828] text-white pb-24"
+      className="min-h-screen bg-[var(--surface-1)] text-white pb-24"
       style={{ fontFamily: "'Outfit', sans-serif" }}
     >
       <div className="max-w-lg mx-auto">
         {/* ── HERO ── */}
         <div className="px-5 pt-6 pb-2">
           <div className="flex items-center gap-2 mb-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#7d5fff]" />
-            <span className="text-[9px] font-bold tracking-[.2em] uppercase text-[#b59bff]">
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+            <span className="text-[9px] font-bold tracking-[.2em] uppercase text-[#67e8f9]">
               Pencarian
             </span>
           </div>
@@ -78,7 +78,7 @@ export default async function SearchPage({
           >
             Cari
             <br />
-            <span className="text-[#7d5fff]">Anime</span>
+            <span className="text-[#67e8f9]">Anime</span>
           </h1>
 
           {query && (
@@ -118,7 +118,7 @@ export default async function SearchPage({
                     prefetch={false}
                     href={`/anime/detail/${anime.slug}`}
                     key={anime.slug}
-                    className="group block rounded-2xl overflow-hidden border border-white/5 bg-[#1c1c1c]"
+                    className="group block rounded-2xl overflow-hidden border border-white/5 bg-[var(--surface-1)]"
                   >
                     <div className="relative" style={{ aspectRatio: "2/3" }}>
                       <img
@@ -191,7 +191,7 @@ export default async function SearchPage({
             ) : (
               /* Empty State */
               <div className="px-5 py-16 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#1c1c1c] border border-white/5 flex items-center justify-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--surface-1)] border border-white/5 flex items-center justify-center">
                   <svg
                     width="24"
                     height="24"
@@ -220,7 +220,7 @@ export default async function SearchPage({
                 {result.hasPrev && (
                   <Link
                     href={`/anime/search?q=${encodeURIComponent(query)}&page=${page - 1}`}
-                    className="px-3 py-2 rounded-lg bg-[#16162a] border border-white/[0.06] text-[10px] font-bold text-white/40 hover:text-white/70"
+                    className="px-3 py-2 rounded-lg bg-[#16162a] border border-white/[0.06] text-[10px] font-bold text-white/40 transition-colors duration-200 hover:text-white/70"
                   >
                     ← Prev
                   </Link>
@@ -231,7 +231,7 @@ export default async function SearchPage({
                 {result.hasNext && (
                   <Link
                     href={`/anime/search?q=${encodeURIComponent(query)}&page=${page + 1}`}
-                    className="px-3 py-2 rounded-lg bg-[#16162a] border border-white/[0.06] text-[10px] font-bold text-white/40 hover:text-white/70"
+                    className="px-3 py-2 rounded-lg bg-[#16162a] border border-white/[0.06] text-[10px] font-bold text-white/40 transition-colors duration-200 hover:text-white/70"
                   >
                     Next →
                   </Link>

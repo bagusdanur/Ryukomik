@@ -72,7 +72,7 @@ export default function SwitchCategoryButton() {
       <button
         onClick={() => setOpen((v) => !v)}
         title="Ganti Kategori"
-        className="relative w-9 h-9 rounded-xl bg-[#1c1c1c] border border-white/5 flex items-center justify-center active:scale-90 group"
+        className="relative w-9 h-9 rounded-xl bg-[var(--surface-1)] border border-white/5 flex items-center justify-center active:scale-90 group"
         style={{
           borderColor: open ? `${active.color}55` : undefined,
         }}

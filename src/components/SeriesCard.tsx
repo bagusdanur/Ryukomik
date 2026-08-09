@@ -82,7 +82,7 @@ export default function SeriesCard({
       </div>
 
       <div className="mt-2 min-w-0">
-        <p className="line-clamp-2 text-[13px] font-bold leading-snug text-white/90 group-hover:text-[var(--accent-2)]">
+        <p className="line-clamp-2 text-[13px] font-bold leading-snug text-white/90 transition-colors duration-200 group-hover:text-[var(--accent-2)]">
           {title || "Tanpa judul"}
         </p>
         {(eyebrow || sideEyebrow) && (

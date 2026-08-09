@@ -157,7 +157,7 @@ const cleanTitle = useCallback((title?: string) => {
           <a
             key={i}
             href={`/chapter/${item.source}/${item.lastChapterSlug}`}
-            className="rk-card-soft group flex items-center justify-between rounded-2xl p-3 hover:border-cyan-200/20"
+            className="rk-card-soft group flex items-center justify-between rounded-2xl p-3 transition-colors duration-200 hover:border-cyan-200/20"
           >
             {/* LEFT */}
             <div className="flex flex-col gap-1 min-w-0">
@@ -181,7 +181,7 @@ const cleanTitle = useCallback((title?: string) => {
                   e.stopPropagation();
                   setConfirm(item);
                 }}
-                className="opacity-60 hover:text-rose-300 hover:opacity-100"
+                className="opacity-60 transition-all duration-200 hover:text-rose-300 hover:opacity-100"
                 title="Hapus history"
               >
                 <FiTrash2 size={16} />
@@ -209,7 +209,7 @@ const cleanTitle = useCallback((title?: string) => {
               </button>
               <button
                 onClick={deleteItem}
-                className="flex-1 rounded-xl bg-rose-500 py-2 font-bold hover:bg-rose-400"
+                className="flex-1 rounded-xl bg-rose-500 py-2 font-bold transition-colors duration-200 hover:bg-rose-400"
               >
                 Hapus
               </button>

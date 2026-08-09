@@ -106,7 +106,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
       style={{ fontFamily: "'Outfit', sans-serif" }}
     >
       {loadingEpisode && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#151515] px-6 text-center">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[var(--surface-1)] px-6 text-center">
           <div className="relative h-14 w-14">
             <div className="absolute inset-0 rounded-full border-4 border-white/10" />
             <div className="absolute inset-0 rounded-full border-4 border-cyan-300" />
@@ -133,7 +133,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
           <Link
           prefetch={false}
             href="/anime/terbaru"
-            className="inline-flex items-center gap-2 text-[10px] font-semibold tracking-[.15em] uppercase text-white/35 hover:text-cyan-200"
+            className="inline-flex items-center gap-2 text-[10px] font-semibold tracking-[.15em] uppercase text-white/35 transition-colors duration-200 hover:text-cyan-200"
           >
             <svg
               className="w-3 h-3"
@@ -252,7 +252,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
             onClick={() => setLoadingEpisode(data.firstEpisode?.title || "Episode 1")}
             className="rk-btn-ghost group flex items-center justify-center gap-2 rounded-2xl py-3.5 active:scale-95"
           >
-            <div className="w-2 h-2 bg-white/20 rounded-full group-hover:bg-white/50" />
+            <div className="w-2 h-2 bg-white/20 rounded-full transition-colors duration-200 group-hover:bg-white/50" />
             <span
               className="text-[11px] font-black uppercase tracking-wider"
               style={{ fontFamily: "'Syne', sans-serif" }}
@@ -312,7 +312,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
           </div>
           <button
             onClick={() => setSynopsisOpen((v) => !v)}
-              className="text-[10px] font-bold text-[#7d5fff] mt-2 uppercase tracking-widest hover:text-[#b59bff]"
+              className="text-[10px] font-bold text-[#67e8f9] mt-2 uppercase tracking-widest transition-colors duration-200 hover:text-[#67e8f9]"
           >
             {synopsisOpen ? "Tutup ↑" : "Selengkapnya ↓"}
           </button>
@@ -353,13 +353,13 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                 placeholder="Cari episode..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[#1c1c1c] border border-white/5 focus:border-[#7d5fff]/40 rounded-xl pl-8 pr-3 py-2 text-[11px] font-bold text-white placeholder-white/20 outline-none"
+              className="w-full bg-[var(--surface-1)] border border-white/5 focus:border-[rgba(34,211,238,0.35)] rounded-xl pl-8 pr-3 py-2 text-[11px] font-bold text-white placeholder-white/20 outline-none"
                 style={{ fontFamily: "'Syne', sans-serif" }}
               />
             </div>
             <button
               onClick={() => setSortAsc((p) => !p)}
-              className="flex items-center gap-1.5 bg-[#1c1c1c] border border-white/5 hover:border-[#7d5fff]/30 rounded-xl px-3 py-2 text-[10px] font-black text-white/50 hover:text-white whitespace-nowrap"
+              className="flex items-center gap-1.5 bg-[var(--surface-1)] border border-white/5 hover:border-[rgba(34,211,238,0.35)] rounded-xl px-3 py-2 text-[10px] font-black text-white/50 hover:text-white whitespace-nowrap transition-colors duration-200"
               style={{ fontFamily: "'Syne', sans-serif" }}
             >
               {sortAsc ? "TERLAMA" : "TERBARU"}
@@ -376,7 +376,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
           </div>
 
           {/* Scroll Box */}
-          <div className="flex flex-col gap-2 overflow-y-auto max-h-80 pr-1 scrollbar-thin scrollbar-thumb-[#7d5fff]/30 scrollbar-track-transparent">
+          <div className="flex flex-col gap-2 overflow-y-auto max-h-80 pr-1 scrollbar-thin scrollbar-thumb-[var(--accent)]/30 scrollbar-track-transparent">
             {filteredEpisodes.length === 0 ? (
               <p
                 className="text-center py-6 text-[11px] font-black text-white/20 tracking-widest uppercase"
@@ -391,11 +391,11 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                   key={ep.slug ?? `${ep.title}-${ep.num}`}
                   href={`/anime/episode/${ep.slug ?? ""}`}
                   onClick={() => setLoadingEpisode(ep.title)}
-                  className="group flex items-center gap-3 p-3 rounded-2xl bg-[#1c1c1c] border border-white/5 hover:border-[#7d5fff]/30 hover:bg-[#7d5fff]/5"
+                  className="group flex items-center gap-3 p-3 rounded-2xl bg-[var(--surface-1)] border border-white/5 hover:border-[rgba(34,211,238,0.35)] hover:bg-[var(--accent)]/5 transition-colors duration-200"
                 >
-                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 group-hover:bg-[#7d5fff] shrink-0">
+                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 transition-colors duration-200 group-hover:bg-[var(--accent)] shrink-0">
                     <span
-                      className="text-[11px] font-black text-white/60 group-hover:text-white"
+                      className="text-[11px] font-black text-white/60 transition-colors duration-200 group-hover:text-white"
                       style={{ fontFamily: "'Syne', sans-serif" }}
                     >
                       {ep.num}
@@ -403,7 +403,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p
-                      className="text-[11px] font-black text-white/80 group-hover:text-white truncate uppercase tracking-tight"
+                      className="text-[11px] font-black text-white/80 group-hover:text-white truncate uppercase tracking-tight transition-colors duration-200"
                       style={{ fontFamily: "'Syne', sans-serif" }}
                     >
                       {ep.title}
@@ -412,7 +412,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                       {ep.date}
                     </p>
                   </div>
-                  <div className="opacity-0 group-hover:opacity-100 shrink-0">
+                  <div className="opacity-0 group-hover:opacity-100 shrink-0 transition-opacity duration-200">
                     <div className="w-7 h-7 rounded-full bg-cyan-600 flex items-center justify-center">
                       <svg
                         className="w-3 h-3 text-white ml-0.5"

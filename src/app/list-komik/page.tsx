@@ -115,7 +115,7 @@ export default function KomikList() {
 
           <button
             type="submit"
-            className="text-white/70 hover:text-white shrink-0"
+            className="text-white/70 hover:text-white shrink-0 transition-colors duration-200"
             aria-label="Cari"
           >
             <FiSearch size={18} />
@@ -208,7 +208,7 @@ export default function KomikList() {
                 </div>
 
                 <div className="mt-2">
-                  <p className="text-sm font-bold leading-snug text-white/90 line-clamp-2 group-hover:text-cyan-100">
+                  <p className="text-sm font-bold leading-snug text-white/90 line-clamp-2 transition-colors duration-200 group-hover:text-cyan-100">
                     {item.title}
                   </p>
                   <p className="text-xs text-violet-200/70">{item.status}</p>

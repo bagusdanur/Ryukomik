@@ -130,7 +130,7 @@ export default function DonghuaEpisodeClient({ data }: DonghuaEpisodeClientProps
               <span className="text-[10px] font-black uppercase tracking-wider text-white/40">Prev</span>
             </Link>
           ) : (
-            <div className="flex items-center justify-center py-3 bg-[#1a1a1b]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
+            <div className="flex items-center justify-center py-3 bg-[var(--surface-1)]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
               <span className="text-[10px] font-black uppercase tracking-wider text-white/30">Prev</span>
             </div>
           )}
@@ -146,7 +146,7 @@ export default function DonghuaEpisodeClient({ data }: DonghuaEpisodeClientProps
               <span className="text-[10px] font-black uppercase tracking-wider" style={{ color: "#ff9f1c" }}>Semua</span>
             </Link>
           ) : (
-            <div className="flex items-center justify-center py-3 bg-[#1a1a1b]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
+            <div className="flex items-center justify-center py-3 bg-[var(--surface-1)]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
               <span className="text-[10px] font-black uppercase tracking-wider text-white/30">Semua</span>
             </div>
           )}
@@ -161,7 +161,7 @@ export default function DonghuaEpisodeClient({ data }: DonghuaEpisodeClientProps
               </svg>
             </Link>
           ) : (
-            <div className="flex items-center justify-center py-3 bg-[#1a1a1b]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
+            <div className="flex items-center justify-center py-3 bg-[var(--surface-1)]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
               <span className="text-[10px] font-black uppercase tracking-wider text-white/30">Next</span>
             </div>
           )}
@@ -182,7 +182,7 @@ export default function DonghuaEpisodeClient({ data }: DonghuaEpisodeClientProps
               style={
                 activePlayer === idx
                   ? { background: "rgba(255,159,28,0.12)", borderColor: "rgba(255,159,28,0.5)" }
-                  : { background: "#1a1a1b", borderColor: "rgba(255,255,255,0.05)" }
+                  : { background: "var(--surface-1)", borderColor: "rgba(255,255,255,0.05)" }
               }
             >
               <div
@@ -222,12 +222,12 @@ export default function DonghuaEpisodeClient({ data }: DonghuaEpisodeClientProps
                     {(dl.links ?? []).map((link, j) => (
                       <a key={j} href={link.url ?? "#"} target="_blank" rel="noopener noreferrer"
                         className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-white/5 active:scale-95 group"
-                        style={{ background: "#1a1a1b" }}
+                        style={{ background: "var(--surface-1)" }}
                       >
                         <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: "#ff9f1c" }}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        <span className="text-[11px] font-black uppercase tracking-tight text-white/35 group-hover:text-white truncate">
+                        <span className="text-[11px] font-black uppercase tracking-tight text-white/35 transition-colors duration-200 group-hover:text-white truncate">
                           {link.label ?? "Download"}
                         </span>
                       </a>

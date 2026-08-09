@@ -124,7 +124,7 @@ export default function HentaiHeader() {
           </span>
           <button
             onClick={() => setOpen(false)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/70 active:scale-90"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white/70 active:scale-90 transition-colors duration-200"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M18 6 6 18M6 6l12 12" />
@@ -141,7 +141,7 @@ export default function HentaiHeader() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl active:scale-95 ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl active:scale-95 transition-colors duration-200 ${
                   isActive
                     ? "bg-[#ff5078]/15 border border-[#ff5078]/30"
                     : "hover:bg-white/5 border border-transparent"
@@ -173,11 +173,11 @@ export default function HentaiHeader() {
           <Link
             href="/donghua/terbaru"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:bg-[#ff9f1c]/8 active:scale-95"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:bg-[#ff9f1c]/8 active:scale-95 transition-colors duration-200"
           >
             <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#ff9f1c" }} />
             <span
-              className="text-[13px] font-bold text-white/30 hover:text-[#ffbf5e]"
+              className="text-[13px] font-bold text-white/30 hover:text-[#ffbf5e] transition-colors duration-200"
               style={{ fontFamily: "'Syne', sans-serif" }}
             >
               Donghua →
@@ -188,9 +188,9 @@ export default function HentaiHeader() {
           <Link
             href="/anime/terbaru"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 border border-transparent active:scale-95"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 border border-transparent active:scale-95 transition-colors duration-200"
           >
-            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#7d5fff" }} />
+            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "var(--accent)" }} />
             <span
               className="text-[13px] font-bold text-white/30"
               style={{ fontFamily: "'Syne', sans-serif" }}

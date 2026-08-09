@@ -64,7 +64,7 @@ export default function HentaiSearchBar({
             setIsSearching(false);
           }}
           placeholder="Cari hentai..."
-          className="w-full h-10 pl-9 pr-20 rounded-xl bg-[#1c1c1c] border border-white/5 text-[13px] text-white placeholder:text-white/15 focus:outline-none focus:border-[#ff5078]/30"
+          className="w-full h-10 pl-9 pr-20 rounded-xl bg-[var(--surface-1)] border border-white/5 text-[13px] text-white placeholder:text-white/15 focus:outline-none focus:border-[#ff5078]/30"
         />
 
         <div className="absolute right-2 flex items-center gap-1">
@@ -72,7 +72,7 @@ export default function HentaiSearchBar({
             <button
               type="button"
               onClick={handleClear}
-              className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-white/30 hover:text-white/50"
+              className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center text-white/30 transition-colors duration-200 hover:text-white/50"
             >
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
                 <path d="M18 6 6 18M6 6l12 12" />
@@ -107,7 +107,7 @@ export default function HentaiSearchBar({
                   setQuery(tag);
                   router.push(`/hentai/search?q=${encodeURIComponent(tag)}`);
                 }}
-                className="px-2 py-1 rounded-md bg-[#1c1c1c] border border-white/5 text-[10px] text-white/30 hover:text-[#ffb3c6] hover:border-[#ff5078]/20"
+                className="px-2 py-1 rounded-md bg-[var(--surface-1)] border border-white/5 text-[10px] text-white/30 hover:text-[#ffb3c6] hover:border-[#ff5078]/20 transition-colors duration-200"
               >
                 {tag}
               </button>

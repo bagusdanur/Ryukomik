@@ -55,7 +55,7 @@ export default function BookmarkPage() {
         {bookmarks.length > 0 && (
           <button
             onClick={handleClear}
-            className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-bold hover:bg-rose-400"
+            className="rounded-xl bg-rose-500 px-4 py-2 text-sm font-bold transition-colors duration-200 hover:bg-rose-400"
           >
             Hapus Semua
           </button>
@@ -74,7 +74,7 @@ export default function BookmarkPage() {
           <div key={item.slug} className="relative group">
             <button
               onClick={() => handleRemove(item.slug)}
-              className="absolute left-2 top-2 z-10 rounded-full bg-rose-500/90 px-2 py-1 text-xs font-bold opacity-90 group-hover:opacity-100"
+              className="absolute left-2 top-2 z-10 rounded-full bg-rose-500/90 px-2 py-1 text-xs font-bold opacity-90 transition-opacity duration-200 group-hover:opacity-100"
             >
               hapus
             </button>
@@ -87,7 +87,7 @@ export default function BookmarkPage() {
               />
             </a>
 
-            <p className="mt-2 text-sm font-bold leading-snug text-white/90 line-clamp-2 group-hover:text-cyan-100">
+            <p className="mt-2 text-sm font-bold leading-snug text-white/90 line-clamp-2 transition-colors duration-200 group-hover:text-cyan-100">
               {item.title}
             </p>
           </div>

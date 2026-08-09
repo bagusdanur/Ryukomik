@@ -173,7 +173,7 @@ export default function UsersTab({
             }}
             className={`flex-1 py-2 rounded-xl text-[11px] font-semibold border transition-all ${
               filter === item.key
-                ? "bg-[#7c5cfc]/20 border-[#7c5cfc]/50 text-[#a78bfa]"
+                ? "bg-[#7c5cfc]/20 border-[#7c5cfc]/50 text-[#67e8f9]"
                 : "bg-transparent border-white/[.08] text-white/35 hover:text-white/60"
             }`}
           >
@@ -251,7 +251,7 @@ export default function UsersTab({
                         {isActivePremium ? "Aktif" : "Expired"}
                       </span>
                       {isActivePremium && daysLeft > 0 && (
-                        <span className="text-[9px] font-bold text-[#7d5fff] bg-[#7d5fff]/10 px-1.5 py-0.5 rounded-full">
+                        <span className="text-[9px] font-bold text-[#67e8f9] bg-[var(--accent)]/10 px-1.5 py-0.5 rounded-full">
                           {daysLeft} hari lagi
                         </span>
                       )}
@@ -259,7 +259,7 @@ export default function UsersTab({
                   ) : (
                     <button
                       onClick={() => openPremiumModal(user)}
-                      className="flex items-center gap-1 text-[10px] font-semibold bg-[#7c5cfc]/15 text-[#a78bfa] px-2.5 py-1 rounded-full hover:bg-[#7c5cfc]/25 transition-colors"
+                      className="flex items-center gap-1 text-[10px] font-semibold bg-[#7c5cfc]/15 text-[#67e8f9] px-2.5 py-1 rounded-full hover:bg-[#7c5cfc]/25 transition-colors"
                     >
                       <FiPlus size={10} /> Premium
                     </button>
@@ -278,7 +278,7 @@ export default function UsersTab({
                       <>
                         <button
                           onClick={() => openPremiumModal(user, 7)}
-                          className="w-7 h-7 rounded-lg bg-[#7c5cfc]/10 text-[#a78bfa] flex items-center justify-center hover:bg-[#7c5cfc]/20 transition-colors"
+                          className="w-7 h-7 rounded-lg bg-[#7c5cfc]/10 text-[#67e8f9] flex items-center justify-center hover:bg-[#7c5cfc]/20 transition-colors"
                           title="Tambah hari premium"
                         >
                           <FiPlus size={12} />
@@ -346,7 +346,7 @@ export default function UsersTab({
                   onClick={() => setCustomDays(days)}
                   className={`rounded-xl border py-2 text-xs font-bold transition ${
                     customDays === days
-                      ? "border-[#7c5cfc]/50 bg-[#7c5cfc]/20 text-[#a78bfa]"
+                      ? "border-[#7c5cfc]/50 bg-[#7c5cfc]/20 text-[#67e8f9]"
                       : "border-white/[.08] bg-white/[.04] text-white/45"
                   }`}
                 >

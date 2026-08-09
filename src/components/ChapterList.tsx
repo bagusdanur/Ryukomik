@@ -254,7 +254,7 @@ export default function ChapterList({
               {batchMode && (
                 <div className="pl-1 shrink-0">
                   {isSelected ? (
-                    <FiCheckSquare size={18} className="text-blue-400" />
+                    <FiCheckSquare size={18} className="text-[var(--accent-2)]" />
                   ) : (
                     <FiSquare size={18} className="text-white/25" />
                   )}
@@ -272,7 +272,7 @@ export default function ChapterList({
       rounded-2xl px-3.5 py-2.5
       border transition-all duration-200
       ${isSelected
-                    ? "bg-blue-500/10 border-blue-500/30"
+                    ? "bg-[var(--accent-2)]/10 border-[var(--accent-2)]/30"
                     : isLastRead
                       ? "bg-violet-500/10 border-violet-300/30"
                       : "rk-card-soft hover:bg-white/[0.08] hover:border-cyan-200/20"
@@ -286,7 +286,7 @@ export default function ChapterList({
                       className={`
             text-[13px] font-medium truncate
             ${isSelected
-                          ? "text-blue-300"
+                          ? "text-[var(--accent-2)]"
                           : isLastRead
                             ? "text-white/70"
                             : "text-white/90"
@@ -297,7 +297,7 @@ export default function ChapterList({
                     </span>
 
                     {isLastRead && !batchMode && (
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#7d5fff]/15 border border-[#7d5fff]/30 text-[#7d5fff] font-medium uppercase tracking-wider">
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-[var(--accent)]/15 border border-[rgba(34,211,238,0.35)] text-[#67e8f9] font-medium uppercase tracking-wider">
                         Baca Terakhir
                       </span>
                     )}

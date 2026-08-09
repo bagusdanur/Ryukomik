@@ -100,7 +100,7 @@ export default function HentaiDetailClient({ data, slug }: HentaiDetailClientPro
           <Link
             prefetch={false}
             href="/hentai/terbaru"
-            className="inline-flex items-center gap-2 text-[10px] font-semibold tracking-[.15em] uppercase text-white/30 hover:text-[#ff8fa3]"
+            className="inline-flex items-center gap-2 text-[10px] font-semibold tracking-[.15em] uppercase text-white/30 transition-colors duration-200 hover:text-[#ff8fa3]"
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -197,7 +197,7 @@ export default function HentaiDetailClient({ data, slug }: HentaiDetailClientPro
               href={`/hentai/episode/${data.lastEpisode?.slug ?? ""}`}
             className="rk-btn-ghost group flex items-center justify-center gap-2 rounded-2xl py-3.5 active:scale-95"
           >
-            <div className="w-2 h-2 bg-white/20 rounded-full group-hover:bg-white/50" />
+            <div className="w-2 h-2 bg-white/20 rounded-full transition-colors duration-200 group-hover:bg-white/50" />
             <span className="text-[11px] font-black uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>
               Episode 1
             </span>
@@ -234,7 +234,7 @@ export default function HentaiDetailClient({ data, slug }: HentaiDetailClientPro
             </div>
             <button
               onClick={() => setSynopsisOpen((v) => !v)}
-              className="text-[10px] font-bold text-[#ff5078] mt-2 uppercase tracking-widest hover:text-[#ffb3c6]"
+              className="text-[10px] font-bold text-[#ff5078] mt-2 uppercase tracking-widest transition-colors duration-200 hover:text-[#ffb3c6]"
             >
               {synopsisOpen ? "Tutup ↑" : "Selengkapnya ↓"}
             </button>
@@ -292,20 +292,20 @@ export default function HentaiDetailClient({ data, slug }: HentaiDetailClientPro
                   prefetch={false}
                   key={ep.slug ?? `${ep.label}-${ep.num}`}
                   href={`/hentai/episode/${ep.slug ?? ""}`}
-                  className="rk-card-soft group flex items-center gap-3 rounded-2xl p-3 hover:border-cyan-200/20"
+                  className="rk-card-soft group flex items-center gap-3 rounded-2xl p-3 transition-colors duration-200 hover:border-cyan-200/20"
                 >
-                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 group-hover:bg-[#ff5078] shrink-0">
-                    <span className="text-[11px] font-black text-white/60 group-hover:text-white" style={{ fontFamily: "'Syne', sans-serif" }}>
+                  <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 transition-colors duration-200 group-hover:bg-[#ff5078] shrink-0">
+                    <span className="text-[11px] font-black text-white/60 transition-colors duration-200 group-hover:text-white" style={{ fontFamily: "'Syne', sans-serif" }}>
                       {ep.num}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-black text-white/80 group-hover:text-white truncate uppercase tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>
+                    <p className="text-[11px] font-black text-white/80 group-hover:text-white truncate uppercase tracking-tight transition-colors duration-200" style={{ fontFamily: "'Syne', sans-serif" }}>
                       {ep.label}
                     </p>
                     <p className="text-[9px] text-white/25 font-medium mt-0.5">{ep.date}</p>
                   </div>
-                  <div className="opacity-0 group-hover:opacity-100 shrink-0">
+                  <div className="opacity-0 group-hover:opacity-100 shrink-0 transition-opacity duration-200">
                     <div className="w-7 h-7 rounded-full bg-[#ff5078] flex items-center justify-center">
                       <svg className="w-3 h-3 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z" />

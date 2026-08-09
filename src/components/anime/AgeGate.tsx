@@ -43,7 +43,7 @@ export default function AgeGate() {
       <div
         className="w-full max-w-sm rounded-2xl flex flex-col overflow-hidden"
         style={{
-          background: "#1a1a1a",
+          background: "var(--surface-1)",
           border: "1px solid rgba(255,80,120,0.2)",
           transform: leaving ? "translateY(40px)" : "translateY(0)",
         }}
@@ -113,7 +113,7 @@ export default function AgeGate() {
             </button>
             <button
               onClick={handleDeny}
-              className="w-full h-10 rounded-xl font-bold text-[12px] text-white/30 hover:text-white/50 active:scale-95 border border-white/5"
+              className="w-full h-10 rounded-xl font-bold text-[12px] text-white/30 hover:text-white/50 active:scale-95 border border-white/5 transition-colors duration-200"
               style={{
                 fontFamily: "'Syne', sans-serif",
                 background: "rgba(255,255,255,0.03)",

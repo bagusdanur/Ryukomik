@@ -67,7 +67,7 @@ export default async function SearchPage({
 
   return (
     <div
-      className="min-h-screen bg-[#282828] text-white pb-24"
+      className="min-h-screen bg-[var(--surface-1)] text-white pb-24"
       style={{ fontFamily: "'Outfit', sans-serif" }}
     >
       <div className="max-w-lg mx-auto">
@@ -126,7 +126,7 @@ export default async function SearchPage({
                     prefetch={false}
                     href={`/donghua/detail/${donghua.slug}`}
                     key={donghua.slug}
-                    className="group block rounded-2xl overflow-hidden border border-white/5 bg-[#1c1c1c] active:scale-95 transition-transform"
+                    className="group block rounded-2xl overflow-hidden border border-white/5 bg-[var(--surface-1)] active:scale-95 transition-transform"
                   >
                     <div className="relative" style={{ aspectRatio: "2/3" }}>
                       <img
@@ -186,7 +186,7 @@ export default async function SearchPage({
             ) : (
               /* Empty State */
               <div className="px-5 py-16 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#1c1c1c] border border-white/5 flex items-center justify-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--surface-1)] border border-white/5 flex items-center justify-center">
                   <svg
                     width="24"
                     height="24"

@@ -97,14 +97,14 @@ export default function AdAnnouncementModal() {
           <div className="flex flex-col gap-2.5">
             <a
               href="/premium-pay"
-              className="flex items-center justify-center gap-2 bg-[var(--accent)] hover:bg-[var(--accent)] active:scale-[0.98] text-white font-semibold text-[15px] py-[15px] rounded-[14px] no-underline tracking-[0.01em]"
+              className="flex items-center justify-center gap-2 bg-[var(--accent)] hover:bg-[var(--accent)] active:scale-[0.98] text-white font-semibold text-[15px] py-[15px] rounded-[14px] no-underline tracking-[0.01em] transition-colors duration-200"
             >
               <RiSparklingFill size={16} />
               Upgrade ke Premium
             </a>
             <button
               onClick={close}
-              className="w-full bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/10 text-white/40 hover:text-white/60 font-medium text-[14px] py-[14px] rounded-[14px] cursor-pointer"
+              className="w-full bg-white/5 hover:bg-white/10 active:scale-[0.98] border border-white/10 text-white/40 hover:text-white/60 font-medium text-[14px] py-[14px] rounded-[14px] cursor-pointer transition-colors duration-200"
             >
               Oke, Mengerti
             </button>

@@ -222,7 +222,7 @@ export default async function NekoTerbaruPage({ searchParams }: HentaiTerbaruPro
           {pagination.hasPrev ? (
             <Link
               href={`/hentai/terbaru?page=${pagination.prevPage}`}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 hover:border-[#ff5078]/40 hover:text-white"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 hover:border-[#ff5078]/40 hover:text-white transition-colors duration-200"
             >
               ← Prev
             </Link>
@@ -239,7 +239,7 @@ export default async function NekoTerbaruPage({ searchParams }: HentaiTerbaruPro
           {pagination.hasNext ? (
             <Link
               href={`/hentai/terbaru?page=${pagination.nextPage}`}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 hover:border-[#ff5078]/40 hover:text-white"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white/70 border border-white/10 hover:border-[#ff5078]/40 hover:text-white transition-colors duration-200"
             >
               Next →
             </Link>

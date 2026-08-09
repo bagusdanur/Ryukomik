@@ -122,7 +122,7 @@ function RankRow({
         <div className="flex min-w-0 items-center gap-1.5">
           <Link
             href={`/u/${encodeURIComponent(row.username)}`}
-            className="max-w-[92px] truncate text-sm font-black hover:text-[var(--accent-2)] sm:max-w-none"
+            className="max-w-[92px] truncate text-sm font-black transition-colors duration-200 hover:text-[var(--accent-2)] sm:max-w-none"
           >
             {row.username}
           </Link>

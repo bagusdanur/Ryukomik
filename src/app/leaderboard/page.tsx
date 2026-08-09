@@ -55,7 +55,7 @@ function Avatar({ url, name, size, borderColor }: AvatarProps) {
     <div className="rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
       style={{
         width: size, height: size,
-        background: "#1c1c1c",
+        background: "var(--surface-1)",
         border: `2px solid ${borderColor || "rgba(255,255,255,0.07)"}`,
       }}>
       {url
@@ -111,14 +111,14 @@ function PodiumCard({
       <span className="text-2xl leading-none">{MEDALS[index]}</span>
       <Link href={getProfileHref(user.username)} className="rounded-full">
         <Avatar url={user.avatar_url} name={name} size={44}
-          borderColor={isSelf ? "rgba(125,95,255,0.5)" : mc + "55"} />
+          borderColor={isSelf ? "rgba(139,92,246,0.5)" : mc + "55"} />
       </Link>
 
       {/* Name */}
       <Link
         href={getProfileHref(user.username)}
-        className="w-full truncate text-center text-[11px] font-bold leading-tight hover:text-cyan-200"
-        style={{ color: isSelf ? "#a78bfa" : "#fff", maxWidth: 80 }}>
+        className="w-full truncate text-center text-[11px] font-bold leading-tight transition-colors duration-200 hover:text-cyan-200"
+        style={{ color: isSelf ? "var(--accent)" : "#fff", maxWidth: 80 }}>
         {name}
       </Link>
 
@@ -167,8 +167,8 @@ function RankRow({
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
       style={{
-        background: isSelf ? "rgba(125,95,255,0.09)" : "rgba(255,255,255,0.025)",
-        border: isSelf ? "1px solid rgba(125,95,255,0.25)" : "1px solid rgba(255,255,255,0.05)",
+        background: isSelf ? "rgba(139,92,246,0.09)" : "rgba(255,255,255,0.025)",
+        border: isSelf ? "1px solid rgba(139,92,246,0.25)" : "1px solid rgba(255,255,255,0.05)",
       }}>
 
       {/* Rank */}
@@ -178,7 +178,7 @@ function RankRow({
 
       <Link href={getProfileHref(user.username)} className="rounded-full">
         <Avatar url={user.avatar_url} name={name} size={36}
-          borderColor={isSelf ? "rgba(125,95,255,0.4)" : undefined} />
+          borderColor={isSelf ? "rgba(139,92,246,0.4)" : undefined} />
       </Link>
 
       {/* Info */}
@@ -186,8 +186,8 @@ function RankRow({
         <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
           <Link
             href={getProfileHref(user.username)}
-            className="truncate text-[12px] font-bold hover:text-cyan-200"
-            style={{ color: isSelf ? "#a78bfa" : "#fff", maxWidth: 110 }}>
+            className="truncate text-[12px] font-bold transition-colors duration-200 hover:text-cyan-200"
+            style={{ color: isSelf ? "var(--accent)" : "#fff", maxWidth: 110 }}>
             {name}
           </Link>
           {isSelf && <Badge>KAMU</Badge>}
@@ -201,7 +201,7 @@ function RankRow({
         </div>
         <XpBar xp={user.xp || 0} level={user.level || 1} />
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-[9px] font-bold" style={{ color: "#7d5fff" }}>Lv.{user.level || 1}</span>
+          <span className="text-[9px] font-bold" style={{ color: "var(--accent)" }}>Lv.{user.level || 1}</span>
           <span className="text-white/15">·</span>
         </div>
       </div>

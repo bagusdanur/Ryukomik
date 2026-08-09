@@ -94,13 +94,13 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
               <span className="text-[10px] font-black uppercase tracking-wider text-white/40">Prev</span>
             </Link>
           ) : (
-            <div className="flex items-center justify-center py-3 bg-[#1e1e1e]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
+            <div className="flex items-center justify-center py-3 bg-[var(--surface-1)]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
               <span className="text-[10px] font-black uppercase tracking-wider text-white/30">Prev</span>
             </div>
           )}
 
           <Link prefetch={false} href={`/anime/detail/${data.allEpisode}`}
-            className="flex items-center justify-center gap-1.5 py-3 bg-cyan-400/10 hover:bg-cyan-400/15 border border-cyan-300/25 rounded-2xl active:scale-95">
+            className="flex items-center justify-center gap-1.5 py-3 bg-cyan-400/10 hover:bg-cyan-400/15 border border-cyan-300/25 rounded-2xl active:scale-95 transition-colors duration-200">
             <svg className="w-3.5 h-3.5 text-cyan-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
             <span className="text-[10px] font-black uppercase tracking-wider text-cyan-200">Semua</span>
           </Link>
@@ -112,7 +112,7 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
               <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
             </Link>
           ) : (
-            <div className="flex items-center justify-center py-3 bg-[#1e1e1e]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
+            <div className="flex items-center justify-center py-3 bg-[var(--surface-1)]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
               <span className="text-[10px] font-black uppercase tracking-wider text-white/30">Next</span>
             </div>
           )}
@@ -129,7 +129,7 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
         <div className="grid grid-cols-2 gap-2 mb-5">
           {activePlayers.map((player, idx) => (
             <button key={idx} onClick={() => setActivePlayer(idx)}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left active:scale-95 ${
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left active:scale-95 transition-colors duration-200 ${
                 activePlayer === idx
                   ? "bg-cyan-400/10 border-cyan-300/50"
                   : "bg-white/[0.04] border-white/5 hover:border-cyan-300/25 hover:bg-cyan-400/5"
@@ -160,11 +160,11 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
             <div className="grid grid-cols-2 gap-2 mb-5">
               {data.downloads.map((dl, idx) => (
                 <a key={idx} href={dl.url ?? "#"} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-3 py-2.5 bg-white/[0.04] hover:bg-cyan-400/5 border border-white/5 hover:border-cyan-300/25 rounded-xl active:scale-95 group">
+                  className="flex items-center gap-2 px-3 py-2.5 bg-white/[0.04] hover:bg-cyan-400/5 border border-white/5 hover:border-cyan-300/25 rounded-xl active:scale-95 group transition-colors duration-200">
                   <svg className="w-3.5 h-3.5 text-cyan-200 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  <span className="text-[11px] font-black uppercase tracking-tight text-white/35 group-hover:text-white truncate">{dl.name ?? "Download"}</span>
+                  <span className="text-[11px] font-black uppercase tracking-tight text-white/35 group-hover:text-white truncate transition-colors duration-200">{dl.name ?? "Download"}</span>
                 </a>
               ))}
             </div>

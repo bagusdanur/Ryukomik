@@ -123,7 +123,7 @@ export default function HentaiEpisodeClient({ data }: HentaiEpisodeClientProps) 
               <span className="text-[10px] font-black uppercase tracking-wider text-white/40">Prev</span>
             </Link>
           ) : (
-            <div className="flex items-center justify-center py-3 bg-[#1e1e1e]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
+            <div className="flex items-center justify-center py-3 bg-[var(--surface-1)]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
               <span className="text-[10px] font-black uppercase tracking-wider text-white/30">Prev</span>
             </div>
           )}
@@ -131,7 +131,7 @@ export default function HentaiEpisodeClient({ data }: HentaiEpisodeClientProps) 
           <Link
             prefetch={false}
             href={`/hentai/detail/${data.allEpisode}`}
-            className="flex items-center justify-center gap-1.5 py-3 bg-[#ff5078]/8 hover:bg-[#ff5078]/15 border border-[#ff5078]/25 rounded-2xl active:scale-95"
+            className="flex items-center justify-center gap-1.5 py-3 bg-[#ff5078]/8 hover:bg-[#ff5078]/15 border border-[#ff5078]/25 rounded-2xl active:scale-95 transition-colors duration-200"
           >
             <svg className="w-3.5 h-3.5 text-[#ff8fa3]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -151,7 +151,7 @@ export default function HentaiEpisodeClient({ data }: HentaiEpisodeClientProps) 
               </svg>
             </Link>
           ) : (
-            <div className="flex items-center justify-center py-3 bg-[#1e1e1e]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
+            <div className="flex items-center justify-center py-3 bg-[var(--surface-1)]/40 border border-white/5 rounded-2xl opacity-20 cursor-not-allowed">
               <span className="text-[10px] font-black uppercase tracking-wider text-white/30">Next</span>
             </div>
           )}
@@ -171,7 +171,7 @@ export default function HentaiEpisodeClient({ data }: HentaiEpisodeClientProps) 
             <button
               key={idx}
               onClick={() => setActivePlayer(idx)}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left active:scale-95 ${
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left active:scale-95 transition-colors duration-200 ${
                 activePlayer === idx
                   ? "bg-[#ff5078]/12 border-[#ff5078]/50"
                   : "bg-white/[0.04] border-white/5 hover:border-cyan-200/25 hover:bg-cyan-400/5"
@@ -222,7 +222,7 @@ export default function HentaiEpisodeClient({ data }: HentaiEpisodeClientProps) 
                   {/* quality header */}
                   <button
                     onClick={() => setOpenQuality(openQuality === idx ? null : idx)}
-                    className="w-full flex items-center justify-between px-3 py-2.5 bg-[#1e1e1e] border border-white/5 hover:border-[#ff5078]/25 rounded-xl active:scale-95"
+                    className="w-full flex items-center justify-between px-3 py-2.5 bg-[var(--surface-1)] border border-white/5 hover:border-[#ff5078]/25 rounded-xl active:scale-95 transition-colors duration-200"
                   >
                     <div className="flex items-center gap-2">
                       <svg className="w-3.5 h-3.5 text-[#ff5078] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -249,12 +249,12 @@ export default function HentaiEpisodeClient({ data }: HentaiEpisodeClientProps) 
                           href={link.href ?? "#"}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-2 px-3 py-2 bg-[#ff5078]/5 hover:bg-[#ff5078]/10 border border-[#ff5078]/15 hover:border-[#ff5078]/30 rounded-xl active:scale-95 group"
+                          className="flex items-center gap-2 px-3 py-2 bg-[#ff5078]/5 hover:bg-[#ff5078]/10 border border-[#ff5078]/15 hover:border-[#ff5078]/30 rounded-xl active:scale-95 group transition-colors duration-200"
                         >
                           <svg className="w-3 h-3 text-[#ff5078] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                           </svg>
-                          <span className="text-[10px] font-black uppercase tracking-tight text-white/40 group-hover:text-white/70 truncate">
+                          <span className="text-[10px] font-black uppercase tracking-tight text-white/40 group-hover:text-white/70 truncate transition-colors duration-200">
                             {link.label}
                           </span>
                         </a>

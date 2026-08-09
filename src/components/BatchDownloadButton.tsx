@@ -200,7 +200,7 @@ export default function BatchDownloadButton({ source, chapters, isPremium, user 
       <button
         onClick={() => setOpen(!open)}
         disabled={loading}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#7d5fff] hover:bg-[#6d4eef] active:scale-[0.98] transition text-sm font-semibold disabled:opacity-60"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--accent)] hover:bg-[#6d4eef] active:scale-[0.98] transition text-sm font-semibold disabled:opacity-60"
       >
         <FiDownload size={15} />
         {loading ? `${overall}%` : `Download (${chapters.length})`}
@@ -229,7 +229,7 @@ export default function BatchDownloadButton({ source, chapters, isPremium, user 
             <div className="flex gap-2 mb-3">
               <button
                 onClick={() => handleBatch("zip")}
-                className="flex-1 py-2 rounded-lg bg-[#7d5fff] hover:bg-[#6d4eef] text-sm font-semibold transition"
+                className="flex-1 py-2 rounded-lg bg-[var(--accent)] hover:bg-[#6d4eef] text-sm font-semibold transition"
               >
                 ZIP
               </button>
@@ -251,7 +251,7 @@ export default function BatchDownloadButton({ source, chapters, isPremium, user 
               </div>
               <div className="w-full bg-white/10 rounded-full h-1.5">
                 <div
-                  className="bg-[#7d5fff] h-1.5 rounded-full transition-all duration-300"
+                  className="bg-[var(--accent)] h-1.5 rounded-full transition-all duration-300"
                   style={{ width: `${overall}%` }}
                 />
               </div>

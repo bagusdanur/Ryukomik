@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 
-const ACCENT = "#7d5fff";
+const ACCENT = "var(--accent)";
 
 interface ReaderProgressProps {
   images?: string[];
