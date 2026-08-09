@@ -429,3 +429,42 @@ img {
 .animate-slideUp {
   animation: slideUp 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 }
+
+/* Badge premium (VIP/ADMIN/STAFF): sapuan cahaya diagonal.
+   Cuma transform+opacity yang dianimasikan (compositor-only, gak trigger
+   repaint), jadi murah dijalankan meski banyak badge tampil sekaligus. */
+@keyframes badgeShine {
+  0% {
+    transform: translateX(-160%) skewX(-20deg);
+  }
+  55%,
+  100% {
+    transform: translateX(320%) skewX(-20deg);
+  }
+}
+
+.rk-badge-premium {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.rk-badge-premium::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  transform: translateX(-160%) skewX(-20deg);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rk-badge-premium::after {
+    animation: badgeShine 3.2s ease-in-out infinite;
+    animation-delay: var(--rk-badge-shine-delay, 0s);
+    will-change: transform;
+  }
+}
