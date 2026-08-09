@@ -96,12 +96,6 @@ type CommentItemProps = {
 
 const IMAGE_REGEX = /\.(jpg|jpeg|png|webp|gif)$/i;
 const URL_REGEX = /^\[https?:\/\/[^\]]+\]$/;
-const TYPE_ACCENT: Record<CommentType, string> = {
-  admin: "var(--accent-3)",
-  staff: "#34d399",
-  premium: "var(--accent)",
-  normal: "var(--accent-2)",
-};
 // ============================================
 // UTILITY FUNCTIONS (outside component)
 // ============================================
@@ -296,27 +290,17 @@ CommentContent.displayName = "CommentContent";
 
 const CommentAvatar = memo(({ avatar_url, author_name, type = "normal" }: CommentAvatarProps) => {
   const isNormal = type === "normal";
-  const accentStyle = isNormal
-    ? undefined
-    : {
-        borderColor: `color-mix(in srgb, ${TYPE_ACCENT[type]} 35%, transparent)`,
-        backgroundColor: `color-mix(in srgb, ${TYPE_ACCENT[type]} 10%, transparent)`,
-      };
 
   return (
     <div
       className={`h-10 w-10 shrink-0 overflow-hidden rounded-xl border flex items-center justify-center ${
-        isNormal ? "border-white/[0.08] bg-neutral-800" : ""
+        isNormal ? "border-white/[0.08] bg-neutral-800" : "border-white/20 bg-black/40"
       }`}
-      style={accentStyle}
     >
       {avatar_url ? (
         <img src={avatar_url} className="w-full h-full object-cover" alt="av" loading="lazy" />
       ) : (
-        <span
-          className="text-xs font-bold text-gray-500"
-          style={isNormal ? undefined : { color: TYPE_ACCENT[type] }}
-        >
+        <span className="text-xs font-bold text-gray-500">
           {author_name?.charAt(0)}
         </span>
       )}
@@ -325,10 +309,12 @@ const CommentAvatar = memo(({ avatar_url, author_name, type = "normal" }: Commen
 });
 CommentAvatar.displayName = "CommentAvatar";
 
+/** Accent bar kiri — netral, biar gak rebutan warna sama GIF background */
 const AccentBar = memo(({ type }: { type: CommentType }) => (
   <div
-    className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full"
-    style={{ background: TYPE_ACCENT[type], opacity: type === "normal" ? 0.3 : 1 }}
+    className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-full ${
+      type === "normal" ? "bg-white/[0.12]" : "bg-white/25"
+    }`}
   />
 ));
 AccentBar.displayName = "AccentBar";
@@ -390,15 +376,11 @@ const CommentItem = memo(({
     submitReply(data.id);
   }, [submitReply, data.id]);
 
-  const borderStyle = useMemo(() => {
-    if (type === "normal") return undefined;
-    const accent = TYPE_ACCENT[type];
-    return { borderColor: `color-mix(in srgb, ${accent} 35%, transparent)` };
-  }, [type]);
+  const cardBorderClass = type !== "normal" ? "border-white/15" : "";
 
   return (
     <div className={isReply ? "ml-10 md:ml-14 border-l-2 border-white/5 pl-4" : ""}>
-      <div className="rk-card-soft relative overflow-visible rounded-2xl border p-4" style={borderStyle}>
+      <div className={`rk-card-soft relative overflow-visible rounded-2xl border p-4 ${cardBorderClass}`}>
         <ExclusiveCommentWallpaper type={type} />
         <AccentBar type={type} />
         <div className="relative z-[1] flex gap-3">
@@ -415,18 +397,12 @@ const CommentItem = memo(({
               <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                 {profileHref ? (
                   <ProfilePopover profile={profile} href={profileHref}>
-                    <span
-                      className="truncate text-[13px] font-black hover:text-cyan-200"
-                      style={type !== "normal" ? { color: TYPE_ACCENT[type] } : undefined}
-                    >
+                    <span className="truncate text-[13px] font-black text-white hover:text-cyan-200">
                     {displayName}
                     </span>
                   </ProfilePopover>
                 ) : (
-                  <span
-                    className="truncate text-[13px] font-black text-white"
-                    style={type !== "normal" ? { color: TYPE_ACCENT[type] } : undefined}
-                  >
+                  <span className="truncate text-[13px] font-black text-white">
                     {displayName}
                   </span>
                 )}

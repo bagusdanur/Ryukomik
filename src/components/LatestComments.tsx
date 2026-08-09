@@ -69,13 +69,6 @@ type TitleRushWinnerRow = {
 };
 
 type CommentType = "admin" | "staff" | "premium" | "normal";
-
-const TYPE_ACCENT: Record<CommentType, string> = {
-  admin: "var(--accent-3)",
-  staff: "#34d399",
-  premium: "var(--accent)",
-  normal: "var(--accent-2)",
-};
 // ============================================
 // PURE UTILITIES
 // ============================================
@@ -225,12 +218,13 @@ export async function getLatestComments() {
  * GIF background — opacity sangat rendah (0.10) +
  * dark overlay tebal supaya teks tetap bersih.
  */
-/** Accent bar kiri */
+/** Accent bar kiri — netral, biar gak rebutan warna sama GIF background */
 function AccentBar({ type }: { type: CommentType }) {
   return (
     <div
-      className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full"
-      style={{ background: TYPE_ACCENT[type], opacity: type === "normal" ? 0.3 : 1 }}
+      className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-full ${
+        type === "normal" ? "bg-white/[0.12]" : "bg-white/25"
+      }`}
     />
   );
 }
@@ -245,21 +239,13 @@ function CommentAvatar({
   authorName?: string | null;
   type: CommentType;
 }) {
-  const isNormal = type === "normal";
-  const accentStyle = isNormal
-    ? undefined
-    : {
-        borderColor: `color-mix(in srgb, ${TYPE_ACCENT[type]} 35%, transparent)`,
-        backgroundColor: `color-mix(in srgb, ${TYPE_ACCENT[type]} 10%, transparent)`,
-        color: TYPE_ACCENT[type],
-      };
-
   return (
     <div
       className={`w-10 h-10 rounded-xl border flex-shrink-0 overflow-hidden flex items-center justify-center text-[14px] font-semibold ${
-        isNormal ? "border-white/[0.08] bg-white/[0.05] text-gray-500" : ""
+        type === "normal"
+          ? "border-white/[0.08] bg-white/[0.05] text-gray-500"
+          : "border-white/20 bg-black/40 text-white/70"
       }`}
-      style={accentStyle}
     >
       {avatarUrl ? (
         <img
@@ -339,12 +325,13 @@ function CommentCard({
       ? "premium"
       : "normal";
 
-  const cardClass = "rk-card-soft group relative overflow-visible rounded-2xl border hover:border-[var(--accent-2)]/20";
-  const cardBorderStyle =
-    type === "normal" ? undefined : { borderColor: `color-mix(in srgb, ${TYPE_ACCENT[type]} 30%, transparent)` };
+  const cardClass = [
+    "rk-card-soft group relative overflow-visible rounded-2xl border hover:border-[var(--accent-2)]/20",
+    type !== "normal" ? "border-white/15" : "",
+  ].join(" ");
 
   return (
-    <article className={`${cardClass} font-sans`} style={cardBorderStyle}>
+    <article className={`${cardClass} font-sans`}>
       <ExclusiveCommentWallpaper type={type} />
       <AccentBar type={type} />
 
@@ -371,18 +358,12 @@ function CommentCard({
             <div className="flex items-center gap-1.5 flex-wrap min-w-0">
               {profileLink ? (
                 <ProfilePopover profile={profile} href={profileLink}>
-                  <span
-                    className="truncate text-[13px] font-black leading-none hover:text-cyan-200"
-                    style={type !== "normal" ? { color: TYPE_ACCENT[type] } : undefined}
-                  >
+                  <span className="truncate text-[13px] font-black leading-none text-gray-100 hover:text-cyan-200">
                     {authorName}
                   </span>
                 </ProfilePopover>
               ) : (
-                <span
-                  className="truncate text-[13px] font-black leading-none text-gray-100"
-                  style={type !== "normal" ? { color: TYPE_ACCENT[type] } : undefined}
-                >
+                <span className="truncate text-[13px] font-black leading-none text-gray-100">
                   {authorName}
                 </span>
               )}
