@@ -68,7 +68,14 @@ type TitleRushWinnerRow = {
   rank: number;
 };
 
-type CommentType = "admin" | "premium" | "normal";
+type CommentType = "admin" | "staff" | "premium" | "normal";
+
+const TYPE_ACCENT: Record<CommentType, string> = {
+  admin: "var(--accent-3)",
+  staff: "#34d399",
+  premium: "var(--accent)",
+  normal: "var(--accent-2)",
+};
 // ============================================
 // PURE UTILITIES
 // ============================================
@@ -220,16 +227,10 @@ export async function getLatestComments() {
  */
 /** Accent bar kiri */
 function AccentBar({ type }: { type: CommentType }) {
-  const barColor =
-    type === "admin"
-      ? "bg-[var(--accent-3)]"
-      : type === "premium"
-      ? "bg-[var(--accent)]"
-      : "bg-[var(--accent-2)]/30";
-
   return (
     <div
-      className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-full ${barColor}`}
+      className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full"
+      style={{ background: TYPE_ACCENT[type], opacity: type === "normal" ? 0.3 : 1 }}
     />
   );
 }
@@ -244,23 +245,21 @@ function CommentAvatar({
   authorName?: string | null;
   type: CommentType;
 }) {
-  const border =
-    type === "admin"
-      ? "border-[var(--accent-3)]/35"
-      : type === "premium"
-      ? "border-[var(--accent)]/35"
-      : "border-white/[0.08]";
-
-  const fallback =
-    type === "admin"
-      ? "bg-[var(--accent-3)]/10 text-[var(--accent-3)]"
-      : type === "premium"
-      ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-      : "bg-white/[0.05] text-gray-500";
+  const isNormal = type === "normal";
+  const accentStyle = isNormal
+    ? undefined
+    : {
+        borderColor: `color-mix(in srgb, ${TYPE_ACCENT[type]} 35%, transparent)`,
+        backgroundColor: `color-mix(in srgb, ${TYPE_ACCENT[type]} 10%, transparent)`,
+        color: TYPE_ACCENT[type],
+      };
 
   return (
     <div
-      className={`w-10 h-10 rounded-xl border flex-shrink-0 overflow-hidden flex items-center justify-center text-[14px] font-semibold ${border} ${fallback}`}
+      className={`w-10 h-10 rounded-xl border flex-shrink-0 overflow-hidden flex items-center justify-center text-[14px] font-semibold ${
+        isNormal ? "border-white/[0.08] bg-white/[0.05] text-gray-500" : ""
+      }`}
+      style={accentStyle}
     >
       {avatarUrl ? (
         <img
@@ -331,24 +330,21 @@ function CommentCard({
   const profileLink = getProfileLink(profile.username);
   const { texts, images } = parseContent(comment.content);
 
-  const type =
+  const type: CommentType =
     profile.role === "admin"
       ? "admin"
+      : profile.role === "staff"
+      ? "staff"
       : profile.is_premium
       ? "premium"
       : "normal";
 
-  const cardClass = [
-    "rk-card-soft group relative overflow-visible rounded-2xl border",
-    type === "admin"
-      ? "border-[var(--accent-3)]/30 hover:border-[var(--accent-3)]/40"
-      : type === "premium"
-      ? "border-[var(--accent)]/30 hover:border-[var(--accent)]/40"
-      : "hover:border-[var(--accent-2)]/20",
-  ].join(" ");
+  const cardClass = "rk-card-soft group relative overflow-visible rounded-2xl border hover:border-[var(--accent-2)]/20";
+  const cardBorderStyle =
+    type === "normal" ? undefined : { borderColor: `color-mix(in srgb, ${TYPE_ACCENT[type]} 30%, transparent)` };
 
   return (
-    <article className={`${cardClass} font-sans`}>
+    <article className={`${cardClass} font-sans`} style={cardBorderStyle}>
       <ExclusiveCommentWallpaper type={type} />
       <AccentBar type={type} />
 
@@ -376,26 +372,16 @@ function CommentCard({
               {profileLink ? (
                 <ProfilePopover profile={profile} href={profileLink}>
                   <span
-                    className={`truncate text-[13px] font-black leading-none hover:text-cyan-200 ${
-                    type === "admin"
-                      ? "text-[var(--accent-3)]"
-                      : type === "premium"
-                      ? "text-white"
-                      : "text-gray-100"
-                  }`}
+                    className="truncate text-[13px] font-black leading-none hover:text-cyan-200"
+                    style={type !== "normal" ? { color: TYPE_ACCENT[type] } : undefined}
                   >
                     {authorName}
                   </span>
                 </ProfilePopover>
               ) : (
                 <span
-                  className={`truncate text-[13px] font-black leading-none ${
-                    type === "admin"
-                      ? "text-[var(--accent-3)]"
-                      : type === "premium"
-                      ? "text-white"
-                      : "text-gray-100"
-                  }`}
+                  className="truncate text-[13px] font-black leading-none text-gray-100"
+                  style={type !== "normal" ? { color: TYPE_ACCENT[type] } : undefined}
                 >
                   {authorName}
                 </span>

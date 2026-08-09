@@ -2,11 +2,25 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// "Glitch Moon" — Cyberpunk: Edgerunners (Studio Trigger x Netflix, official verified Giphy channel)
-const EXCLUSIVE_GIF_WALLPAPER =
-  "https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExOGhhMzlyejhqdjh2dnZzM2s0eXUxYmkzcmkwMHFoaWVzNmk2djNlNCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/QU7IFSUto0kIV0l5H8/giphy.gif";
+// Semua dari channel resmi terverifikasi Cyberpunk: Edgerunners
+// (Studio Trigger x Netflix) di Giphy — beda GIF per tier biar gak
+// keliatan ditempel-tempel sama semua.
+const WALLPAPER_BY_TYPE = {
+  // "Eye Lights" — tegas & menyala, buat admin.
+  admin: "https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExODVtZGc5bnFoMmMycjhvMnd2eTF5eDRtZ2syazM4cGZuaGFjdHVmcyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lH6DWLFh4mWtk7ou9f/giphy.gif",
+  // "All Good Smile" — hangat & positif, buat staff.
+  staff: "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExZG05MXBnaGJ5dmhwbTB2M2puY3JvNnF4dGhkdGczanB5bGZsMHU5dCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/XnZacC7iFtMcj5eQsW/giphy.gif",
+  // "Glitch Moon" — moody/atmospheric, buat member premium/VIP.
+  premium: "https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExOGhhMzlyejhqdjh2dnZzM2s0eXUxYmkzcmkwMHFoaWVzNmk2djNlNCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/QU7IFSUto0kIV0l5H8/giphy.gif",
+} as const;
 
-type ExclusiveCommentType = "normal" | "admin" | "premium" | string;
+type ExclusiveCommentType = "normal" | "admin" | "staff" | "premium" | string;
+
+const OVERLAY_BY_TYPE: Record<string, string> = {
+  admin: "bg-[rgba(18,4,8,0.82)]",
+  staff: "bg-[rgba(4,18,12,0.82)]",
+  premium: "bg-[rgba(12,8,24,0.82)]",
+};
 
 export default function ExclusiveCommentWallpaper({
   type,
@@ -15,9 +29,10 @@ export default function ExclusiveCommentWallpaper({
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [visible, setVisible] = useState(false);
+  const wallpaperUrl = WALLPAPER_BY_TYPE[type as keyof typeof WALLPAPER_BY_TYPE];
 
   useEffect(() => {
-    if (type === "normal" || visible) return;
+    if (!wallpaperUrl || visible) return;
     const node = ref.current;
     if (!node) return;
 
@@ -38,14 +53,9 @@ export default function ExclusiveCommentWallpaper({
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [type, visible]);
+  }, [wallpaperUrl, visible]);
 
-  if (type === "normal") return null;
-
-  const overlay =
-    type === "admin"
-      ? "bg-[rgba(18,4,8,0.82)]"
-      : "bg-[rgba(12,8,24,0.82)]";
+  if (!wallpaperUrl) return null;
 
   return (
     <div
@@ -54,14 +64,14 @@ export default function ExclusiveCommentWallpaper({
     >
       {visible && (
         <img
-          src={EXCLUSIVE_GIF_WALLPAPER}
+          src={wallpaperUrl}
           className="h-full w-full object-cover opacity-35"
           alt=""
           loading="lazy"
           decoding="async"
         />
       )}
-      <div className={`absolute inset-0 ${overlay}`} />
+      <div className={`absolute inset-0 ${OVERLAY_BY_TYPE[type] || OVERLAY_BY_TYPE.premium}`} />
     </div>
   );
 }

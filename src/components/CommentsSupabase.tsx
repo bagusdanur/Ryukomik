@@ -93,6 +93,12 @@ type CommentItemProps = {
 
 const IMAGE_REGEX = /\.(jpg|jpeg|png|webp|gif)$/i;
 const URL_REGEX = /^\[https?:\/\/[^\]]+\]$/;
+const TYPE_ACCENT: Record<"admin" | "staff" | "premium" | "normal", string> = {
+  admin: "var(--accent-3)",
+  staff: "#34d399",
+  premium: "var(--accent)",
+  normal: "var(--accent-2)",
+};
 // ============================================
 // UTILITY FUNCTIONS (outside component)
 // ============================================
@@ -335,7 +341,14 @@ const CommentItem = memo(({
   const displayName = profile.username || data.author_name;
   const avatarUrl = profile.avatar_url || data.avatar_url;
   const profileHref = getProfileHref(profile.username);
-  const type = profile.role === "admin" ? "admin" : profile.is_premium ? "premium" : "normal";
+  const type =
+    profile.role === "admin"
+      ? "admin"
+      : profile.role === "staff"
+      ? "staff"
+      : profile.is_premium
+      ? "premium"
+      : "normal";
   const xpPercentage = (profile.xp ?? 0) % 100;
   const hasReplies = (data.replies?.length ?? 0) > 0;
   const isReplying = replying === data.id;
@@ -348,15 +361,15 @@ const CommentItem = memo(({
     submitReply(data.id);
   }, [submitReply, data.id]);
 
-  const borderClass = useMemo(() => {
-    if (profile.role === "admin") return "rk-card-soft border-[var(--accent-3)]/35";
-    if (profile.is_premium) return "rk-card-soft border-[var(--accent)]/35";
-    return "rk-card-soft";
-  }, [profile.role, profile.is_premium]);
+  const borderStyle = useMemo(() => {
+    if (type === "normal") return undefined;
+    const accent = TYPE_ACCENT[type];
+    return { borderColor: `color-mix(in srgb, ${accent} 35%, transparent)` };
+  }, [type]);
 
   return (
     <div className={isReply ? "ml-10 md:ml-14 border-l-2 border-white/5 pl-4" : ""}>
-      <div className={`relative overflow-visible rounded-2xl border p-4 ${borderClass}`}>
+      <div className="rk-card-soft relative overflow-visible rounded-2xl border p-4" style={borderStyle}>
         <ExclusiveCommentWallpaper type={type} />
         <div className="relative z-[1] flex gap-3">
           <div className="shrink-0 flex flex-col items-center">
