@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 
+// "Glitch Moon" — Cyberpunk: Edgerunners (Studio Trigger x Netflix, official verified Giphy channel)
 const EXCLUSIVE_GIF_WALLPAPER =
-  "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExcGtsdGNpd3ptcGIyZmpxaG4wZGc5eHU1cWk1MTdoN2h6NG1yM296diZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/V69LhUggYIg6qmKUoD/giphy.gif";
+  "https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExOGhhMzlyejhqdjh2dnZzM2s0eXUxYmkzcmkwMHFoaWVzNmk2djNlNCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/QU7IFSUto0kIV0l5H8/giphy.gif";
 
 type ExclusiveCommentType = "normal" | "admin" | "premium" | string;
 
