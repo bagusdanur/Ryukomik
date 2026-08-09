@@ -8,6 +8,7 @@ import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import LoginModal from "@/components/LoginModal";
 import UserBadges from "@/components/UserBadges";
 import ProfilePopover from "@/components/profile/ProfilePopover";
+import Button from "@/components/Button";
 import { stickers } from "@/data/stickers";
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { loadCachedProfile } from "@/utils/profileCache";
@@ -219,12 +220,12 @@ const StickerPicker = memo(({ onSelect, onClose }: StickerPickerProps) => {
             className="rk-input w-full rounded-xl p-2 text-xs"
           />
           {errorMsg && <p className="text-red-400 text-[10px]">{errorMsg}</p>}
-          <button
+          <Button
             onClick={handleAddLink}
-            className="rk-btn-primary w-full rounded-xl p-1.5 text-xs font-bold"
+            className="w-full rounded-xl p-1.5 text-xs font-bold"
           >
             Tambah
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -471,12 +472,12 @@ const CommentItem = memo(({
             >
               Batal
             </button>
-            <button
+            <Button
               onClick={handleSubmitReply}
-              className="rk-btn-primary rounded-xl px-4 py-1.5 text-[10px] font-black uppercase"
+              className="rounded-xl px-4 py-1.5 text-[10px] font-black uppercase"
             >
               Kirim
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -782,13 +783,13 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
 
         <div className="flex justify-between mt-4 items-center">
           <div className="relative">
-            <button
+            <Button
               type="button"
               onClick={toggleSticker}
-              className="rk-btn-primary rounded-xl px-2 py-2 text-lg"
+              className="rounded-xl px-2 py-2 text-lg"
             >
               <RiEmojiStickerLine className="text-xl" />
-            </button>
+            </Button>
             {showSticker && (
               <StickerPicker onSelect={insertToTextarea} onClose={closeSticker} />
             )}

@@ -4,6 +4,7 @@ import type { Provider } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import { FcGoogle } from "react-icons/fc";
 import { FaDiscord, FaTwitter } from "react-icons/fa";
+import Button from "@/components/Button";
 
 type LoginModalProps = {
   close: () => void;
@@ -127,9 +128,9 @@ export default function LoginModal({ close }: LoginModalProps) {
                 placeholder="Password"
               />
 
-              <button className="rk-btn-primary w-full rounded-2xl py-3 font-bold">
+              <Button className="w-full rounded-2xl py-3 font-bold">
                 Login
-              </button>
+              </Button>
 
               <button className="block mx-auto text-xs text-white/50 hover:text-white mt-2">
                 Lupa Password?

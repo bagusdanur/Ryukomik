@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isPushSupported, subscribePush, getExistingSubscription } from "@/utils/pushSubscription";
 import { IoMdNotifications, IoMdClose } from "react-icons/io";
+import Button from "@/components/Button";
 
 export default function NotificationPrompt() {
   const { user } = useSupabaseUser();
@@ -84,14 +85,14 @@ export default function NotificationPrompt() {
             </p>
 
             <div className="mt-3 flex gap-2">
-              <button
+              <Button
                 onClick={handleSubscribe}
                 disabled={loading}
-                className="rk-btn-primary flex-1 rounded-lg py-2 text-xs font-medium disabled:opacity-50"
+                className="flex-1 rounded-lg py-2 text-xs font-medium disabled:opacity-50"
                 style={{ background: "var(--accent)" }}
               >
                 {loading ? "Menyiapkan..." : "Ya, aktifkan! 🔔"}
-              </button>
+              </Button>
               <button
                 onClick={handleDismiss}
                 className="rounded-lg border px-4 py-2 text-xs transition hover:bg-white/5"

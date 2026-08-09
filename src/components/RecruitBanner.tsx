@@ -15,6 +15,7 @@ import {
 } from "react-icons/fa";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import LoginModal from "@/components/LoginModal";
+import Button from "@/components/Button";
 import type { IconType } from "react-icons";
 
 type SlideIconKey = "ban" | "whatsapp" | "star" | "coffee" | "gamepad" | "robot" | "bullhorn";
@@ -226,20 +227,22 @@ export default function RecruitBanner() {
         }}
       >
         {/* Prev */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => goTo(cur - 1)}
-          className="rk-btn-ghost absolute left-1.5 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full"
+          className="absolute left-1.5 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full"
         >
           <FaChevronLeft className="text-[10px]" />
-        </button>
+        </Button>
 
         {/* Next */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => goTo(cur + 1)}
-          className="rk-btn-ghost absolute right-1.5 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full"
+          className="absolute right-1.5 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full"
         >
           <FaChevronRight className="text-[10px]" />
-        </button>
+        </Button>
 
         {/* Slide */}
         <div className="relative flex items-center gap-3 px-8 py-4">

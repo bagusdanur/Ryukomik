@@ -5,6 +5,7 @@ import { FaFilter } from "react-icons/fa";
 import KomikSkeleton from "./KomikSkeleton";
 import { FiSearch } from "react-icons/fi";
 import type { ListKomikItem } from "@/types/content";
+import Button from "@/components/Button";
 
 interface ListResponse {
   data?: ListKomikItem[];
@@ -121,12 +122,13 @@ export default function KomikList() {
             <FiSearch size={18} />
           </button>
         </form>
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setShowFilter(!showFilter)}
-          className="rk-btn-ghost rounded-2xl px-3 py-3"
+          className="rounded-2xl px-3 py-3"
         >
           <FaFilter />
-        </button>
+        </Button>
       </div>
 
       {/* FILTER PANEL */}
@@ -221,22 +223,24 @@ export default function KomikList() {
 
       {/* PAGINATION */}
       <div className="flex justify-center items-center mt-6 gap-3">
-        <button
+        <Button
+          variant="ghost"
           disabled={page === 1}
           onClick={() => setPage(page - 1)}
-          className="rk-btn-ghost rounded-xl px-4 py-2 disabled:opacity-30"
+          className="rounded-xl px-4 py-2 disabled:opacity-30"
         >
           Prev
-        </button>
+        </Button>
 
         <span className="text-white/60 text-sm">Page {page}</span>
 
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setPage(page + 1)}
-          className="rk-btn-ghost rounded-xl px-4 py-2"
+          className="rounded-xl px-4 py-2"
         >
           Next
-        </button>
+        </Button>
       </div>
       </div>
     </div>

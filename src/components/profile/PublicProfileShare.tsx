@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FiCheck, FiCopy, FiShare2 } from "react-icons/fi";
+import Button from "@/components/Button";
 
 async function copyText(text) {
   if (navigator.clipboard && window.isSecureContext) {
@@ -67,13 +68,14 @@ export default function PublicProfileShare({ username }) {
           : "Share Profil";
 
   return (
-    <button
+    <Button
+      variant="ghost"
       type="button"
       onClick={shareProfile}
-      className="rk-btn-ghost mx-auto mt-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold"
+      className="mx-auto mt-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold"
     >
       {isDone ? <FiCheck /> : status === "error" ? <FiCopy /> : <FiShare2 />}
       {label}
-    </button>
+    </Button>
   );
 }

@@ -14,6 +14,7 @@ import type { FormEvent } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
+import Button from "@/components/Button";
 
 const COLLECTION_KEY = "comic_collections";
 const cloudItemCache = new Map<string, NormalizedBookmark[]>();
@@ -430,12 +431,13 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
             : "Login untuk menyimpan koleksi ke cloud dan menampilkannya di profil publik."}
         </p>
         {hasLocalCollections && cloudReady && (
-          <button
+          <Button
+            variant="ghost"
             onClick={migrateLocalCollections}
-            className="rk-btn-ghost mx-auto mt-4 flex rounded-xl px-4 py-2 text-sm font-bold"
+            className="mx-auto mt-4 flex rounded-xl px-4 py-2 text-sm font-bold"
           >
             Import Koleksi Lokal
-          </button>
+          </Button>
         )}
         <form onSubmit={createCollection} className="mx-auto mt-6 flex max-w-sm gap-2">
           <input
@@ -444,9 +446,9 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
             placeholder="Nama koleksi"
             className="rk-input min-w-0 flex-1 rounded-xl px-3 py-2.5 text-sm"
           />
-          <button className="rk-btn-primary rounded-xl px-4 py-2.5 font-bold">
+          <Button className="rounded-xl px-4 py-2.5 font-bold">
             <FiPlus />
-          </button>
+          </Button>
         </form>
       </div>
     );
@@ -455,12 +457,13 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
   return (
     <div className="space-y-4">
       {hasLocalCollections && cloudReady && (
-        <button
+        <Button
+          variant="ghost"
           onClick={migrateLocalCollections}
-          className="rk-btn-ghost w-full rounded-xl py-2 text-sm font-bold"
+          className="w-full rounded-xl py-2 text-sm font-bold"
         >
           Import Koleksi Lokal ke Supabase
-        </button>
+        </Button>
       )}
 
       {!cloudReady && (
@@ -476,10 +479,10 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
           placeholder="Koleksi baru..."
           className="rk-input min-w-0 flex-1 rounded-xl px-3 py-2.5 text-sm"
         />
-        <button className="rk-btn-primary flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold">
+        <Button className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold">
           <FiPlus size={16} />
           Buat
-        </button>
+        </Button>
       </form>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
@@ -547,13 +550,13 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
                   </>
                 )}
               </button>
-              <button
+              <Button
                 onClick={() => setPickerOpen(true)}
-                className="rk-btn-primary flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold"
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold"
               >
                 <FiPlus size={15} />
                 Tambah
-              </button>
+              </Button>
               <button
                 onClick={() => deleteCollection(activeCollection.id)}
                 className="grid h-10 w-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-white/55 hover:border-[color:color-mix(in_srgb,var(--accent-3)_30%,transparent)] hover:text-[var(--accent-3)]"

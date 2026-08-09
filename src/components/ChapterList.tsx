@@ -9,6 +9,7 @@ import { FiDownload } from "react-icons/fi";
 import { RiSortAsc, RiSortDesc } from "react-icons/ri";
 import { HiOutlineBookOpen } from "react-icons/hi2";
 import PremiumModal from "./PremModal";
+import Button from "./Button";
 import type { User } from "@supabase/supabase-js";
 
 type ChapterItem = {
@@ -146,9 +147,10 @@ export default function ChapterList({
         </div>
 
         {/* Sort toggle */}
-        <button
+        <Button
+          variant="ghost"
           onClick={() => setReverse(!reverse)}
-          className="rk-btn-ghost flex items-center gap-1.5 rounded-2xl px-3 py-2.5 text-xs whitespace-nowrap"
+          className="flex items-center gap-1.5 rounded-2xl px-3 py-2.5 text-xs whitespace-nowrap"
         >
           {reverse ? (
             <>
@@ -159,11 +161,12 @@ export default function ChapterList({
               <RiSortDesc size={15} /> Terbaru
             </>
           )}
-        </button>
+        </Button>
 
         {/* Batch DL */}
         {!batchMode ? (
-          <button
+          <Button
+            variant="ghost"
             onClick={() => {
               if (!user) {
                 setShowPremiumModal(true);
@@ -176,11 +179,11 @@ export default function ChapterList({
               }
               setBatchMode(true);
             }}
-            className="rk-btn-ghost flex items-center gap-1.5 rounded-2xl px-3 py-2.5 text-xs"
+            className="flex items-center gap-1.5 rounded-2xl px-3 py-2.5 text-xs"
           >
             <FiDownload size={15} />
             Batch
-          </button>
+          </Button>
         ) : (
           <button
             onClick={cancelBatch}

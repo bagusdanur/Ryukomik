@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState, useMemo } from "react";
+import Button from "@/components/Button";
 
 type DonghuaInfo = {
   status?: string;
@@ -389,9 +390,10 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                 onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.05)")}
               />
             </div>
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setSortAsc((p) => !p)}
-              className="rk-btn-ghost flex items-center gap-1.5 rounded-xl px-3 py-2 text-[10px] font-black whitespace-nowrap"
+              className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[10px] font-black whitespace-nowrap"
               style={{ fontFamily: "'Syne', sans-serif" }}
             >
               {sortAsc ? "TERLAMA" : "TERBARU"}
@@ -404,7 +406,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
               >
                 <path d="M12 5v14M5 12l7 7 7-7" />
               </svg>
-            </button>
+            </Button>
           </div>
 
           {/* Scroll Box */}

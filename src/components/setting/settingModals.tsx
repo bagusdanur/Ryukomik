@@ -1,5 +1,6 @@
 import { THEME_COLORS } from "@/components/ThemeColorProvider";
 import { Modal } from "./settingUi";
+import Button from "@/components/Button";
 import { FaCamera, FaUserEdit } from "react-icons/fa";
 import type { ChangeEvent } from "react";
 
@@ -101,9 +102,9 @@ export function ThemeModal({ activeTheme, onChangeTheme, onClose }: ThemeModalPr
           );
         })}
       </div>
-      <button type="button" onClick={onClose} className="rk-btn-ghost mt-4 w-full rounded-xl py-2">
+      <Button variant="ghost" type="button" onClick={onClose} className="mt-4 w-full rounded-xl py-2">
         Tutup
-      </button>
+      </Button>
     </Modal>
   );
 }
@@ -181,21 +182,22 @@ export function ProfileEditModal({
       />
 
       <div className="flex gap-3">
-        <button
+        <Button
+          variant="ghost"
           type="button"
           onClick={onClose}
-          className="rk-btn-ghost flex-1 rounded-xl py-2"
+          className="flex-1 rounded-xl py-2"
         >
           Batal
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           disabled={saving}
           onClick={onSave}
-          className="rk-btn-primary flex-1 rounded-xl py-2 font-bold disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex-1 rounded-xl py-2 font-bold disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving ? "Menyimpan..." : "Simpan"}
-        </button>
+        </Button>
       </div>
     </Modal>
   );
@@ -239,9 +241,9 @@ export function ConfirmModal({ confirm, loadingAction, onCancel, onConfirm }: Co
         <p className="mb-5 text-sm leading-relaxed text-white/65">{config.desc}</p>
       )}
       <div className="flex gap-3">
-        <button onClick={onCancel} className="rk-btn-ghost flex-1 rounded-xl py-2">
+        <Button variant="ghost" onClick={onCancel} className="flex-1 rounded-xl py-2">
           Batal
-        </button>
+        </Button>
         <button
           disabled={loadingAction}
           onClick={onConfirm}
@@ -262,13 +264,13 @@ export function LogoutModal({ loadingLogout, onBackupLogout, onLogout, onCancel 
         Disarankan membuat backup terlebih dahulu agar bookmark dan riwayat baca tidak hilang.
       </p>
       <div className="flex flex-col gap-3">
-        <button
+        <Button
           disabled={loadingLogout}
           onClick={onBackupLogout}
-          className="rk-btn-primary w-full rounded-xl py-2"
+          className="w-full rounded-xl py-2"
         >
           Backup & Logout
-        </button>
+        </Button>
         <button
           disabled={loadingLogout}
           onClick={onLogout}
@@ -276,9 +278,9 @@ export function LogoutModal({ loadingLogout, onBackupLogout, onLogout, onCancel 
         >
           Logout Tanpa Backup
         </button>
-        <button onClick={onCancel} className="rk-btn-ghost w-full rounded-xl py-2">
+        <Button variant="ghost" onClick={onCancel} className="w-full rounded-xl py-2">
           Batal
-        </button>
+        </Button>
       </div>
     </Modal>
   );

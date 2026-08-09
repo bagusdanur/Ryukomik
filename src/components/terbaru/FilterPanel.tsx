@@ -1,6 +1,7 @@
 "use client";
 import type { Dispatch, SetStateAction } from "react";
 import type { SourceId, TerbaruFilters, UpdateItem } from "@/types/content";
+import Button from "@/components/Button";
 
 interface FilterPanelProps {
   showFilter: boolean;
@@ -100,7 +101,8 @@ export default function FilterPanel({
       </div>
 
       {/* 🔥 RESET BUTTON (TIDAK DIUBAH SAMA SEKALI) */}
-      <button
+      <Button
+        variant="ghost"
         onClick={() => {
           setOrderby("modified");
           setTipe("");
@@ -114,10 +116,10 @@ export default function FilterPanel({
 
           fetchData(1);
         }}
-        className="rk-btn-ghost mt-3 w-full rounded-xl py-2.5 text-sm font-bold"
+        className="mt-3 w-full rounded-xl py-2.5 text-sm font-bold"
       >
         Reset
-      </button>
+      </Button>
     </div>
   );
 }

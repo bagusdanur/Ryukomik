@@ -23,6 +23,7 @@ import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 import LoginModal from "@/components/LoginModal";
 import SkPremiumModal from "@/components/SkPremiumModal";
+import Button from "@/components/Button";
 
 const features = [
   {
@@ -601,13 +602,13 @@ export default function PremiumPage() {
                     : " · Premium"}
                 </div>
               ) : (
-                <button
+                <Button
                   onClick={handleActivatePremium}
-                  className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-bold min-h-[44px] cursor-pointer"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl py-2.5 text-sm font-bold min-h-[44px] cursor-pointer"
                 >
                   <HiOutlineSparkles size={15} />
                   Aktifkan Premium
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -803,13 +804,13 @@ export default function PremiumPage() {
 
                       {/* Action buttons */}
                       <div className="pt-2">
-                        <button
+                        <Button
                           onClick={goToStep2}
-                          className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all"
+                          className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all"
                         >
                           Saya Sudah Transfer
                           <FiChevronRight size={16} />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -933,14 +934,14 @@ export default function PremiumPage() {
                           <FiChevronLeft size={16} />
                           Kembali
                         </button>
-                        <button
+                        <Button
                           onClick={goToStep3}
                           disabled={hasPendingRequest}
-                          className="rk-btn-primary flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Lanjut Konfirmasi
                           <FiChevronRight size={16} />
-                        </button>
+                        </Button>
                       </div>
                         </>
                       )}
@@ -1043,10 +1044,10 @@ export default function PremiumPage() {
                           <FiChevronLeft size={16} />
                           Kembali
                         </button>
-                        <button
+                        <Button
                           onClick={handleSubmit}
                           disabled={loading || !isSkAgreed}
-                          className="rk-btn-primary flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 hover:brightness-110 active:scale-[0.99] transition-all"
+                          className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 hover:brightness-110 active:scale-[0.99] transition-all"
                         >
                           {loading ? (
                             <FiLoader size={16} className="animate-spin" />
@@ -1054,7 +1055,7 @@ export default function PremiumPage() {
                             <HiOutlineSparkles size={16} />
                           )}
                           {loading ? "Mengirim..." : "Kirim Bukti Pembayaran"}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}

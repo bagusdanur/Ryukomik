@@ -3,6 +3,7 @@ import { FiX, FiSettings } from "react-icons/fi";
 import type { ReactNode } from "react";
 import type { ImageScaling, PageSpacing, ReadingMode, ReaderSettingsState } from "@/store/readerStore";
 import { useReaderStore } from "@/store/readerStore";
+import Button from "@/components/Button";
 
 const ACCENT = "#22d3ee";
 
@@ -269,13 +270,13 @@ export default function ReaderSettingModal({ settings, onClose }: ReaderSettingM
           className="px-4 py-3 flex-shrink-0"
           style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <button
+          <Button
             type="button"
             onClick={onClose}
-            className="rk-btn-primary w-full cursor-pointer rounded-2xl border-none py-2.5 text-[13px] font-bold tracking-wide text-white"
+            className="w-full cursor-pointer rounded-2xl border-none py-2.5 text-[13px] font-bold tracking-wide text-white"
           >
             Finish
-          </button>
+          </Button>
         </div>
       </div>
     </div>

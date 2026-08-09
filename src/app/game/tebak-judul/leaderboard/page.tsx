@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import VipBadge from "@/components/VipBadge";
 import TitleRushWinnerBadge from "@/components/TitleRushWinnerBadge";
+import Button from "@/components/Button";
 import { FaCrown, FaMedal, FaTrophy } from "react-icons/fa";
 import { FiArrowLeft, FiAward, FiClock, FiRefreshCw, FiTarget, FiUser } from "react-icons/fi";
 
@@ -203,14 +204,15 @@ export default function TitleRushLeaderboardPage() {
           >
             <FiArrowLeft />
           </Link>
-          <button
+          <Button
+            variant="ghost"
             type="button"
             onClick={loadLeaderboard}
-            className="rk-btn-ghost inline-flex h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold"
+            className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-xs font-bold"
           >
             <FiRefreshCw />
             Refresh
-          </button>
+          </Button>
         </div>
 
         <section className="rk-card mb-3 overflow-hidden rounded-lg sm:mb-4">

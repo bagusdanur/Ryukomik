@@ -23,6 +23,7 @@ import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 import LoginModal from "@/components/LoginModal";
 import SkPremiumModal from "@/components/SkPremiumModal";
+import Button from "@/components/Button";
 import { supabase } from "@/lib/supabaseClient";
 
 const features = [
@@ -1050,10 +1051,10 @@ export default function PremiumPayClient() {
 
                           {/* Action buttons */}
                           <div className="pt-2">
-                            <button
+                            <Button
                               onClick={handleCreateTransaction}
                               disabled={loading || !isSkAgreed}
-                              className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold min-h-[44px] cursor-pointer hover:brightness-110 active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {loading ? (
                                 <FiLoader size={16} className="animate-spin" />
@@ -1061,7 +1062,7 @@ export default function PremiumPayClient() {
                                 "Lanjut Pembayaran"
                               )}
                               {!loading && <FiChevronRight size={16} />}
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       )}

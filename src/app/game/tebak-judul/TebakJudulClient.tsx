@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import Button from "@/components/Button";
 import { FaCheck, FaCrown, FaFire, FaMedal, FaRedoAlt, FaTimes, FaTrophy } from "react-icons/fa";
 import { FiArrowRight, FiAward, FiBarChart2, FiCheckSquare, FiClock, FiHome, FiRefreshCw, FiTarget, FiZap } from "react-icons/fi";
 
@@ -570,16 +571,16 @@ export default function TebakJudulClient({
                       Juara 3 mendapatkan Premium 3 Hari.
                     </div>
                   </div>
-                  <button
+                  <Button
                     onClick={restart}
                     disabled={restartDisabled}
-                    className="rk-btn-primary mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg px-5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg px-5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <FaRedoAlt />
                     {restartDisabled
                       ? `Main lagi ${Math.ceil(restartCooldown / 60)} menit`
                       : "Main lagi"}
-                  </button>
+                  </Button>
                   <Link
                     href="/game/tebak-judul/leaderboard"
                     className="rk-btn-ghost mt-3 inline-flex h-12 w-full items-center justify-center rounded-lg px-5 text-sm font-bold"
@@ -646,20 +647,21 @@ export default function TebakJudulClient({
       {answered && !isFinished && question?.answer && (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/[0.08] bg-[var(--background)] px-3 py-3 text-white">
           <div className="mx-auto flex max-w-3xl items-center gap-2">
-            <button
+            <Button
               onClick={continueGame}
-              className="rk-btn-primary inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold"
+              className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold"
             >
               Lanjut
               <FiArrowRight />
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
               onClick={restart}
-              className="rk-btn-ghost inline-flex h-12 w-12 items-center justify-center rounded-lg"
+              className="inline-flex h-12 w-12 items-center justify-center rounded-lg"
               aria-label="Restart game"
             >
               <FiRefreshCw />
-            </button>
+            </Button>
             <Link
               href={`/komik/${question.answer.source}/${question.answer.slug}`}
               className="rk-btn-ghost inline-flex h-12 flex-1 items-center justify-center rounded-lg px-3 text-sm font-semibold"

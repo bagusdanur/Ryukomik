@@ -9,6 +9,7 @@ import type { Chapter, Series } from "@/types/content";
 import { useHistoryStore } from "@/store/historyStore";
 import CommentsSupabase from "@/components/CommentsSupabase";
 import BookmarkButton from "@/components/BookmarkButton";
+import Button from "@/components/Button";
 import { FaArrowLeft, FaHeart, FaCommentDots } from "react-icons/fa";
 import ChapterList from "@/components/ChapterList";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
@@ -186,19 +187,20 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
         <div className="absolute inset-0 bg-[var(--background)]/76" />
 
         <div className="absolute top-4 left-4 right-4 flex justify-between z-20">
-          <button
+          <Button
+            variant="ghost"
             onClick={() => router.back()}
-            className="rk-btn-ghost rounded-full p-3 active:scale-90"
+            className="rounded-full p-3 active:scale-90"
           >
             <FaArrowLeft />
-          </button>
+          </Button>
           <div className="flex gap-3">
-            <button className="rk-btn-ghost rounded-full p-3 active:scale-90">
+            <Button variant="ghost" className="rounded-full p-3 active:scale-90">
               <FaHeart />
-            </button>
-            <button className="rk-btn-ghost rounded-full p-3 active:scale-90">
+            </Button>
+            <Button variant="ghost" className="rounded-full p-3 active:scale-90">
               <FaCommentDots />
-            </button>
+            </Button>
           </div>
         </div>
       </div>

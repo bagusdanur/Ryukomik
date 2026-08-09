@@ -10,6 +10,7 @@ import {
   isActivePremiumProfile,
   loadCachedProfile,
 } from "@/utils/profileCache";
+import Button from "@/components/Button";
 
 type PremiumProfile = {
   is_premium?: boolean;
@@ -170,23 +171,24 @@ export default function PremiumModal({ open, onClose }: PremiumModalProps) {
             )}
 
             {/* BUTTON */}
-            <button
+            <Button
               onClick={redeemPremium}
               disabled={loading}
-              className="rk-btn-primary mt-5 w-full rounded-2xl py-3 font-bold disabled:opacity-60"
+              className="mt-5 w-full rounded-2xl py-3 font-bold disabled:opacity-60"
             >
               {loading ? "Memproses..." : "Redeem Premium"}
-            </button>
+            </Button>
             {/* Arahkan ke /premium untuk lihat fitur + beli */}
-            <button
+            <Button
+              variant="ghost"
               onClick={() => {
                 onClose();
                 router.push("/premium-pay");
               }}
-              className="rk-btn-ghost mt-3 w-full rounded-2xl py-3 font-bold"
+              className="mt-3 w-full rounded-2xl py-3 font-bold"
             >
               Lihat Fitur Premium
-            </button>
+            </Button>
 
             <p className="mt-3 text-xs text-white/40 text-center">
               Premium aktif sesuai durasi kode

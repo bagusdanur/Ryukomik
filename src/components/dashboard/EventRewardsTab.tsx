@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FaCrown, FaMedal, FaTrophy } from "react-icons/fa";
 import { FiAward, FiCalendar, FiCheck, FiChevronDown, FiRefreshCw, FiTrash2, FiX } from "react-icons/fi";
 import { Avatar } from "./dashboardUtils";
+import Button from "@/components/Button";
 
 export type TitleRushWinner = {
   rank: number;
@@ -255,10 +256,10 @@ export default function EventRewardsTab({
       </section>
 
       <div className="grid grid-cols-2 gap-2">
-        <button
+        <Button
           onClick={awardWinners}
           disabled={loading || awarding || deleting || winners.length === 0 || !canAward}
-          className="rk-btn-primary flex h-11 min-w-0 items-center justify-center gap-2 rounded-xl px-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 min-w-0 items-center justify-center gap-2 rounded-xl px-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50"
         >
           {awarding ? (
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -268,7 +269,7 @@ export default function EventRewardsTab({
           <span className="truncate">
             {isCurrentWeek && !debugAward ? "Belum Selesai" : debugAward ? "Debug Hadiah" : "Kasih Hadiah"}
           </span>
-        </button>
+        </Button>
 
         <button
           onClick={() => setConfirmDelete(true)}

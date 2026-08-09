@@ -11,6 +11,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import LoginModal from "@/components/LoginModal";
 import AgeModal from "@/components/AgeModal";
+import Button from "@/components/Button";
 import {
   TITLE_RUSH_EVENT_TYPE,
 } from "@/utils/titleRushNotification";
@@ -294,13 +295,14 @@ useEffect(() => {
           </form>
 
           <div className="relative">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => startTransition(() => setShowSource(!showSource))}
-              className="rk-btn-ghost flex h-10 items-center gap-2 rounded-full px-3 text-sm"
+              className="flex h-10 items-center gap-2 rounded-full px-3 text-sm"
             >
               <FaExchangeAlt className="text-xs" />
               <span className="capitalize">{SOURCE_MAP[source] || "1"}</span>
-            </button>
+            </Button>
 
             {showSource && (
               <>

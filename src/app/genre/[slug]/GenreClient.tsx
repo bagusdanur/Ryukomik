@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SeriesCard from "@/components/SeriesCard";
+import Button from "@/components/Button";
 
 interface GenreResultItem {
   title: string;
@@ -202,27 +203,27 @@ export default function GenreClient({ initialData, slug, title }: GenreClientPro
             <p className="text-sm leading-6 text-white/60">
               Tidak ada komik lagi di halaman ini.
             </p>
-            <button
+            <Button
               onClick={() => handlePageChange(currentPage - 1)}
-              className="rk-btn-primary mt-5 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold cursor-pointer"
+              className="mt-5 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold cursor-pointer"
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <path d="M7.5 2L3.5 6L7.5 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               Kembali ke Halaman {currentPage - 1}
-            </button>
+            </Button>
           </div>
         ) : results.length === 0 ? (
           <div className="rk-state rounded-2xl px-5 py-8 text-center">
             <p className="text-sm leading-6 text-white/60">
               Tidak ada komik yang ditemukan untuk genre ini.
             </p>
-            <button
+            <Button
               onClick={() => router.push("/genre")}
-              className="rk-btn-primary mt-5 inline-flex rounded-full px-4 py-2 text-sm font-bold cursor-pointer"
+              className="mt-5 inline-flex rounded-full px-4 py-2 text-sm font-bold cursor-pointer"
             >
               Lihat Semua Genre
-            </button>
+            </Button>
           </div>
         ) : (
           <>

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { nekoImg } from "@/utils/neko";
+import Button from "@/components/Button";
 
 type HentaiGenre = {
   name?: string;
@@ -268,16 +269,17 @@ export default function HentaiDetailClient({ data, slug }: HentaiDetailClientPro
                 style={{ fontFamily: "'Syne', sans-serif" }}
               />
             </div>
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setSortAsc((p) => !p)}
-              className="rk-btn-ghost flex items-center gap-1.5 rounded-xl px-3 py-2 text-[10px] font-black whitespace-nowrap"
+              className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[10px] font-black whitespace-nowrap"
               style={{ fontFamily: "'Syne', sans-serif" }}
             >
               {sortAsc ? "TERLAMA" : "TERBARU"}
               <svg className={`w-3 h-3 ${sortAsc ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M12 5v14M5 12l7 7 7-7" />
               </svg>
-            </button>
+            </Button>
           </div>
 
           {/* List */}

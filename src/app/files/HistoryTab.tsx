@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FiTrash2 } from "react-icons/fi";
 import { useHistoryStore } from "@/store/historyStore";
 import type { ReadHistoryItem } from "@/types/user";
+import Button from "@/components/Button";
 
 
 type HistoryTabProps = {
@@ -201,12 +202,13 @@ const cleanTitle = useCallback((title?: string) => {
             </p>
 
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setConfirm(null)}
-                className="rk-btn-ghost flex-1 rounded-xl py-2"
+                className="flex-1 rounded-xl py-2"
               >
                 Batal
-              </button>
+              </Button>
               <button
                 onClick={deleteItem}
                 className="flex-1 rounded-xl bg-rose-500 py-2 font-bold transition-colors duration-200 hover:bg-rose-400"

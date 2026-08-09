@@ -6,6 +6,7 @@ import type { SourceId } from "@/types/content";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import SourcePicker from "@/components/SourcePicker";
 import { SOURCE_MAP } from "@/config/sources";
+import Button from "@/components/Button";
 
 import {
   FaFilter,
@@ -85,13 +86,14 @@ export default function HeaderBar({
         </form>
 
         <div className="relative">
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setShowSource(!showSource)}
-            className="rk-btn-ghost flex h-10 items-center gap-2 rounded-full px-3 text-sm"
+            className="flex h-10 items-center gap-2 rounded-full px-3 text-sm"
           >
             <FaExchangeAlt className="text-xs" />
             <span className="capitalize">{SOURCE_MAP[source] || "1"}</span>
-          </button>
+          </Button>
 
           {showSource && (
             <>

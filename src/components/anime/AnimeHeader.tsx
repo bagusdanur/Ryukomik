@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import SwitchCategoryButton from "./SwitchCategoryButton";
+import Button from "@/components/Button";
 const NAV_ITEMS = [
   { label: "Terbaru", href: "/anime/terbaru" },
   { label: "Ongoing", href: "/anime/ongoing" },
@@ -77,9 +78,10 @@ export default function AnimeHeader() {
               </svg>
             </Link>
 
-            <button
+            <Button
+              variant="ghost"
               onClick={() => setOpen((v) => !v)}
-              className="rk-btn-ghost flex h-9 w-9 flex-col items-center justify-center gap-[5px] rounded-2xl active:scale-90"
+              className="flex h-9 w-9 flex-col items-center justify-center gap-[5px] rounded-2xl active:scale-90"
               aria-label="Menu"
             >
               <span
@@ -104,7 +106,7 @@ export default function AnimeHeader() {
                   transform: open ? "translateY(-7px) rotate(-45deg)" : "none",
                 }}
               />
-            </button>
+            </Button>
           </div>
         </div>
       </header>
