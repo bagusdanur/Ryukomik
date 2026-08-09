@@ -66,9 +66,12 @@ type CommentContentProps = {
   onOpenSpoiler: () => void;
 };
 
+type CommentType = "admin" | "staff" | "premium" | "normal";
+
 type CommentAvatarProps = {
   avatar_url?: string | null;
   author_name?: string | null;
+  type?: CommentType;
 };
 
 type CommentBadgeProps = {
@@ -93,7 +96,7 @@ type CommentItemProps = {
 
 const IMAGE_REGEX = /\.(jpg|jpeg|png|webp|gif)$/i;
 const URL_REGEX = /^\[https?:\/\/[^\]]+\]$/;
-const TYPE_ACCENT: Record<"admin" | "staff" | "premium" | "normal", string> = {
+const TYPE_ACCENT: Record<CommentType, string> = {
   admin: "var(--accent-3)",
   staff: "#34d399",
   premium: "var(--accent)",
@@ -291,18 +294,44 @@ const CommentContent = memo(({ text, isSpoiler, openSpoiler, onOpenSpoiler }: Co
 });
 CommentContent.displayName = "CommentContent";
 
-const CommentAvatar = memo(({ avatar_url, author_name }: CommentAvatarProps) => (
-  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-2xl bg-neutral-800 ring-1 ring-white/10">
-    {avatar_url ? (
-      <img src={avatar_url} className="w-full h-full object-cover" alt="av" loading="lazy" />
-    ) : (
-      <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
-        {author_name?.charAt(0)}
-      </div>
-    )}
-  </div>
-));
+const CommentAvatar = memo(({ avatar_url, author_name, type = "normal" }: CommentAvatarProps) => {
+  const isNormal = type === "normal";
+  const accentStyle = isNormal
+    ? undefined
+    : {
+        borderColor: `color-mix(in srgb, ${TYPE_ACCENT[type]} 35%, transparent)`,
+        backgroundColor: `color-mix(in srgb, ${TYPE_ACCENT[type]} 10%, transparent)`,
+      };
+
+  return (
+    <div
+      className={`h-10 w-10 shrink-0 overflow-hidden rounded-xl border flex items-center justify-center ${
+        isNormal ? "border-white/[0.08] bg-neutral-800" : ""
+      }`}
+      style={accentStyle}
+    >
+      {avatar_url ? (
+        <img src={avatar_url} className="w-full h-full object-cover" alt="av" loading="lazy" />
+      ) : (
+        <span
+          className="text-xs font-bold text-gray-500"
+          style={isNormal ? undefined : { color: TYPE_ACCENT[type] }}
+        >
+          {author_name?.charAt(0)}
+        </span>
+      )}
+    </div>
+  );
+});
 CommentAvatar.displayName = "CommentAvatar";
+
+const AccentBar = memo(({ type }: { type: CommentType }) => (
+  <div
+    className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full"
+    style={{ background: TYPE_ACCENT[type], opacity: type === "normal" ? 0.3 : 1 }}
+  />
+));
+AccentBar.displayName = "AccentBar";
 
 const CommentBadge = memo(({ role, isPremium, titleRushRank, xpRank }: CommentBadgeProps) => {
   return (
@@ -341,7 +370,7 @@ const CommentItem = memo(({
   const displayName = profile.username || data.author_name;
   const avatarUrl = profile.avatar_url || data.avatar_url;
   const profileHref = getProfileHref(profile.username);
-  const type =
+  const type: CommentType =
     profile.role === "admin"
       ? "admin"
       : profile.role === "staff"
@@ -371,32 +400,33 @@ const CommentItem = memo(({
     <div className={isReply ? "ml-10 md:ml-14 border-l-2 border-white/5 pl-4" : ""}>
       <div className="rk-card-soft relative overflow-visible rounded-2xl border p-4" style={borderStyle}>
         <ExclusiveCommentWallpaper type={type} />
+        <AccentBar type={type} />
         <div className="relative z-[1] flex gap-3">
-          <div className="shrink-0 flex flex-col items-center">
-            {profileHref ? (
-              <ProfilePopover profile={profile} href={profileHref}>
-                <CommentAvatar avatar_url={avatarUrl} author_name={displayName} />
-              </ProfilePopover>
-            ) : (
-              <CommentAvatar avatar_url={avatarUrl} author_name={displayName} />
-            )}
-            <span className="mt-1 text-[9px] font-black text-[var(--accent-2)]">LV.{profile.level}</span>
-            <div className="w-11 h-1 bg-white/10 rounded-full mt-1 overflow-hidden border border-white/5">
-              <div className="h-full bg-[var(--accent)]" style={{ width: `${xpPercentage}%` }} />
-            </div>
-          </div>
+          {profileHref ? (
+            <ProfilePopover profile={profile} href={profileHref}>
+              <CommentAvatar avatar_url={avatarUrl} author_name={displayName} type={type} />
+            </ProfilePopover>
+          ) : (
+            <CommentAvatar avatar_url={avatarUrl} author_name={displayName} type={type} />
+          )}
 
           <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-center mb-1">
-              <div className="flex items-center gap-2">
+            <div className="flex items-start justify-between gap-2 mb-0.5">
+              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                 {profileHref ? (
                   <ProfilePopover profile={profile} href={profileHref}>
-                    <span className="text-[13px] font-black text-white hover:text-cyan-200">
+                    <span
+                      className="truncate text-[13px] font-black hover:text-cyan-200"
+                      style={type !== "normal" ? { color: TYPE_ACCENT[type] } : undefined}
+                    >
                     {displayName}
                     </span>
                   </ProfilePopover>
                 ) : (
-                  <span className="text-[13px] font-black text-white">
+                  <span
+                    className="truncate text-[13px] font-black text-white"
+                    style={type !== "normal" ? { color: TYPE_ACCENT[type] } : undefined}
+                  >
                     {displayName}
                   </span>
                 )}
@@ -407,10 +437,17 @@ const CommentItem = memo(({
                   xpRank={xpRank}
                 />
               </div>
-              <span className="text-[9px] text-gray-500 italic font-medium">
-                {formatTime(data.created_at)}
-              </span>
+              <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                <span className="text-[10px] font-bold text-[var(--accent-2)] leading-none">Lvl {profile.level}</span>
+                <div className="w-8 h-[3px] rounded-full bg-white/[0.07] overflow-hidden">
+                  <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${xpPercentage}%` }} />
+                </div>
+              </div>
             </div>
+
+            <span className="text-[9px] text-gray-500 italic font-medium">
+              {formatTime(data.created_at)}
+            </span>
 
             <div className="text-[14px] text-gray-300 leading-relaxed font-medium py-1">
               <CommentContent
@@ -496,9 +533,10 @@ const PremiumPromoComment = memo(() => {
   return (
     <div className="relative overflow-visible rounded-2xl border border-[var(--accent)]/35 p-4 rk-card-soft">
       <ExclusiveCommentWallpaper type="premium" />
+      <AccentBar type="premium" />
       <div className="relative z-[1] flex gap-3">
         <div className="shrink-0 flex flex-col items-center">
-          <CommentAvatar avatar_url="/icon.png" author_name="Ryukomik" />
+          <CommentAvatar avatar_url="/icon.png" author_name="Ryukomik" type="premium" />
           <span className="mt-1 text-[9px] font-black text-[var(--accent-2)]">OFFICIAL</span>
           <div className="mt-1 h-1 w-11 overflow-hidden rounded-full border border-white/5 bg-white/10">
             <div className="h-full w-full bg-[var(--accent)]" />
