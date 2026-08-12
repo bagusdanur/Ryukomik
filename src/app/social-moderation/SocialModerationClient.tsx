@@ -1,0 +1,14 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { socialFetch } from "@/lib/social/client";
+
+type Report = { id: number; target_type: "post" | "profile"; target_id: string; reason: string; status: string; created_at: string };
+export default function SocialModerationClient() {
+  const [status, setStatus] = useState("open"); const [items, setItems] = useState<Report[]>([]); const [error, setError] = useState("");
+  const load = useCallback(async () => { try { const result = await socialFetch<{items: Report[]}>(`/api/social/moderation/reports?status=${status}`); setItems(result.items); setError(""); } catch (failure) { setError(failure instanceof Error ? failure.message : "Gagal memuat laporan."); } }, [status]);
+  useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
+  async function decide(item: Report, decision: "reviewed" | "dismissed" | "actioned", removeTarget = false) { await socialFetch("/api/social/moderation/reports", { method: "PATCH", body: JSON.stringify({ id: item.id, status: decision, removeTarget }) }); await load(); }
+  return <div className="mt-6"><div className="mb-4 flex gap-2 overflow-x-auto">{["open","reviewed","dismissed","actioned","all"].map((value) => <button key={value} onClick={() => setStatus(value)} className={`rounded-full px-4 py-2 text-xs font-black ${status === value ? "bg-cyan-300/15 text-cyan-100" : "bg-white/5 text-white/45"}`}>{value}</button>)}</div>{error && <div className="rounded-xl border border-red-400/20 p-4 text-sm text-red-200">{error}</div>}<div className="space-y-3">{items.map((item) => <article key={item.id} className="rk-card-soft rounded-2xl p-4"><div className="flex items-center justify-between gap-2"><span className="rounded-full bg-white/5 px-2 py-1 text-[10px] font-bold uppercase text-white/45">{item.target_type}</span><time className="text-[10px] text-white/30">{new Date(item.created_at).toLocaleString("id-ID")}</time></div><p className="mt-3 text-sm text-white/80">{item.reason}</p><div className="mt-3 flex flex-wrap gap-2">{item.target_type === "post" && <Link href={`/post/${item.target_id}`} className="rounded-lg border border-white/10 px-3 py-2 text-xs">Lihat target</Link>}<button onClick={() => decide(item,"reviewed")} className="rounded-lg border border-white/10 px-3 py-2 text-xs">Review</button><button onClick={() => decide(item,"dismissed")} className="rounded-lg border border-white/10 px-3 py-2 text-xs">Tolak</button><button onClick={() => decide(item,"actioned",item.target_type === "post")} className="rounded-lg bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200">Tindak</button></div></article>)}{!error && !items.length && <p className="py-16 text-center text-white/35">Tidak ada laporan pada status ini.</p>}</div></div>;
+}

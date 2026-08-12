@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -45,13 +45,14 @@ export default function SocialDock() {
 
   useEffect(() => {
     if (!user || !socialRoute) return;
-    void poll();
+    const initialPoll = window.setTimeout(() => void poll(), 0);
     const timer = window.setInterval(poll, 60_000);
     const visible = () => {
       if (document.visibilityState === "visible") void poll();
     };
     document.addEventListener("visibilitychange", visible);
     return () => {
+      window.clearTimeout(initialPoll);
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", visible);
     };

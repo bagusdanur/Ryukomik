@@ -1,6 +1,7 @@
 import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { allowsSocialNotification } from "@/lib/social/notifications";
 
 async function mutate(request: Request, remove: boolean) {
   assertSameOrigin(request); const userId = await requireUserId(request);
@@ -12,7 +13,7 @@ async function mutate(request: Request, remove: boolean) {
     ? await supabaseAdmin.from("social_post_likes").delete().eq("post_id", postId).eq("user_id", userId)
     : await supabaseAdmin.from("social_post_likes").upsert({ post_id: postId, user_id: userId }, { ignoreDuplicates: true });
   if (result.error) throw result.error;
-  if (!remove && post.author_id !== userId) {
+  if (!remove && post.author_id !== userId && await allowsSocialNotification(post.author_id, "likes")) {
     const { data: actor } = await supabaseAdmin.from("profiles").select("username").eq("id", userId).maybeSingle();
     await supabaseAdmin.from("notifications").insert({ user_id: post.author_id, actor_id: userId, actor_name: actor?.username || "User", type: "social_like", target_id: postId, is_read: false });
   }

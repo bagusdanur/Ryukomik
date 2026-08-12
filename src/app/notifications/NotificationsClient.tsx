@@ -1,29 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { FiCheck, FiRefreshCw, FiSettings } from "react-icons/fi";
 import { socialFetch } from "@/lib/social/client";
 
 type Notification = { id: string; actor_name?: string; type?: string; target_id?: string; slug?: string; is_read?: boolean; created_at: string };
-
 export default function NotificationsClient() {
-  const [items, setItems] = useState<Notification[]>([]); const [unread, setUnread] = useState(0); const [loading, setLoading] = useState(true);
-  const load = useCallback(async () => {
-    try { const result = await socialFetch<{ items: Notification[]; unreadCount: number }>("/api/social/notifications"); setItems(result.items); setUnread(result.unreadCount); }
-    finally { setLoading(false); }
-  }, []);
-  useEffect(() => {
-    void load();
-    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void load(); }, 60_000);
-    const visible = () => { if (document.visibilityState === "visible") void load(); };
-    document.addEventListener("visibilitychange", visible);
-    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", visible); };
-  }, [load]);
+  const [items, setItems] = useState<Notification[]>([]); const [unread, setUnread] = useState(0); const [loading, setLoading] = useState(true); const [cursor, setCursor] = useState<string | null>(null); const [filter, setFilter] = useState<"all" | "unread">("all");
+  const load = useCallback(async (more = false) => { try { const result = await socialFetch<{ items: Notification[]; unreadCount: number; nextCursor?: string | null }>(`/api/social/notifications${more && cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`); setItems((current) => more ? [...current, ...result.items] : result.items); setUnread(result.unreadCount); setCursor(result.nextCursor || null); } finally { setLoading(false); } }, [cursor]);
+  useEffect(() => { void load(); const timer = window.setInterval(() => { if (document.visibilityState === "visible") void load(); }, 60_000); const visible = () => { if (document.visibilityState === "visible") void load(); }; document.addEventListener("visibilitychange", visible); return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", visible); }; }, []); // eslint-disable-line react-hooks/exhaustive-deps
   async function markAll() { await socialFetch("/api/social/notifications", { method: "PATCH", body: JSON.stringify({ all: true }) }); setItems((current) => current.map((item) => ({ ...item, is_read: true }))); setUnread(0); }
-  const label = (item: Notification) => item.type === "new_follower" ? `${item.actor_name || "Seseorang"} mulai mengikuti kamu` : `${item.actor_name || "Seseorang"} mengirim aktivitas baru`;
-  return <div className="space-y-3">
-    <div className="flex justify-end"><button disabled={!unread} onClick={markAll} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-bold disabled:opacity-40">Tandai semua dibaca ({unread})</button></div>
-    {items.map((item) => <Link key={item.id} href={item.type === "new_follower" && item.target_id ? `/u/${item.actor_name || item.target_id}` : item.slug || "/feed"} className={`rk-card-soft block rounded-2xl p-4 ${item.is_read ? "opacity-60" : "border-cyan-300/20"}`}><p className="text-sm text-white/80">{label(item)}</p><time className="mt-2 block text-[10px] text-white/35">{new Date(item.created_at).toLocaleString("id-ID")}</time></Link>)}
-    {!loading && !items.length && <p className="py-12 text-center text-white/40">Belum ada notifikasi.</p>}
-  </div>;
+  async function markOne(id: string) { const item = items.find((entry) => entry.id === id); if (!item || item.is_read) return; setItems((current) => current.map((entry) => entry.id === id ? { ...entry, is_read: true } : entry)); setUnread((value) => Math.max(0, value - 1)); await socialFetch("/api/social/notifications", { method: "PATCH", body: JSON.stringify({ ids: [id] }) }); }
+  const visibleItems = useMemo(() => filter === "unread" ? items.filter((item) => !item.is_read) : items, [filter, items]);
+  const label = (item: Notification) => item.type === "new_follower" ? `${item.actor_name || "Seseorang"} mulai mengikuti kamu` : item.type === "social_like" ? `${item.actor_name || "Seseorang"} menyukai postinganmu` : item.type === "social_reply" ? `${item.actor_name || "Seseorang"} membalas postinganmu` : `${item.actor_name || "Seseorang"} mengirim aktivitas baru`;
+  const href = (item: Notification) => item.type === "new_follower" ? `/u/${encodeURIComponent(item.actor_name || item.target_id || "")}` : item.target_id ? `/post/${item.target_id}` : item.slug || "/files";
+  return <div className="space-y-3"><div className="flex flex-wrap items-center gap-2"><div className="flex rounded-xl border border-white/10 p-1">{(["all","unread"] as const).map((value) => <button key={value} onClick={() => setFilter(value)} className={`rounded-lg px-3 py-2 text-xs font-black ${filter === value ? "bg-white/8 text-cyan-200" : "text-white/40"}`}>{value === "all" ? "Semua" : `Belum dibaca (${unread})`}</button>)}</div><Link href="/social-controls" className="ml-auto grid h-9 w-9 place-items-center rounded-full border border-white/10 text-white/50" aria-label="Pengaturan notifikasi"><FiSettings/></Link><button disabled={!unread} onClick={markAll} className="flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-xs font-bold disabled:opacity-40"><FiCheck/> Tandai semua</button></div>{visibleItems.map((item) => <Link key={item.id} href={href(item)} onClick={() => void markOne(item.id)} className={`rk-card-soft block rounded-2xl p-4 transition hover:bg-white/[0.04] ${item.is_read ? "opacity-60" : "border-cyan-300/20 bg-cyan-300/[0.025]"}`}><p className="text-sm text-white/80">{label(item)}</p><time className="mt-2 block text-[10px] text-white/35">{new Date(item.created_at).toLocaleString("id-ID")}</time></Link>)}{loading && !items.length && <p className="py-12 text-center text-white/40"><FiRefreshCw className="mx-auto mb-2 animate-spin"/>Memuat notifikasi...</p>}{!loading && !visibleItems.length && <p className="py-12 text-center text-white/40">Tidak ada notifikasi pada filter ini.</p>}{cursor && <button onClick={() => load(true)} disabled={loading} className="w-full rounded-xl border border-white/10 py-3 text-sm font-black text-white/60">{loading ? "Memuat..." : "Muat lainnya"}</button>}</div>;
 }

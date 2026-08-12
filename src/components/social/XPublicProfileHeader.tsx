@@ -228,6 +228,9 @@ export default function XPublicProfileHeader({ username }: { username: string })
                       <Link href="/notifications" className={menuItem}>
                         <FiBell /> Notifikasi
                       </Link>
+                      <Link href="/social-controls" className={menuItem}>
+                        <FiSlash /> Kontrol sosial
+                      </Link>
                       <Link href="/social-collections" className={menuItem}>
                         <FiGrid /> Kelola koleksi
                       </Link>

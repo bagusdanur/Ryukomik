@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
+import { recordSocialMetric } from "@/lib/social/metrics";
 
 const requests = new Map<string, { startedAt: number; count: number }>();
+let lastPrune = 0;
 
 export function socialLimit(request: Request, userId: string, max = 30) {
   const key = `${userId}:${new URL(request.url).pathname}`;
   const now = Date.now();
+  if (now - lastPrune > 60_000) {
+    for (const [requestKey, entry] of requests) {
+      if (now - entry.startedAt > 120_000) requests.delete(requestKey);
+    }
+    lastPrune = now;
+  }
   const current = requests.get(key);
   if (!current || now - current.startedAt > 60_000) {
     requests.set(key, { startedAt: now, count: 1 });
@@ -21,6 +29,8 @@ export function socialJson(data: unknown, init?: ResponseInit) {
     headers: { "content-type": "application/json; charset=utf-8", ...init?.headers },
   });
   response.headers.set("Server-Timing", `app;desc=\"social\", bytes;desc=\"${Buffer.byteLength(body)}\"`);
+  response.headers.set("X-Social-Payload-Bytes", String(Buffer.byteLength(body)));
+  recordSocialMetric("social-api", response.status, Buffer.byteLength(body));
   if (process.env.NODE_ENV !== "test") {
     console.info(`[social-egress] ${response.status} ${Buffer.byteLength(body)} bytes`);
   }

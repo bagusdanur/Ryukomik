@@ -2,6 +2,8 @@ import { revalidateTag } from "next/cache";
 import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { decodeSocialCursor, encodeSocialCursor } from "@/lib/social/cursor";
+import { allowsSocialNotification } from "@/lib/social/notifications";
 
 const POST_COLUMNS = "id, author_id, parent_id, content, image_url, visibility, likes_count, replies_count, created_at, updated_at, profiles!social_posts_author_id_fkey(username, avatar_url, level, role, is_premium)";
 
@@ -18,7 +20,7 @@ export async function GET(request: Request) {
     const viewerId = await requireUserId(request); const url = new URL(request.url);
     const scope = url.searchParams.get("scope") || "following";
     const profileId = url.searchParams.get("userId"); const parentId = url.searchParams.get("parentId");
-    const cursor = url.searchParams.get("cursor");
+    const cursor = decodeSocialCursor(url.searchParams.get("cursor"));
     const needsFollowing = scope === "following" || Boolean(parentId);
     const [{ data: follows }, { data: mutes }, { data: blocks }] = await Promise.all([
       needsFollowing
@@ -33,12 +35,12 @@ export async function GET(request: Request) {
       ...(blocks || []).map((row) => row.blocker_id === viewerId ? row.blocked_id : row.blocker_id),
     ]);
     let query = supabaseAdmin.from("social_posts").select(POST_COLUMNS)
-      .order("created_at", { ascending: parentId ? true : false }).limit(21);
+      .order("created_at", { ascending: Boolean(parentId) }).order("id", { ascending: Boolean(parentId) }).limit(21);
     query = parentId ? query.eq("parent_id", parentId) : query.is("parent_id", null);
     if (scope === "following") query = query.in("author_id", [viewerId, ...followed]);
     else if (scope === "profile" && profileId) query = query.eq("author_id", profileId);
     else query = query.eq("visibility", "public");
-    if (cursor) query = parentId ? query.gt("created_at", cursor) : query.lt("created_at", cursor);
+    if (cursor) query = query.or(parentId ? `created_at.gt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.gt.${cursor.id})` : `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
     const { data, error } = await query; if (error) throw error;
     const visible = (data || []).filter((post) => !hidden.has(post.author_id) && (post.visibility === "public" || post.author_id === viewerId || followed.includes(post.author_id)));
     const page = visible.slice(0, 20); const ids = page.map((post) => post.id);
@@ -48,7 +50,7 @@ export async function GET(request: Request) {
     if (likeError) throw likeError;
     const liked = new Set((likedRows || []).map((row) => row.post_id));
     const items = page.map((post) => ({ ...post, viewer_liked: liked.has(post.id), viewer_owns: post.author_id === viewerId }));
-    return socialJson({ items, nextCursor: visible.length > 20 ? page.at(-1)?.created_at : null }, { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=60", Vary: "Authorization" } });
+    return socialJson({ items, nextCursor: visible.length > 20 ? encodeSocialCursor(page.at(-1)?.created_at, page.at(-1)?.id) : null }, { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=60", Vary: "Authorization" } });
   } catch (error) { return socialError(error); }
 }
 
@@ -70,7 +72,7 @@ export async function POST(request: Request) {
     const { data: actor } = await supabaseAdmin.from("profiles").select("username").eq("id", userId).maybeSingle();
     const { data, error } = await supabaseAdmin.from("social_posts").insert({ author_id: userId, parent_id: parent?.id || null, content, image_url: media, visibility }).select("id, created_at").single();
     if (error) throw error;
-    if (parent && parent.author_id !== userId) await supabaseAdmin.from("notifications").insert({ user_id: parent.author_id, actor_id: userId, actor_name: actor?.username || "User", type: "social_reply", target_id: parent.id, is_read: false });
+    if (parent && parent.author_id !== userId && await allowsSocialNotification(parent.author_id, "replies")) await supabaseAdmin.from("notifications").insert({ user_id: parent.author_id, actor_id: userId, actor_name: actor?.username || "User", type: "social_reply", target_id: parent.id, is_read: false });
     await supabaseAdmin.from("activity_events").insert({ actor_id: userId, actor_name: actor?.username || "User", event_type: parent ? "replied_post" : "created_post", entity_id: data.id, entity_label: content === "[sticker]" ? "Membagikan sticker" : content.slice(0, 80), visibility });
     revalidateTag("social-posts", { expire: 0 }); revalidateTag("social-profile", { expire: 0 });
     return socialJson({ post: data }, { status: 201 });

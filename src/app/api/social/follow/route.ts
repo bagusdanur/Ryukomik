@@ -2,6 +2,7 @@ import { revalidateTag } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
+import { allowsSocialNotification } from "@/lib/social/notifications";
 
 export async function POST(request: Request) {
   try {
@@ -22,8 +23,9 @@ export async function POST(request: Request) {
     );
     if (error) throw error;
     const { data: actor } = await supabaseAdmin.from("profiles").select("username").eq("id", userId).maybeSingle();
+    const notifyFollow = await allowsSocialNotification(targetUserId, "follows");
     await Promise.all([
-      supabaseAdmin.from("notifications").insert({ user_id: targetUserId, actor_id: userId, actor_name: actor?.username || "User", type: "new_follower", target_id: userId, is_read: false }),
+      notifyFollow ? supabaseAdmin.from("notifications").insert({ user_id: targetUserId, actor_id: userId, actor_name: actor?.username || "User", type: "new_follower", target_id: userId, is_read: false }) : Promise.resolve(),
       supabaseAdmin.from("activity_events").insert({ actor_id: userId, actor_name: actor?.username || "User", event_type: "followed_user", entity_id: targetUserId, entity_label: target.username, visibility: "followers" }),
     ]);
     revalidateTag("social-profile", { expire: 0 });

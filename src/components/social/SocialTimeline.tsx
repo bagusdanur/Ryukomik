@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
+  FiBookmark,
+  FiCopy,
   FiEdit3,
   FiHeart,
   FiLink,
@@ -300,6 +302,7 @@ function Composer({
 function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
   const author = authorOf(post);
   const [liked, setLiked] = useState(post.viewer_liked);
+  const [bookmarked, setBookmarked] = useState(false);
   const [likes, setLikes] = useState(post.likes_count);
   const [replying, setReplying] = useState(false);
   const [replies, setReplies] = useState<Post[]>([]);
@@ -318,6 +321,14 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
       setLiked(!next);
       setLikes((value) => Math.max(0, value + (next ? -1 : 1)));
     }
+  }
+  async function toggleBookmark() {
+    const next = !bookmarked; setBookmarked(next);
+    try { await socialFetch("/api/social/posts/bookmark", { method: next ? "POST" : "DELETE", body: JSON.stringify({ postId: post.id }) }); }
+    catch { setBookmarked(!next); }
+  }
+  async function copyLink() {
+    await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
   }
   async function openReplies() {
     setReplying((value) => !value);
@@ -416,7 +427,7 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
               referrerPolicy="no-referrer"
             />
           )}
-          <div className="mt-4 flex max-w-xs justify-between text-white/40">
+          <div className="mt-4 flex max-w-sm items-center justify-between gap-3 text-white/40">
             <button
               onClick={openReplies}
               className="flex items-center gap-2 text-xs hover:text-[var(--accent-2)]"
@@ -424,6 +435,9 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
               <FiMessageCircle size={17} />
               {post.replies_count || "Balas"}
             </button>
+            <Link href={`/post/${post.id}`} aria-label="Buka posting" className="hover:text-cyan-300"><FiMessageCircle size={17}/></Link>
+            <button onClick={copyLink} aria-label="Salin tautan" className="hover:text-cyan-300"><FiCopy size={16}/></button>
+            <button onClick={toggleBookmark} aria-label="Simpan posting" className={bookmarked ? "text-cyan-300" : "hover:text-cyan-300"}><FiBookmark size={17} fill={bookmarked ? "currentColor" : "none"}/></button>
             <button
               onClick={toggleLike}
               className={`flex items-center gap-2 text-xs ${liked ? "text-pink-400" : "hover:text-pink-400"}`}

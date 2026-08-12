@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
+import { decodeSocialCursor, encodeSocialCursor } from "@/lib/social/cursor";
 
 const COLUMNS = "id, user_id, actor_id, actor_name, type, slug, target_id, is_read, created_at";
 
@@ -15,14 +16,14 @@ export async function GET(request: Request) {
       if (error) throw error;
       return socialJson({ unreadCount: count || 0 }, { headers: { "Cache-Control": "private, max-age=30" } });
     }
-    const cursor = url.searchParams.get("cursor");
-    let query = supabaseAdmin.from("notifications").select(COLUMNS).eq("user_id", userId).order("created_at", { ascending: false }).limit(21);
-    if (cursor) query = query.lt("created_at", cursor);
+    const cursor = decodeSocialCursor(url.searchParams.get("cursor"));
+    let query = supabaseAdmin.from("notifications").select(COLUMNS).eq("user_id", userId).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(21);
+    if (cursor) query = query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
     const { data, error } = await query;
     if (error) throw error;
     const rows = data || [];
     const items = rows.slice(0, 20);
-    return socialJson({ items, unreadCount: items.filter((item) => !item.is_read).length, nextCursor: rows.length > 20 ? items.at(-1)?.created_at : null }, { headers: { "Cache-Control": "private, no-store" } });
+    return socialJson({ items, unreadCount: items.filter((item) => !item.is_read).length, nextCursor: rows.length > 20 ? encodeSocialCursor(items.at(-1)?.created_at, items.at(-1)?.id) : null }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) { return socialError(error); }
 }
 
@@ -31,7 +32,7 @@ export async function PATCH(request: Request) {
     assertSameOrigin(request);
     const userId = await requireUserId(request);
     const body = await request.json() as { ids?: string[]; all?: boolean };
-    let query = supabaseAdmin.from("notifications").update({ is_read: true }).eq("user_id", userId).eq("is_read", false);
+    let query = supabaseAdmin.from("notifications").update({ is_read: true, read_at: new Date().toISOString() }).eq("user_id", userId).eq("is_read", false);
     if (!body.all) {
       const ids = (body.ids || []).slice(0, 20);
       if (!ids.length) return socialJson({ updated: 0 });
