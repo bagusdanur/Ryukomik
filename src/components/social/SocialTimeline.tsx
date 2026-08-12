@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { FiHeart, FiLink, FiMessageCircle, FiMoreHorizontal, FiRefreshCw, FiSend, FiTrash2, FiX } from "react-icons/fi";
+import { FiEdit3, FiHeart, FiLink, FiMessageCircle, FiMoreHorizontal, FiRefreshCw, FiSend, FiTrash2, FiX } from "react-icons/fi";
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { socialFetch } from "@/lib/social/client";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
@@ -110,6 +110,7 @@ export default function SocialTimeline() {
   const [loading, setLoading] = useState(true);
   const [version, setVersion] = useState(0);
   const [error, setError] = useState("");
+  const [composerOpen, setComposerOpen] = useState(false);
 
   const load = useCallback(async (reset = false) => {
     if (!user) return;
@@ -127,11 +128,13 @@ export default function SocialTimeline() {
 
   return <section className="flex min-h-[calc(100dvh-17rem)] w-full flex-col overflow-hidden rounded-2xl border border-white/[0.1] bg-[var(--surface-0)] shadow-[0_20px_70px_rgba(0,0,0,.22)] sm:min-h-[620px]">
     <div className="grid shrink-0 grid-cols-2 border-b border-white/[0.08] bg-white/[0.02]">{(["community", "following"] as const).map((tab) => <button key={tab} onClick={() => setScope(tab)} className={`relative h-14 text-sm font-black transition hover:bg-white/[0.035] ${scope === tab ? "text-white" : "text-white/40"}`}>{tab === "following" ? "Mengikuti" : "Untuk Kamu"}{scope === tab && <span className="absolute inset-x-1/3 bottom-0 h-1 rounded-full bg-[var(--accent-2)]"/>}</button>)}</div>
-    <div className="shrink-0 p-3 sm:p-5"><Composer onCreated={() => setVersion((value) => value + 1)}/></div>
+    <div className="hidden shrink-0 p-5 sm:block"><Composer onCreated={() => setVersion((value) => value + 1)}/></div>
     {error && <div className="mx-3 mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-200 sm:mx-4"><span>{error}</span><button onClick={() => load(true)} className="font-black">Coba lagi</button></div>}
     <div>{items.map((post) => <PostCard key={post.id} post={post} onChanged={() => setVersion((value) => value + 1)}/>)}</div>
     {loading && !items.length && <div className="grid min-h-52 flex-1 place-content-center border-t border-white/[0.08] p-10 text-center text-sm text-white/35"><FiRefreshCw className="mx-auto mb-2 animate-spin" />Memuat postingan...</div>}
     {!loading && !error && !items.length && <div className="grid min-h-52 flex-1 place-content-center border-t border-white/[0.08] p-10 text-center"><div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-xl text-white/35"><FiMessageCircle /></div><p className="text-lg font-black">Timeline masih sepi</p><p className="mt-2 text-sm text-white/40">Jadilah yang pertama membagikan rekomendasi hari ini.</p></div>}
     {cursor && <button disabled={loading} onClick={() => load()} className="flex w-full items-center justify-center gap-2 border-t border-white/[0.08] py-4 text-sm font-black text-white/60"><FiRefreshCw className={loading ? "animate-spin" : ""}/>{loading ? "Memuat" : "Muat posting lain"}</button>}
+    <button type="button" onClick={() => setComposerOpen(true)} className="fixed bottom-[5.5rem] right-4 z-40 flex h-14 items-center gap-2 rounded-full bg-[var(--accent-2)] px-4 text-sm font-black text-black shadow-[0_12px_35px_rgba(34,211,238,.28)] transition active:scale-95 sm:hidden"><FiEdit3 className="text-lg" /><span>Posting</span></button>
+    {composerOpen && <div className="fixed inset-0 z-[70] flex items-end sm:hidden"><button type="button" aria-label="Tutup composer" onClick={() => setComposerOpen(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm" /><div className="relative z-10 max-h-[88dvh] w-full overflow-y-auto rounded-t-3xl border-t border-white/15 bg-[var(--surface-1)] px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-2xl"><div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/20" /><div className="mb-3 flex items-center justify-between px-1"><div><h2 className="font-black">Buat postingan</h2><p className="text-[11px] text-white/40">Bagikan sesuatu ke komunitas.</p></div><button type="button" onClick={() => setComposerOpen(false)} className="grid h-9 w-9 place-items-center rounded-full bg-white/5 text-white/60"><FiX /></button></div><Composer onCreated={() => { setVersion((value) => value + 1); setComposerOpen(false); }} /></div></div>}
   </section>;
 }
