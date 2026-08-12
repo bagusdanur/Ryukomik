@@ -649,7 +649,7 @@ export default async function PublicProfilePage({ params }: RouteProps) {
 
         <PublicCollectionsTabs collections={publicCollections} />
 
-        <section className="mt-8">
+        <section id="profile-activity" className="mt-8 scroll-mt-20">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[color:color-mix(in_srgb,var(--accent-2)_60%,transparent)]">
               Komentar Terbaru

@@ -41,7 +41,7 @@ export default function PublicCollectionsTabs({
   const items = activeCollection?.user_collection_items || [];
 
   return (
-    <section className="mt-8 max-w-full overflow-hidden">
+    <section id="profile-collections" className="mt-8 max-w-full scroll-mt-20 overflow-hidden">
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="shrink-0 text-[10px] font-bold uppercase tracking-[0.16em] text-[color:color-mix(in_srgb,var(--accent-2)_60%,transparent)]">
           Koleksi Publik

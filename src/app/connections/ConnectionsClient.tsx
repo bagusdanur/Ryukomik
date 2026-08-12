@@ -2,15 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { socialFetch } from "@/lib/social/client";
 
 type Person = { id: string; username: string; avatar_url?: string | null; bio?: string | null; level?: number; created_at: string };
 
 export default function ConnectionsClient() {
-  const [mode, setMode] = useState<"followers" | "following">("followers"); const [items, setItems] = useState<Person[]>([]); const [cursor, setCursor] = useState<string | null>(null); const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const initialMode = searchParams.get("tab") === "following" ? "following" : "followers";
+  const viewedUserId = searchParams.get("userId");
+  const [mode, setMode] = useState<"followers" | "following">(initialMode);
+  const [items, setItems] = useState<Person[]>([]); const [cursor, setCursor] = useState<string | null>(null); const [loading, setLoading] = useState(true);
   async function load(reset = false, selected = mode) {
     setLoading(true);
-    try { const result = await socialFetch<{ items: Person[]; nextCursor: string | null }>(`/api/social/connections?mode=${selected}${!reset && cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`); setItems((current) => reset ? result.items : [...current, ...result.items]); setCursor(result.nextCursor); }
+    try { const result = await socialFetch<{ items: Person[]; nextCursor: string | null }>(`/api/social/connections?mode=${selected}${viewedUserId ? `&userId=${encodeURIComponent(viewedUserId)}` : ""}${!reset && cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`); setItems((current) => reset ? result.items : [...current, ...result.items]); setCursor(result.nextCursor); }
     finally { setLoading(false); }
   }
   useEffect(() => { void load(true, mode); }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
