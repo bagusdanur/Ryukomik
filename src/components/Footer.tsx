@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiBookmark, FiClock, FiHome, FiSettings } from "react-icons/fi";
+import { FiClock, FiHome, FiSettings, FiUsers } from "react-icons/fi";
 import { TbPlayerSkipForward } from "react-icons/tb";
 
 export default function BottomNav() {
@@ -23,7 +23,7 @@ export default function BottomNav() {
     { href: "/", icon: FiHome, label: "Home" },
     { href: "/anime/terbaru", icon: TbPlayerSkipForward, label: "Anime" },
     { href: "/terbaru", icon: FiClock, label: "Terbaru" },
-    { href: "/files", icon: FiBookmark, label: "Riwayat" },
+    { href: "/files", icon: FiUsers, label: "Komunitas" },
     { href: "/setting", icon: FiSettings, label: "Setting" },
   ];
 
