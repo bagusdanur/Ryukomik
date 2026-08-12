@@ -71,7 +71,7 @@ export default function FilesClient() {
  
 
   return (
-    <div className="rk-page px-3 pb-28 pt-16 text-white sm:px-5 sm:pt-20">
+    <div className="rk-page px-3 pb-28 pt-3 text-white sm:px-5 sm:pt-20">
       <div className="rk-shell max-w-4xl">
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>

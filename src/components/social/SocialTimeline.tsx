@@ -575,9 +575,9 @@ export default function SocialTimeline() {
         onClick={() => setComposerOpen(true)}
         aria-label="Buat postingan"
         title="Buat postingan"
-        className="fixed bottom-[5.5rem] right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-[var(--accent-2)] text-black shadow-[0_12px_35px_rgba(34,211,238,.28)] transition active:scale-95 sm:hidden"
+        className="fixed bottom-[5.25rem] right-4 z-40 grid h-11 w-11 place-items-center rounded-full border border-cyan-300/20 bg-[#111827] text-cyan-300 shadow-[0_10px_28px_rgba(0,0,0,.45)] transition hover:bg-[#172033] active:scale-95 sm:hidden"
       >
-        <FiEdit3 className="text-xl" />
+        <FiEdit3 className="text-base" />
       </button>
       {composerOpen && (
         <div className="fixed inset-0 z-[70] flex items-end sm:hidden">
