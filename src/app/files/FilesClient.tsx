@@ -71,13 +71,13 @@ export default function FilesClient() {
  
 
   return (
-    <div className="rk-page px-4 pt-4 pb-24 text-white">
-      <div className="rk-shell max-w-3xl">
-        <div className="mb-4 flex items-center justify-between gap-3">
+    <div className="rk-page px-3 pb-28 pt-20 text-white sm:px-5 sm:pt-24">
+      <div className="rk-shell max-w-4xl">
+        <div className="mb-5 flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200/60">Social & Library</p>
-            <h1 className="text-2xl font-black">Komunitas</h1>
-            <p className="mt-1 text-xs text-white/40">Timeline, notifikasi, dan semua bacaan tersimpan.</p>
+            <h1 className="text-2xl font-black sm:text-3xl">Komunitas</h1>
+            <p className="mt-1 text-xs text-white/40 sm:text-sm">Timeline, notifikasi, dan semua bacaan tersimpan.</p>
           </div>
           <div className="flex shrink-0 gap-2">
             <Link href="/connections" aria-label="Koneksi sosial" title="Koneksi sosial" className="grid h-10 w-10 place-items-center rounded-full border border-white/10 text-white/55 transition hover:bg-white/5 hover:text-white"><FiUsers /></Link>
@@ -88,7 +88,7 @@ export default function FilesClient() {
           </div>
         </div>
         {/* TAB HEADER */}
-        <div className="rk-card-soft mb-4 grid grid-cols-4 gap-1 overflow-hidden rounded-2xl p-1 text-[10px] font-semibold sm:text-xs">
+        <div className="rk-card-soft mb-5 grid grid-cols-4 gap-1 overflow-hidden rounded-2xl p-1.5 text-[10px] font-semibold shadow-[0_10px_35px_rgba(0,0,0,.12)] sm:text-xs">
           {[
             { id: "timeline", label: "Timeline", icon: FiBookOpen },
             { id: "favorite", label: "Favorit", icon: FiHeart },
@@ -100,7 +100,7 @@ export default function FilesClient() {
             <button
               key={t.id}
               onClick={() => changeTab(t.id as FilesTab)}
-              className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition sm:flex-row sm:gap-1.5 sm:px-2 ${
+              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition sm:flex-row sm:gap-2 sm:px-3 ${
                 tab === t.id
                   ? "bg-violet-500/15 text-cyan-100"
                   : "text-white/50 hover:bg-white/[0.06] hover:text-white/80"

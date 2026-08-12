@@ -1,5 +1,5 @@
 const PREFIX = "rk";
-const CACHE_VERSION = "v20";
+const CACHE_VERSION = "v21";
 const STATIC_CACHE = `${PREFIX}-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `${PREFIX}-images-${CACHE_VERSION}`;
 const CHAPTER_CACHE = `${PREFIX}-chapter-${CACHE_VERSION}`;
@@ -37,6 +37,7 @@ const NO_NAV_CACHE_PATHS = [
 ];
 
 const PRIVATE_API_PREFIXES = [
+  "/api/social",
   "/api/comments",
   "/api/comment-like",
   "/api/reactions",

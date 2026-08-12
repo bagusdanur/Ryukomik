@@ -32,9 +32,9 @@ function Composer({ parentId, compact = false, onCreated }: { parentId?: string;
     } finally { setSending(false); }
   }
 
-  return <form onSubmit={submit} className={compact ? "border-t border-white/[0.08] p-3" : "rounded-2xl border border-white/[0.08] bg-white/[0.025] p-3 sm:p-4"}>
-    {!compact && <div className="mb-3"><p className="text-sm font-black">Buat postingan</p><p className="text-[11px] text-white/35">Bagikan kabar atau rekomendasi komik ke komunitas.</p></div>}
-    <textarea value={content} onChange={(event) => setContent(event.target.value.slice(0, 500))} rows={compact ? 2 : 4} placeholder={parentId ? "Tulis balasan..." : "Apa yang ingin kamu bagikan?"} className="min-h-24 w-full resize-none rounded-xl border border-white/[0.08] bg-black/10 px-3 py-3 text-[15px] leading-relaxed text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/30 focus:bg-black/20" />
+  return <form onSubmit={submit} className={compact ? "border-t border-white/[0.08] p-3" : "rounded-2xl border border-white/[0.1] bg-[linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.018))] p-4 shadow-[inset_0_1px_rgba(255,255,255,.025)] sm:p-5"}>
+    {!compact && <div className="mb-4"><p className="text-base font-black">Buat postingan</p><p className="mt-0.5 text-xs text-white/40">Bagikan kabar atau rekomendasi komik ke komunitas.</p></div>}
+    <textarea value={content} onChange={(event) => setContent(event.target.value.slice(0, 500))} rows={compact ? 3 : 6} placeholder={parentId ? "Tulis balasan..." : "Apa yang ingin kamu bagikan hari ini?"} className={`${compact ? "min-h-28" : "min-h-44 sm:min-h-48"} w-full resize-y rounded-2xl border border-white/[0.12] bg-[#090b14] px-4 py-4 text-[15px] leading-relaxed text-white shadow-inner outline-none transition placeholder:text-white/35 focus:border-cyan-300/45 focus:bg-[#0b0e18]`} />
     {image && <div className="relative mt-3 overflow-hidden rounded-2xl border border-white/10"><img src={image} alt="Preview" className="max-h-72 w-full object-cover" referrerPolicy="no-referrer"/><button type="button" onClick={() => setImage("")} className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-1 text-xs">Hapus</button></div>}
     {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -99,13 +99,13 @@ export default function SocialTimeline() {
   if (userLoading) return <div className="rk-card-soft animate-pulse rounded-2xl py-16 text-center text-sm text-white/35">Menyiapkan komunitas...</div>;
   if (!user) return <div className="rk-card-soft rounded-2xl p-8 text-center text-white/50"><p className="font-black text-white/80">Masuk untuk bergabung</p><p className="mt-2 text-sm">Login diperlukan untuk melihat dan membuat postingan komunitas.</p></div>;
 
-  return <section className="mx-auto max-w-2xl overflow-hidden rounded-2xl border border-white/[0.08] bg-[var(--surface-0)] shadow-[0_18px_60px_rgba(0,0,0,.18)]">
-    <div className="grid grid-cols-2 border-b border-white/[0.08] bg-white/[0.015]">{(["community", "following"] as const).map((tab) => <button key={tab} onClick={() => setScope(tab)} className={`relative h-12 text-sm font-black transition hover:bg-white/[0.025] ${scope === tab ? "text-white" : "text-white/40"}`}>{tab === "following" ? "Mengikuti" : "Untuk Kamu"}{scope === tab && <span className="absolute inset-x-1/3 bottom-0 h-1 rounded-full bg-[var(--accent-2)]"/>}</button>)}</div>
-    <div className="p-3 sm:p-4"><Composer onCreated={() => setVersion((value) => value + 1)}/></div>
+  return <section className="flex min-h-[calc(100dvh-17rem)] w-full flex-col overflow-hidden rounded-2xl border border-white/[0.1] bg-[var(--surface-0)] shadow-[0_20px_70px_rgba(0,0,0,.22)] sm:min-h-[620px]">
+    <div className="grid shrink-0 grid-cols-2 border-b border-white/[0.08] bg-white/[0.02]">{(["community", "following"] as const).map((tab) => <button key={tab} onClick={() => setScope(tab)} className={`relative h-14 text-sm font-black transition hover:bg-white/[0.035] ${scope === tab ? "text-white" : "text-white/40"}`}>{tab === "following" ? "Mengikuti" : "Untuk Kamu"}{scope === tab && <span className="absolute inset-x-1/3 bottom-0 h-1 rounded-full bg-[var(--accent-2)]"/>}</button>)}</div>
+    <div className="shrink-0 p-3 sm:p-5"><Composer onCreated={() => setVersion((value) => value + 1)}/></div>
     {error && <div className="mx-3 mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-200 sm:mx-4"><span>{error}</span><button onClick={() => load(true)} className="font-black">Coba lagi</button></div>}
     <div>{items.map((post) => <PostCard key={post.id} post={post} onChanged={() => setVersion((value) => value + 1)}/>)}</div>
-    {loading && !items.length && <div className="border-t border-white/[0.08] p-10 text-center text-sm text-white/35"><FiRefreshCw className="mx-auto mb-2 animate-spin" />Memuat postingan...</div>}
-    {!loading && !error && !items.length && <div className="border-t border-white/[0.08] p-10 text-center"><p className="font-black">Belum ada postingan</p><p className="mt-2 text-sm text-white/40">Jadilah yang pertama membagikan rekomendasi hari ini.</p></div>}
+    {loading && !items.length && <div className="grid min-h-52 flex-1 place-content-center border-t border-white/[0.08] p-10 text-center text-sm text-white/35"><FiRefreshCw className="mx-auto mb-2 animate-spin" />Memuat postingan...</div>}
+    {!loading && !error && !items.length && <div className="grid min-h-52 flex-1 place-content-center border-t border-white/[0.08] p-10 text-center"><div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-xl text-white/35"><FiMessageCircle /></div><p className="text-lg font-black">Timeline masih sepi</p><p className="mt-2 text-sm text-white/40">Jadilah yang pertama membagikan rekomendasi hari ini.</p></div>}
     {cursor && <button disabled={loading} onClick={() => load()} className="flex w-full items-center justify-center gap-2 border-t border-white/[0.08] py-4 text-sm font-black text-white/60"><FiRefreshCw className={loading ? "animate-spin" : ""}/>{loading ? "Memuat" : "Muat posting lain"}</button>}
   </section>;
 }
