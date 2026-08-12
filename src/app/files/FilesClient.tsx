@@ -4,9 +4,13 @@ import dynamicImport from "next/dynamic";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { FiBell, FiBookOpen, FiClock, FiFolder, FiHeart, FiSearch, FiUser, FiUsers } from "react-icons/fi";
+import { FiBookOpen, FiClock, FiFolder, FiHeart, FiSearch, FiUsers } from "react-icons/fi";
+import CommunityNotifications from "@/components/social/CommunityNotifications";
+import { socialFetch } from "@/lib/social/client";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 
-type FilesTab = "timeline" | "notifications" | "favorite" | "history" | "collections";
+type FilesTab = "timeline" | "favorite" | "history" | "collections";
+type MiniProfile = { username: string; avatar_url?: string | null };
 
 const TabLoading = () => (
   <div className="rk-card-soft rounded-2xl py-10 text-center text-sm text-white/50">
@@ -27,22 +31,30 @@ const CollectionTab = dynamicImport(() => import("./CollectionTab"), {
   ssr: false,
 });
 const SocialTimeline = dynamicImport(() => import("@/components/social/SocialTimeline"), { loading: TabLoading, ssr: false });
-const NotificationsClient = dynamicImport(() => import("@/app/notifications/NotificationsClient"), { loading: TabLoading, ssr: false });
 
 function normalizeTab(value: string | null): FilesTab {
   if (value === "download") return "collections";
-  if (value === "timeline" || value === "notifications" || value === "favorite" || value === "history" || value === "collections") {
+  if (value === "timeline" || value === "favorite" || value === "history" || value === "collections") {
     return value;
   }
   return "timeline";
 }
 
 export default function FilesClient() {
+  const { user } = useSupabaseUser();
   const searchParams = useSearchParams();
   const initialTab = normalizeTab(searchParams.get("tab"));
 
   const [tab, setTab] = useState(initialTab);
   const [search, setSearch] = useState("");
+  const [profile, setProfile] = useState<MiniProfile | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    socialFetch<{ profile: MiniProfile | null }>("/api/social/me/profile")
+      .then((result) => setProfile(result.profile))
+      .catch(() => undefined);
+  }, [user]);
 
   // ⬅️ update tab kalau URL berubah
   useEffect(() => {
@@ -61,7 +73,7 @@ export default function FilesClient() {
   return (
     <div className="rk-page px-4 pt-4 pb-24 text-white">
       <div className="rk-shell max-w-3xl">
-        <div className="mb-4 flex items-end justify-between gap-3">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200/60">Social & Library</p>
             <h1 className="text-2xl font-black">Komunitas</h1>
@@ -69,14 +81,16 @@ export default function FilesClient() {
           </div>
           <div className="flex shrink-0 gap-2">
             <Link href="/connections" aria-label="Koneksi sosial" title="Koneksi sosial" className="grid h-10 w-10 place-items-center rounded-full border border-white/10 text-white/55 transition hover:bg-white/5 hover:text-white"><FiUsers /></Link>
-            <Link href="/social-settings" aria-label="Profil sosial" title="Profil sosial" className="grid h-10 w-10 place-items-center rounded-full border border-white/10 text-white/55 transition hover:bg-white/5 hover:text-white"><FiUser /></Link>
+            <CommunityNotifications />
+            <Link href={profile?.username ? `/u/${encodeURIComponent(profile.username)}` : "/social-settings"} aria-label="Buka profil sosial" title="Profil sosial" className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-white/15 bg-white/5 text-sm font-black text-white/70 transition hover:border-white/30">
+              {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : (profile?.username || "U")[0]?.toUpperCase()}
+            </Link>
           </div>
         </div>
         {/* TAB HEADER */}
-        <div className="rk-card-soft mb-4 grid grid-cols-5 gap-1 overflow-hidden rounded-2xl p-1 text-[10px] font-semibold sm:text-xs">
+        <div className="rk-card-soft mb-4 grid grid-cols-4 gap-1 overflow-hidden rounded-2xl p-1 text-[10px] font-semibold sm:text-xs">
           {[
             { id: "timeline", label: "Timeline", icon: FiBookOpen },
-            { id: "notifications", label: "Notif", icon: FiBell },
             { id: "favorite", label: "Favorit", icon: FiHeart },
             { id: "history", label: "Riwayat", icon: FiClock },
             { id: "collections", label: "Koleksi", icon: FiFolder },
@@ -113,7 +127,6 @@ export default function FilesClient() {
 
         {/* CONTENT */}
         {tab === "timeline" && <SocialTimeline />}
-        {tab === "notifications" && <NotificationsClient />}
         {tab === "favorite" && <FavoriteTab search={search} />}
         {tab === "history" && <HistoryTab search={search} />}
         {tab === "collections" && <CollectionTab search={search} />}

@@ -19,8 +19,11 @@ export async function GET(request: Request) {
     const scope = url.searchParams.get("scope") || "following";
     const profileId = url.searchParams.get("userId"); const parentId = url.searchParams.get("parentId");
     const cursor = url.searchParams.get("cursor");
+    const needsFollowing = scope === "following" || Boolean(parentId);
     const [{ data: follows }, { data: mutes }, { data: blocks }] = await Promise.all([
-      supabaseAdmin.from("user_follows").select("following_id").eq("follower_id", viewerId).limit(500),
+      needsFollowing
+        ? supabaseAdmin.from("user_follows").select("following_id").eq("follower_id", viewerId).limit(500)
+        : Promise.resolve({ data: [] as Array<{ following_id: string }> }),
       supabaseAdmin.from("user_mutes").select("muted_id").eq("user_id", viewerId).limit(500),
       supabaseAdmin.from("user_blocks").select("blocker_id, blocked_id").or(`blocker_id.eq.${viewerId},blocked_id.eq.${viewerId}`).limit(500),
     ]);
@@ -45,7 +48,7 @@ export async function GET(request: Request) {
     if (likeError) throw likeError;
     const liked = new Set((likedRows || []).map((row) => row.post_id));
     const items = page.map((post) => ({ ...post, viewer_liked: liked.has(post.id), viewer_owns: post.author_id === viewerId }));
-    return socialJson({ items, nextCursor: visible.length > 20 ? page.at(-1)?.created_at : null }, { headers: { "Cache-Control": "private, max-age=60" } });
+    return socialJson({ items, nextCursor: visible.length > 20 ? page.at(-1)?.created_at : null }, { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=60", Vary: "Authorization" } });
   } catch (error) { return socialError(error); }
 }
 
