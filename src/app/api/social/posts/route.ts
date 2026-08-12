@@ -57,7 +57,8 @@ export async function POST(request: Request) {
     assertSameOrigin(request); const userId = await requireUserId(request);
     if (!socialLimit(request, userId, 12)) return socialJson({ error: "Terlalu banyak posting." }, { status: 429 });
     const body = await request.json() as { content?: string; image_url?: string; visibility?: string; parent_id?: string };
-    const content = body.content?.trim().slice(0, 500);
+    const media = validMedia(body.image_url);
+    const content = body.content?.trim().slice(0, 500) || (media ? "[sticker]" : "");
     if (!content) return socialJson({ error: "Posting tidak boleh kosong." }, { status: 400 });
     const visibility = body.visibility === "followers" ? "followers" : "public";
     let parent: { id: string; author_id: string } | null = null;
@@ -67,10 +68,10 @@ export async function POST(request: Request) {
       if (!parent) return socialJson({ error: "Posting induk tidak ditemukan." }, { status: 404 });
     }
     const { data: actor } = await supabaseAdmin.from("profiles").select("username").eq("id", userId).maybeSingle();
-    const { data, error } = await supabaseAdmin.from("social_posts").insert({ author_id: userId, parent_id: parent?.id || null, content, image_url: validMedia(body.image_url), visibility }).select("id, created_at").single();
+    const { data, error } = await supabaseAdmin.from("social_posts").insert({ author_id: userId, parent_id: parent?.id || null, content, image_url: media, visibility }).select("id, created_at").single();
     if (error) throw error;
     if (parent && parent.author_id !== userId) await supabaseAdmin.from("notifications").insert({ user_id: parent.author_id, actor_id: userId, actor_name: actor?.username || "User", type: "social_reply", target_id: parent.id, is_read: false });
-    await supabaseAdmin.from("activity_events").insert({ actor_id: userId, actor_name: actor?.username || "User", event_type: parent ? "replied_post" : "created_post", entity_id: data.id, entity_label: content.slice(0, 80), visibility });
+    await supabaseAdmin.from("activity_events").insert({ actor_id: userId, actor_name: actor?.username || "User", event_type: parent ? "replied_post" : "created_post", entity_id: data.id, entity_label: content === "[sticker]" ? "Membagikan sticker" : content.slice(0, 80), visibility });
     revalidateTag("social-posts", { expire: 0 }); revalidateTag("social-profile", { expire: 0 });
     return socialJson({ post: data }, { status: 201 });
   } catch (error) {

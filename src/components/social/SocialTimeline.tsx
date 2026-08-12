@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { FiHeart, FiImage, FiMessageCircle, FiMoreHorizontal, FiRefreshCw, FiSend, FiTrash2 } from "react-icons/fi";
+import { FiHeart, FiLink, FiMessageCircle, FiMoreHorizontal, FiRefreshCw, FiSend, FiTrash2, FiX } from "react-icons/fi";
+import { RiEmojiStickerLine } from "react-icons/ri";
 import { socialFetch } from "@/lib/social/client";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { stickers } from "@/data/stickers";
 
 type Author = { username?: string; avatar_url?: string | null; level?: number };
 type Post = { id: string; author_id: string; content: string; image_url?: string | null; visibility: string; likes_count: number; replies_count: number; created_at: string; viewer_liked: boolean; viewer_owns: boolean; profiles?: Author | Author[] | null };
@@ -13,16 +15,40 @@ function authorOf(post: Post): Author {
   return Array.isArray(post.profiles) ? post.profiles[0] || {} : post.profiles || {};
 }
 
+function MediaPicker({ onSelect, onClose }: { onSelect: (url: string) => void; onClose: () => void }) {
+  const [tab, setTab] = useState<"sticker" | "link">("sticker");
+  const [manualUrl, setManualUrl] = useState("");
+  const [error, setError] = useState("");
+
+  function addManualUrl() {
+    const value = manualUrl.trim();
+    try {
+      const parsed = new URL(value);
+      if (parsed.protocol !== "https:") throw new Error();
+      onSelect(value); onClose();
+    } catch {
+      setError("Masukkan URL gambar HTTPS yang valid.");
+    }
+  }
+
+  return <div className="absolute bottom-12 left-0 z-30 w-[min(21rem,calc(100vw-2.5rem))] overflow-hidden rounded-2xl border border-white/10 bg-[var(--surface-2)] p-3 shadow-2xl">
+    <div className="mb-3 flex items-center justify-between gap-2"><div className="grid flex-1 grid-cols-2 rounded-xl bg-black/25 p-1">{(["sticker", "link"] as const).map((item) => <button key={item} type="button" onClick={() => { setTab(item); setError(""); }} className={`flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-bold transition ${tab === item ? "bg-[var(--accent)]/25 text-[var(--accent-2)]" : "text-white/40 hover:text-white/75"}`}>{item === "sticker" ? <><RiEmojiStickerLine /> Sticker</> : <><FiLink /> Link</>}</button>)}</div><button type="button" onClick={onClose} aria-label="Tutup pilihan media" className="grid h-8 w-8 place-items-center rounded-full text-white/40 hover:bg-white/5 hover:text-white"><FiX /></button></div>
+    {tab === "sticker" && <div className="grid max-h-64 grid-cols-4 gap-2 overflow-y-auto pr-1">{stickers.map((url, index) => <button key={`${url}-${index}`} type="button" onClick={() => { onSelect(url); onClose(); }} className="group aspect-square overflow-hidden rounded-xl border border-white/[0.08] bg-black/20 transition hover:border-cyan-300/40"><img src={url} alt={`Sticker ${index + 1}`} loading="lazy" className="h-full w-full object-cover transition group-hover:scale-105" referrerPolicy="no-referrer" /></button>)}</div>}
+    {tab === "link" && <div className="space-y-3">{manualUrl && <div className="mx-auto aspect-video max-h-36 overflow-hidden rounded-xl border border-white/10 bg-black/20"><img src={manualUrl} alt="Preview gambar" className="h-full w-full object-contain" referrerPolicy="no-referrer" /></div>}<input type="url" value={manualUrl} onChange={(event) => { setManualUrl(event.target.value); setError(""); }} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addManualUrl(); } }} placeholder="https://contoh.com/gambar.jpg" className="rk-input w-full rounded-xl px-3 py-3 text-xs" />{error && <p className="text-[10px] text-red-300">{error}</p>}<button type="button" onClick={addManualUrl} className="w-full rounded-xl bg-[var(--accent)] px-3 py-2.5 text-xs font-black text-white">Gunakan gambar</button></div>}
+  </div>;
+}
+
 function Composer({ parentId, compact = false, onCreated }: { parentId?: string; compact?: boolean; onCreated: () => void }) {
   const [content, setContent] = useState("");
   const [image, setImage] = useState("");
   const [visibility, setVisibility] = useState("public");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!content.trim() || sending) return;
+    if ((!content.trim() && !image) || sending) return;
     setSending(true); setError("");
     try {
       await socialFetch("/api/social/posts", { method: "POST", body: JSON.stringify({ content, image_url: image || null, visibility, parent_id: parentId || null }) });
@@ -38,8 +64,8 @@ function Composer({ parentId, compact = false, onCreated }: { parentId?: string;
     {image && <div className="relative mt-3 overflow-hidden rounded-2xl border border-white/10"><img src={image} alt="Preview" className="max-h-72 w-full object-cover" referrerPolicy="no-referrer"/><button type="button" onClick={() => setImage("")} className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-1 text-xs">Hapus</button></div>}
     {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-      <div className="flex min-w-0 items-center gap-2"><label className="flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-2 text-[10px] font-bold text-[var(--accent-2)] hover:bg-white/5"><FiImage/><span>Gambar URL</span><input value={image} onChange={(event) => setImage(event.target.value)} className="sr-only" type="url" aria-label="URL gambar HTTPS" /></label>{!parentId && <select value={visibility} onChange={(event) => setVisibility(event.target.value)} className="rounded-full border border-white/10 bg-[var(--surface-1)] px-2.5 py-2 text-[10px] font-bold text-white/60"><option value="public">Publik</option><option value="followers">Pengikut</option></select>}<span className="text-[10px] text-white/30">{content.length}/500</span></div>
-      <button disabled={!content.trim() || sending} className="flex items-center gap-2 rounded-full bg-[var(--accent-2)] px-4 py-2.5 text-xs font-black text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35"><FiSend/>{sending ? "Mengirim" : parentId ? "Balas" : "Posting"}</button>
+      <div className="flex min-w-0 items-center gap-2"><div className="relative"><button type="button" onClick={() => setShowMediaPicker((value) => !value)} className={`flex items-center gap-1.5 rounded-full px-2.5 py-2 text-[10px] font-bold transition hover:bg-white/5 ${image ? "bg-cyan-300/10 text-cyan-200" : "text-[var(--accent-2)]"}`}><RiEmojiStickerLine className="text-base"/><span>{image ? "Ganti media" : "Sticker"}</span></button>{showMediaPicker && <MediaPicker onSelect={setImage} onClose={() => setShowMediaPicker(false)} />}</div>{!parentId && <select value={visibility} onChange={(event) => setVisibility(event.target.value)} className="rounded-full border border-white/10 bg-[var(--surface-1)] px-2.5 py-2 text-[10px] font-bold text-white/60"><option value="public">Publik</option><option value="followers">Pengikut</option></select>}<span className="text-[10px] text-white/30">{content.length}/500</span></div>
+      <button disabled={(!content.trim() && !image) || sending} className="flex items-center gap-2 rounded-full bg-[var(--accent-2)] px-4 py-2.5 text-xs font-black text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35"><FiSend/>{sending ? "Mengirim" : parentId ? "Balas" : "Posting"}</button>
     </div>
   </form>;
 }
@@ -69,7 +95,7 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
   const profileHref = `/u/${encodeURIComponent(author.username || post.author_id)}`;
   return <article className="border-b border-white/[0.08] bg-[var(--surface-0)] transition last:border-b-0 hover:bg-white/[0.02]">
     <div className="flex gap-3 p-4"><Link href={profileHref} className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/5 font-black">{author.avatar_url ? <img src={author.avatar_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer"/> : (author.username || "U")[0]?.toUpperCase()}</Link><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><Link href={profileHref} className="block truncate text-sm font-black hover:underline">{author.username || "User"}</Link><span className="text-[11px] text-white/35">Lv.{author.level || 1} · {new Date(post.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</span></div><button onClick={post.viewer_owns ? remove : report} className="rounded-full p-2 text-white/35 hover:bg-white/5 hover:text-white">{post.viewer_owns ? <FiTrash2 size={14}/> : <FiMoreHorizontal/>}</button></div>
-      <p className="mt-2 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-white/85">{post.content}</p>{post.image_url && <img src={post.image_url} alt="Lampiran posting" className="mt-3 max-h-[480px] w-full rounded-2xl border border-white/10 object-cover" loading="lazy" referrerPolicy="no-referrer"/>}
+      {post.content !== "[sticker]" && <p className="mt-2 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-white/85">{post.content}</p>}{post.image_url && <img src={post.image_url} alt="Sticker atau gambar posting" className="mt-3 max-h-[480px] w-full rounded-2xl border border-white/10 object-contain" loading="lazy" referrerPolicy="no-referrer"/>}
       <div className="mt-4 flex max-w-xs justify-between text-white/40"><button onClick={openReplies} className="flex items-center gap-2 text-xs hover:text-[var(--accent-2)]"><FiMessageCircle size={17}/>{post.replies_count || "Balas"}</button><button onClick={toggleLike} className={`flex items-center gap-2 text-xs ${liked ? "text-pink-400" : "hover:text-pink-400"}`}><FiHeart size={17} fill={liked ? "currentColor" : "none"}/>{likes || "Suka"}</button></div>
     </div></div>
     {replying && <div className="ml-8 border-l border-white/[0.08]"><Composer parentId={post.id} compact onCreated={refreshReplies}/>{replies.map((reply) => <PostCard key={reply.id} post={reply} onChanged={refreshReplies}/>)}{loadedReplies && !replies.length && <p className="p-4 text-center text-xs text-white/35">Belum ada balasan.</p>}</div>}
