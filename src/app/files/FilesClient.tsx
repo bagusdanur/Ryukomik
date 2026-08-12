@@ -10,7 +10,7 @@ import { socialFetch } from "@/lib/social/client";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 
 type FilesTab = "timeline" | "favorite" | "history" | "collections";
-type MiniProfile = { username: string; avatar_url?: string | null };
+type MiniProfile = { id: string; username: string; avatar_url?: string | null; level?: number };
 
 const TabLoading = () => (
   <div className="rk-card-soft rounded-2xl py-10 text-center text-sm text-white/50">

@@ -3,7 +3,7 @@ import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
-const PROFILE_FIELDS = "id, username, avatar_url, banner_url, bio, show_public_reads, show_public_comments, show_public_join_date";
+const PROFILE_FIELDS = "id, username, avatar_url, banner_url, bio, level, show_public_reads, show_public_comments, show_public_join_date";
 
 function mediaUrl(value: unknown) {
   if (value === null || value === "") return null;

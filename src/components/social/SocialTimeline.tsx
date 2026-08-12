@@ -33,7 +33,10 @@ type Post = {
   viewer_liked: boolean;
   viewer_owns: boolean;
   profiles?: Author | Author[] | null;
+  pending?: boolean;
+
 };
+type ViewerProfile = Author & { id: string };
 
 function authorOf(post: Post): Author {
   return Array.isArray(post.profiles)
@@ -168,10 +171,14 @@ function Composer({
   parentId,
   compact = false,
   onCreated,
+  optimisticAuthor,
+  onFailed,
 }: {
   parentId?: string;
   compact?: boolean;
-  onCreated: (post?: Post) => void;
+  onCreated: (post?: Post, replaceId?: string) => void;
+  optimisticAuthor?: ViewerProfile;
+  onFailed?: (temporaryId: string, message: string) => void;
 }) {
   const [content, setContent] = useState("");
   const [image, setImage] = useState("");
@@ -183,28 +190,62 @@ function Composer({
   async function submit(event: FormEvent) {
     event.preventDefault();
     if ((!content.trim() && !image) || sending) return;
+
+    const submittedContent = content.trim() || "[sticker]";
+    const submittedImage = image || null;
+    const temporaryId = `optimistic-${crypto.randomUUID()}`;
+    const optimisticPost: Post | null = optimisticAuthor
+      ? {
+          id: temporaryId,
+          author_id: optimisticAuthor.id,
+          content: submittedContent,
+          image_url: submittedImage,
+          visibility,
+          likes_count: 0,
+          replies_count: 0,
+          created_at: new Date().toISOString(),
+          viewer_liked: false,
+          viewer_owns: true,
+          profiles: optimisticAuthor,
+          pending: true,
+        }
+      : null;
+
     setSending(true);
     setError("");
+    if (optimisticPost) {
+      setContent("");
+      setImage("");
+      onCreated(optimisticPost);
+    }
+
     try {
       const result = await socialFetch<{ post: { id: string; created_at: string } }>("/api/social/posts", {
         method: "POST",
         body: JSON.stringify({
-          content,
-          image_url: image || null,
+          content: submittedContent === "[sticker]" ? "" : submittedContent,
+          image_url: submittedImage,
           visibility,
           parent_id: parentId || null,
         }),
       });
-      const createdPost: Post = { id: result.post.id, author_id: "me", content: content.trim() || "[sticker]", image_url: image || null, visibility, likes_count: 0, replies_count: 0, created_at: result.post.created_at, viewer_liked: false, viewer_owns: true, profiles: { username: "Kamu", level: 1 } };
-      setContent("");
-      setImage("");
-      onCreated(createdPost);
+      const createdPost: Post = optimisticPost
+        ? { ...optimisticPost, id: result.post.id, created_at: result.post.created_at, pending: false }
+        : { id: result.post.id, author_id: "me", content: submittedContent, image_url: submittedImage, visibility, likes_count: 0, replies_count: 0, created_at: result.post.created_at, viewer_liked: false, viewer_owns: true, profiles: { username: "Kamu", level: 1 } };
+      if (optimisticPost) onCreated(createdPost, temporaryId);
+      else {
+        setContent("");
+        setImage("");
+        onCreated(createdPost);
+      }
     } catch (failure) {
-      setError(
-        failure instanceof Error
-          ? failure.message
-          : "Gagal mengirim postingan.",
-      );
+      const message = failure instanceof Error ? failure.message : "Gagal mengirim postingan.";
+      setError(message);
+      if (optimisticPost) {
+        setContent(submittedContent === "[sticker]" ? "" : submittedContent);
+        setImage(submittedImage || "");
+        onFailed?.(temporaryId, message);
+      }
     } finally {
       setSending(false);
     }
@@ -310,6 +351,7 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
   const [loadedReplies, setLoadedReplies] = useState(false);
 
   async function toggleLike() {
+    if (post.pending) return;
     const next = !liked;
     setLiked(next);
     setLikes((value) => Math.max(0, value + (next ? 1 : -1)));
@@ -324,14 +366,17 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
     }
   }
   async function toggleBookmark() {
+    if (post.pending) return;
     const next = !bookmarked; setBookmarked(next);
     try { await socialFetch("/api/social/posts/bookmark", { method: next ? "POST" : "DELETE", body: JSON.stringify({ postId: post.id }) }); }
     catch { setBookmarked(!next); }
   }
   async function copyLink() {
+    if (post.pending) return;
     await navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
   }
   async function openReplies() {
+    if (post.pending) return;
     setReplying((value) => !value);
     if (loadedReplies) return;
     try {
@@ -401,17 +446,17 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
               </Link>
               <span className="text-[11px] text-white/35">
                 Lv.{author.level || 1} ·{" "}
-                {new Date(post.created_at).toLocaleDateString("id-ID", {
+                {post.pending ? "Mengirim..." : new Date(post.created_at).toLocaleDateString("id-ID", {
                   day: "numeric",
                   month: "short",
                 })}
               </span>
             </div>
             <button
-              onClick={post.viewer_owns ? remove : report}
+              onClick={post.pending ? undefined : post.viewer_owns ? remove : report}
               className="rounded-full p-2 text-white/35 hover:bg-white/5 hover:text-white"
             >
-              {post.viewer_owns ? <FiTrash2 size={14} /> : <FiMoreHorizontal />}
+              {post.pending ? <FiRefreshCw className="animate-spin" size={14} /> : post.viewer_owns ? <FiTrash2 size={14} /> : <FiMoreHorizontal />}
             </button>
           </div>
           {post.content !== "[sticker]" && (
@@ -466,7 +511,7 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
   );
 }
 
-export default function SocialTimeline() {
+function SocialTimelineEnabled({ viewerProfile = null }: { viewerProfile?: ViewerProfile | null }) {
   const { user, loading: userLoading } = useSupabaseUser();
   const [scope, setScope] = useState<"following" | "community">("community");
   const [items, setItems] = useState<Post[]>([]);
@@ -475,6 +520,22 @@ export default function SocialTimeline() {
   const [version, setVersion] = useState(0);
   const [error, setError] = useState("");
   const [composerOpen, setComposerOpen] = useState(false);
+  const viewer: ViewerProfile = viewerProfile || {
+    id: user?.id || "",
+    username: user?.email?.split("@")[0] || "User",
+    avatar_url: null,
+    level: 1,
+  };
+  const handleCreated = (post?: Post, replaceId?: string) => {
+    if (!post) return;
+    setItems((current) => replaceId
+      ? current.map((item) => item.id === replaceId ? post : item)
+      : [post, ...current]);
+  };
+  const handleFailed = (temporaryId: string, message: string) => {
+    setItems((current) => current.filter((item) => item.id !== temporaryId));
+    setError(message);
+  };
 
   const load = useCallback(
     async (reset = false) => {
@@ -539,7 +600,7 @@ export default function SocialTimeline() {
         ))}
       </div>
       <div className="hidden shrink-0 p-5 sm:block">
-        <Composer onCreated={(post) => post && setItems((current) => [post, ...current])} />
+        <Composer optimisticAuthor={viewer} onCreated={handleCreated} onFailed={handleFailed} />
       </div>
       {error && (
         <div className="mx-3 mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-200 sm:mx-4">
@@ -620,10 +681,12 @@ export default function SocialTimeline() {
               </button>
             </div>
             <Composer
-              onCreated={(post) => {
-                if (post) setItems((current) => [post, ...current]);
-                setComposerOpen(false);
+              optimisticAuthor={viewer}
+              onCreated={(post, replaceId) => {
+                handleCreated(post, replaceId);
+                if (!replaceId) setComposerOpen(false);
               }}
+              onFailed={handleFailed}
             />
           </div>
         </div>
@@ -631,3 +694,25 @@ export default function SocialTimeline() {
     </section>
   );
 }
+
+export default function SocialTimeline() {
+  return (
+    <section className="grid min-h-[calc(100dvh-17rem)] w-full place-content-center overflow-hidden rounded-2xl border border-amber-300/15 bg-[linear-gradient(145deg,rgba(251,191,36,.055),rgba(255,255,255,.015))] px-6 py-16 text-center shadow-[0_20px_70px_rgba(0,0,0,.22)] sm:min-h-[620px]">
+      <div className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-amber-200/15 bg-amber-300/[0.06] text-2xl text-amber-100/70">
+        <FiX />
+      </div>
+      <p className="mt-5 text-[10px] font-black uppercase tracking-[0.22em] text-amber-200/55">
+        Maintenance / Closed
+      </p>
+      <h2 className="mt-2 text-xl font-black text-white sm:text-2xl">
+        Timeline sedang ditutup sementara
+      </h2>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-white/40">
+        Fitur posting dan pemuatan timeline sedang dinonaktifkan. Favorit, riwayat,
+        dan koleksi tetap dapat digunakan seperti biasa.
+      </p>
+    </section>
+  );
+}
+
+void SocialTimelineEnabled;
