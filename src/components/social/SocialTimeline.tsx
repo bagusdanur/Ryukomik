@@ -171,7 +171,7 @@ function Composer({
 }: {
   parentId?: string;
   compact?: boolean;
-  onCreated: () => void;
+  onCreated: (post?: Post) => void;
 }) {
   const [content, setContent] = useState("");
   const [image, setImage] = useState("");
@@ -186,7 +186,7 @@ function Composer({
     setSending(true);
     setError("");
     try {
-      await socialFetch("/api/social/posts", {
+      const result = await socialFetch<{ post: { id: string; created_at: string } }>("/api/social/posts", {
         method: "POST",
         body: JSON.stringify({
           content,
@@ -195,9 +195,10 @@ function Composer({
           parent_id: parentId || null,
         }),
       });
+      const createdPost: Post = { id: result.post.id, author_id: "me", content: content.trim() || "[sticker]", image_url: image || null, visibility, likes_count: 0, replies_count: 0, created_at: result.post.created_at, viewer_liked: false, viewer_owns: true, profiles: { username: "Kamu", level: 1 } };
       setContent("");
       setImage("");
-      onCreated();
+      onCreated(createdPost);
     } catch (failure) {
       setError(
         failure instanceof Error
@@ -538,7 +539,7 @@ export default function SocialTimeline() {
         ))}
       </div>
       <div className="hidden shrink-0 p-5 sm:block">
-        <Composer onCreated={() => setVersion((value) => value + 1)} />
+        <Composer onCreated={(post) => post && setItems((current) => [post, ...current])} />
       </div>
       {error && (
         <div className="mx-3 mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-200 sm:mx-4">
@@ -619,8 +620,8 @@ export default function SocialTimeline() {
               </button>
             </div>
             <Composer
-              onCreated={() => {
-                setVersion((value) => value + 1);
+              onCreated={(post) => {
+                if (post) setItems((current) => [post, ...current]);
                 setComposerOpen(false);
               }}
             />
