@@ -933,7 +933,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   };
 
   const uploadChapterImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length || !activeManga || !chapterForm.chapter_number) {
+    if (!e.target.files?.length || !activeManga || chapterForm.chapter_number == null) {
       alert("Isi nomor chapter dulu sebelum upload gambar!");
       return;
     }
@@ -1033,7 +1033,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   };
 
   const importChapterImagesFromSource = async (directSlug?: string) => {
-    if (!chapterForm.chapter_number) {
+    if (chapterForm.chapter_number == null) {
       alert("Isi nomor chapter dulu sebelum import gambar!");
       return;
     }
@@ -1765,7 +1765,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading || !chapterForm.chapter_number}
+                disabled={uploading || chapterForm.chapter_number == null}
                 className="flex items-center gap-2 rounded-xl bg-emerald-400/[.12] px-4 py-2.5 text-sm font-bold text-emerald-300 transition hover:bg-emerald-400/[.2] disabled:opacity-50"
               >
                 {uploading ? `${uploadProgress}%` : <><FiUploadCloudIcon /> Pilih</>}

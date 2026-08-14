@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { manga_slug, chapter_number, title, image_urls, is_published = false } = body;
 
-    if (!manga_slug || !chapter_number) {
+    if (!manga_slug || chapter_number == null) {
       return NextResponse.json({ error: "manga_slug and chapter_number are required" }, { status: 400 });
     }
 
