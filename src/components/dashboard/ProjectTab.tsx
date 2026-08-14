@@ -1731,7 +1731,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 required
                 type="number"
                 step="0.1"
-                value={chapterForm.chapter_number || ""}
+                value={chapterForm.chapter_number ?? ""}
                 onChange={(e) => setChapterForm({ ...chapterForm, chapter_number: Number(e.target.value) })}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm"
                 placeholder="12"
