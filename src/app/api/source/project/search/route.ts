@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     // diminta melebihi total baris yang ada.
     let countQuery = supabaseAdmin
       .from("project_manga")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("is_published", true);
     if (q) countQuery = countQuery.ilike("title", `%${q}%`);
 

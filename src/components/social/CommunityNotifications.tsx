@@ -61,9 +61,11 @@ export default function CommunityNotifications() {
 
   useEffect(() => {
     if (!user) return;
-    void loadCount();
-    const timer = window.setInterval(loadCount, 60_000);
-    const onVisibility = () => { if (document.visibilityState === "visible") void loadCount(); };
+    let lastLoadAt = 0;
+    const refresh = () => { if (document.visibilityState !== "visible" || Date.now() - lastLoadAt < 10_000) return; lastLoadAt = Date.now(); void loadCount(); };
+    refresh();
+    const timer = window.setInterval(refresh, 120_000);
+    const onVisibility = refresh;
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.clearInterval(timer);

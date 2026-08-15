@@ -45,11 +45,11 @@ export default function SocialDock() {
 
   useEffect(() => {
     if (!user || !socialRoute) return;
-    const initialPoll = window.setTimeout(() => void poll(), 0);
-    const timer = window.setInterval(poll, 60_000);
-    const visible = () => {
-      if (document.visibilityState === "visible") void poll();
-    };
+    let lastPollAt = 0;
+    const refresh = () => { if (document.visibilityState !== "visible" || Date.now() - lastPollAt < 10_000) return; lastPollAt = Date.now(); void poll(); };
+    const initialPoll = window.setTimeout(refresh, 0);
+    const timer = window.setInterval(refresh, 120_000);
+    const visible = refresh;
     document.addEventListener("visibilitychange", visible);
     return () => {
       window.clearTimeout(initialPoll);

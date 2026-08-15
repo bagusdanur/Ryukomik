@@ -14,7 +14,7 @@ const getPustakaPage = unstable_cache(
     // diminta melebihi total baris yang ada.
     const { count: totalCount, error: countError } = await supabaseAdmin
       .from("project_manga")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("is_published", true);
 
     if (countError) throw countError;

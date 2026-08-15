@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     // ditembak sama sekali kalau memang sudah di luar jangkauan.
     const { count: totalCount, error: countError } = await supabaseAdmin
       .from("project_manga")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("is_published", true);
 
     if (countError) throw countError;
