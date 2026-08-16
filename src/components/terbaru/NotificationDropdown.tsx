@@ -8,12 +8,12 @@ import { formatDistanceToNow } from "date-fns";
 import { id } from "date-fns/locale";
 import { useEffect, useMemo, useState, startTransition, type Dispatch, type SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
-import type { NotificationItem, SourceId } from "@/types/content";
+import type { NotificationItem } from "@/types/content";
 import {
   markTitleRushWeeklyNotificationRead,
   TITLE_RUSH_EVENT_TYPE,
 } from "@/utils/titleRushNotification";
-import { DEFAULT_SOURCE } from "@/config/sources";
+import { getNotificationLink } from "@/utils/notificationLink";
 
 interface NotificationDropdownProps {
   user: User | null;
@@ -97,54 +97,6 @@ export default function NotificationDropdown({
 
   if (!user) return null;
 
-  const detectSource = (slug = ""): { source: SourceId; slug: string } => {
-    if (!slug || typeof slug !== "string") return { source: DEFAULT_SOURCE, slug: "" };
-    const map: SourceId[] = ["kiryuu", "komikid", "komiku", "luvyaa", "sekte", "doujindesu"];
-
-    for (const source of map) {
-      const prefix = `${source}-`;
-      if (slug.startsWith(prefix)) {
-        return { source, slug: slug.replace(prefix, "") };
-      }
-    }
-
-    const adultPrefix = ["doujindesu-", "sektedoujin-"].find((prefix) =>
-      slug.startsWith(prefix),
-    );
-    if (adultPrefix) {
-      return {
-        source: adultPrefix === "doujindesu-" ? "doujindesu" : "sekte",
-        slug: slug.replace(adultPrefix, ""),
-      };
-    }
-
-    return { source: DEFAULT_SOURCE, slug };
-  };
-
-  const getNotifLink = (notification: NotificationItem) => {
-    if (
-      notification?.type === TITLE_RUSH_EVENT_TYPE ||
-      notification?.type === "premium_activated" ||
-      notification?.type === "premium_reward"
-    ) {
-      if (notification?.type === TITLE_RUSH_EVENT_TYPE) return "/game";
-      return "/premium-pay";
-    }
-    if (!notification?.slug) return "#";
-
-    const { source, slug } = detectSource(notification.slug);
-    const isChapter =
-      slug.includes("/chapter-") ||
-      slug.includes("-chapter-") ||
-      slug.includes("volume");
-
-    if (source === "meionovels") {
-      return isChapter ? `/novel/chapter/${slug}` : `/novel/${slug}`;
-    }
-
-    if (isChapter) return `/chapter/${source}/${slug}`;
-    return `/komik/${source}/${slug}`;
-  };
 
   return (
     <div className="relative shrink-0">
@@ -350,7 +302,7 @@ export default function NotificationDropdown({
                   <Link
                     prefetch={false}
                     key={notification.id}
-                    href={getNotifLink(notification)}
+                    href={getNotificationLink(notification)}
                     onClick={() => setShowNotif(false)}
                     className="flex gap-2.5 border-b border-[var(--line-soft)] p-3 transition-colors hover:bg-[color:color-mix(in_srgb,var(--surface-2)_55%,transparent)]"
                   >

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FiBell, FiCheck, FiExternalLink, FiLoader, FiX } from "react-icons/fi";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { useSharedNotifications } from "@/hooks/useSharedNotifications";
+import { getNotificationLink } from "@/utils/notificationLink";
 
 type Notification = {
   id: string;
@@ -21,11 +22,6 @@ function notificationLabel(item: Notification) {
   if (item.type === "social_reply") return `${item.actor_name || "Seseorang"} membalas postinganmu`;
   if (item.type === "social_like") return `${item.actor_name || "Seseorang"} menyukai postinganmu`;
   return `${item.actor_name || "Seseorang"} mengirim aktivitas baru`;
-}
-
-function notificationHref(item: Notification) {
-  if (item.type === "new_follower" && item.actor_name) return `/u/${encodeURIComponent(item.actor_name)}`;
-  return item.slug || "/files?tab=timeline";
 }
 
 export default function CommunityNotifications() {
@@ -61,7 +57,7 @@ export default function CommunityNotifications() {
             <div className="max-h-[calc(min(70vh,34rem)-4rem)] overflow-y-auto">
               {loading && <div className="grid place-items-center py-12 text-white/40"><FiLoader className="animate-spin" /></div>}
               {!loading && items.map((item) => (
-                <Link key={item.id} href={notificationHref(item)} onClick={() => setOpen(false)} className={`flex gap-3 border-b border-white/[0.06] px-4 py-3 transition hover:bg-white/[0.04] ${item.is_read ? "opacity-60" : "bg-cyan-300/[0.035]"}`}>
+                <Link key={item.id} href={getNotificationLink(item)} onClick={() => setOpen(false)} className={`flex gap-3 border-b border-white/[0.06] px-4 py-3 transition hover:bg-white/[0.04] ${item.is_read ? "opacity-60" : "bg-cyan-300/[0.035]"}`}>
                   <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.is_read ? "bg-white/15" : "bg-[var(--accent-2)]"}`} />
                   <span className="min-w-0 flex-1"><span className="block text-sm leading-relaxed text-white/80">{notificationLabel(item)}</span><time className="mt-1 block text-[10px] text-white/35">{new Date(item.created_at).toLocaleString("id-ID")}</time></span>
                 </Link>
