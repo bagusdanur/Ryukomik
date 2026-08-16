@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FiChevronDown, FiChevronUp, FiX } from "react-icons/fi";
 import { FiDownload } from "react-icons/fi";
 import type { User } from "@supabase/supabase-js";
+import { blobToPdfImage, fetchDownloadChapter, fetchDownloadImage, imageExtension, saveBlob } from "@/lib/chapterDownload";
 
 type DownloadType = "zip" | "pdf";
 
@@ -24,13 +25,6 @@ type BatchDownloadButtonProps = {
   isPremium?: boolean;
   user?: User | null;
 };
-
-const blobToBase64 = (blob: Blob): Promise<string> =>
-  new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(String(reader.result ?? ""));
-    reader.readAsDataURL(blob);
-  });
 
 function formatTitleFromSlug(slug?: string, currentChapter?: string) {
   if (currentChapter) {
@@ -65,18 +59,6 @@ function formatTitleFromSlug(slug?: string, currentChapter?: string) {
   return ch ? `${title} - Ch. ${ch}` : title || "Unknown";
 }
 
-async function fetchChapterImages(source: string, slug: string): Promise<ChapterImagesResponse> {
-  const res = await fetch(
-    `https://api.ryukomik.web.id/${source}/chapter/${slug}`
-  );
-  const data = await res.json();
-  return {
-    images: data.images || [],
-    chapterSlug: data.chapterSlug,
-    currentChapter: data.currentChapter,
-  };
-}
-
 export default function BatchDownloadButton({ source, chapters, isPremium, user }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -107,7 +89,7 @@ export default function BatchDownloadButton({ source, chapters, isPremium, user 
       addLog(`⏳ ${label}...`);
 
       try {
-        const { images, chapterSlug, currentChapter } = await fetchChapterImages(source, slug);
+        const { images, chapterSlug, currentChapter } = await fetchDownloadChapter(source, slug);
         const title = formatTitleFromSlug(chapterSlug || slug, currentChapter);
 
         if (images.length === 0) {
@@ -127,37 +109,25 @@ export default function BatchDownloadButton({ source, chapters, isPremium, user 
         if (type === "pdf") {
           let pdf: import("jspdf").jsPDF | null = null;
           for (let j = 0; j < images.length; j++) {
-            const res = await fetch(`/api/image?url=${encodeURIComponent(images[j])}`);
-            const blob = await res.blob();
-            const imgData = await blobToBase64(blob);
-            const img = new Image();
-            img.src = imgData;
-            await new Promise<void>((resolve) => {
-              img.onload = () => {
-                const maxWidth = 1000;
-                let w = img.width, h = img.height;
-                if (w > maxWidth) { h = h * (maxWidth / w); w = maxWidth; }
+            const blob = await fetchDownloadImage(images[j], j + 1);
+            const { dataUrl, width: w, height: h } = await blobToPdfImage(blob);
                 if (!pdf) {
                   pdf = new JsPdf!({ unit: "px", format: [w, h] });
                 } else {
                   pdf.addPage([w, h]);
                 }
-                pdf.addImage(img, "JPEG", 0, 0, w, h, undefined, "FAST");
+                pdf.addImage(dataUrl, "JPEG", 0, 0, w, h, undefined, "FAST");
                 pdf.setFontSize(22);
                 pdf.setTextColor(0, 0, 0);
                 pdf.text("Ryukomik.my.id", w / 2, h - 8, { align: "center" });
-                resolve();
-              };
-            });
           }
           const pdfBlob = pdf?.output("blob");
           if (pdfBlob) zip.file(`${title}.pdf`, pdfBlob);
         } else {
           const folder = zip.folder(title);
           for (let j = 0; j < images.length; j++) {
-            const res = await fetch(`/api/image?url=${encodeURIComponent(images[j])}`);
-            const blob = await res.blob();
-            folder?.file(`${String(j + 1).padStart(3, "0")}.jpg`, blob);
+            const blob = await fetchDownloadImage(images[j], j + 1);
+            folder?.file(`${String(j + 1).padStart(3, "0")}.${imageExtension(blob)}`, blob);
           }
         }
 
@@ -185,10 +155,7 @@ export default function BatchDownloadButton({ source, chapters, isPremium, user 
 
     addLog("📦 Membuat ZIP...");
     const content = await zip.generateAsync({ type: "blob" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(content);
-    a.download = `ryukomik_batch_${type}.zip`;
-    a.click();
+    saveBlob(content, `ryukomik_batch_${type}.zip`);
 
     addLog("🎉 Selesai!");
     setLoading(false);

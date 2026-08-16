@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { FiDownload, FiX } from "react-icons/fi";
 import type { User } from "@supabase/supabase-js";
 import { loadCachedRole } from "@/utils/roleCache";
+import { blobToPdfImage, fetchDownloadChapter, fetchDownloadImage, imageExtension, saveBlob } from "@/lib/chapterDownload";
 
 type DownloadType = "pdf" | "zip";
 
@@ -13,12 +14,6 @@ type DownloadButtonProps = {
   isPremium?: boolean;
   user?: User | null;
   onPremium?: () => void;
-};
-
-type ChapterResponse = {
-  images?: string[];
-  chapterSlug?: string;
-  currentChapter?: string;
 };
 
 export default function DownloadButton({
@@ -61,12 +56,8 @@ export default function DownloadButton({
     setProgress(0);
 
     try {
-      const res = await fetch(
-        `https://api.ryukomik.web.id/${source}/chapter/${slug}`,
-      );
-      const data = (await res.json()) as ChapterResponse;
-
-      const images = data.images || [];
+      const data = await fetchDownloadChapter(source, slug);
+      const images = data.images;
 
       const chapterTitle = formatTitleFromSlug(
         data.chapterSlug,
@@ -94,12 +85,8 @@ export default function DownloadButton({
         const folder = zip.folder(chapterTitle);
 
         for (let i = 0; i < images.length; i++) {
-          const res = await fetch(
-            `/api/image?url=${encodeURIComponent(images[i])}`,
-          );
-          const blob = await res.blob();
-
-          const fileName = `${String(i + 1).padStart(3, "0")}.jpg`;
+          const blob = await fetchDownloadImage(images[i], i + 1);
+          const fileName = `${String(i + 1).padStart(3, "0")}.${imageExtension(blob)}`;
           folder?.file(fileName, blob);
 
           setProgress(Math.round(((i + 1) / images.length) * 100));
@@ -107,10 +94,7 @@ export default function DownloadButton({
 
         const content = await zip.generateAsync({ type: "blob" });
 
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(content);
-        a.download = `${chapterTitle}.zip`;
-        a.click();
+        saveBlob(content, `${chapterTitle}.zip`);
 
         setLoading(false);
         setProgress(0);
@@ -125,28 +109,8 @@ export default function DownloadButton({
       let done = 0;
 
       for (let i = 0; i < images.length; i++) {
-        const res = await fetch(
-          `/api/image?url=${encodeURIComponent(images[i])}`,
-        );
-
-        const blob = await res.blob();
-        const imgData = await blobToBase64(blob);
-
-        const img = new Image();
-        img.src = imgData;
-
-        await new Promise<void>((resolve) => {
-          img.onload = () => {
-            const maxWidth = 1000;
-            let width = img.width;
-            let height = img.height;
-
-            if (width > maxWidth) {
-              const ratio = maxWidth / width;
-              width = maxWidth;
-              height = height * ratio;
-            }
-
+        const blob = await fetchDownloadImage(images[i], i + 1);
+        const { dataUrl, width, height } = await blobToPdfImage(blob);
             if (!pdf) {
               pdf = new jsPDF({
                 unit: "px",
@@ -156,7 +120,7 @@ export default function DownloadButton({
               pdf.addPage([width, height]);
             }
 
-            pdf.addImage(img, "JPEG", 0, 0, width, height, undefined, "FAST");
+            pdf.addImage(dataUrl, "JPEG", 0, 0, width, height, undefined, "FAST");
 
             // watermark
             pdf.setFontSize(22);
@@ -170,10 +134,6 @@ export default function DownloadButton({
               align: "center",
             });
 
-            resolve();
-          };
-        });
-
         done++;
         setProgress(Math.round((done / images.length) * 100));
       }
@@ -181,19 +141,12 @@ export default function DownloadButton({
       pdf?.save(`${chapterTitle}.pdf`);
     } catch (e) {
       console.error(e);
-      alert("Gagal download");
+      alert(e instanceof Error ? e.message : "Gagal download");
     }
 
     setLoading(false);
     setProgress(0);
   };
-
-  const blobToBase64 = (blob: Blob): Promise<string> =>
-    new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(String(reader.result ?? ""));
-      reader.readAsDataURL(blob);
-    });
 
   function formatTitleFromSlug(slug?: string, currentChapter?: string) {
     // Coba extract dari currentChapter dulu (paling akurat)
