@@ -16,6 +16,7 @@ export interface Series {
   created_at?: string;
   updated_at?: string;
   upvote_count?: number;
+  reaction_counts?: Record<string, number>;
 }
 
 export interface Chapter {

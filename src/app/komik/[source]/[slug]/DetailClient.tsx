@@ -254,11 +254,6 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
                 image={data.thumbnail}
               />
             </div>
-            {source === "project" && (
-              <div className="mt-2">
-                <ProjectUpvoteButton slug={slug} initialCount={data.upvote_count} />
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -297,6 +292,14 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
         isPremium={isPremium}
         user={user}
       />
+
+      {source === "project" && (
+        <section className="rk-shell mt-8 px-4">
+          <div className="rounded-3xl border border-white/10 bg-black/20 px-5 py-7 text-center shadow-sm">
+            <ProjectUpvoteButton slug={slug} initialCount={data.upvote_count} initialCounts={data.reaction_counts} />
+          </div>
+        </section>
+      )}
 
       <div className="rk-shell px-4 mt-10 border-t border-white/10 pt-10">
         <CommentsSupabase type="komik" slug={`${source}-${slug}`} chapter={undefined} />

@@ -15,7 +15,7 @@ async function authenticatedUser(request: Request) {
 export async function GET(request: Request, props: { params: Promise<{ slug: string }> }) {
   try {
     const [{ slug }, userId] = await Promise.all([props.params, authenticatedUser(request)]);
-    const data = await projectApiFetch<{ upvoted: boolean; upvote_count: number }>(
+    const data = await projectApiFetch<{ selected_reaction: string | null; upvote_count: number; reaction_counts: Record<string, number> }>(
       `/projects/${encodeURIComponent(slug)}/upvote?userId=${encodeURIComponent(userId)}`,
       { cache: "no-store" },
     );
@@ -29,9 +29,10 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
 export async function POST(request: Request, props: { params: Promise<{ slug: string }> }) {
   try {
     const [{ slug }, userId] = await Promise.all([props.params, authenticatedUser(request)]);
-    const data = await projectApiFetch<{ upvoted: boolean; upvote_count: number }>(
+    const body = await request.json().catch(() => ({}));
+    const data = await projectApiFetch<{ selected_reaction: string | null; upvote_count: number; reaction_counts: Record<string, number> }>(
       `/projects/${encodeURIComponent(slug)}/upvote`,
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) },
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, reactionType: body.reactionType }) },
     );
     return NextResponse.json(data, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
