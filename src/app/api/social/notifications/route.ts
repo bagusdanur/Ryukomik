@@ -3,19 +3,13 @@ import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { decodeSocialCursor, encodeSocialCursor } from "@/lib/social/cursor";
 
-const COLUMNS = "id, user_id, actor_id, actor_name, type, slug, target_id, is_read, created_at";
+const COLUMNS = "id, user_id, actor_id, actor_name, type, slug, chapter, target_id, is_read, created_at";
 
 export async function GET(request: Request) {
   try {
     const userId = await requireUserId(request);
     if (!socialLimit(request, userId, 65)) return socialJson({ error: "Terlalu banyak permintaan." }, { status: 429 });
     const url = new URL(request.url);
-    const countOnly = url.searchParams.get("count") === "1";
-    if (countOnly) {
-      const { count, error } = await supabaseAdmin.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("is_read", false);
-      if (error) throw error;
-      return socialJson({ unreadCount: count || 0 }, { headers: { "Cache-Control": "private, max-age=30" } });
-    }
     const cursor = decodeSocialCursor(url.searchParams.get("cursor"));
     let query = supabaseAdmin.from("notifications").select(COLUMNS).eq("user_id", userId).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(21);
     if (cursor) query = query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);

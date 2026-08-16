@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { FiBell, FiCheck, FiExternalLink, FiLoader, FiX } from "react-icons/fi";
-import { socialFetch } from "@/lib/social/client";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { useSharedNotifications } from "@/hooks/useSharedNotifications";
 
 type Notification = {
   id: string;
@@ -31,58 +31,16 @@ function notificationHref(item: Notification) {
 export default function CommunityNotifications() {
   const { user } = useSupabaseUser();
   const [open, setOpen] = useState(false);
-  const [unread, setUnread] = useState(0);
-  const [items, setItems] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(false);
-  const loadedRef = useRef(false);
-
-  const loadCount = useCallback(async () => {
-    if (!user || document.visibilityState !== "visible") return;
-    try {
-      const result = await socialFetch<{ unreadCount: number }>("/api/social/notifications?count=1");
-      setUnread(result.unreadCount);
-    } catch {
-      // Keep the last known count on transient failures.
-    }
-  }, [user]);
-
-  const loadItems = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const result = await socialFetch<{ items: Notification[]; unreadCount: number }>("/api/social/notifications");
-      setItems(result.items);
-      setUnread(result.unreadCount);
-      loadedRef.current = true;
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    let lastLoadAt = 0;
-    const refresh = () => { if (document.visibilityState !== "visible" || Date.now() - lastLoadAt < 10_000) return; lastLoadAt = Date.now(); void loadCount(); };
-    refresh();
-    const timer = window.setInterval(refresh, 120_000);
-    const onVisibility = refresh;
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [loadCount, user]);
+  const { items, unread, loading, markRead } = useSharedNotifications(user?.id);
 
   async function toggle() {
     const next = !open;
     setOpen(next);
-    if (next && !loadedRef.current) await loadItems();
+    return;
   }
 
   async function markAll() {
-    await socialFetch("/api/social/notifications", { method: "PATCH", body: JSON.stringify({ all: true }) });
-    setItems((current) => current.map((item) => ({ ...item, is_read: true })));
-    setUnread(0);
+    await markRead();
   }
 
   return (

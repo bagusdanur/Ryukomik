@@ -5,14 +5,13 @@ import FilterPanel from "@/components/terbaru/FilterPanel";
 import HeaderBar from "@/components/terbaru/HeaderBar";
 import NotificationDropdown from "@/components/terbaru/NotificationDropdown";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { supabase } from "@/lib/supabaseClient";
 import LoginModal from "@/components/LoginModal";
 import { useRouter } from "next/navigation";
 import AgeModal from "@/components/AgeModal";
 import {
   TITLE_RUSH_EVENT_TYPE,
 } from "@/utils/titleRushNotification";
-import { clearNotificationCache, fetchCachedNotifications } from "@/utils/notificationFetch";
+import { fetchCachedNotifications, markNotificationsRead } from "@/utils/notificationFetch";
 import { useHistoryStore } from "@/store/historyStore";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import type { NotificationItem, SourceId, TerbaruFilters, UpdateItem } from "@/types/content";
@@ -263,15 +262,7 @@ export default function TerbaruPage({
 
       if (!unreadRegularIds.length) return;
 
-      const { error } = await supabase
-        .from("notifications")
-        .update({ is_read: true })
-        .eq("user_id", user.id)
-        .in("id", unreadRegularIds);
-
-      if (error) throw error;
-
-      clearNotificationCache(user.id);
+      await markNotificationsRead(user.id, unreadRegularIds);
       setNotifications((prev) => {
         const readIds = new Set(unreadRegularIds);
         const next = prev.map((notification) =>

@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useState, useEffect, startTransition } from "react";
 import type { FormEvent } from "react";
 import type { NotificationItem, SourceId } from "@/types/content";
-import { supabase } from "@/lib/supabaseClient";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import LoginModal from "@/components/LoginModal";
@@ -15,7 +14,7 @@ import Button from "@/components/Button";
 import {
   TITLE_RUSH_EVENT_TYPE,
 } from "@/utils/titleRushNotification";
-import { clearNotificationCache, fetchCachedNotifications } from "@/utils/notificationFetch";
+import { fetchCachedNotifications, markNotificationsRead } from "@/utils/notificationFetch";
 
 import {
   FaUserCircle,
@@ -137,13 +136,7 @@ export default function Navbar() {
 
     if (!unreadRegularIds.length) return;
 
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", user.id)
-      .in("id", unreadRegularIds);
-
-    clearNotificationCache(user.id);
+    await markNotificationsRead(user.id, unreadRegularIds);
     setNotifications((prev) => {
       const readIds = new Set(unreadRegularIds);
       const next = prev.map((notification) =>

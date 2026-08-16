@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
 import { FiBell, FiEdit3, FiFolder, FiUsers } from "react-icons/fi";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
-import { socialFetch } from "@/lib/social/client";
+import { useSharedNotifications } from "@/hooks/useSharedNotifications";
 
 const links = [
   { href: "/feed", label: "Feed", icon: FiUsers },
@@ -26,37 +25,10 @@ const socialPrefixes = [
 export default function SocialDock() {
   const pathname = usePathname();
   const { user } = useSupabaseUser();
-  const [unread, setUnread] = useState(0);
+  const { unread } = useSharedNotifications(user?.id);
   const socialRoute = socialPrefixes.some(
     (route) => pathname === route || pathname.startsWith(route),
   );
-
-  const poll = useCallback(async () => {
-    if (!user || !socialRoute || document.visibilityState !== "visible") return;
-    try {
-      const result = await socialFetch<{ unreadCount: number }>(
-        "/api/social/notifications?count=1",
-      );
-      setUnread(result.unreadCount);
-    } catch {
-      setUnread(0);
-    }
-  }, [socialRoute, user]);
-
-  useEffect(() => {
-    if (!user || !socialRoute) return;
-    let lastPollAt = 0;
-    const refresh = () => { if (document.visibilityState !== "visible" || Date.now() - lastPollAt < 10_000) return; lastPollAt = Date.now(); void poll(); };
-    const initialPoll = window.setTimeout(refresh, 0);
-    const timer = window.setInterval(refresh, 120_000);
-    const visible = refresh;
-    document.addEventListener("visibilitychange", visible);
-    return () => {
-      window.clearTimeout(initialPoll);
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", visible);
-    };
-  }, [poll, socialRoute, user]);
 
   if (!user || !socialRoute) return null;
 
