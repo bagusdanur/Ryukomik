@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { projectApiFetch } from "@/lib/projectApiServer";
 
 export type ProjectDiscordEventType =
   | "project_published"
@@ -19,7 +19,7 @@ export async function enqueueProjectDiscordEvent(
   manga: MangaSnapshot,
   extra: Record<string, unknown> = {},
 ) {
-  const { error } = await supabaseAdmin.from("project_discord_events").insert({
+  await projectApiFetch("/admin/discord-events", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
     event_type: eventType,
     manga_slug: manga.slug,
     payload: {
@@ -31,6 +31,5 @@ export async function enqueueProjectDiscordEvent(
       genres: manga.genres || [],
       ...extra,
     },
-  });
-  if (error) throw error;
+  }) });
 }

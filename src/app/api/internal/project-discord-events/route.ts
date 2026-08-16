@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { projectApiFetch } from "@/lib/projectApiServer";
 
 export const dynamic = "force-dynamic";
 
@@ -22,17 +22,8 @@ export async function GET(request: NextRequest) {
   const after = Number.isSafeInteger(rawAfter) && rawAfter >= 0 ? rawAfter : 0;
   const rawLimit = Number(request.nextUrl.searchParams.get("limit") || "25");
   const limit = Math.max(1, Math.min(Number.isSafeInteger(rawLimit) ? rawLimit : 25, 50));
-  const { data, error } = await supabaseAdmin
-    .from("project_discord_events")
-    .select("id,event_type,manga_slug,payload,created_at")
-    .gt("id", after)
-    .order("id", { ascending: true })
-    .limit(limit);
-  if (error) {
-    return NextResponse.json({ error: "Tidak dapat membaca event project." }, { status: 500 });
-  }
-
-  const response = NextResponse.json({ data: data || [] });
+  const result = await projectApiFetch<{ data: unknown[] }>(`/admin/discord-events?after=${after}&limit=${limit}`);
+  const response = NextResponse.json({ data: result.data || [] });
   response.headers.set("Cache-Control", "no-store");
   return response;
 }

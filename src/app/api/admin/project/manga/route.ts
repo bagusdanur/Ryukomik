@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { deleteR2Prefix } from "@/lib/r2Storage";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 import { enqueueProjectDiscordEvent } from "@/lib/projectDiscordEvents";
-import { projectApiUrl } from "@/lib/projectApiServer";
+import { projectApiFetch, projectApiUrl } from "@/lib/projectApiServer";
 
 function revalidateProjectContent(slug?: string) {
   revalidateTag("source-project-pustaka", { expire: 0 });
@@ -31,9 +31,7 @@ export async function GET(request: Request) {
 
     const projectUrl = projectApiUrl(`/admin/projects?page=${page}&limit=${limit}`);
     if (projectUrl) {
-      const token = request.headers.get("authorization") || "";
-      const upstream = await fetch(projectUrl, { headers: { Authorization: token } });
-      return NextResponse.json(await upstream.json(), { status: upstream.status });
+      return NextResponse.json(await projectApiFetch(`/admin/projects?page=${page}&limit=${limit}`));
     }
 
     const { data, count, error } = await supabaseAdmin
@@ -58,6 +56,10 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    if (projectApiUrl("/admin/projects")) {
+      const result = await projectApiFetch<{data:{slug:string}}>("/admin/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      revalidateProjectContent(result.data.slug); return NextResponse.json(result, { status: 201 });
+    }
     const { slug, title, cover_url, description, author, status, type, genres } = body;
 
     if (!slug || !title) {
@@ -100,6 +102,13 @@ export async function PATCH(request: Request) {
 
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+    if (projectApiUrl(`/admin/projects/${id}`)) {
+      const existing = await projectApiFetch<{data:any}>(`/admin/projects/${id}`);
+      const result = await projectApiFetch<{data:any}>(`/admin/projects/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!existing.data.is_published && result.data.is_published) await enqueueProjectDiscordEvent("project_published", result.data);
+      else if (existing.data.is_published && result.data.is_published && status !== existing.data.status && ["dropped","cancelled"].includes(status || "")) await enqueueProjectDiscordEvent("project_status_changed", result.data, { previous_status: existing.data.status || "", status });
+      revalidateProjectContent(existing.data.slug); revalidateProjectContent(result.data.slug); return NextResponse.json(result);
     }
 
     const update = Object.fromEntries(
@@ -172,6 +181,13 @@ export async function DELETE(request: Request) {
 
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+    if (projectApiUrl(`/admin/projects/${id}`)) {
+      const existing = await projectApiFetch<{data:{slug:string}}>(`/admin/projects/${id}`);
+      const chapters = await projectApiFetch<{data:Array<{chapter_number:number}>}>(`/admin/chapters?manga_slug=${encodeURIComponent(existing.data.slug)}`);
+      await Promise.all([deleteR2Prefix(`covers/${existing.data.slug}/`), ...chapters.data.map((ch) => deleteR2Prefix(`chapters/${existing.data.slug}/${ch.chapter_number}/`))]);
+      await projectApiFetch(`/admin/projects/${id}`, { method: "DELETE" }); revalidateProjectContent(existing.data.slug);
+      return NextResponse.json({ success: true, deletedChapters: chapters.data.length });
     }
 
     // 1. Ambil data manga untuk dapat slug

@@ -4,7 +4,7 @@ import { deleteR2Prefix, deleteR2File } from "@/lib/r2Storage";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { enqueueProjectDiscordEvent } from "@/lib/projectDiscordEvents";
-import { projectApiUrl } from "@/lib/projectApiServer";
+import { projectApiFetch, projectApiUrl } from "@/lib/projectApiServer";
 
 function revalidateProjectContent(mangaSlug: string) {
   revalidateTag("source-project-pustaka", { expire: 0 });
@@ -41,9 +41,7 @@ export async function GET(request: Request) {
 
     const projectUrl = projectApiUrl(`/admin/chapters?manga_slug=${encodeURIComponent(mangaSlug)}&page=${page}&limit=${limit}`);
     if (projectUrl) {
-      const token = request.headers.get("authorization") || "";
-      const upstream = await fetch(projectUrl, { headers: { Authorization: token } });
-      return NextResponse.json(await upstream.json(), { status: upstream.status });
+      return NextResponse.json(await projectApiFetch(`/admin/chapters?manga_slug=${encodeURIComponent(mangaSlug)}&page=${page}&limit=${limit}`));
     }
 
     const { data, count, error } = await supabaseAdmin
@@ -73,6 +71,11 @@ export async function POST(request: Request) {
 
     if (!manga_slug || chapter_number == null) {
       return NextResponse.json({ error: "manga_slug and chapter_number are required" }, { status: 400 });
+    }
+    if (projectApiUrl("/admin/chapters")) {
+      const result = await projectApiFetch<{data:any}>("/admin/chapters", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (result.data.is_published) { const manga = await projectApiFetch<{data:any}>(`/projects/${encodeURIComponent(manga_slug)}`).catch(()=>null); if (manga?.data?.is_published !== false && !["dropped","cancelled"].includes(manga?.data?.status || "")) await enqueueProjectDiscordEvent("chapter_published", manga!.data, { chapter_number: result.data.chapter_number, chapter_title: result.data.title || "" }); }
+      revalidateProjectContent(manga_slug); revalidateProjectChapter(manga_slug,result.data.chapter_number); return NextResponse.json(result, {status:201});
     }
 
     const { data, error } = await supabaseAdmin
@@ -129,6 +132,14 @@ export async function PATCH(request: Request) {
 
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+    if (projectApiUrl(`/admin/chapters/${id}`)) {
+      const existing = await projectApiFetch<{data:any}>(`/admin/chapters/${id}`);
+      const result = await projectApiFetch<{data:any}>(`/admin/chapters/${id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+      const oldUrls:string[]=existing.data.image_urls||[], newUrls:string[]=result.data.image_urls||[];
+      await Promise.all(oldUrls.filter((url)=>!newUrls.includes(url)).map(async(url)=>{try{const key=new URL(url).pathname.substring(1);if(key.startsWith("chapters/"))await deleteR2File(key);}catch{}}));
+      if(!existing.data.is_published&&result.data.is_published){const manga=await projectApiFetch<{data:any}>(`/projects/${encodeURIComponent(result.data.manga_slug)}`).catch(()=>null);if(manga?.data&&!['dropped','cancelled'].includes(manga.data.status||''))await enqueueProjectDiscordEvent('chapter_published',manga.data,{chapter_number:result.data.chapter_number,chapter_title:result.data.title||''});}
+      revalidateProjectContent(result.data.manga_slug);revalidateProjectChapter(existing.data.manga_slug,existing.data.chapter_number);revalidateProjectChapter(result.data.manga_slug,result.data.chapter_number);return NextResponse.json(result);
     }
 
     const { data: existingChapter, error: fetchError } = await supabaseAdmin
@@ -210,6 +221,9 @@ export async function DELETE(request: Request) {
 
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
+    if (projectApiUrl(`/admin/chapters/${id}`)) {
+      const existing=await projectApiFetch<{data:any}>(`/admin/chapters/${id}`);await deleteR2Prefix(`chapters/${existing.data.manga_slug}/${existing.data.chapter_number}/`);await projectApiFetch(`/admin/chapters/${id}`,{method:'DELETE'});revalidateProjectContent(existing.data.manga_slug);revalidateProjectChapter(existing.data.manga_slug,existing.data.chapter_number);return NextResponse.json({success:true});
     }
 
     // 1. Ambil data chapter untuk dapat manga_slug & chapter_number
