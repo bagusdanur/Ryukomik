@@ -33,27 +33,17 @@ export async function GET(request: Request) {
     const mangaSlug = searchParams.get("manga_slug");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "50", 10);
-    const offset = (page - 1) * limit;
 
     if (!mangaSlug) {
       return NextResponse.json({ error: "manga_slug is required" }, { status: 400 });
     }
 
-    const projectUrl = projectApiUrl(`/admin/chapters?manga_slug=${encodeURIComponent(mangaSlug)}&page=${page}&limit=${limit}`);
-    if (projectUrl) {
-      return NextResponse.json(await projectApiFetch(`/admin/chapters?manga_slug=${encodeURIComponent(mangaSlug)}&page=${page}&limit=${limit}`));
+    const query = new URLSearchParams({ manga_slug: mangaSlug, page: String(page), limit: String(limit) });
+    for (const key of ["search", "status"]) {
+      const value = searchParams.get(key);
+      if (value) query.set(key, value);
     }
-
-    const { data, count, error } = await supabaseAdmin
-      .from("project_chapters")
-      .select("id, manga_slug, chapter_number, title, image_urls, is_published, uploaded_at", { count: "exact" })
-      .eq("manga_slug", mangaSlug)
-      .order("chapter_number", { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    if (error) throw error;
-
-    return NextResponse.json({ data, total: count || 0 });
+    return NextResponse.json(await projectApiFetch(`/admin/chapters?${query}`));
   } catch (err: unknown) {
     return adminErrorResponse(err, "Gagal mengambil data chapter.");
   }
@@ -67,6 +57,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    if (!projectApiUrl("/admin/chapters")) throw new Error("PROJECT_API_URL is not configured");
     const { manga_slug, chapter_number, title, image_urls, is_published = false } = body;
 
     if (!manga_slug || chapter_number == null) {
@@ -133,6 +124,7 @@ export async function PATCH(request: Request) {
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
+    if (!projectApiUrl(`/admin/chapters/${id}`)) throw new Error("PROJECT_API_URL is not configured");
     if (projectApiUrl(`/admin/chapters/${id}`)) {
       const existing = await projectApiFetch<{data:any}>(`/admin/chapters/${id}`);
       const result = await projectApiFetch<{data:any}>(`/admin/chapters/${id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
@@ -222,6 +214,7 @@ export async function DELETE(request: Request) {
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
+    if (!projectApiUrl(`/admin/chapters/${id}`)) throw new Error("PROJECT_API_URL is not configured");
     if (projectApiUrl(`/admin/chapters/${id}`)) {
       const existing=await projectApiFetch<{data:any}>(`/admin/chapters/${id}`);await deleteR2Prefix(`chapters/${existing.data.manga_slug}/${existing.data.chapter_number}/`);await projectApiFetch(`/admin/chapters/${id}`,{method:'DELETE'});revalidateProjectContent(existing.data.manga_slug);revalidateProjectChapter(existing.data.manga_slug,existing.data.chapter_number);return NextResponse.json({success:true});
     }

@@ -27,22 +27,12 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
-    const offset = (page - 1) * limit;
-
-    const projectUrl = projectApiUrl(`/admin/projects?page=${page}&limit=${limit}`);
-    if (projectUrl) {
-      return NextResponse.json(await projectApiFetch(`/admin/projects?page=${page}&limit=${limit}`));
+    const query = new URLSearchParams({ page: String(page), limit: String(limit) });
+    for (const key of ["search", "status", "sort"]) {
+      const value = searchParams.get(key);
+      if (value) query.set(key, value);
     }
-
-    const { data, count, error } = await supabaseAdmin
-      .from("project_manga")
-      .select("id, slug, title, cover_url, description, type, status, author, genres, is_published, is_spotlight, view_count, created_at, updated_at", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    if (error) throw error;
-
-    return NextResponse.json({ data, total: count || 0 });
+    return NextResponse.json(await projectApiFetch(`/admin/projects?${query}`));
   } catch (err: unknown) {
     return adminErrorResponse(err, "Gagal mengambil data manga.");
   }
@@ -56,6 +46,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    if (!projectApiUrl("/admin/projects")) throw new Error("PROJECT_API_URL is not configured");
     if (projectApiUrl("/admin/projects")) {
       const result = await projectApiFetch<{data:{slug:string}}>("/admin/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       revalidateProjectContent(result.data.slug); return NextResponse.json(result, { status: 201 });
@@ -98,11 +89,17 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
+    if (body.restore === true && body.id) {
+      const result = await projectApiFetch<{ data: { slug: string } }>(`/admin/projects/${body.id}/restore`, { method: "POST" });
+      revalidateProjectContent(result.data.slug);
+      return NextResponse.json(result);
+    }
     const { id, slug, title, cover_url, description, author, status, type, genres, is_published, is_spotlight } = body;
 
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
+    if (!projectApiUrl(`/admin/projects/${id}`)) throw new Error("PROJECT_API_URL is not configured");
     if (projectApiUrl(`/admin/projects/${id}`)) {
       const existing = await projectApiFetch<{data:any}>(`/admin/projects/${id}`);
       const result = await projectApiFetch<{data:any}>(`/admin/projects/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -182,12 +179,11 @@ export async function DELETE(request: Request) {
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
+    if (!projectApiUrl(`/admin/projects/${id}`)) throw new Error("PROJECT_API_URL is not configured");
     if (projectApiUrl(`/admin/projects/${id}`)) {
       const existing = await projectApiFetch<{data:{slug:string}}>(`/admin/projects/${id}`);
-      const chapters = await projectApiFetch<{data:Array<{chapter_number:number}>}>(`/admin/chapters?manga_slug=${encodeURIComponent(existing.data.slug)}`);
-      await Promise.all([deleteR2Prefix(`covers/${existing.data.slug}/`), ...chapters.data.map((ch) => deleteR2Prefix(`chapters/${existing.data.slug}/${ch.chapter_number}/`))]);
       await projectApiFetch(`/admin/projects/${id}`, { method: "DELETE" }); revalidateProjectContent(existing.data.slug);
-      return NextResponse.json({ success: true, deletedChapters: chapters.data.length });
+      return NextResponse.json({ success: true, softDeleted: true });
     }
 
     // 1. Ambil data manga untuk dapat slug

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useState, useEffect, useCallback, FormEvent, useRef, useMemo } from "react";
 import {
@@ -16,6 +17,9 @@ import {
   FiX as FiXIcon,
   FiEye as FiEyeIcon,
   FiDownloadCloud as FiDownloadCloudIcon,
+  FiExternalLink as FiExternalLinkIcon,
+  FiAlertTriangle as FiAlertTriangleIcon,
+  FiClock as FiClockIcon,
 } from "react-icons/fi";
 import { MANGA_SOURCES } from "@/config/sources";
 
@@ -95,6 +99,7 @@ type Manga = {
   is_spotlight?: boolean;
   view_count?: number;
   created_at: string;
+  deleted_at?: string | null;
 };
 
 type Chapter = {
@@ -116,14 +121,29 @@ type ProjectViewStats = {
   readersToday: number;
   readers7d: number;
   bySlug: Record<string, number>;
+  content?: { total: number; published: number; drafts: number; views: number | string };
 };
+type ProjectActivity = { id: number; action: string; entity_type: string; manga_slug?: string | null; detail?: { title?: string }; created_at: string };
+
+async function runInBatches<T>(items: T[], worker: (item: T) => Promise<void>, size = 4) {
+  const failures: T[] = [];
+  for (let index = 0; index < items.length; index += size) {
+    await Promise.all(items.slice(index, index + size).map(async (item) => {
+      try { await worker(item); } catch { failures.push(item); }
+    }));
+  }
+  if (failures.length) throw new Error(`${failures.length} operasi gagal. Data berhasil dimuat ulang; silakan coba lagi.`);
+}
 
 interface ProjectTabProps {
   getAdminToken: () => Promise<string>;
 }
 
 export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
-  const [view, setView] = useState<"mangaList" | "mangaForm" | "chapterList" | "chapterForm" | "chapterPreview">("mangaList");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  type ProjectView = "mangaList" | "mangaForm" | "chapterList" | "chapterForm" | "chapterPreview";
+  const [view, setViewState] = useState<ProjectView>(() => searchParams.get("projectView") === "chapterList" ? "chapterList" : "mangaList");
 
   // Data
   const [mangaList, setMangaList] = useState<Manga[]>([]);
@@ -137,6 +157,10 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [dataError, setDataError] = useState("");
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [activities, setActivities] = useState<ProjectActivity[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
 
   // Forms
   const [mangaForm, setMangaForm] = useState<Partial<Manga>>({ is_published: false });
@@ -188,6 +212,17 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   // Search
   const [chapterSearch, setChapterSearch] = useState("");
   const [mangaSearch, setMangaSearch] = useState("");
+  const [debouncedMangaSearch, setDebouncedMangaSearch] = useState("");
+  const [debouncedChapterSearch, setDebouncedChapterSearch] = useState("");
+  const [mangaStatus, setMangaStatus] = useState("all");
+  const [mangaSort, setMangaSort] = useState("updated_desc");
+  const [chapterStatus, setChapterStatus] = useState("all");
+  const [mangaPage, setMangaPage] = useState(1);
+  const [chapterPage, setChapterPage] = useState(1);
+  const [mangaTotal, setMangaTotal] = useState(0);
+  const [chapterTotal, setChapterTotal] = useState(0);
+  const mangaPageSize = 24;
+  const chapterPageSize = 30;
 
   // Bulk delete
   const [selectedManga, setSelectedManga] = useState<Set<string>>(new Set());
@@ -197,37 +232,106 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const mangaDraftLoadedRef = useRef(false);
+  const chapterDraftLoadedRef = useRef(false);
+
+  useEffect(() => {
+    if (view !== "mangaForm") { mangaDraftLoadedRef.current = false; return; }
+    if (!mangaForm.id && !mangaDraftLoadedRef.current) {
+      mangaDraftLoadedRef.current = true;
+      try {
+        const saved = localStorage.getItem("ryukomik:project:manga-draft");
+        if (saved) setMangaForm(JSON.parse(saved));
+      } catch { localStorage.removeItem("ryukomik:project:manga-draft"); }
+    }
+    if (mangaForm.id) return;
+    const timer = window.setTimeout(() => localStorage.setItem("ryukomik:project:manga-draft", JSON.stringify(mangaForm)), 400);
+    return () => window.clearTimeout(timer);
+  }, [mangaForm, view]);
+
+  useEffect(() => {
+    if (view !== "chapterForm") { chapterDraftLoadedRef.current = false; return; }
+    const key = activeManga?.slug ? `ryukomik:project:chapter-draft:${activeManga.slug}` : "";
+    if (!key) return;
+    if (!chapterForm.id && !chapterDraftLoadedRef.current) {
+      chapterDraftLoadedRef.current = true;
+      try {
+        const saved = localStorage.getItem(key);
+        if (saved) setChapterForm(JSON.parse(saved));
+      } catch { localStorage.removeItem(key); }
+    }
+    if (chapterForm.id) return;
+    const timer = window.setTimeout(() => localStorage.setItem(key, JSON.stringify(chapterForm)), 400);
+    return () => window.clearTimeout(timer);
+  }, [activeManga?.slug, chapterForm, view]);
+
+  const setView = useCallback((nextView: ProjectView, slugOverride?: string) => {
+    setViewState(nextView);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("page", "project");
+    if (nextView === "mangaList") {
+      params.delete("projectView");
+      params.delete("slug");
+    } else {
+      params.set("projectView", nextView);
+      const slug = slugOverride || activeManga?.slug || params.get("slug");
+      if (slug) params.set("slug", slug);
+    }
+    router.push(`/dashboard?${params.toString()}`, { scroll: false });
+  }, [activeManga?.slug, router, searchParams]);
+
+  useEffect(() => {
+    const urlView = searchParams.get("projectView");
+    const views: ProjectView[] = ["mangaList", "mangaForm", "chapterList", "chapterForm", "chapterPreview"];
+    const safeView: ProjectView = views.includes(urlView as ProjectView) ? urlView as ProjectView : "mangaList";
+    setViewState((current) => current === safeView ? current : safeView);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const slug = searchParams.get("slug");
+    if (view === "mangaList" || activeManga || !slug) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const token = await getAdminToken();
+        const params = new URLSearchParams({ search: slug, limit: "10" });
+        const response = await fetch(`/api/admin/project/manga?${params}`, { headers: { Authorization: `Bearer ${token}` } });
+        const payload = await response.json();
+        const manga = (payload.data as Manga[] | undefined)?.find((item) => item.slug === slug);
+        if (!cancelled && manga) setActiveManga(manga);
+        if (!cancelled && !manga) setView("mangaList");
+      } catch {
+        if (!cancelled) setView("mangaList");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [activeManga, getAdminToken, searchParams, setView, view]);
 
   // â”€â”€â”€ FILTERED DATA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const filteredManga = useMemo(() => {
-    if (!mangaSearch.trim()) return mangaList;
-    const q = mangaSearch.toLowerCase();
-    return mangaList.filter(
-      (m) =>
-        m.title.toLowerCase().includes(q) ||
-        m.slug.toLowerCase().includes(q) ||
-        m.author?.toLowerCase().includes(q)
-    );
-  }, [mangaList, mangaSearch]);
+  const filteredManga = mangaList;
+  const filteredChapters = chapterList;
 
-  const filteredChapters = useMemo(() => {
-    if (!chapterSearch.trim()) return chapterList;
-    const q = chapterSearch.toLowerCase();
-    return chapterList.filter(
-      (c) =>
-        `chapter ${c.chapter_number}`.includes(q) ||
-        c.title?.toLowerCase().includes(q)
-    );
-  }, [chapterList, chapterSearch]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedMangaSearch(mangaSearch.trim()), 350);
+    return () => window.clearTimeout(timer);
+  }, [mangaSearch]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedChapterSearch(chapterSearch.trim()), 350);
+    return () => window.clearTimeout(timer);
+  }, [chapterSearch]);
+
+  useEffect(() => setMangaPage(1), [debouncedMangaSearch, mangaStatus, mangaSort]);
+  useEffect(() => setChapterPage(1), [debouncedChapterSearch, chapterStatus]);
 
   const publicationSummary = useMemo(() => ({
-    published: mangaList.filter((manga) => manga.is_published).length,
-    drafts: mangaList.filter((manga) => !manga.is_published).length,
-  }), [mangaList]);
+    published: Number(viewStats.content?.published) || 0,
+    drafts: Number(viewStats.content?.drafts) || 0,
+  }), [viewStats.content]);
 
   const totalViews = useMemo(
-    () => mangaList.reduce((total, manga) => total + (Number(manga.view_count) || 0), 0),
-    [mangaList],
+    () => Number(viewStats.content?.views) || 0,
+    [viewStats.content],
   );
 
   // â”€â”€â”€ SEARCH DARI SOURCE (autocomplete pengganti input slug manual) â”€â”€â”€
@@ -458,20 +562,20 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     try {
       const token = await getAdminToken();
       const targets = chapterList.filter((c) => selectedChapters.has(c.id));
-      await Promise.all(
-        targets.map((chap) =>
-          fetch("/api/admin/project/chapter", {
+      await runInBatches(targets, async (chap) => {
+          const response = await fetch("/api/admin/project/chapter", {
             method: "PATCH",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ ...chap, is_published: true }),
-          })
-        )
-      );
+            body: JSON.stringify({ id: chap.id, is_published: true }),
+          });
+          if (!response.ok) throw new Error("Gagal publish chapter");
+      });
       setSelectedChapters(new Set());
       setBulkMode(false);
       await fetchChapters(activeManga!.slug);
     } catch (err) {
-      alert("Gagal publish chapter");
+      alert(err instanceof Error ? err.message : "Gagal publish chapter");
+      await fetchChapters(activeManga!.slug);
     } finally {
       setLoading(false);
     }
@@ -511,30 +615,55 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   // â”€â”€â”€ MANGA ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const fetchManga = useCallback(async () => {
     setLoading(true);
+    setDataError("");
     try {
       const token = await getAdminToken();
       const headers = { Authorization: `Bearer ${token}` };
+      const params = new URLSearchParams({ page: String(mangaPage), limit: String(mangaPageSize), status: mangaStatus, sort: mangaSort });
+      if (debouncedMangaSearch) params.set("search", debouncedMangaSearch);
       const [res, statsRes] = await Promise.all([
-        fetch("/api/admin/project/manga", { headers }),
+        fetch(`/api/admin/project/manga?${params}`, { headers }),
         fetch("/api/admin/project/view-stats", { headers }),
       ]);
       const [json, statsJson] = await Promise.all([res.json(), statsRes.json()]);
+      if (!res.ok) throw new Error(json?.error || "Gagal memuat project");
       setMangaList(json.data || []);
+      setMangaTotal(Number(json.total) || 0);
       if (statsRes.ok) {
         setViewStats({
           readersToday: Number(statsJson.readersToday) || 0,
           readers7d: Number(statsJson.readers7d) || 0,
           bySlug: statsJson.bySlug || {},
+          content: statsJson.content,
         });
       }
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : "Gagal memuat project");
     } finally {
       setLoading(false);
     }
-  }, [getAdminToken]);
+  }, [getAdminToken, mangaPage, mangaStatus, mangaSort, debouncedMangaSearch]);
 
   useEffect(() => {
     if (view === "mangaList") fetchManga();
   }, [view, fetchManga]);
+
+  useEffect(() => {
+    if (!activityOpen) return;
+    let cancelled = false;
+    setActivityLoading(true);
+    void (async () => {
+      try {
+        const token = await getAdminToken();
+        const response = await fetch("/api/admin/project/activity", { headers: { Authorization: `Bearer ${token}` } });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Gagal memuat aktivitas");
+        if (!cancelled) setActivities(payload.data || []);
+      } catch (error) { if (!cancelled) setDataError(error instanceof Error ? error.message : "Gagal memuat aktivitas"); }
+      finally { if (!cancelled) setActivityLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [activityOpen, getAdminToken]);
 
   const saveManga = async (e: FormEvent) => {
     e.preventDefault();
@@ -551,6 +680,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
         body: JSON.stringify(mangaForm),
       });
       if (!res.ok) throw new Error("Gagal menyimpan manga");
+      if (!mangaForm.id) localStorage.removeItem("ryukomik:project:manga-draft");
       setView("mangaList");
     } catch (err: any) {
       alert(err.message);
@@ -643,6 +773,18 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     }
   };
 
+  const restoreManga = async (manga: Manga) => {
+    setLoading(true);
+    try {
+      const token = await getAdminToken();
+      const response = await fetch("/api/admin/project/manga", { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ id: manga.id, restore: true }) });
+      if (!response.ok) throw new Error("Gagal memulihkan project");
+      await fetchManga();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Gagal memulihkan project");
+    } finally { setLoading(false); }
+  };
+
   const performPublicationChange = async (manga: Manga) => {
     setLoading(true);
     try {
@@ -686,14 +828,13 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     setLoading(true);
     try {
       const token = await getAdminToken();
-      await Promise.all(
-        Array.from(selectedManga).map((id) =>
-          fetch(`/api/admin/project/manga?id=${id}`, {
+      await runInBatches(Array.from(selectedManga), async (id) => {
+          const response = await fetch(`/api/admin/project/manga?id=${id}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },
-          })
-        )
-      );
+          });
+          if (!response.ok) throw new Error("Gagal menghapus project");
+      });
       setSelectedManga(new Set());
       setBulkMode(false);
       fetchManga();
@@ -794,24 +935,35 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const fetchChapters = useCallback(
     async (slug: string) => {
       setLoading(true);
+      setDataError("");
       try {
         const token = await getAdminToken();
-        const res = await fetch(`/api/admin/project/chapter?manga_slug=${slug}`, {
+        const params = new URLSearchParams({ manga_slug: slug, page: String(chapterPage), limit: String(chapterPageSize), status: chapterStatus });
+        if (debouncedChapterSearch) params.set("search", debouncedChapterSearch);
+        const res = await fetch(`/api/admin/project/chapter?${params}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const json = await res.json();
+        if (!res.ok) throw new Error(json?.error || "Gagal memuat chapter");
         setChapterList(json.data || []);
+        setChapterTotal(Number(json.total) || 0);
+      } catch (error) {
+        setDataError(error instanceof Error ? error.message : "Gagal memuat chapter");
       } finally {
         setLoading(false);
       }
     },
-    [getAdminToken]
+    [getAdminToken, chapterPage, chapterStatus, debouncedChapterSearch]
   );
+
+  useEffect(() => {
+    if (view === "chapterList" && activeManga) fetchChapters(activeManga.slug);
+  }, [view, activeManga, fetchChapters]);
 
   const openChapters = (manga: Manga) => {
     setActiveManga(manga);
-    fetchChapters(manga.slug);
-    setView("chapterList");
+    setChapterPage(1);
+    setView("chapterList", manga.slug);
     setChapterSearch("");
     setBulkMode(false);
     setSelectedChapters(new Set());
@@ -838,6 +990,8 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       });
       if (!res.ok) throw new Error("Gagal menyimpan chapter");
 
+      if (!chapterForm.id && activeManga?.slug) localStorage.removeItem(`ryukomik:project:chapter-draft:${activeManga.slug}`);
+
       setView("chapterList");
       fetchChapters(activeManga!.slug);
     } catch (err: any) {
@@ -854,7 +1008,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       const res = await fetch("/api/admin/project/chapter", {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...chapter, is_published: !chapter.is_published }),
+        body: JSON.stringify({ id: chapter.id, is_published: !chapter.is_published }),
       });
       if (!res.ok) throw new Error("Gagal mengubah status chapter");
       await fetchChapters(activeManga!.slug);
@@ -897,14 +1051,13 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     setLoading(true);
     try {
       const token = await getAdminToken();
-      await Promise.all(
-        Array.from(selectedChapters).map((id) =>
-          fetch(`/api/admin/project/chapter?id=${id}`, {
+      await runInBatches(Array.from(selectedChapters), async (id) => {
+          const response = await fetch(`/api/admin/project/chapter?id=${id}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },
-          })
-        )
-      );
+          });
+          if (!response.ok) throw new Error("Gagal menghapus chapter");
+      });
       setSelectedChapters(new Set());
       setBulkMode(false);
       fetchChapters(activeManga!.slug);
@@ -1375,7 +1528,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-base sm:text-lg leading-tight truncate">{activeManga?.title}</h2>
             <p className="text-xs text-white/40">
-              {chapterList.length} chapter
+              {chapterTotal} chapter
               {bulkMode && selectedChapters.size > 0 && ` â€¢ ${selectedChapters.size} dipilih`}
             </p>
           </div>
@@ -1597,16 +1750,22 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           </div>
         )}
 
-        {/* Search */}
-        <div className="relative">
-          <FiSearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={14} />
-          <input
-            value={chapterSearch}
-            onChange={(e) => setChapterSearch(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:border-[#7c5cfc]/50 transition-colors"
-            placeholder="Cari chapter..."
-          />
+        {/* Search and filters */}
+        <div className="flex flex-col gap-2 rounded-2xl border border-white/[.06] bg-[#13131a] p-3 sm:flex-row">
+          <div className="relative flex-1">
+            <FiSearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" size={14} />
+            <input value={chapterSearch} onChange={(e) => setChapterSearch(e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-emerald-400/50" placeholder="Cari nomor atau judul chapter..." />
+          </div>
+          <select value={chapterStatus} onChange={(e) => setChapterStatus(e.target.value)} className="rounded-xl border border-white/10 bg-[#0d0d12] px-3 py-2.5 text-xs text-white/70 outline-none focus:border-emerald-400/50">
+            <option value="all">Semua chapter</option><option value="published">Publik</option><option value="draft">Draft</option>
+          </select>
         </div>
+
+        {dataError && (
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-400/20 bg-rose-400/[.08] p-3 text-xs text-rose-200">
+            <span>{dataError}</span><button onClick={() => activeManga && fetchChapters(activeManga.slug)} className="rounded-lg bg-rose-400/15 px-3 py-2 font-bold">Coba lagi</button>
+          </div>
+        )}
 
         {/* Chapter List */}
         <div className="bg-[#13131a] border border-white/[.06] rounded-2xl overflow-hidden">
@@ -1680,6 +1839,15 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             </div>
           )}
         </div>
+        {chapterTotal > chapterPageSize && (
+          <div className="flex items-center justify-between rounded-2xl border border-white/[.06] bg-[#13131a] px-4 py-3">
+            <p className="text-xs text-white/40">Halaman {chapterPage} dari {Math.ceil(chapterTotal / chapterPageSize)}</p>
+            <div className="flex gap-2">
+              <button disabled={chapterPage === 1 || loading} onClick={() => setChapterPage((page) => Math.max(1, page - 1))} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-bold text-white/60 disabled:opacity-30">Sebelumnya</button>
+              <button disabled={chapterPage >= Math.ceil(chapterTotal / chapterPageSize) || loading} onClick={() => setChapterPage((page) => page + 1)} className="rounded-xl bg-emerald-400 px-3 py-2 text-xs font-black text-black disabled:opacity-30">Berikutnya</button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -2032,6 +2200,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/dashboard?page=project-db" className="rounded-xl border border-emerald-400/20 bg-emerald-400/[.1] px-3 py-2 text-xs font-bold text-emerald-200 transition hover:bg-emerald-400/[.18]">Database &amp; Backup</Link>
+            <button onClick={() => setActivityOpen((open) => !open)} className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[.04] px-3 py-2 text-xs font-bold text-white/65 transition hover:bg-white/[.08]"><FiClockIcon /> Aktivitas</button>
             <span className="rounded-xl border border-sky-400/15 bg-sky-400/[.08] px-3 py-2 text-xs font-bold text-sky-200">{totalViews.toLocaleString("id-ID")} views</span>
             <span className="rounded-xl border border-violet-400/15 bg-violet-400/[.08] px-3 py-2 text-xs font-bold text-violet-200">{viewStats.readers7d.toLocaleString("id-ID")} pembaca / 7 hari</span>
             <span className="rounded-xl border border-white/10 bg-white/[.04] px-3 py-2 text-xs font-bold text-white/65">{viewStats.readersToday.toLocaleString("id-ID")} hari ini</span>
@@ -2040,6 +2209,15 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           </div>
         </div>
       </div>
+
+      {activityOpen && (
+        <div className="rounded-2xl border border-white/[.07] bg-[#13131a] p-4">
+          <div className="mb-3 flex items-center justify-between"><div><p className="text-sm font-black">Aktivitas terbaru</p><p className="text-[10px] text-white/40">Perubahan penting pada Source Project.</p></div><button onClick={() => setActivityOpen(false)} className="rounded-lg p-2 text-white/40 hover:bg-white/[.06] hover:text-white"><FiXIcon /></button></div>
+          {activityLoading ? <p className="py-5 text-center text-xs text-white/35">Memuat aktivitas...</p> : activities.length === 0 ? <p className="py-5 text-center text-xs text-white/35">Belum ada aktivitas tercatat.</p> : (
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{activities.map((item) => <div key={item.id} className="rounded-xl border border-white/[.06] bg-black/20 p-3"><p className="text-xs font-bold capitalize text-white/75">{item.action.replaceAll("_", " ")} · {item.detail?.title || item.manga_slug || item.entity_type}</p><p className="mt-1 text-[10px] text-white/35">{new Date(item.created_at).toLocaleString("id-ID")}</p></div>)}</div>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 rounded-2xl border border-white/[.06] bg-[#13131a]/80 p-3 sm:flex-row sm:items-center sm:p-4">
         <div className="relative flex-1">
@@ -2051,8 +2229,14 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             placeholder="Cari judul, slug, atau author..."
           />
         </div>
+        <select value={mangaStatus} onChange={(e) => setMangaStatus(e.target.value)} className="rounded-xl border border-white/10 bg-[#0d0d12] px-3 py-2.5 text-xs text-white/70 outline-none focus:border-emerald-400/45">
+          <option value="all">Semua status</option><option value="published">Publik</option><option value="draft">Draft</option><option value="ongoing">Ongoing</option><option value="completed">Completed</option><option value="dropped">Dropped</option><option value="trash">Trash</option>
+        </select>
+        <select value={mangaSort} onChange={(e) => setMangaSort(e.target.value)} className="rounded-xl border border-white/10 bg-[#0d0d12] px-3 py-2.5 text-xs text-white/70 outline-none focus:border-emerald-400/45">
+          <option value="updated_desc">Terbaru diubah</option><option value="created_desc">Terbaru dibuat</option><option value="title_asc">Judul A-Z</option><option value="views_desc">Views terbanyak</option>
+        </select>
         <div className="flex items-center gap-2">
-          <span className="mr-auto text-xs text-white/40 sm:mr-1">{filteredManga.length} dari {mangaList.length} manga</span>
+          <span className="mr-auto whitespace-nowrap text-xs text-white/40 sm:mr-1">{mangaTotal} manga</span>
           {bulkMode ? (
             <>
               <button onClick={bulkDeleteManga} disabled={selectedManga.size === 0} className="rounded-xl bg-rose-500/15 px-3 py-2.5 text-xs font-bold text-rose-400 transition hover:bg-rose-500/25 disabled:opacity-50">Hapus ({selectedManga.size})</button>
@@ -2132,6 +2316,12 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       </div>
       </div>
 
+      {dataError && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-400/20 bg-rose-400/[.08] p-3 text-xs text-rose-200">
+          <span>{dataError}</span><button onClick={() => void fetchManga()} className="rounded-lg bg-rose-400/15 px-3 py-2 font-bold">Coba lagi</button>
+        </div>
+      )}
+
       {/* Manga Grid */}
       {loading && mangaList.length === 0 ? (
         <div className="p-8 text-center text-white/30 text-sm">Memuat data...</div>
@@ -2147,9 +2337,9 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
           {filteredManga.map((manga) => (
             <div key={manga.id} className="group overflow-hidden rounded-2xl border border-white/[.07] bg-[#13131a] shadow-sm transition duration-200 hover:-translate-y-1 hover:border-emerald-400/30 hover:shadow-xl hover:shadow-black/25">
-              <div className="relative aspect-[4/5] cursor-pointer overflow-hidden" onClick={() => !bulkMode && openChapters(manga)}>
+              <div className="relative aspect-[4/5] cursor-pointer overflow-hidden" onClick={() => !bulkMode && !manga.deleted_at && openChapters(manga)}>
                 {manga.cover_url ? (
-                  <img src={manga.cover_url} alt={manga.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                  <img src={manga.cover_url} alt={manga.title} loading="lazy" decoding="async" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
                 ) : (
                   <div className="w-full h-full bg-white/5 flex items-center justify-center text-white/10">
                     <FiImageIcon size={32} />
@@ -2157,7 +2347,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 )}
                 {bulkMode && (
                   <div className="absolute top-2 left-2 z-10">
-                    <button
+                    <button disabled={Boolean(manga.deleted_at)}
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleMangaSelect(manga.id);
@@ -2191,20 +2381,27 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                       {(manga.view_count || 0).toLocaleString("id-ID")}
                     </span>
                     <span className={`rounded-full px-2 py-1 text-[9px] font-black tracking-wide shadow-lg ${
-                      manga.is_published
+                      manga.deleted_at ? "bg-rose-500/90 text-white" : manga.is_published
                         ? "bg-emerald-500/90 text-white"
                         : "bg-amber-400/90 text-black"
                     }`}>
-                      {manga.is_published ? "PUBLIK" : "DRAFT"}
+                      {manga.deleted_at ? "TRASH" : manga.is_published ? "PUBLIK" : "DRAFT"}
                     </span>
                   </div>
                   <h3 className="line-clamp-2 text-sm font-black leading-tight text-white sm:text-[15px]">{manga.title}</h3>
                   <p className="mt-1 text-[10px] font-medium text-white/65 capitalize">
                     {manga.type} • {manga.status}
                   </p>
+                  {(!manga.cover_url || !manga.type || !manga.status) && (
+                    <p className="mt-1 flex items-center gap-1 text-[9px] font-bold text-amber-300"><FiAlertTriangleIcon size={10} /> Metadata belum lengkap</p>
+                  )}
                 </div>
               </div>
-              {!bulkMode && (
+              {!bulkMode && manga.deleted_at ? (
+                <div className="border-t border-white/[.05] bg-[#101015] p-2.5">
+                  <button onClick={() => void restoreManga(manga)} className="w-full rounded-xl bg-emerald-400/[.12] px-3 py-2.5 text-[11px] font-black text-emerald-300 transition hover:bg-emerald-400/[.2]">Pulihkan dari Trash</button>
+                </div>
+              ) : !bulkMode && (
                 <div className="grid grid-cols-2 gap-2 border-t border-white/[.05] bg-[#101015] p-2.5">
                   <button
                     onClick={() => openChapters(manga)}
@@ -2231,6 +2428,11 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                   >
                     <FiEdit2Icon size={13} /> Edit
                   </button>
+                  {manga.is_published && (
+                    <Link href={`/komik/project/${manga.slug}`} target="_blank" className="flex items-center justify-center gap-1.5 rounded-xl border border-sky-400/10 bg-sky-400/[.07] px-3 py-2.5 text-[11px] font-bold text-sky-300 transition hover:bg-sky-400/[.14]">
+                      <FiExternalLinkIcon size={13} /> Lihat publik
+                    </Link>
+                  )}
                   <button
                     onClick={() => setMangaConfirmation({ action: "delete", manga })}
                     className="flex items-center justify-center gap-1.5 rounded-xl bg-rose-500/10 px-3 py-2.5 text-[11px] font-bold text-rose-300 transition hover:bg-rose-500/20"
@@ -2241,6 +2443,16 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {mangaTotal > mangaPageSize && (
+        <div className="flex items-center justify-between rounded-2xl border border-white/[.06] bg-[#13131a] px-4 py-3">
+          <p className="text-xs text-white/40">Halaman {mangaPage} dari {Math.ceil(mangaTotal / mangaPageSize)}</p>
+          <div className="flex gap-2">
+            <button disabled={mangaPage === 1 || loading} onClick={() => setMangaPage((page) => Math.max(1, page - 1))} className="rounded-xl border border-white/10 px-3 py-2 text-xs font-bold text-white/60 disabled:opacity-30">Sebelumnya</button>
+            <button disabled={mangaPage >= Math.ceil(mangaTotal / mangaPageSize) || loading} onClick={() => setMangaPage((page) => page + 1)} className="rounded-xl bg-emerald-400 px-3 py-2 text-xs font-black text-black disabled:opacity-30">Berikutnya</button>
+          </div>
         </div>
       )}
 
@@ -2262,7 +2474,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               <p className="mt-2 text-sm leading-relaxed text-white/55">
                 <span className="font-bold text-white/85">{mangaConfirmation.manga.title}</span>{" "}
                 {mangaConfirmation.action === "delete"
-                  ? "beserta seluruh chapter dan gambar terkait akan dihapus permanen. Tindakan ini tidak dapat dibatalkan."
+                  ? "akan dipindahkan ke Trash dan disembunyikan dari halaman publik. Chapter serta gambar R2 tetap aman dan dapat dipulihkan."
                   : mangaConfirmation.action === "publish"
                     ? "akan langsung tampil pada listing, pencarian, dan halaman publik Ryukomik."
                     : "tidak lagi tampil pada listing, pencarian, detail, maupun reader publik."}
@@ -2273,7 +2485,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                   onClick={confirmMangaAction}
                   className={`rounded-xl px-4 py-2.5 text-sm font-black text-white transition ${mangaConfirmation.action === "delete" ? "bg-rose-500 hover:bg-rose-400" : mangaConfirmation.action === "publish" ? "bg-emerald-500 hover:bg-emerald-400" : "bg-amber-400 text-black hover:bg-amber-300"}`}
                 >
-                  {mangaConfirmation.action === "delete" ? "Ya, hapus permanen" : mangaConfirmation.action === "publish" ? "Ya, publikasikan" : "Ya, jadikan draft"}
+                  {mangaConfirmation.action === "delete" ? "Pindahkan ke Trash" : mangaConfirmation.action === "publish" ? "Ya, publikasikan" : "Ya, jadikan draft"}
                 </button>
               </div>
             </div>

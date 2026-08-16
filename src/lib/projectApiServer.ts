@@ -10,6 +10,9 @@ export async function projectApiFetch<T>(path: string, init?: RequestInit): Prom
   headers.set("Accept", "application/json");
   if (process.env.PROJECT_API_INTERNAL_TOKEN) headers.set("Authorization", `Bearer ${process.env.PROJECT_API_INTERNAL_TOKEN}`);
   const response = await fetch(url, { ...init, headers });
-  if (!response.ok) throw new Error(`Project API failed with status ${response.status}`);
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null) as { error?: string } | null;
+    throw new Error(payload?.error || `Project API failed with status ${response.status}`);
+  }
   return response.json() as Promise<T>;
 }

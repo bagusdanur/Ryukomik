@@ -162,7 +162,7 @@ export default function AdminDashboard() {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [page, setPage] = useState<DashboardPage>(() => {
     const urlPage = searchParams.get("page");
-    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "yuki-ai"];
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "project-db", "yuki-ai"];
     return validPages.includes(urlPage as DashboardPage) ? (urlPage as DashboardPage) : "dashboard";
   });
   const [premiumCodes, setPremiumCodes] = useState<PremiumCode[]>([]);
