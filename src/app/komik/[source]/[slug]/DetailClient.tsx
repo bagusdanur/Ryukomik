@@ -294,8 +294,8 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
       />
 
       {source === "project" && (
-        <section className="rk-shell mt-8 px-4">
-          <div className="rounded-3xl border border-white/10 bg-black/20 px-5 py-7 text-center shadow-sm">
+        <section className="rk-shell mt-6 px-3 sm:mt-8 sm:px-4">
+          <div className="rk-card-soft rounded-2xl px-3 py-4 text-center sm:rounded-3xl sm:px-5 sm:py-7">
             <ProjectUpvoteButton slug={slug} initialCount={data.upvote_count} initialCounts={data.reaction_counts} />
           </div>
         </section>

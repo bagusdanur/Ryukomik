@@ -5,10 +5,10 @@ import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 
 const reactions = [
-  { id: "suka", label: "Suka", icon: FaThumbsUp, color: "text-sky-300" },
-  { id: "semangat", label: "Semangat", icon: FaFire, color: "text-orange-300" },
-  { id: "keren", label: "Keren", icon: FaStar, color: "text-amber-300" },
-  { id: "ditunggu", label: "Ditunggu", icon: FaClock, color: "text-violet-300" },
+  { id: "suka", label: "Suka", icon: FaThumbsUp },
+  { id: "semangat", label: "Semangat", icon: FaFire },
+  { id: "keren", label: "Keren", icon: FaStar },
+  { id: "ditunggu", label: "Ditunggu", icon: FaClock },
 ] as const;
 type ReactionId = (typeof reactions)[number]["id"];
 type Counts = Record<ReactionId, number>;
@@ -65,16 +65,16 @@ export default function ProjectUpvoteButton({ slug, initialCount = 0, initialCou
   };
 
   return <div className="text-center">
-    <h2 className="text-lg font-black text-white/95">Reaksi Project Ini</h2>
-    <p className="mt-1 text-xs text-white/45">{total} reaksi pembaca</p>
-    <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-      {reactions.map(({ id, label, icon: Icon, color }) => {
+    <h2 className="text-sm font-black text-white/90 sm:text-lg">Reaksi Project Ini</h2>
+    <p className="mt-0.5 text-[10px] text-white/40 sm:mt-1 sm:text-xs">{total} reaksi pembaca</p>
+    <div className="mt-3 grid grid-cols-4 gap-1.5 sm:mt-5 sm:gap-2.5">
+      {reactions.map(({ id, label, icon: Icon }) => {
         const active = selected === id;
         return <button key={id} type="button" onClick={() => react(id)} disabled={loading || userLoading} aria-pressed={active}
-          className={`flex min-w-[92px] flex-col items-center rounded-2xl border px-3 py-3.5 transition active:scale-95 disabled:opacity-60 ${active ? "border-violet-300/55 bg-violet-400/15 shadow-[0_0_22px_rgba(167,139,250,.1)]" : "border-white/10 bg-white/[.04] hover:border-white/20 hover:bg-white/[.07]"}`}>
-          <span className={`grid h-10 w-10 place-items-center rounded-full bg-white/[.07] ${color}`}><Icon size={19} /></span>
-          <span className="mt-2 text-[11px] font-bold text-white/70">{label}</span>
-          <span className="mt-0.5 text-sm font-black tabular-nums text-white">{counts[id]}</span>
+          className={`flex min-w-0 flex-col items-center rounded-xl border px-1 py-2 transition active:scale-95 disabled:opacity-60 sm:rounded-2xl sm:px-3 sm:py-3.5 ${active ? "border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] shadow-[0_0_18px_color-mix(in_srgb,var(--accent)_14%,transparent)]" : "border-white/10 bg-white/[.04] hover:border-[var(--accent-2)]/30 hover:bg-white/[.07]"}`}>
+          <span className={`grid h-7 w-7 place-items-center rounded-full sm:h-10 sm:w-10 ${active ? "bg-[var(--accent)] text-white" : "bg-white/[.07] text-[var(--accent-2)]"}`}><Icon className="text-[13px] sm:text-[19px]" /></span>
+          <span className="mt-1.5 max-w-full truncate text-[9px] font-bold text-white/65 sm:mt-2 sm:text-[11px]">{label}</span>
+          <span className="text-xs font-black tabular-nums text-white sm:mt-0.5 sm:text-sm">{counts[id]}</span>
         </button>;
       })}
     </div>
