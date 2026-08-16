@@ -15,6 +15,7 @@ import ChapterList from "@/components/ChapterList";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
+import ProjectUpvoteButton from "@/components/ProjectUpvoteButton";
 
 type ComicDetail = Series & {
   thumbnail: string;
@@ -253,6 +254,11 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
                 image={data.thumbnail}
               />
             </div>
+            {source === "project" && (
+              <div className="mt-2">
+                <ProjectUpvoteButton slug={slug} initialCount={data.upvote_count} />
+              </div>
+            )}
           </div>
         </div>
       </div>

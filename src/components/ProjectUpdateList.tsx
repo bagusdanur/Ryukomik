@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import SeriesCard from "@/components/SeriesCard";
 import { setPendingSource } from "@/store/pendingSource";
 import type { UpdateItem } from "@/types/content";
+import { FiArrowUp } from "react-icons/fi";
 
 const typeBadge = (typeGenre?: string) => {
   const type = typeGenre?.split(",")[0]?.trim().toLowerCase();
@@ -60,11 +61,16 @@ export default function ProjectUpdateList({
                 eyebrow={item.chapter_terbaru?.replace("Chapter", "Ch.")}
                 meta={item.info}
                 corner={
-                  item.status?.toLowerCase() === "cancelled" ? (
+                  <>
+                  {item.status?.toLowerCase() === "cancelled" ? (
                     <span className="absolute right-2 top-2 rounded-full border border-red-300/35 bg-red-500/85 px-2 py-0.5 text-[9px] font-black tracking-wide text-white shadow-lg">
                       CANCELLED
                     </span>
-                  ) : null
+                  ) : null}
+                  <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full border border-amber-200/25 bg-black/75 px-2 py-1 text-[10px] font-black text-amber-200 backdrop-blur-sm">
+                    <FiArrowUp size={12} /> {item.upvote_count || 0}
+                  </span>
+                  </>
                 }
               />
             ))}

@@ -15,6 +15,7 @@ export interface Series {
   chapters?: Chapter[];
   created_at?: string;
   updated_at?: string;
+  upvote_count?: number;
 }
 
 export interface Chapter {
@@ -57,6 +58,7 @@ export interface UpdateItem {
   chapter_terbaru?: string;
   status?: string;
   source?: SourceId;
+  upvote_count?: number;
 }
 
 export interface FilterOption {
