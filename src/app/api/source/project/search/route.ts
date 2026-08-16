@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { projectApiUrl } from "@/lib/projectApiServer";
 
 export async function GET(request: Request) {
   try {
@@ -8,6 +9,14 @@ export async function GET(request: Request) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = 20;
     const offset = (page - 1) * limit;
+
+    const projectUrl = projectApiUrl(`/projects/search?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`);
+    if (projectUrl) {
+      const upstream = await fetch(projectUrl, { next: { revalidate: 30, tags: [`project-search:${q}:${page}`] } });
+      if (!upstream.ok) throw new Error(`Project API failed with status ${upstream.status}`);
+      const json = await upstream.json();
+      return NextResponse.json({ data: (json.data || []).map((p: Record<string, unknown>) => ({ slug: p.slug, title: p.title, source: "project", image: p.cover_url || "", info: p.status || "", type_genre: p.type || "manga" })), success: true, hasMore: Boolean(json.hasMore) }, { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" } });
+    }
 
     // Cek total dulu -- Supabase/PostgREST bisa balikin HTTP 416 (body gak
     // konsisten, gak bisa diandalkan lewat error.code) kalau range yang

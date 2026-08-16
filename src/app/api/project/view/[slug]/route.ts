@@ -1,6 +1,7 @@
 import { createHmac } from "crypto";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { projectApiUrl } from "@/lib/projectApiServer";
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const VISITOR_ID_PATTERN = /^[a-f0-9-]{36}$/i;
@@ -33,6 +34,11 @@ export async function POST(
     }
 
     const visitorHash = createHmac("sha256", secret).update(visitorId).digest("hex");
+    const projectUrl = projectApiUrl(`/projects/${encodeURIComponent(slug)}/view`);
+    if (projectUrl) {
+      await fetch(projectUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ viewerHash: visitorHash }) });
+      return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });
+    }
     const { error } = await supabaseAdmin.rpc("record_project_view", {
       p_manga_slug: slug,
       p_visitor_hash: visitorHash,

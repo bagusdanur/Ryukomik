@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { unstable_cache } from "next/cache";
+import { projectApiUrl } from "@/lib/projectApiServer";
 
 const CACHE_TTL = 120; // 2 menit
 
@@ -71,6 +72,14 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+
+    const projectUrl = projectApiUrl(`/projects?page=${page}&limit=20`);
+    if (projectUrl) {
+      const upstream = await fetch(projectUrl, { next: { revalidate: CACHE_TTL, tags: ["source-project-pustaka"] } });
+      if (!upstream.ok) throw new Error(`Project API failed with status ${upstream.status}`);
+      const json = await upstream.json();
+      return NextResponse.json({ data: (json.data || []).map((p: Record<string, unknown>) => ({ slug: p.slug, title: p.title, source: "project", image: p.cover_url || "", info: p.status || "", type_genre: p.type || "manga" })), hasMore: Boolean(json.hasMore) }, { headers: { "Cache-Control": `public, s-maxage=${CACHE_TTL}, stale-while-revalidate=${CACHE_TTL * 2}` } });
+    }
 
     const result = await getPustakaPage(page);
 

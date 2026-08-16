@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { projectApiUrl } from "@/lib/projectApiServer";
 
 function formatRelativeDate(dateStr: string): string {
   if (!dateStr) return "";
@@ -30,6 +31,15 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
 
     if (!slug) {
       return NextResponse.json({ success: false, error: "Slug is required" }, { status: 400 });
+    }
+
+    const projectUrl = projectApiUrl(`/projects/${encodeURIComponent(slug)}`);
+    if (projectUrl) {
+      const response = await fetch(projectUrl, { next: { revalidate: 300, tags: [`project-detail:${slug}`] } });
+      if (!response.ok) return NextResponse.json({ success: false, error: "Project tidak ditemukan" }, { status: response.status });
+      const json = await response.json();
+      const data = json.data || {};
+      return NextResponse.json({ success: true, data: { ...data, thumbnail: data.thumbnail || data.cover_url, synopsis: data.synopsis || data.description, chapters: (data.chapters || []).map((c: { id?: string; chapter_number: number; title?: string; uploaded_at?: string }) => ({ id: c.id, slug: `${slug}/chapter-${c.chapter_number}`, title: c.title || `Chapter ${c.chapter_number}`, date: c.uploaded_at || "" })) } }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } });
     }
 
     const { data: manga, error: mangaError } = await supabaseAdmin

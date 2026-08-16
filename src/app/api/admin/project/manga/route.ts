@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { deleteR2Prefix } from "@/lib/r2Storage";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 import { enqueueProjectDiscordEvent } from "@/lib/projectDiscordEvents";
+import { projectApiUrl } from "@/lib/projectApiServer";
 
 function revalidateProjectContent(slug?: string) {
   revalidateTag("source-project-pustaka", { expire: 0 });
@@ -27,6 +28,13 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const offset = (page - 1) * limit;
+
+    const projectUrl = projectApiUrl(`/admin/projects?page=${page}&limit=${limit}`);
+    if (projectUrl) {
+      const token = request.headers.get("authorization") || "";
+      const upstream = await fetch(projectUrl, { headers: { Authorization: token } });
+      return NextResponse.json(await upstream.json(), { status: upstream.status });
+    }
 
     const { data, count, error } = await supabaseAdmin
       .from("project_manga")

@@ -4,6 +4,7 @@ import { deleteR2Prefix, deleteR2File } from "@/lib/r2Storage";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { enqueueProjectDiscordEvent } from "@/lib/projectDiscordEvents";
+import { projectApiUrl } from "@/lib/projectApiServer";
 
 function revalidateProjectContent(mangaSlug: string) {
   revalidateTag("source-project-pustaka", { expire: 0 });
@@ -36,6 +37,13 @@ export async function GET(request: Request) {
 
     if (!mangaSlug) {
       return NextResponse.json({ error: "manga_slug is required" }, { status: 400 });
+    }
+
+    const projectUrl = projectApiUrl(`/admin/chapters?manga_slug=${encodeURIComponent(mangaSlug)}&page=${page}&limit=${limit}`);
+    if (projectUrl) {
+      const token = request.headers.get("authorization") || "";
+      const upstream = await fetch(projectUrl, { headers: { Authorization: token } });
+      return NextResponse.json(await upstream.json(), { status: upstream.status });
     }
 
     const { data, count, error } = await supabaseAdmin

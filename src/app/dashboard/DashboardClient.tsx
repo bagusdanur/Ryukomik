@@ -31,6 +31,7 @@ import ApkSettingsTab, {
 } from "@/components/dashboard/ApkSettingsTab";
 import YukiAiSettingsTab from "@/components/dashboard/YukiAiSettingsTab";
 import ProjectTab from "@/components/dashboard/ProjectTab";
+import ProjectDbTab from "@/components/dashboard/ProjectDbTab";
 import { FiBookOpen } from "react-icons/fi";
 
 
@@ -47,6 +48,7 @@ type DashboardPage =
   | "apk"
   | "codes"
   | "project"
+  | "project-db"
   | "yuki-ai";
 
 type AdminUser = User & {
@@ -307,7 +309,7 @@ export default function AdminDashboard() {
 
   // Sync page state with URL on back/forward navigation
   useEffect(() => {
-    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "yuki-ai"];
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "project-db", "yuki-ai"];
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const urlPage = params.get("page");
@@ -317,6 +319,15 @@ export default function AdminDashboard() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
+  // Keep the selected dashboard tab in sync with the URL, including hard refreshes
+  // and navigation performed by Next.js rather than the browser history.
+  useEffect(() => {
+    const urlPage = searchParams.get("page");
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "project-db", "yuki-ai"];
+    const resolved = validPages.includes(urlPage as DashboardPage) ? (urlPage as DashboardPage) : "dashboard";
+    setPage((current) => current === resolved ? current : resolved);
+  }, [searchParams]);
 
   const fetchComments = useCallback(async () => {
     setCommentsLoading(true);
@@ -1130,6 +1141,7 @@ export default function AdminDashboard() {
       nextPage === "apk" ||
       nextPage === "codes" ||
       nextPage === "project" ||
+      nextPage === "project-db" ||
       nextPage === "yuki-ai"
     ) {
       setPage(nextPage);
@@ -1175,6 +1187,7 @@ export default function AdminDashboard() {
       icon: <FiBookOpen size={18} />,
       label: "Project",
     },
+    { id: "project-db", icon: <FiActivity size={18} />, label: "Project DB" },
   ];
 
   // ── render ─────────────────────────────────────────────────────────────
@@ -1197,7 +1210,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
-              setPage("requests");
+              setDashboardPage("requests");
             }}
             className="relative w-8 h-8 rounded-lg bg-white/[.05] border border-white/[.08] flex items-center justify-center text-white/50 hover:text-white transition-colors"
           >
@@ -1258,6 +1271,7 @@ export default function AdminDashboard() {
         {page === "project" && (
           <ProjectTab getAdminToken={getAdminToken} />
         )}
+        {page === "project-db" && <ProjectDbTab getAdminToken={getAdminToken} />}
         {page === "users" && (
           <UsersTab
             users={users}
