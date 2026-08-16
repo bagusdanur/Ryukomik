@@ -86,7 +86,16 @@ export const parseSlug = (slug?: string | null) => {
 
 export const getLink = (slug?: string | null) => {
   if (!slug) return "#";
-  const { source, realSlug } = parseSlug(slug);
+  let { source, realSlug } = parseSlug(slug);
+
+  // Some older project comments were stored as `ikiru-project-<slug>`
+  // because project pages previously inherited the default source. Treat the
+  // explicit project marker as authoritative so those links remain valid.
+  if (realSlug.startsWith("project-")) {
+    source = "project";
+    realSlug = realSlug.slice("project-".length);
+  }
+
   const isChapter =
     realSlug.includes("/chapter-") || realSlug.includes("-chapter-");
   if (source === "meionovels") {
