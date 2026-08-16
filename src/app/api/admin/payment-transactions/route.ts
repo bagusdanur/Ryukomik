@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 
     let query = supabaseAdmin
       .from("payment_transactions")
-      .select("id, user_id, amount, currency, status, payment_method, reference, created_at, updated_at")
+      .select("id, user_id, order_id, package_name, duration_days, amount, fee, total_payment, payment_method, payment_number, status, expired_at, completed_at, created_at")
       .order("created_at", { ascending: false })
       .limit(100);
 
