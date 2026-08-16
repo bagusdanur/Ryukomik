@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import { useState, useEffect, useCallback, FormEvent, useRef, useMemo } from "react";
 import {
@@ -2030,6 +2031,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             <p className="mt-1 text-xs text-white/45">Kelola judul, chapter, dan status publikasi dalam satu tempat.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Link href="/dashboard?page=project-db" className="rounded-xl border border-emerald-400/20 bg-emerald-400/[.1] px-3 py-2 text-xs font-bold text-emerald-200 transition hover:bg-emerald-400/[.18]">Database &amp; Backup</Link>
             <span className="rounded-xl border border-sky-400/15 bg-sky-400/[.08] px-3 py-2 text-xs font-bold text-sky-200">{totalViews.toLocaleString("id-ID")} views</span>
             <span className="rounded-xl border border-violet-400/15 bg-violet-400/[.08] px-3 py-2 text-xs font-bold text-violet-200">{viewStats.readers7d.toLocaleString("id-ID")} pembaca / 7 hari</span>
             <span className="rounded-xl border border-white/10 bg-white/[.04] px-3 py-2 text-xs font-bold text-white/65">{viewStats.readersToday.toLocaleString("id-ID")} hari ini</span>

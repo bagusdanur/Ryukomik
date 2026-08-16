@@ -1187,7 +1187,6 @@ export default function AdminDashboard() {
       icon: <FiBookOpen size={18} />,
       label: "Project",
     },
-    { id: "project-db", icon: <FiActivity size={18} />, label: "Project DB" },
   ];
 
   // ── render ─────────────────────────────────────────────────────────────
@@ -1395,7 +1394,7 @@ export default function AdminDashboard() {
         {navItems.map((nav) => (
           <button
             key={nav.id}
-            onClick={() => setPage(nav.id)}
+            onClick={() => setDashboardPage(nav.id)}
             className={`flex flex-1 flex-col items-center gap-1 py-3 transition-colors lg:flex-none lg:flex-row lg:gap-3 lg:rounded-xl lg:px-3 lg:py-2.5 lg:text-left ${page === nav.id ? "text-[#7c5cfc] lg:bg-[#7c5cfc]/12" : "text-white/25 hover:text-white/50 lg:hover:bg-white/[.04]"}`}
           >
             {nav.icon}
