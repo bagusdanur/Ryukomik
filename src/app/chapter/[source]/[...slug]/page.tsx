@@ -32,7 +32,7 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
       
       const res = await fetch(`${baseUrl}/api/project/chapter/${mangaSlug}/${chapter}`, {
         next: {
-          revalidate: 3600,
+          revalidate: 300,
           tags: [`project-chapter:${mangaSlug}:${chapter}`],
         },
         headers: { Accept: "application/json" }
