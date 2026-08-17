@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { projectApiUrl } from "@/lib/projectApiServer";
 
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
 const VISITOR_ID_PATTERN = /^[a-f0-9-]{36}$/i;
 
 export async function POST(
