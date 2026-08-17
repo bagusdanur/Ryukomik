@@ -29,7 +29,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
       const json = await (await fetch(projectUrl, { next: { revalidate: 300, tags: [`project-chapter:${slug}:${chapterNum}`] } })).json();
       if (!json?.data) return NextResponse.json({ success: false, error: "Chapter tidak ditemukan" }, { status: 404 });
       const chapterData = json.data;
-      return NextResponse.json({ success: true, title: chapterData.title || `Chapter ${chapterData.chapter_number}`, currentChapter: `Chapter ${chapterData.chapter_number}`, mangaId: slug, series: { slug }, prev: null, next: null, images: chapterData.image_urls || [] }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600" } });
+      return NextResponse.json({ success: true, title: chapterData.title || `Chapter ${chapterData.chapter_number}`, currentChapter: `Chapter ${chapterData.chapter_number}`, mangaId: slug, series: { slug }, prev: chapterData.prev || null, next: chapterData.next || null, images: chapterData.image_urls || [] }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600" } });
     }
 
     // Dapatkan data manga (untuk prev/next logic dan title)
