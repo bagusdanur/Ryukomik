@@ -30,6 +30,7 @@ interface TerbaruClientProps {
 
 interface SourceResponse {
   data?: unknown;
+  hasMore?: boolean;
 }
 
 
@@ -581,7 +582,9 @@ export default function TerbaruPage({
           const newData = nextData.filter((item) => !existingSlugs.has(item.slug));
           return [...prev, ...newData];
         });
-        setHasMore(true);
+        // Stop if API says no more, or if all items were duplicates
+        const isDuplicatePage = p > 1 && nextData.length > 0 && json.hasMore === false;
+        setHasMore(!isDuplicatePage);
       } else {
         setHasMore(false);
       }
