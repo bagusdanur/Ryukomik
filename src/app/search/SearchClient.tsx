@@ -222,7 +222,7 @@ export default function SearchClient({
     });
   }
 
-  const combinedData = [...data, ...adultData];
+  const combinedData = [...data, ...adultData].sort((a, b) => (a.source === "project" ? -1 : 0) - (b.source === "project" ? -1 : 0));
 
   return (
     <div className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
