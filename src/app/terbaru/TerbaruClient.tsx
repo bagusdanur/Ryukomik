@@ -583,8 +583,7 @@ export default function TerbaruPage({
           return [...prev, ...newData];
         });
         // Stop if API says no more, or if all items were duplicates
-        const isDuplicatePage = p > 1 && nextData.length > 0 && json.hasMore === false;
-        setHasMore(!isDuplicatePage);
+        setHasMore(json.hasMore !== false);
       } else {
         setHasMore(false);
       }
