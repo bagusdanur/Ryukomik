@@ -64,7 +64,7 @@ const getDetail = async (source: string, slug: string): Promise<ComicDetail | nu
     }
   }
 
-  const apiSource = source === "kiryuu" ? "komikid" : source;
+  const apiSource = source;
   const endpoint = `https://api.ryukomik.web.id/${apiSource}/detail/${encodeURIComponent(slug)}`;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {

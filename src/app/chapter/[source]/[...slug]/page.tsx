@@ -53,7 +53,7 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
     }
   }
 
-  const apiSource = source === "kiryuu" ? "komikid" : source;
+  const apiSource = source;
   try {
     const res = await fetch(
       `https://api.ryukomik.web.id/${apiSource}/chapter/${slugStr}`,
