@@ -536,6 +536,12 @@ export default function TerbaruPage({
       const params = new URLSearchParams();
       params.append("page", String(p));
 
+      // Filter dianggap aktif kalau user mengubah salah satu dropdown.
+      // orderby default = "modified"; kalau masih itu & sisanya kosong => belum filter.
+      const filterActive = Boolean(
+        tipe || genre || genre2 || status || (orderby && orderby !== "modified")
+      );
+
       switch (currentSource) {
         case "komiku":
           if (orderby) params.append("orderby", orderby);
@@ -546,20 +552,30 @@ export default function TerbaruPage({
           url = buildSourceUrl("komiku", "pustaka-filter", params);
           break;
         case "komikid":
-          if (orderby) params.append("orderby", orderby);
-          if (tipe) params.append("tipe", tipe);
-          if (genre) params.append("genre", genre);
-          if (genre2) params.append("genre2", genre2);
-          if (status) params.append("status", status);
-          url = buildSourceUrl("komikid", "pustaka-filter", params);
+          if (filterActive) {
+            if (orderby) params.append("orderby", orderby);
+            if (tipe) params.append("tipe", tipe);
+            if (genre) params.append("genre", genre);
+            if (genre2) params.append("genre2", genre2);
+            if (status) params.append("status", status);
+            url = buildSourceUrl("komikid", "pustaka-filter", params);
+          } else {
+            // No filter: pakai /pustaka lama (ada jam upload + chapter terbaru)
+            url = buildSourceUrl("komikid", "pustaka", params);
+          }
           break;
         case "luvyaa":
-          if (orderby) params.append("orderby", orderby);
-          if (tipe) params.append("tipe", tipe);
-          if (genre) params.append("genre", genre);
-          if (genre2) params.append("genre2", genre2);
-          if (status) params.append("status", status);
-          url = buildSourceUrl("luvyaa", "pustaka-filter", params);
+          if (filterActive) {
+            if (orderby) params.append("orderby", orderby);
+            if (tipe) params.append("tipe", tipe);
+            if (genre) params.append("genre", genre);
+            if (genre2) params.append("genre2", genre2);
+            if (status) params.append("status", status);
+            url = buildSourceUrl("luvyaa", "pustaka-filter", params);
+          } else {
+            // No filter: pakai /pustaka lama (ada jam upload + chapter terbaru)
+            url = buildSourceUrl("luvyaa", "pustaka", params);
+          }
           break;
         case "ikiru":
           url = buildSourceUrl("ikiru", "pustaka", params);
