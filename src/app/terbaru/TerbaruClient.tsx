@@ -581,7 +581,17 @@ export default function TerbaruPage({
           url = buildSourceUrl("ikiru", "pustaka", params);
           break;
         case "kiryuu":
-          url = buildSourceUrl("kiryuu", "pustaka", params);
+          if (filterActive) {
+            if (orderby) params.append("orderby", orderby);
+            if (tipe) params.append("tipe", tipe);
+            if (genre) params.append("genre", genre);
+            if (genre2) params.append("genre2", genre2);
+            if (status) params.append("status", status);
+            url = buildSourceUrl("kiryuu", "pustaka-filter", params);
+          } else {
+            // No filter: pakai /pustaka lama (ada jam upload + chapter terbaru)
+            url = buildSourceUrl("kiryuu", "pustaka", params);
+          }
           break;
         case "sekte":
           url = buildSourceUrl("sekte", "pustaka", params);
