@@ -39,7 +39,7 @@ const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 const LISTING_CACHE_PREFIX = "rk_terbaru_listing_v3";
 const GLOBAL_STATE_CACHE_KEY = "rk_terbaru_global_state_v1";
 const LISTING_CACHE_TTL = 5 * 60 * 1000;
-import { VALID_SOURCE_IDS, DEFAULT_SOURCE } from "@/config/sources";
+import { VALID_SOURCE_IDS, DEFAULT_SOURCE, sourceHasFilter } from "@/config/sources";
 import { getAndClearPendingSource } from "@/store/pendingSource";
 const VALID_SOURCES = VALID_SOURCE_IDS;
 
@@ -360,15 +360,25 @@ export default function TerbaruPage({
     } catch {}
   }, [data, page, source, orderby, tipe, genre, genre2, status]);
 
-  // ✅ FILTER: cache 24 jam + abort controller
+  // ✅ FILTER: cache 24 jam + abort controller — per-source dinamis
   useEffect(() => {
     const controller = new AbortController();
-    
-    async function getFilters() {
-      if (initialFilters) return;
 
+    // Source tanpa filter: reset opsi biar panel nggak nampilin genre source lain
+    if (!sourceHasFilter(source)) {
+      setFilters(null);
+      return;
+    }
+
+    // initialFilters cuma valid untuk source awal (komiku dari SSR)
+    if (initialFilters && source === initialSource) {
+      setFilters(initialFilters);
+      return;
+    }
+
+    async function getFilters() {
       try {
-        const json = await fetchJson<{ data?: TerbaruFilters }>(buildSourceUrl("komiku", "filters"), {
+        const json = await fetchJson<{ data?: TerbaruFilters }>(buildSourceUrl(source, "filters"), {
           signal: controller.signal,
         });
         setFilters(json.data ?? null);
@@ -381,7 +391,7 @@ export default function TerbaruPage({
 
     getFilters();
     return () => controller.abort();
-  }, [initialFilters]);
+  }, [source, initialFilters, initialSource]);
 
   const extractChapter = useCallback((text?: string, slug?: string) => {
     let raw = "";
@@ -536,16 +546,26 @@ export default function TerbaruPage({
           url = buildSourceUrl("komiku", "pustaka-filter", params);
           break;
         case "komikid":
-          url = buildSourceUrl("komikid", "pustaka", params);
+          if (orderby) params.append("orderby", orderby);
+          if (tipe) params.append("tipe", tipe);
+          if (genre) params.append("genre", genre);
+          if (genre2) params.append("genre2", genre2);
+          if (status) params.append("status", status);
+          url = buildSourceUrl("komikid", "pustaka-filter", params);
+          break;
+        case "luvyaa":
+          if (orderby) params.append("orderby", orderby);
+          if (tipe) params.append("tipe", tipe);
+          if (genre) params.append("genre", genre);
+          if (genre2) params.append("genre2", genre2);
+          if (status) params.append("status", status);
+          url = buildSourceUrl("luvyaa", "pustaka-filter", params);
           break;
         case "ikiru":
           url = buildSourceUrl("ikiru", "pustaka", params);
           break;
         case "kiryuu":
           url = buildSourceUrl("kiryuu", "pustaka", params);
-          break;
-        case "luvyaa":
-          url = buildSourceUrl("luvyaa", "pustaka", params);
           break;
         case "sekte":
           url = buildSourceUrl("sekte", "pustaka", params);
@@ -758,6 +778,14 @@ export default function TerbaruPage({
     }
   }, [user, targetSource, source, fetchData, resetListing]);
 
+  const resetFilterState = useCallback(() => {
+    setOrderby("modified");
+    setTipe("");
+    setGenre("");
+    setGenre2("");
+    setStatus("");
+  }, []);
+
   const handleSourceChange = useCallback((nextSource: SourceId) => {
     if (nextSource === source) {
       if (dataLengthRef.current === 0 && !loadingRef.current) {
@@ -766,9 +794,10 @@ export default function TerbaruPage({
       return;
     }
 
+    resetFilterState();
     resetListing();
     setSource(nextSource);
-  }, [fetchData, resetListing, source]);
+  }, [fetchData, resetListing, resetFilterState, source]);
 
   return (
     <div className="rk-page rk-app-surface">
@@ -810,6 +839,7 @@ export default function TerbaruPage({
       {navigatingHref && <ComicDetailSkeleton overlay />}
 
       <main className="rk-shell px-4 pt-20 pb-24">
+      {sourceHasFilter(source) && (
       <FilterPanel
         showFilter={showFilter}
         filters={filters || {}}
@@ -842,6 +872,7 @@ export default function TerbaruPage({
         setHasMore={setHasMore}
         fetchData={fetchData}
       />
+      )}
 
       <div
         key={`${source}:${orderby}:${tipe}:${genre}:${genre2}:${status}`}
