@@ -42,12 +42,12 @@ export default function FilterPanel({
 
   return (
     <div className="rk-card mb-4 rounded-2xl px-3 py-3">
-      
+
       {/* GRID 2 KOLOM (TIDAK DIUBAH) */}
       <div className="grid grid-cols-2 gap-2">
 
         {/* TIPE */}
-        <select
+        {Boolean(filters.tipe?.length) && <select
           value={tipe}
           onChange={(e) => setTipe(e.target.value)}
           className="rk-input w-full rounded-xl px-3 py-2.5 text-sm"
@@ -57,10 +57,10 @@ export default function FilterPanel({
               {t.label}
             </option>
           ))}
-        </select>
+        </select>}
 
         {/* STATUS */}
-        <select
+        {Boolean(filters.status?.length) && <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           className="rk-input w-full rounded-xl px-3 py-2.5 text-sm"
@@ -70,10 +70,10 @@ export default function FilterPanel({
               {s.label}
             </option>
           ))}
-        </select>
+        </select>}
 
         {/* GENRE 1 */}
-        <select
+        {Boolean(filters.genre?.length) && <select
           value={genre}
           onChange={(e) => setGenre(e.target.value)}
           className="rk-input w-full rounded-xl px-3 py-2.5 text-sm"
@@ -83,10 +83,10 @@ export default function FilterPanel({
               {g.label}
             </option>
           ))}
-        </select>
+        </select>}
 
         {/* GENRE 2 */}
-        <select
+        {Boolean(filters.genre2?.length) && <select
           value={genre2}
           onChange={(e) => setGenre2(e.target.value)}
           className="rk-input w-full rounded-xl px-3 py-2.5 text-sm"
@@ -96,7 +96,7 @@ export default function FilterPanel({
               {g.label}
             </option>
           ))}
-        </select>
+        </select>}
 
       </div>
 

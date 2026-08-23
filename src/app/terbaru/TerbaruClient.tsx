@@ -30,7 +30,6 @@ interface TerbaruClientProps {
 
 interface SourceResponse {
   data?: unknown;
-  hasMore?: boolean;
 }
 
 
@@ -65,6 +64,8 @@ function buildSourceUrl(source: SourceId, endpoint: string, params?: URLSearchPa
 }
 
 function normalizeStoredSource(value: string | null, fallback: SourceId): SourceId {
+  // Migrasikan pilihan aktif lama; rute konten Ikiru tetap dapat dibuka secara langsung.
+  if (value === "ikiru") return "josei";
   return VALID_SOURCES.has(value as SourceId) ? (value as SourceId) : fallback;
 }
 
@@ -308,7 +309,7 @@ export default function TerbaruPage({
       if (cachedState) {
         const parsed = JSON.parse(cachedState);
         const age = Date.now() - parsed.timestamp;
-        
+
         const cachedSource = normalizeStoredSource(parsed.source ?? null, source);
         if (
           age < LISTING_CACHE_TTL &&
@@ -328,7 +329,7 @@ export default function TerbaruPage({
           setPage(restoredPage);
           pageRef.current = restoredPage;
           dataLengthRef.current = restoredData.length;
-          
+
         }
       }
     } catch {}
@@ -360,25 +361,23 @@ export default function TerbaruPage({
     } catch {}
   }, [data, page, source, orderby, tipe, genre, genre2, status]);
 
-  // ✅ FILTER: cache 24 jam + abort controller — per-source dinamis
+  // Filter selalu mengikuti source aktif. Source tanpa endpoint filter tidak
+  // menampilkan pilihan milik source lain.
   useEffect(() => {
     const controller = new AbortController();
-
-    // Source tanpa filter: reset opsi biar panel nggak nampilin genre source lain
-    if (!sourceHasFilter(source)) {
-      setFilters(null);
-      return;
-    }
-
-    // initialFilters cuma valid untuk source awal (komiku dari SSR)
-    if (initialFilters && source === initialSource) {
-      setFilters(initialFilters);
-      return;
-    }
+    // Jangan pernah tampilkan opsi milik source sebelumnya sambil menunggu
+    // endpoint filter source yang baru selesai dimuat.
+    setFilters(null);
 
     async function getFilters() {
       try {
-        const json = await fetchJson<{ data?: TerbaruFilters }>(buildSourceUrl(source, "filters"), {
+        if (!sourceHasFilter(source)) {
+          return;
+        }
+        const url = source === "project"
+          ? "/api/project/filters"
+          : buildSourceUrl(source, "filters");
+        const json = await fetchJson<{ data?: TerbaruFilters }>(url, {
           signal: controller.signal,
         });
         setFilters(json.data ?? null);
@@ -391,7 +390,7 @@ export default function TerbaruPage({
 
     getFilters();
     return () => controller.abort();
-  }, [source, initialFilters, initialSource]);
+  }, [source]);
 
   const extractChapter = useCallback((text?: string, slug?: string) => {
     let raw = "";
@@ -535,69 +534,35 @@ export default function TerbaruPage({
       let url = "";
       const params = new URLSearchParams();
       params.append("page", String(p));
-
-      // Filter dianggap aktif kalau user mengubah salah satu dropdown.
-      // orderby default = "modified"; kalau masih itu & sisanya kosong => belum filter.
-      const filterActive = Boolean(
-        tipe || genre || genre2 || status || (orderby && orderby !== "modified")
-      );
+      if (sourceHasFilter(currentSource)) {
+        if (orderby) params.append("orderby", orderby);
+        if (tipe) params.append("tipe", tipe);
+        if (genre) params.append("genre", genre);
+        if (genre2) params.append("genre2", genre2);
+        if (status) params.append("status", status);
+      }
 
       switch (currentSource) {
         case "komiku":
-          if (orderby) params.append("orderby", orderby);
-          if (tipe) params.append("tipe", tipe);
-          if (genre) params.append("genre", genre);
-          if (genre2) params.append("genre2", genre2);
-          if (status) params.append("status", status);
           url = buildSourceUrl("komiku", "pustaka-filter", params);
           break;
         case "komikid":
-          if (filterActive) {
-            if (orderby) params.append("orderby", orderby);
-            if (tipe) params.append("tipe", tipe);
-            if (genre) params.append("genre", genre);
-            if (genre2) params.append("genre2", genre2);
-            if (status) params.append("status", status);
-            url = buildSourceUrl("komikid", "pustaka-filter", params);
-          } else {
-            // No filter: pakai /pustaka lama (ada jam upload + chapter terbaru)
-            url = buildSourceUrl("komikid", "pustaka", params);
-          }
+          url = buildSourceUrl("komikid", "pustaka-filter", params);
           break;
-        case "luvyaa":
-          if (filterActive) {
-            if (orderby) params.append("orderby", orderby);
-            if (tipe) params.append("tipe", tipe);
-            if (genre) params.append("genre", genre);
-            if (genre2) params.append("genre2", genre2);
-            if (status) params.append("status", status);
-            url = buildSourceUrl("luvyaa", "pustaka-filter", params);
-          } else {
-            // No filter: pakai /pustaka lama (ada jam upload + chapter terbaru)
-            url = buildSourceUrl("luvyaa", "pustaka", params);
-          }
-          break;
-        case "ikiru":
-          url = buildSourceUrl("ikiru", "pustaka", params);
+        case "josei":
+          url = buildSourceUrl("josei", "pustaka-filter", params);
           break;
         case "kiryuu":
-          if (filterActive) {
-            if (orderby) params.append("orderby", orderby);
-            if (tipe) params.append("tipe", tipe);
-            if (genre) params.append("genre", genre);
-            if (genre2) params.append("genre2", genre2);
-            if (status) params.append("status", status);
-            url = buildSourceUrl("kiryuu", "pustaka-filter", params);
-          } else {
-            // No filter: pakai /pustaka lama (ada jam upload + chapter terbaru)
-            url = buildSourceUrl("kiryuu", "pustaka", params);
-          }
+          url = buildSourceUrl("kiryuu", "pustaka-filter", params);
+          break;
+        case "luvyaa":
+          url = buildSourceUrl("luvyaa", "pustaka-filter", params);
           break;
         case "sekte":
-          url = buildSourceUrl("sekte", "pustaka", params);
+          url = buildSourceUrl("sekte", "pustaka-filter", params);
           break;
         case "doujindesu":
-          url = buildSourceUrl("doujindesu", "pustaka", params);
+          url = buildSourceUrl("doujindesu", "pustaka-filter", params);
           break;
         case "meionovels":
           url = buildSourceUrl("meionovels", "pustaka", params);
@@ -628,8 +593,7 @@ export default function TerbaruPage({
           const newData = nextData.filter((item) => !existingSlugs.has(item.slug));
           return [...prev, ...newData];
         });
-        // Stop if API says no more, or if all items were duplicates
-        setHasMore(json.hasMore !== false);
+        setHasMore(true);
       } else {
         setHasMore(false);
       }
@@ -653,10 +617,10 @@ export default function TerbaruPage({
   useEffect(() => {
     const handleScroll = () => {
       if (scrollTimeoutRef.current) return;
-      
+
       scrollTimeoutRef.current = setTimeout(() => {
         scrollTimeoutRef.current = null;
-        
+
         const bottom =
           window.innerHeight + window.scrollY >=
           document.documentElement.scrollHeight - 200;
@@ -823,7 +787,7 @@ export default function TerbaruPage({
     resetFilterState();
     resetListing();
     setSource(nextSource);
-  }, [fetchData, resetListing, resetFilterState, source]);
+  }, [fetchData, resetFilterState, resetListing, source]);
 
   return (
     <div className="rk-page rk-app-surface">
@@ -865,7 +829,6 @@ export default function TerbaruPage({
       {navigatingHref && <ComicDetailSkeleton overlay />}
 
       <main className="rk-shell px-4 pt-20 pb-24">
-      {sourceHasFilter(source) && (
       <FilterPanel
         showFilter={showFilter}
         filters={filters || {}}
@@ -898,7 +861,6 @@ export default function TerbaruPage({
         setHasMore={setHasMore}
         fetchData={fetchData}
       />
-      )}
 
       <div
         key={`${source}:${orderby}:${tipe}:${genre}:${genre2}:${status}`}

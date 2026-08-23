@@ -64,7 +64,7 @@ const getDetail = async (source: string, slug: string): Promise<ComicDetail | nu
     }
   }
 
-  const apiSource = source;
+  const apiSource = source === "kiryuu" ? "komikid" : source;
   const endpoint = `https://api.ryukomik.web.id/${apiSource}/detail/${encodeURIComponent(slug)}`;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -83,7 +83,18 @@ const getDetail = async (source: string, slug: string): Promise<ComicDetail | nu
 
       const json = (await res.json()) as Dict;
       const detail = normalizeDetail(json);
-      if (detail) return detail;
+      if (detail) {
+        if (source === "josei") {
+          detail.chapters = detail.chapters.map((chapter) => ({
+            ...chapter,
+            slug:
+              chapter.slug && !chapter.slug.includes("/")
+                ? `${slug}/${chapter.slug}`
+                : chapter.slug,
+          }));
+        }
+        return detail;
+      }
     } catch {
       continue;
     }
@@ -172,7 +183,7 @@ export default async function DetailPage({ params }: DetailPageProps) {
                 "item": "https://ryukomik.my.id"
               },
               {
-                "@type": "ListItem", 
+                "@type": "ListItem",
                 "position": 2,
                 "name": data?.title || "Komik",
                 "item": `https://ryukomik.my.id/komik/${source}/${cleanSlug}`

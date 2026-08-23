@@ -5,6 +5,7 @@ const SOURCES = [
   "kiryuu",
   "komikid",
   "komiku",
+  "josei",
   "ikiru",
   "luvyaa",
   "sekte",
@@ -29,7 +30,7 @@ export function getNotificationLink(notification: LinkNotification) {
   if (!rawSlug) return "/notifications";
   if (rawSlug.startsWith("/")) return rawSlug;
 
-  let source = "ikiru";
+  let source = "josei";
   for (const candidate of SOURCES) {
     const prefix = `${candidate}-`;
     if (rawSlug.startsWith(prefix)) {

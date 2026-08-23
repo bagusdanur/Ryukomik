@@ -23,7 +23,10 @@ const COMIC_SOURCES: SearchSource[] = [
   ...ADULT_SOURCE_CONFIGS.map(s => ({ id: s.id as SearchSourceId, label: `Source ${s.label}` })),
   ...PROJECT_SOURCES.map(s => ({ id: s.id as SearchSourceId, label: s.label })),
 ];
-const PUBLIC_SOURCES = COMIC_SOURCES.filter((source) => !ADULT_SOURCE_IDS.has(source.id));
+// Endpoint /josei/search masih bermasalah di upstream. Listing/detail/reader Josei tetap aktif.
+const PUBLIC_SOURCES = COMIC_SOURCES.filter(
+  (source) => !ADULT_SOURCE_IDS.has(source.id) && source.id !== "josei",
+);
 const ADULT_SOURCES = COMIC_SOURCES.filter((source) => ADULT_SOURCE_IDS.has(source.id));
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
 
@@ -222,7 +225,7 @@ export default function SearchClient({
     });
   }
 
-  const combinedData = [...data, ...adultData].sort((a, b) => (a.source === "project" ? -1 : 0) - (b.source === "project" ? -1 : 0));
+  const combinedData = [...data, ...adultData];
 
   return (
     <div className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
@@ -241,10 +244,10 @@ export default function SearchClient({
             {COMIC_SOURCES.map(source => {
               const status = sourceStatus[source.id];
               if (!status) return null;
-              
+
               return (
-                <div 
-                  key={source.id} 
+                <div
+                  key={source.id}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold shadow-sm transition-all duration-300 ${
                     status === "loading" ? "bg-white/[0.08] text-white/70 animate-pulse" :
                     status === "done" ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/20" :

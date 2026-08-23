@@ -14,7 +14,7 @@ import Button from "@/components/Button";
 import {
   TITLE_RUSH_EVENT_TYPE,
 } from "@/utils/titleRushNotification";
-import { fetchCachedNotifications, markNotificationsRead } from "@/utils/notificationFetch";
+import { fetchCachedNotifications, markNotificationsRead, startNotificationPolling, subscribeNotifications } from "@/utils/notificationFetch";
 
 import {
   FaUserCircle,
@@ -47,8 +47,10 @@ export default function Navbar() {
   useEffect(() => {
     const syncSource = () => {
       const saved = localStorage.getItem("source");
+      const normalized = saved === "ikiru" ? DEFAULT_SOURCE : (saved as SourceKey | null) || DEFAULT_SOURCE;
+      if (saved === "ikiru") localStorage.setItem("source", DEFAULT_SOURCE);
       startTransition(() => {
-        setSource((saved as SourceKey | null) || DEFAULT_SOURCE);
+        setSource(normalized);
       });
     };
 
@@ -72,7 +74,7 @@ export default function Navbar() {
 
   useEffect(() => {
     const saved = localStorage.getItem("source");
-    const normalized = (saved as SourceKey | null) || DEFAULT_SOURCE;
+    const normalized = saved === "ikiru" ? DEFAULT_SOURCE : (saved as SourceKey | null) || DEFAULT_SOURCE;
     const id = requestAnimationFrame(() => {
       startTransition(() => {
         setSource(normalized);
@@ -99,6 +101,19 @@ export default function Navbar() {
     }, 0);
     return () => window.clearTimeout(id);
   }, [fetchNotifications]);
+
+  useEffect(() => {
+    if (!userId) return;
+    const unsubscribe = subscribeNotifications(userId, (items) => {
+      setNotifications(items);
+      setUnreadCount(items.filter((item) => !item.is_read).length);
+    });
+    const stopPolling = startNotificationPolling(userId);
+    return () => {
+      unsubscribe();
+      stopPolling();
+    };
+  }, [userId]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -163,7 +178,7 @@ export default function Navbar() {
       return { source: DEFAULT_SOURCE, slug: "" };
     }
 
-    const map: SourceKey[] = ["kiryuu", "komikid", "komiku", "ikiru", "luvyaa", "sekte", "doujindesu"];
+    const map: SourceKey[] = ["josei", "kiryuu", "komikid", "komiku", "ikiru", "luvyaa", "sekte", "doujindesu"];
 
     for (const s of map) {
       const prefix = `${s}-`;
@@ -267,7 +282,7 @@ useEffect(() => {
         <div className="max-w-screen-xl mx-auto px-3 py-2.5 flex items-center gap-3">
           {/* SEARCH */}
           <form
-          
+
             onSubmit={(e: FormEvent<HTMLFormElement>) => {
               e.preventDefault();
               const form = e.currentTarget;
@@ -282,7 +297,7 @@ useEffect(() => {
               name="search"
               type="text"
               placeholder="Cari komik..."
-             
+
               className="bg-transparent outline-none text-sm text-white placeholder-white/45 flex-1 min-w-0"
             />
           </form>
