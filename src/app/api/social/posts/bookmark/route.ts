@@ -1,6 +1,7 @@
 import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { socialQuery } from "@/lib/social/db";
+import { ensureSocialProfile } from "@/lib/social/profileSync";
 
 async function mutate(request: Request, remove: boolean) {
   assertSameOrigin(request);
@@ -8,12 +9,11 @@ async function mutate(request: Request, remove: boolean) {
   if (!socialLimit(request, userId, 60)) return socialJson({ error: "Terlalu banyak permintaan." }, { status: 429 });
   const { postId } = await request.json() as { postId?: string };
   if (!postId) return socialJson({ error: "Posting tidak valid." }, { status: 400 });
-  const { data: post } = await supabaseAdmin.from("social_posts").select("id").eq("id", postId).maybeSingle();
-  if (!post) return socialJson({ error: "Posting tidak ditemukan." }, { status: 404 });
-  const result = remove
-    ? await supabaseAdmin.from("social_post_bookmarks").delete().eq("post_id", postId).eq("user_id", userId)
-    : await supabaseAdmin.from("social_post_bookmarks").upsert({ post_id: postId, user_id: userId }, { ignoreDuplicates: true });
-  if (result.error) throw result.error;
+  await ensureSocialProfile(userId);
+  const post = await socialQuery("select 1 from social_posts where id=$1", [postId]);
+  if (!post.rowCount) return socialJson({ error: "Posting tidak ditemukan." }, { status: 404 });
+  if (remove) await socialQuery("delete from social_post_bookmarks where post_id=$1 and user_id=$2", [postId, userId]);
+  else await socialQuery("insert into social_post_bookmarks(post_id,user_id) values($1,$2) on conflict do nothing", [postId, userId]);
   return socialJson({ bookmarked: !remove });
 }
 

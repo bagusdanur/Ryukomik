@@ -78,7 +78,25 @@ export async function GET(request: Request) {
       const upstream = await fetch(projectUrl, { next: { revalidate: CACHE_TTL, tags: ["source-project-pustaka"] } });
       if (!upstream.ok) throw new Error(`Project API failed with status ${upstream.status}`);
       const json = await upstream.json();
-      return NextResponse.json({ data: (json.data || []).map((p: Record<string, unknown>) => ({ slug: p.slug, title: p.title, source: "project", image: p.cover_url || "", info: p.status || "", type_genre: p.type || "manga" })), hasMore: Boolean(json.hasMore) }, { headers: { "Cache-Control": `public, s-maxage=${CACHE_TTL}, stale-while-revalidate=${CACHE_TTL * 2}` } });
+      return NextResponse.json(
+        {
+          data: (json.data || []).map((p: Record<string, unknown>) => ({
+            slug: p.slug,
+            title: p.title,
+            source: "project",
+            image: p.cover_url || "",
+            info: p.status || "",
+            type_genre: p.type || "manga",
+            chapter_terbaru: p.latest_chapter != null ? `Ch. ${p.latest_chapter}` : "",
+          })),
+          hasMore: Boolean(json.hasMore),
+        },
+        {
+          headers: {
+            "Cache-Control": `public, s-maxage=${CACHE_TTL}, stale-while-revalidate=${CACHE_TTL * 2}`,
+          },
+        },
+      );
     }
 
     const result = await getPustakaPage(page);

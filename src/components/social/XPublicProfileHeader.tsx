@@ -19,6 +19,8 @@ import {
 } from "react-icons/fi";
 import { supabase } from "@/lib/supabaseClient";
 import { socialFetch } from "@/lib/social/client";
+import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
+import UserBadges from "@/components/UserBadges";
 
 type SocialProfile = {
   id: string;
@@ -37,6 +39,13 @@ type SocialProfile = {
 
 function fallbackAvatar(name: string) {
   return name.slice(0, 1).toUpperCase();
+}
+
+function profileVisualType(profile: SocialProfile) {
+  if (profile.role === "admin") return "admin";
+  if (profile.role === "staff") return "staff";
+  if (profile.is_premium) return "premium";
+  return "normal";
 }
 
 export default function XPublicProfileHeader({ username }: { username: string }) {
@@ -157,6 +166,7 @@ export default function XPublicProfileHeader({ username }: { username: string })
             referrerPolicy="no-referrer"
           />
         )}
+        <ExclusiveCommentWallpaper type={profileVisualType(profile)} />
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" />
       </div>
 
@@ -257,9 +267,10 @@ export default function XPublicProfileHeader({ username }: { username: string })
           </div>
         </div>
 
-        <h1 className="mt-2 break-words text-xl font-black leading-tight">
-          {profile.username}
-        </h1>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <h1 className="break-words text-xl font-black leading-tight">{profile.username}</h1>
+          <UserBadges role={profile.role} isPremium={profile.is_premium} />
+        </div>
         <p className="break-all text-sm text-white/40">
           @{profile.username.toLowerCase().replace(/\s+/g, "_")}
         </p>

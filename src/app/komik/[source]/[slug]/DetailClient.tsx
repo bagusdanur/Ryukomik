@@ -16,6 +16,7 @@ import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 import ProjectUpvoteButton from "@/components/ProjectUpvoteButton";
+import DiscussComicCard from "@/components/social/DiscussComicCard";
 
 type ComicDetail = Series & {
   thumbnail: string;
@@ -300,6 +301,13 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
           </div>
         </section>
       )}
+
+      <DiscussComicCard
+        title={data.title}
+        source={source}
+        slug={slug}
+        thumbnail={data.thumbnail}
+      />
 
       <div className="rk-shell px-4 mt-10 border-t border-white/10 pt-10">
         <CommentsSupabase type="komik" slug={`${source}-${slug}`} chapter={undefined} />

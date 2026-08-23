@@ -1,25 +1,5 @@
-import { unstable_cache } from "next/cache";
+import { decodeSocialCursor, encodeSocialCursor } from "@/lib/social/cursor";
+import { socialQuery } from "@/lib/social/db";
 import { socialError, socialJson } from "@/lib/social/http";
-import { supabaseAdmin } from "@/lib/supabaseServer";
 
-const getPublicPosts = unstable_cache(async (username: string, cursor: string | null) => {
-  const { data: profile, error: profileError } = await supabaseAdmin.from("profiles").select("id").ilike("username", username).limit(1).maybeSingle();
-  if (profileError) throw profileError; if (!profile) return null;
-  let query = supabaseAdmin.from("social_posts")
-    .select("id, author_id, content, image_url, likes_count, replies_count, created_at")
-    .eq("author_id", profile.id).eq("visibility", "public").is("parent_id", null)
-    .order("created_at", { ascending: false }).limit(21);
-  if (cursor) query = query.lt("created_at", cursor);
-  const { data, error } = await query; if (error) throw error;
-  const rows = data || []; const items = rows.slice(0, 20);
-  return { items, nextCursor: rows.length > 20 ? items.at(-1)?.created_at : null };
-}, ["public-social-posts-v1"], { revalidate: 120, tags: ["social-posts", "social-profile"] });
-
-export async function GET(request: Request, context: { params: Promise<{ username: string }> }) {
-  try {
-    const { username } = await context.params; const cursor = new URL(request.url).searchParams.get("cursor");
-    const result = await getPublicPosts(decodeURIComponent(username), cursor);
-    if (!result) return socialJson({ error: "Profil tidak ditemukan." }, { status: 404 });
-    return socialJson(result, { headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300" } });
-  } catch (error) { return socialError(error); }
-}
+export async function GET(request:Request,context:{params:Promise<{username:string}>}){try{const {username}=await context.params;const cursor=decodeSocialCursor(new URL(request.url).searchParams.get("cursor"));const profile=await socialQuery<{user_id:string}>("select user_id from social_profiles where lower(username)=lower($1)",[decodeURIComponent(username)]);if(!profile.rows[0])return socialJson({error:"Profil tidak ditemukan."},{status:404});const result=await socialQuery(`select p.id,p.author_id,p.content,p.image_url,p.likes_count,p.replies_count,p.created_at,p.edited_at,json_build_object('username',s.username,'avatar_url',s.avatar_url,'level',s.level,'role',s.role,'is_premium',s.is_premium) profiles from social_posts p join social_profiles s on s.user_id=p.author_id where p.author_id=$1 and p.parent_id is null and p.visibility='public' and ($2::timestamptz is null or (p.created_at,p.id)<($2::timestamptz,$3::uuid)) order by p.created_at desc,p.id desc limit 21`,[profile.rows[0].user_id,cursor?.createdAt||null,cursor?.id||null]);const items=result.rows.slice(0,20);return socialJson({items,nextCursor:result.rows.length>20?encodeSocialCursor(items.at(-1)?.created_at as string,items.at(-1)?.id as string):null});}catch(error){return socialError(error);}}

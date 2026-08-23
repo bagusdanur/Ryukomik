@@ -4,8 +4,8 @@ import { socialFetch } from "@/lib/social/client";
 import type { NotificationItem } from "@/types/content";
 import { ensureTitleRushWeeklyNotification } from "@/utils/titleRushNotification";
 
-const NOTIFICATION_TTL = 120 * 1000;
-const POLL_INTERVAL = 120 * 1000;
+const NOTIFICATION_TTL = 8 * 1000;
+const POLL_INTERVAL = 10 * 1000;
 type Listener = (items: NotificationItem[], nextCursor: string | null) => void;
 type Poller = { refs: number; timer: number; onVisibility: () => void };
 const notificationCache = new Map<string, { at: number; data: NotificationItem[] }>();
@@ -110,7 +110,7 @@ export async function markNotificationsRead(userId: string, ids?: string[]) {
   try {
     await socialFetch("/api/social/notifications", {
       method: "PATCH",
-      body: JSON.stringify(ids?.length ? { ids: ids.slice(0, 20) } : { all: true }),
+      body: JSON.stringify(ids?.length ? { ids: ids.slice(0, 50) } : { all: true }),
     });
   } catch (error) {
     publish(userId, previous);

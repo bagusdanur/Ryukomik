@@ -19,8 +19,10 @@ import { RiEmojiStickerLine } from "react-icons/ri";
 import { socialFetch } from "@/lib/social/client";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { stickers } from "@/data/stickers";
+import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
+import UserBadges from "@/components/UserBadges";
 
-type Author = { username?: string; avatar_url?: string | null; level?: number };
+type Author = { username?: string; avatar_url?: string | null; level?: number; role?: string | null; is_premium?: boolean | null };
 type Post = {
   id: string;
   author_id: string;
@@ -42,6 +44,13 @@ function authorOf(post: Post): Author {
   return Array.isArray(post.profiles)
     ? post.profiles[0] || {}
     : post.profiles || {};
+}
+
+function authorVisualType(author: Author) {
+  if (author.role === "admin") return "admin";
+  if (author.role === "staff") return "staff";
+  if (author.is_premium) return "premium";
+  return "normal";
 }
 
 function MediaPicker({
@@ -172,13 +181,11 @@ function Composer({
   compact = false,
   onCreated,
   optimisticAuthor,
-  onFailed,
 }: {
   parentId?: string;
   compact?: boolean;
   onCreated: (post?: Post, replaceId?: string) => void;
   optimisticAuthor?: ViewerProfile;
-  onFailed?: (temporaryId: string, message: string) => void;
 }) {
   const [content, setContent] = useState("");
   const [image, setImage] = useState("");
@@ -193,34 +200,12 @@ function Composer({
 
     const submittedContent = content.trim() || "[sticker]";
     const submittedImage = image || null;
-    const temporaryId = `optimistic-${crypto.randomUUID()}`;
-    const optimisticPost: Post | null = optimisticAuthor
-      ? {
-          id: temporaryId,
-          author_id: optimisticAuthor.id,
-          content: submittedContent,
-          image_url: submittedImage,
-          visibility,
-          likes_count: 0,
-          replies_count: 0,
-          created_at: new Date().toISOString(),
-          viewer_liked: false,
-          viewer_owns: true,
-          profiles: optimisticAuthor,
-          pending: true,
-        }
-      : null;
 
     setSending(true);
     setError("");
-    if (optimisticPost) {
-      setContent("");
-      setImage("");
-      onCreated(optimisticPost);
-    }
 
     try {
-      const result = await socialFetch<{ post: { id: string; created_at: string } }>("/api/social/posts", {
+      const result = await socialFetch<{ post: { id: string; author_id: string; created_at: string; profiles: Author } }>("/api/social/posts", {
         method: "POST",
         body: JSON.stringify({
           content: submittedContent === "[sticker]" ? "" : submittedContent,
@@ -229,23 +214,25 @@ function Composer({
           parent_id: parentId || null,
         }),
       });
-      const createdPost: Post = optimisticPost
-        ? { ...optimisticPost, id: result.post.id, created_at: result.post.created_at, pending: false }
-        : { id: result.post.id, author_id: "me", content: submittedContent, image_url: submittedImage, visibility, likes_count: 0, replies_count: 0, created_at: result.post.created_at, viewer_liked: false, viewer_owns: true, profiles: { username: "Kamu", level: 1 } };
-      if (optimisticPost) onCreated(createdPost, temporaryId);
-      else {
-        setContent("");
-        setImage("");
-        onCreated(createdPost);
-      }
+      const createdPost: Post = {
+        id: result.post.id,
+        author_id: result.post.author_id,
+        content: submittedContent,
+        image_url: submittedImage,
+        visibility,
+        likes_count: 0,
+        replies_count: 0,
+        created_at: result.post.created_at,
+        viewer_liked: false,
+        viewer_owns: true,
+        profiles: result.post.profiles,
+      };
+      setContent("");
+      setImage("");
+      onCreated(createdPost);
     } catch (failure) {
       const message = failure instanceof Error ? failure.message : "Gagal mengirim postingan.";
       setError(message);
-      if (optimisticPost) {
-        setContent(submittedContent === "[sticker]" ? "" : submittedContent);
-        setImage(submittedImage || "");
-        onFailed?.(temporaryId, message);
-      }
     } finally {
       setSending(false);
     }
@@ -269,6 +256,7 @@ function Composer({
         </div>
       )}
       <textarea
+        disabled={sending}
         value={content}
         onChange={(event) => setContent(event.target.value.slice(0, 500))}
         rows={compact ? 3 : 6}
@@ -333,8 +321,8 @@ function Composer({
           disabled={(!content.trim() && !image) || sending}
           className="flex items-center gap-2 rounded-full bg-[var(--accent-2)] px-4 py-2.5 text-xs font-black text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35"
         >
-          <FiSend />
-          {sending ? "Mengirim" : parentId ? "Balas" : "Posting"}
+          {sending ? <FiRefreshCw className="animate-spin" /> : <FiSend />}
+          {sending ? "Sedang mengirim..." : parentId ? "Balas" : "Posting"}
         </button>
       </div>
     </form>
@@ -418,8 +406,9 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
 
   const profileHref = `/u/${encodeURIComponent(author.username || post.author_id)}`;
   return (
-    <article className="border-b border-white/[0.08] bg-[var(--surface-0)] transition last:border-b-0 hover:bg-white/[0.02]">
-      <div className="flex gap-3 p-4">
+    <article className="relative overflow-hidden border-b border-white/[0.08] bg-[var(--surface-0)] transition last:border-b-0 hover:bg-white/[0.02]">
+      <ExclusiveCommentWallpaper type={authorVisualType(author)} />
+      <div className="relative z-[1] flex gap-3 p-4">
         <Link
           href={profileHref}
           className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/5 font-black"
@@ -438,12 +427,12 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <Link
-                href={profileHref}
-                className="block truncate text-sm font-black hover:underline"
-              >
-                {author.username || "User"}
-              </Link>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Link href={profileHref} className="block truncate text-sm font-black hover:underline">
+                  {author.username || "User"}
+                </Link>
+                <UserBadges role={author.role} isPremium={author.is_premium} />
+              </div>
               <span className="text-[11px] text-white/35">
                 Lv.{author.level || 1} ·{" "}
                 {post.pending ? "Mengirim..." : new Date(post.created_at).toLocaleDateString("id-ID", {
@@ -468,7 +457,7 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
             <img
               src={post.image_url}
               alt="Sticker atau gambar posting"
-              className={`mt-3 rounded-2xl border border-white/10 object-contain ${post.content === "[sticker]" ? "mx-auto max-h-56 max-w-56" : "max-h-96 w-full"}`}
+              className={`mt-3 border border-white/10 object-contain ${post.content === "[sticker]" ? "mx-auto max-h-24 max-w-24 rounded-xl" : "max-h-96 w-full rounded-2xl"}`}
               loading="lazy"
               referrerPolicy="no-referrer"
             />
@@ -532,11 +521,6 @@ function SocialTimelineEnabled({ viewerProfile = null }: { viewerProfile?: Viewe
       ? current.map((item) => item.id === replaceId ? post : item)
       : [post, ...current]);
   };
-  const handleFailed = (temporaryId: string, message: string) => {
-    setItems((current) => current.filter((item) => item.id !== temporaryId));
-    setError(message);
-  };
-
   const load = useCallback(
     async (reset = false) => {
       if (!user) return;
@@ -564,9 +548,41 @@ function SocialTimelineEnabled({ viewerProfile = null }: { viewerProfile?: Viewe
     [cursor, scope, user],
   );
 
+  const refreshLatest = useCallback(async () => {
+    if (!user || document.visibilityState === "hidden") return;
+    try {
+      const result = await socialFetch<{ items: Post[]; nextCursor: string | null }>(
+        `/api/social/posts?scope=${scope}&live=${Date.now()}`,
+        { cache: "no-store" },
+      );
+      setItems((current) => {
+        const incomingIds = new Set(result.items.map((item) => item.id));
+        const pending = current.filter((item) => item.pending);
+        const older = current.filter((item) => !item.pending && !incomingIds.has(item.id));
+        return [...pending, ...result.items, ...older];
+      });
+      setError("");
+    } catch {
+      // Kegagalan refresh latar belakang tidak mengganggu timeline yang sedang dibaca.
+    }
+  }, [scope, user]);
+
   useEffect(() => {
     void load(true);
   }, [scope, user, version]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!user) return;
+    const interval = window.setInterval(() => void refreshLatest(), 4000);
+    const refreshOnFocus = () => void refreshLatest();
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnFocus);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnFocus);
+    };
+  }, [refreshLatest, user]);
   if (userLoading)
     return (
       <div className="rk-card-soft animate-pulse rounded-2xl py-16 text-center text-sm text-white/35">
@@ -600,7 +616,7 @@ function SocialTimelineEnabled({ viewerProfile = null }: { viewerProfile?: Viewe
         ))}
       </div>
       <div className="hidden shrink-0 p-5 sm:block">
-        <Composer optimisticAuthor={viewer} onCreated={handleCreated} onFailed={handleFailed} />
+        <Composer optimisticAuthor={viewer} onCreated={handleCreated} />
       </div>
       {error && (
         <div className="mx-3 mb-3 flex items-center justify-between gap-3 rounded-xl border border-red-400/20 bg-red-400/5 px-3 py-2 text-xs text-red-200 sm:mx-4">
@@ -686,7 +702,6 @@ function SocialTimelineEnabled({ viewerProfile = null }: { viewerProfile?: Viewe
                 handleCreated(post, replaceId);
                 if (!replaceId) setComposerOpen(false);
               }}
-              onFailed={handleFailed}
             />
           </div>
         </div>
@@ -696,23 +711,5 @@ function SocialTimelineEnabled({ viewerProfile = null }: { viewerProfile?: Viewe
 }
 
 export default function SocialTimeline() {
-  return (
-    <section className="grid min-h-[calc(100dvh-17rem)] w-full place-content-center overflow-hidden rounded-2xl border border-amber-300/15 bg-[linear-gradient(145deg,rgba(251,191,36,.055),rgba(255,255,255,.015))] px-6 py-16 text-center shadow-[0_20px_70px_rgba(0,0,0,.22)] sm:min-h-[620px]">
-      <div className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-amber-200/15 bg-amber-300/[0.06] text-2xl text-amber-100/70">
-        <FiX />
-      </div>
-      <p className="mt-5 text-[10px] font-black uppercase tracking-[0.22em] text-amber-200/55">
-        Maintenance / Closed
-      </p>
-      <h2 className="mt-2 text-xl font-black text-white sm:text-2xl">
-        Timeline sedang ditutup sementara
-      </h2>
-      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-white/40">
-        Fitur posting dan pemuatan timeline sedang dinonaktifkan. Favorit, riwayat,
-        dan koleksi tetap dapat digunakan seperti biasa.
-      </p>
-    </section>
-  );
+  return <SocialTimelineEnabled />;
 }
-
-void SocialTimelineEnabled;

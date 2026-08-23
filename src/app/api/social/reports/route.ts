@@ -1,15 +1,2 @@
-import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
-import { socialError, socialJson, socialLimit } from "@/lib/social/http";
-import { supabaseAdmin } from "@/lib/supabaseServer";
-
-export async function POST(request: Request) {
-  try {
-    assertSameOrigin(request); const userId = await requireUserId(request);
-    if (!socialLimit(request, userId, 10)) return socialJson({ error: "Batas laporan tercapai." }, { status: 429 });
-    const body = await request.json() as { targetType?: string; targetId?: string; reason?: string };
-    const reason = body.reason?.trim().slice(0, 200);
-    if (!body.targetId || !["post", "profile"].includes(body.targetType || "") || !reason || reason.length < 3) return socialJson({ error: "Laporan tidak lengkap." }, { status: 400 });
-    const { error } = await supabaseAdmin.from("social_reports").upsert({ reporter_id: userId, target_type: body.targetType, target_id: body.targetId, reason, status: "open" }, { onConflict: "reporter_id,target_type,target_id" });
-    if (error) throw error; return socialJson({ success: true }, { status: 201 });
-  } catch (error) { return socialError(error); }
-}
+import { assertSameOrigin,requireUserId } from "@/lib/social/auth";import { socialQuery } from "@/lib/social/db";import { socialError,socialJson,socialLimit } from "@/lib/social/http";import { ensureSocialProfile } from "@/lib/social/profileSync";
+export async function POST(request:Request){try{assertSameOrigin(request);const userId=await requireUserId(request);if(!socialLimit(request,userId,10))return socialJson({error:"Batas laporan tercapai."},{status:429});const body=await request.json() as {targetType?:string;targetId?:string;reason?:string},reason=body.reason?.trim().slice(0,200);if(!body.targetId||!["post","profile"].includes(body.targetType||"")||!reason||reason.length<3)return socialJson({error:"Laporan tidak lengkap."},{status:400});await ensureSocialProfile(userId);await socialQuery(`insert into social_reports(reporter_id,target_type,target_id,reason,status) values($1,$2,$3,$4,'open') on conflict(reporter_id,target_type,target_id) do update set reason=excluded.reason,status='open',resolved_at=null`,[userId,body.targetType,body.targetId,reason]);return socialJson({success:true},{status:201})}catch(e){return socialError(e)}}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { projectApiUrl } from "@/lib/projectApiServer";
 
 function formatRelativeDate(dateStr: string): string {
   if (!dateStr) return "";
@@ -26,19 +27,70 @@ function formatRelativeDate(dateStr: string): string {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "30", 10);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") || "30", 10)));
     const offset = (page - 1) * limit;
+    const tipe = (searchParams.get("tipe") || "").trim();
+    const status = (searchParams.get("status") || "").trim();
+    const genre = (searchParams.get("genre") || "").trim();
+    const genre2 = (searchParams.get("genre2") || "").trim();
 
-    // Cek dulu total datanya sebelum query ber-range. Supabase/PostgREST
-    // balikin HTTP 416 (dengan body yang gak konsisten bentuknya, gak bisa
-    // diandalkan buat deteksi lewat error.code) kalau offset yang diminta
-    // melebihi total baris yang ada -- jadi range-nya jangan sampai
-    // ditembak sama sekali kalau memang sudah di luar jangkauan.
-    const { count: totalCount, error: countError } = await supabaseAdmin
+    // Cek jika microservice project PostgreSQL (ryukomik-project-db) aktif
+    const upstreamParams = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (tipe) upstreamParams.set("type", tipe);
+    if (status) upstreamParams.set("status", status);
+    if (genre) upstreamParams.set("genre", genre);
+    if (genre2) upstreamParams.set("genre2", genre2);
+    const projectUrl = projectApiUrl(`/projects?${upstreamParams.toString()}`);
+    if (projectUrl) {
+      try {
+        const upstream = await fetch(projectUrl, {
+          next: { revalidate: 60, tags: ["source-project-pustaka"] },
+        });
+        if (upstream.ok) {
+          const json = await upstream.json();
+          const results = (json.data || []).map((item: any) => ({
+            slug: item.slug,
+            title: item.title,
+            image: item.cover_url || item.image || "",
+            source: "project",
+            info: item.latest_chapter_uploaded_at
+              ? formatRelativeDate(item.latest_chapter_uploaded_at)
+              : item.updated_at
+              ? formatRelativeDate(item.updated_at)
+              : "",
+            type_genre: [item.type, ...(item.genres || [])].filter(Boolean).join(", "),
+            chapter_terbaru: item.latest_chapter != null ? `Chapter ${item.latest_chapter}` : "",
+            status: item.status || "",
+          }));
+
+          const response = NextResponse.json({
+            success: true,
+            data: results,
+            total: typeof json.total === "number" ? json.total : results.length,
+            hasMore: Boolean(json.hasMore),
+          });
+          response.headers.set(
+            "Cache-Control",
+            "public, s-maxage=60, stale-while-revalidate=180",
+          );
+          return response;
+        }
+      } catch (upstreamErr) {
+        console.error("[api/project/pustaka] Upstream project API error, falling back to Supabase:", upstreamErr);
+      }
+    }
+
+    // Fallback: Supabase DB
+    let countQuery = supabaseAdmin
       .from("project_manga")
       .select("id", { count: "exact", head: true })
       .eq("is_published", true);
+    if (tipe) countQuery = countQuery.ilike("type", tipe);
+    if (status) countQuery = countQuery.ilike("status", status);
+    if (genre) countQuery = countQuery.contains("genres", [genre]);
+    if (genre2) countQuery = countQuery.contains("genres", [genre2]);
+    const { count: totalCount, error: countError } = await countQuery;
 
     if (countError) throw countError;
 
@@ -52,10 +104,15 @@ export async function GET(request: Request) {
     }
 
     // Ambil manga untuk halaman ini
-    const { data: mangaList, error } = await supabaseAdmin
+    let listQuery = supabaseAdmin
       .from("project_manga")
       .select("slug, title, cover_url, type, status, author, genres, updated_at")
-      .eq("is_published", true)
+      .eq("is_published", true);
+    if (tipe) listQuery = listQuery.ilike("type", tipe);
+    if (status) listQuery = listQuery.ilike("status", status);
+    if (genre) listQuery = listQuery.contains("genres", [genre]);
+    if (genre2) listQuery = listQuery.contains("genres", [genre2]);
+    const { data: mangaList, error } = await listQuery
       .order("updated_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -70,18 +127,13 @@ export async function GET(request: Request) {
       });
     }
 
-    // Ambil chapter terbaru untuk semua manga sekaligus.
-    // RPC ini pakai DISTINCT ON (manga_slug) di database, jadi selalu dapat
-    // tepat 1 baris (yang benar-benar terbaru) per manga_slug — bukan
-    // ORDER BY + LIMIT global yang bisa bikin manga ber-chapter rendah
-    // gak kebagian slot kalau ada manga lain ber-chapter tinggi.
-    const mangaSlugs = mangaList.map(m => m.slug);
+    const mangaSlugs = mangaList.map((m) => m.slug);
     const { data: allChapters } = await supabaseAdmin.rpc(
       "get_latest_project_chapters",
       { p_manga_slugs: mangaSlugs },
     );
 
-    // Build map: slug -> latest chapter (ambil yang pertama karena sudah di-order DESC)
+    // Build map: slug -> latest chapter
     const latestChapterMap = new Map<string, { chapter_number: number; uploaded_at: string }>();
     for (const ch of allChapters || []) {
       if (!latestChapterMap.has(ch.manga_slug)) {
@@ -114,7 +166,7 @@ export async function GET(request: Request) {
     });
     response.headers.set(
       "Cache-Control",
-      "public, s-maxage=120, stale-while-revalidate=300",
+      "public, s-maxage=60, stale-while-revalidate=180",
     );
     return response;
   } catch (err: unknown) {

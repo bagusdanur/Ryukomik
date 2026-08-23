@@ -15,7 +15,22 @@ export async function GET(request: Request) {
       const upstream = await fetch(projectUrl, { next: { revalidate: 30, tags: [`project-search:${q}:${page}`] } });
       if (!upstream.ok) throw new Error(`Project API failed with status ${upstream.status}`);
       const json = await upstream.json();
-      return NextResponse.json({ data: (json.data || []).map((p: Record<string, unknown>) => ({ slug: p.slug, title: p.title, source: "project", image: p.cover_url || "", info: p.status || "", type_genre: p.type || "manga" })), success: true, hasMore: Boolean(json.hasMore) }, { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" } });
+      return NextResponse.json(
+        {
+          data: (json.data || []).map((p: Record<string, unknown>) => ({
+            slug: p.slug,
+            title: p.title,
+            source: "project",
+            image: p.cover_url || "",
+            info: p.status || "",
+            type_genre: p.type || "manga",
+            chapter_terbaru: p.latest_chapter != null ? `Ch. ${p.latest_chapter}` : "",
+          })),
+          success: true,
+          hasMore: Boolean(json.hasMore),
+        },
+        { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" } },
+      );
     }
 
     // Cek total dulu -- Supabase/PostgREST bisa balikin HTTP 416 (body gak

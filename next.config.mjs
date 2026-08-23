@@ -141,7 +141,7 @@ const nextConfig = {
     ];
   },
 
-  serverExternalPackages: ["cheerio", "@aws-sdk/client-s3", "@aws-sdk/s3-request-presigner"],
+  serverExternalPackages: ["cheerio", "pg", "@aws-sdk/client-s3", "@aws-sdk/s3-request-presigner"],
 };
 
 export default nextConfig;

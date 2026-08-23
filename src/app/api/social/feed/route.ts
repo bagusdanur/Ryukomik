@@ -1,25 +1,16 @@
-import { supabaseAdmin } from "@/lib/supabaseServer";
 import { requireUserId } from "@/lib/social/auth";
+import { socialQuery } from "@/lib/social/db";
 import { socialError, socialJson } from "@/lib/social/http";
+import { ensureSocialProfile } from "@/lib/social/profileSync";
 
 export async function GET(request: Request) {
   try {
-    const userId = await requireUserId(request);
-    const url = new URL(request.url);
-    const cursor = url.searchParams.get("cursor");
-    const { data: follows, error: followsError } = await supabaseAdmin.from("user_follows").select("following_id").eq("follower_id", userId).limit(500);
-    if (followsError) throw followsError;
-    const actorIds = [userId, ...(follows || []).map((row) => row.following_id)];
-    let query = supabaseAdmin.from("activity_events")
-      .select("id, actor_id, actor_name, event_type, entity_id, entity_label, visibility, created_at")
-      .in("actor_id", actorIds).neq("visibility", "private")
-      .order("created_at", { ascending: false }).order("id", { ascending: false }).limit(21);
-    if (cursor) query = query.lt("created_at", cursor);
-    const { data, error } = await query;
-    if (error) throw error;
-    const rows = data || [];
-    const hasMore = rows.length > 20;
-    const items = rows.slice(0, 20);
-    return socialJson({ items, nextCursor: hasMore ? items.at(-1)?.created_at : null }, { headers: { "Cache-Control": "private, max-age=60" } });
-  } catch (error) { return socialError(error); }
+    const userId = await requireUserId(request); await ensureSocialProfile(userId);
+    const cursor = new URL(request.url).searchParams.get("cursor");
+    const result = await socialQuery(`select e.id,e.actor_id,e.actor_name,e.event_type,e.entity_id,e.entity_label,e.visibility,e.created_at
+      from social_activity_events e where (e.actor_id=$1 or exists(select 1 from social_follows f where f.follower_id=$1 and f.following_id=e.actor_id))
+      and e.visibility<>'private' and ($2::timestamptz is null or e.created_at<$2) order by e.created_at desc,e.id desc limit 21`, [userId, cursor]);
+    const items=result.rows.slice(0,20);
+    return socialJson({items,nextCursor:result.rows.length>20?items.at(-1)?.created_at:null},{headers:{"Cache-Control":"private, max-age=60"}});
+  } catch(error){return socialError(error);}
 }

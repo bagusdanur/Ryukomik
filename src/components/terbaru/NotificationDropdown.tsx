@@ -14,6 +14,7 @@ import {
   TITLE_RUSH_EVENT_TYPE,
 } from "@/utils/titleRushNotification";
 import { getNotificationLink } from "@/utils/notificationLink";
+import { getNotificationLabel } from "@/utils/notificationPresentation";
 
 interface NotificationDropdownProps {
   user: User | null;
@@ -311,10 +312,7 @@ export default function NotificationDropdown({
                     </div>
                     <div className="min-w-0">
                       <p className="text-[11px] leading-snug text-white/70">
-                        <span className="font-bold text-[var(--accent-2)]">
-                          {notification.actor_name || "User"}
-                        </span>{" "}
-                        membalas komentar kamu
+                        {getNotificationLabel(notification)}
                       </p>
                       <span className="mt-1 block text-[9px] text-white/30">
                         {notification.formattedTime}

@@ -1,13 +1,43 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { projectApiUrl } from "@/lib/projectApiServer";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const q = searchParams.get("q") || "";
+    const q = (searchParams.get("q") || "").trim();
+    const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") || "30", 10)));
 
-    if (!q.trim()) {
+    if (!q) {
       return NextResponse.json({ success: true, data: [] });
+    }
+
+    const projectUrl = projectApiUrl(`/projects/search?q=${encodeURIComponent(q)}&limit=${limit}`);
+    if (projectUrl) {
+      try {
+        const upstream = await fetch(projectUrl, {
+          next: { revalidate: 30, tags: [`project-search:${q}`] },
+        });
+        if (upstream.ok) {
+          const json = await upstream.json();
+          const results = (json.data || []).map((item: any) => ({
+            slug: item.slug,
+            title: item.title,
+            image: item.cover_url || item.image || "",
+            source: "project",
+            update: item.status || "",
+            chapter_terbaru: item.latest_chapter != null ? `Chapter ${item.latest_chapter}` : "",
+          }));
+          const response = NextResponse.json({ success: true, data: results });
+          response.headers.set(
+            "Cache-Control",
+            "public, s-maxage=30, stale-while-revalidate=60",
+          );
+          return response;
+        }
+      } catch (upstreamErr) {
+        console.error("[api/project/search] Upstream project search error, falling back to Supabase:", upstreamErr);
+      }
     }
 
     let query = supabaseAdmin
@@ -18,7 +48,7 @@ export async function GET(request: Request) {
 
     const { data, error } = await query
       .order("updated_at", { ascending: false })
-      .limit(30);
+      .limit(limit);
 
     if (error) {
       console.error("[project/search] Supabase error:", error);
@@ -44,3 +74,4 @@ export async function GET(request: Request) {
     );
   }
 }
+

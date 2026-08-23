@@ -1,26 +1,4 @@
-import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
-import { socialError, socialJson, socialLimit } from "@/lib/social/http";
-import { supabaseAdmin } from "@/lib/supabaseServer";
-
-type Kind = "block" | "mute";
-const config = {
-  block: { table: "user_blocks", owner: "blocker_id", target: "blocked_id" },
-  mute: { table: "user_mutes", owner: "user_id", target: "muted_id" },
-} as const;
-
-async function mutate(request: Request, remove: boolean) {
-  assertSameOrigin(request); const userId = await requireUserId(request);
-  if (!socialLimit(request, userId, 20)) return socialJson({ error: "Terlalu banyak permintaan." }, { status: 429 });
-  const body = await request.json() as { targetUserId?: string; kind?: Kind };
-  if (!body.targetUserId || body.targetUserId === userId || !body.kind || !config[body.kind]) return socialJson({ error: "Relasi tidak valid." }, { status: 400 });
-  const selected = config[body.kind];
-  const query = remove
-    ? supabaseAdmin.from(selected.table).delete().eq(selected.owner, userId).eq(selected.target, body.targetUserId)
-    : supabaseAdmin.from(selected.table).upsert({ [selected.owner]: userId, [selected.target]: body.targetUserId }, { ignoreDuplicates: true });
-  const { error } = await query; if (error) throw error;
-  if (body.kind === "block" && !remove) await supabaseAdmin.from("user_follows").delete().or(`and(follower_id.eq.${userId},following_id.eq.${body.targetUserId}),and(follower_id.eq.${body.targetUserId},following_id.eq.${userId})`);
-  return socialJson({ active: !remove });
-}
-
-export async function POST(request: Request) { try { return await mutate(request, false); } catch (error) { return socialError(error); } }
-export async function DELETE(request: Request) { try { return await mutate(request, true); } catch (error) { return socialError(error); } }
+import { assertSameOrigin,requireUserId } from "@/lib/social/auth";import { socialQuery,socialTransaction } from "@/lib/social/db";import { socialError,socialJson,socialLimit } from "@/lib/social/http";import { ensureSocialProfile } from "@/lib/social/profileSync";
+type Kind="block"|"mute";
+async function mutate(request:Request,remove:boolean){assertSameOrigin(request);const userId=await requireUserId(request);if(!socialLimit(request,userId,20))return socialJson({error:"Terlalu banyak permintaan."},{status:429});const body=await request.json() as {targetUserId?:string;kind?:Kind};if(!body.targetUserId||body.targetUserId===userId||!body.kind||!["block","mute"].includes(body.kind))return socialJson({error:"Relasi tidak valid."},{status:400});await Promise.all([ensureSocialProfile(userId),ensureSocialProfile(body.targetUserId)]);const table=body.kind==="block"?"social_blocks":"social_mutes",owner=body.kind==="block"?"blocker_id":"user_id",target=body.kind==="block"?"blocked_id":"muted_id";await socialTransaction(async client=>{if(remove)await client.query(`delete from ${table} where ${owner}=$1 and ${target}=$2`,[userId,body.targetUserId]);else await client.query(`insert into ${table}(${owner},${target}) values($1,$2) on conflict do nothing`,[userId,body.targetUserId]);if(body.kind==="block"&&!remove)await client.query("delete from social_follows where (follower_id=$1 and following_id=$2) or (follower_id=$2 and following_id=$1)",[userId,body.targetUserId]);});return socialJson({active:!remove});}
+export async function POST(r:Request){try{return await mutate(r,false)}catch(e){return socialError(e)}}export async function DELETE(r:Request){try{return await mutate(r,true)}catch(e){return socialError(e)}}

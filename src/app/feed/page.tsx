@@ -1,17 +1,6 @@
-﻿import SocialTimeline from "@/components/social/SocialTimeline";
-
-export const dynamic = "force-dynamic";
-
-export default function FeedPage() {
-  return (
-    <main className="rk-page px-0 pb-28 pt-16 text-white sm:px-4 sm:pt-20">
-      <div className="rk-shell max-w-2xl">
-        <div className="mb-4 px-4 sm:px-0">
-          <p className="text-[10px] font-bold uppercase tracking-[.16em] text-cyan-200/60">Community</p>
-          <h1 className="text-2xl font-black">Timeline Ryukomik</h1>
-        </div>
-        <SocialTimeline />
-      </div>
-    </main>
-  );
-}
+import Link from "next/link";
+import { FiBell,FiBookmark,FiSettings,FiUsers } from "react-icons/fi";
+import SocialTimeline from "@/components/social/SocialTimeline";
+import SocialDiscoveryRail from "@/components/social/SocialDiscoveryRail";
+export const dynamic="force-dynamic";
+export default function FeedPage(){return <main className="rk-page px-0 pb-28 pt-14 text-white sm:px-4 sm:pt-20"><div className="rk-shell max-w-[1240px]"><header className="rk-social-hero mx-3 mb-4 sm:mx-0"><div className="relative z-10"><p className="rk-social-eyebrow">Community space</p><h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Timeline Ryukomik</h1><p className="mt-1 max-w-xl text-xs leading-relaxed text-white/45 sm:text-sm">Temukan bacaan, opini, dan koleksi baru dari komunitas.</p></div><div className="relative z-10 hidden items-center gap-2 sm:flex"><Link href="/connections" className="rk-btn-ghost flex h-10 items-center gap-2 rounded-xl px-3 text-xs font-bold"><FiUsers/> Koneksi</Link><Link href="/notifications" className="rk-btn-ghost grid h-10 w-10 place-items-center rounded-xl" aria-label="Notifikasi"><FiBell/></Link></div></header><div className="grid gap-4 lg:grid-cols-[190px_minmax(0,640px)_minmax(250px,1fr)]"><aside className="hidden lg:block"><nav className="rk-social-panel sticky top-20 space-y-1 p-2"><Link href="/feed" className="rk-social-nav-active"><FiUsers/> Timeline</Link><Link href="/notifications" className="rk-social-nav"><FiBell/> Notifikasi</Link><Link href="/social-collections" className="rk-social-nav"><FiBookmark/> Koleksi</Link><Link href="/social-settings" className="rk-social-nav"><FiSettings/> Pengaturan</Link></nav></aside><SocialTimeline/><div className="hidden lg:block"><SocialDiscoveryRail/></div></div></div></main>}
