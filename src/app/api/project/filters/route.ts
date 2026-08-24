@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { projectApiUrl } from "@/lib/projectApiServer";
+import { allowSupabaseProjectReadFallback, projectApiUrl } from "@/lib/projectApiServer";
 
 type FilterOption = { value: string; label: string };
 
@@ -24,8 +24,15 @@ export async function GET() {
           });
         }
       } catch (error) {
-        console.error("[api/project/filters] Project API fallback:", error);
+        console.error("[api/project/filters] Project API error:", error);
       }
+    }
+
+    if (!allowSupabaseProjectReadFallback()) {
+      return NextResponse.json(
+        { success: false, error: "Project API sementara tidak tersedia" },
+        { status: 503, headers: { "Cache-Control": "public, max-age=30, stale-if-error=86400" } },
+      );
     }
 
     const { data, error } = await supabaseAdmin

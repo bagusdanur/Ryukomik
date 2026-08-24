@@ -38,7 +38,9 @@ const DEFAULT_PROFILE = Object.freeze({
   avatar_url: "",
   total_comments: 0,
 });
-const LATEST_COMMENTS_TTL = 300;
+// Tag "comments" di-invalidasi setiap ada komentar baru, jadi TTL panjang aman
+// untuk periode tanpa perubahan dan mengurangi pembacaan PostgREST berulang.
+const LATEST_COMMENTS_TTL = 1800;
 const COMMENT_SNIPPET_LIMIT = 220;
 
 type CommentProfile = {
@@ -212,7 +214,7 @@ const getActiveTitleRushWinnersCached = unstable_cache(
     return (data || []) as TitleRushWinnerRow[];
   },
   ["active-title-rush-winners"],
-  { revalidate: 600, tags: ["title-rush-winners"] },
+  { revalidate: 3600, tags: ["title-rush-winners"] },
 );
 
 export async function getLatestComments() {

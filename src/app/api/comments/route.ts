@@ -27,7 +27,8 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Terjadi kesalahan";
 }
 
-const COMMENTS_REVALIDATE_SECONDS = 300;
+// Komentar baru tetap langsung membatalkan cache lewat revalidateTag di POST.
+const COMMENTS_REVALIDATE_SECONDS = 1800;
 
 const getCachedComments = unstable_cache(
   async (

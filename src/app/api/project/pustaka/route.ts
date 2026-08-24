@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { projectApiUrl } from "@/lib/projectApiServer";
+import { allowSupabaseProjectReadFallback, projectApiUrl } from "@/lib/projectApiServer";
 
 function formatRelativeDate(dateStr: string): string {
   if (!dateStr) return "";
@@ -77,8 +77,15 @@ export async function GET(request: Request) {
           return response;
         }
       } catch (upstreamErr) {
-        console.error("[api/project/pustaka] Upstream project API error, falling back to Supabase:", upstreamErr);
+        console.error("[api/project/pustaka] Upstream project API error:", upstreamErr);
       }
+    }
+
+    if (!allowSupabaseProjectReadFallback()) {
+      return NextResponse.json(
+        { success: false, data: [], total: 0, hasMore: false, error: "Project API sementara tidak tersedia" },
+        { status: 503, headers: { "Cache-Control": "public, max-age=30, stale-if-error=3600" } },
+      );
     }
 
     // Fallback: Supabase DB

@@ -51,5 +51,5 @@ export const getXpLeadersCached = unstable_cache(
     return (data || []) as XpLeaderRow[];
   },
   ["xp-leaders-v1"],
-  { revalidate: 600, tags: ["xp-leaders", "comment-badges"] },
+  { revalidate: 3600, tags: ["xp-leaders", "comment-badges"] },
 );

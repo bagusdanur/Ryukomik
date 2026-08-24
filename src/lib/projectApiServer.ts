@@ -3,6 +3,13 @@ export function projectApiUrl(path: string): string | null {
   return base ? `${base}${path}` : null;
 }
 
+export function allowSupabaseProjectReadFallback(): boolean {
+  const configured = process.env.PROJECT_SUPABASE_READ_FALLBACK;
+  if (configured === "true") return true;
+  if (configured === "false") return false;
+  return process.env.NODE_ENV !== "production";
+}
+
 export async function projectApiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const url = projectApiUrl(path);
   if (!url) throw new Error("PROJECT_API_URL is not configured");

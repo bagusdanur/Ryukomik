@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { projectApiUrl } from "@/lib/projectApiServer";
+import { allowSupabaseProjectReadFallback, projectApiUrl } from "@/lib/projectApiServer";
 
 export async function GET(request: Request) {
   try {
@@ -36,8 +36,15 @@ export async function GET(request: Request) {
           return response;
         }
       } catch (upstreamErr) {
-        console.error("[api/project/search] Upstream project search error, falling back to Supabase:", upstreamErr);
+        console.error("[api/project/search] Upstream project search error:", upstreamErr);
       }
+    }
+
+    if (!allowSupabaseProjectReadFallback()) {
+      return NextResponse.json(
+        { success: false, data: [], error: "Project API sementara tidak tersedia" },
+        { status: 503, headers: { "Cache-Control": "public, max-age=30, stale-if-error=3600" } },
+      );
     }
 
     let query = supabaseAdmin

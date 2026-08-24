@@ -46,7 +46,7 @@ const getLeaderboardCached = unstable_cache(
     }));
   },
   ["leaderboard-v2"],
-  { revalidate: 600, tags: ["leaderboard"] },
+  { revalidate: 3600, tags: ["leaderboard"] },
 );
 
 export async function GET() {
@@ -56,7 +56,7 @@ export async function GET() {
     const res = NextResponse.json(result);
     res.headers.set(
       "Cache-Control",
-      "public, s-maxage=600, stale-while-revalidate=600"
+      "public, s-maxage=3600, stale-while-revalidate=3600"
     );
     return res;
   } catch (err) {
