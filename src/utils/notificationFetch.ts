@@ -4,8 +4,10 @@ import { socialFetch } from "@/lib/social/client";
 import type { NotificationItem } from "@/types/content";
 import { ensureTitleRushWeeklyNotification } from "@/utils/titleRushNotification";
 
-const NOTIFICATION_TTL = 8 * 1000;
-const POLL_INTERVAL = 10 * 1000;
+// Visibility changes also trigger a refresh. Slow background polling avoids
+// multiplying Auth and database egress for every open tab.
+const NOTIFICATION_TTL = 60 * 1000;
+const POLL_INTERVAL = 15 * 60 * 1000;
 type Listener = (items: NotificationItem[], nextCursor: string | null) => void;
 type Poller = { refs: number; timer: number; onVisibility: () => void };
 const notificationCache = new Map<string, { at: number; data: NotificationItem[] }>();

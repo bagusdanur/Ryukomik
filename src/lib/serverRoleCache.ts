@@ -24,7 +24,7 @@ export type AuthenticatedRole = CachedRole & {
 // /api/me/role) can fire this many times within seconds — e.g. a dashboard
 // page that calls several admin endpoints in parallel — so we reuse a
 // validated token for a short window instead of re-verifying it every time.
-const AUTH_USER_CACHE_MS = 45 * 1000;
+const AUTH_USER_CACHE_MS = 5 * 60 * 1000;
 const authUserCache = new Map<string, { at: number; userId: string }>();
 
 function pruneAuthUserCache(now: number) {
@@ -42,14 +42,17 @@ export async function getVerifiedUserId(token: string): Promise<string> {
     return cached.userId;
   }
 
-  const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
-  if (authError || !authData.user) {
+  // Asymmetric Supabase JWTs are verified locally against cached JWKS.
+  // Legacy symmetric projects automatically fall back to the Auth server.
+  const { data: claimsData, error: authError } = await supabaseAdmin.auth.getClaims(token);
+  const userId = claimsData?.claims?.sub;
+  if (authError || typeof userId !== "string" || !userId) {
     throw new Error("Sesi login tidak valid.");
   }
 
   pruneAuthUserCache(now);
-  authUserCache.set(token, { at: now, userId: authData.user.id });
-  return authData.user.id;
+  authUserCache.set(token, { at: now, userId });
+  return userId;
 }
 
 const getCachedRoleByUserId = unstable_cache(

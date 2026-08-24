@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       socialQuery<NotificationRow>(
         `select ${COLUMNS} from social_notifications where user_id=$1
          and ($2::timestamptz is null or (created_at,id) < ($2::timestamptz,$3::uuid))
-         order by created_at desc,id desc limit 41`,
+         order by created_at desc,id desc limit 21`,
         [userId, cursor?.createdAt || null, cursor?.id || null],
       ),
       (() => {
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
           .eq("user_id", userId)
           .not("type", "in", SOCIAL_TYPES_FILTER)
           .order("created_at", { ascending: false })
-          .limit(41);
+          .limit(21);
         if (cursor?.createdAt) query = query.lt("created_at", cursor.createdAt);
         return query;
       })(),

@@ -36,15 +36,22 @@ export async function GET() {
     const rows = data || [];
     const genres = rows.flatMap((row) => Array.isArray(row.genres) ? row.genres : []);
     const genreOptions = makeOptions(genres, "Genre");
-    return NextResponse.json({
-      success: true,
-      data: {
-        tipe: makeOptions(rows.map((row) => row.type || ""), "Tipe"),
-        status: makeOptions(rows.map((row) => row.status || ""), "Status"),
-        genre: genreOptions,
-        genre2: [{ value: "", label: "Genre 2" }, ...genreOptions.slice(1)],
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          tipe: makeOptions(rows.map((row) => row.type || ""), "Tipe"),
+          status: makeOptions(rows.map((row) => row.status || ""), "Status"),
+          genre: genreOptions,
+          genre2: [{ value: "", label: "Genre 2" }, ...genreOptions.slice(1)],
+        },
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+        },
+      },
+    );
   } catch (error) {
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : "Unknown error" },

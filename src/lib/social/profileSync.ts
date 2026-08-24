@@ -17,7 +17,8 @@ type SourceProfile = {
 export async function ensureSocialProfile(userId: string) {
   const existing = await socialQuery<{ source_updated_at: string | null }>("select source_updated_at from social_profiles where user_id = $1", [userId]);
   const lastSync = existing.rows[0]?.source_updated_at;
-  if (lastSync && Date.now() - new Date(lastSync).getTime() < 5 * 60 * 1000) return;
+  // Profile writes sync explicitly; this periodic read only repairs drift.
+  if (lastSync && Date.now() - new Date(lastSync).getTime() < 30 * 60 * 1000) return;
   const { data, error } = await supabaseAdmin.from("profiles")
     .select("id, username, avatar_url, banner_url, bio, level, role, is_premium")
     .eq("id", userId).maybeSingle();

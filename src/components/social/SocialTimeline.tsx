@@ -573,12 +573,10 @@ function SocialTimelineEnabled({ viewerProfile = null }: { viewerProfile?: Viewe
 
   useEffect(() => {
     if (!user) return;
-    const interval = window.setInterval(() => void refreshLatest(), 4000);
     const refreshOnFocus = () => void refreshLatest();
     window.addEventListener("focus", refreshOnFocus);
     document.addEventListener("visibilitychange", refreshOnFocus);
     return () => {
-      window.clearInterval(interval);
       window.removeEventListener("focus", refreshOnFocus);
       document.removeEventListener("visibilitychange", refreshOnFocus);
     };
