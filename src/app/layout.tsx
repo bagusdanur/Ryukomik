@@ -14,7 +14,6 @@ import "./globals.css";
 import SWRegister from "./sw-register";
 import AdBanner from "@/components/AdBanner";
 import AntiAdblock from "@/components/AntiAdblock";
-import YukiAiScript from "@/components/YukiAiScript";
 import NotificationPrompt from "@/components/NotificationPrompt";
 
 export const viewport: Viewport = {
@@ -126,7 +125,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AdBanner />
         <Footer />
         <Analytics />
-        <YukiAiScript />
        
       </body>
     </html>

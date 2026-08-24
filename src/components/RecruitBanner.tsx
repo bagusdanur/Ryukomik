@@ -10,15 +10,12 @@ import {
   FaChevronRight,
   FaBan,
   FaGamepad,
-  FaRobot,
   FaBullhorn,
 } from "react-icons/fa";
-import { useSupabaseUser } from "@/hooks/useSupabaseUser";
-import LoginModal from "@/components/LoginModal";
 import Button from "@/components/Button";
 import type { IconType } from "react-icons";
 
-type SlideIconKey = "ban" | "whatsapp" | "star" | "coffee" | "gamepad" | "robot" | "bullhorn";
+type SlideIconKey = "ban" | "whatsapp" | "star" | "coffee" | "gamepad" | "bullhorn";
 
 type Slide = {
   iconKey: SlideIconKey;
@@ -65,21 +62,6 @@ const SLIDES: Slide[] = [
       external: true,
       className: "bg-green-700 hover:bg-green-600 text-white",
       iconKey: "whatsapp",
-    },
-  },
-  {
-    iconKey: "robot",
-    iconBg: "bg-[var(--accent-2)]/20",
-    iconColor: "text-[var(--accent-2)]",
-    title: "Yuki AI",
-    badge: { label: "AI", className: "bg-[var(--accent-2)]/20 text-[var(--accent-2)]" },
-    sub: "Tanya jawab seputar komik dengan asisten AI kami.",
-    btn: {
-      label: "Coba AI",
-      href: "https://yuki.ryukomik.web.id",
-      external: true,
-      className: "bg-[var(--accent)] hover:bg-[var(--accent-2)] text-white",
-      iconKey: "robot",
     },
   },
    {
@@ -146,7 +128,6 @@ const ICONS: Record<SlideIconKey, IconType> = {
   star: FaStar,
   coffee: FaCoffee,
   gamepad: FaGamepad,
-  robot: FaRobot,
   bullhorn: FaBullhorn,
 };
 
@@ -160,8 +141,6 @@ export default function RecruitBanner() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const touchStartX = useRef(0);
   const total = SLIDES.length;
-  const { user } = useSupabaseUser();
-  const [showLogin, setShowLogin] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -272,20 +251,7 @@ export default function RecruitBanner() {
 
           {/* Button */}
           <div className="flex-shrink-0">
-            {slide.iconKey === "robot" && !user ? (
-              <button
-                onClick={() => startTransition(() => setShowLogin(true))}
-                className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold transition ${slide.btn.className}`}
-              >
-                {slide.btn.iconKey && (
-                  <span className="text-sm">
-                    <Icon name={slide.btn.iconKey} />
-                  </span>
-                )}
-                {slide.btn.label}
-              </button>
-            ) : (
-              <Link
+            <Link
                 href={slide.btn.href}
                 {...(slide.btn.external
                   ? { target: "_blank", rel: "noopener noreferrer" }
@@ -299,7 +265,6 @@ export default function RecruitBanner() {
                 )}
                 {slide.btn.label}
               </Link>
-            )}
           </div>
         </div>
 
@@ -317,7 +282,6 @@ export default function RecruitBanner() {
         </div>
       </div>
 
-      {showLogin && <LoginModal close={() => setShowLogin(false)} />}
     </div>
   );
 }

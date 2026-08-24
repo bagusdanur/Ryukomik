@@ -29,7 +29,6 @@ import EventRewardsTab, {
 import ApkSettingsTab, {
   type ApkSettingsForm,
 } from "@/components/dashboard/ApkSettingsTab";
-import YukiAiSettingsTab from "@/components/dashboard/YukiAiSettingsTab";
 import ProjectTab from "@/components/dashboard/ProjectTab";
 import ProjectDbTab from "@/components/dashboard/ProjectDbTab";
 import { FiBookOpen } from "react-icons/fi";
@@ -48,8 +47,7 @@ type DashboardPage =
   | "apk"
   | "codes"
   | "project"
-  | "project-db"
-  | "yuki-ai";
+  | "project-db";
 
 type AdminUser = User & {
   role?: string | null;
@@ -162,7 +160,7 @@ export default function AdminDashboard() {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [page, setPage] = useState<DashboardPage>(() => {
     const urlPage = searchParams.get("page");
-    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "project-db", "yuki-ai"];
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "project-db"];
     return validPages.includes(urlPage as DashboardPage) ? (urlPage as DashboardPage) : "dashboard";
   });
   const [premiumCodes, setPremiumCodes] = useState<PremiumCode[]>([]);
@@ -247,14 +245,6 @@ export default function AdminDashboard() {
   const [apkSettingsSaving, setApkSettingsSaving] = useState(false);
   const [apkSettingsNotice, setApkSettingsNotice] = useState("");
 
-  const [yukiAiSettings, setYukiAiSettings] = useState({
-    enabled: true,
-    updated_at: null as string | null,
-  });
-  const [yukiAiLoading, setYukiAiLoading] = useState(false);
-  const [yukiAiSaving, setYukiAiSaving] = useState(false);
-  const [yukiAiNotice, setYukiAiNotice] = useState("");
-
   const getAdminToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
     return data.session?.access_token || "";
@@ -309,7 +299,7 @@ export default function AdminDashboard() {
 
   // Sync page state with URL on back/forward navigation
   useEffect(() => {
-    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "project-db", "yuki-ai"];
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "project-db"];
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const urlPage = params.get("page");
@@ -324,7 +314,7 @@ export default function AdminDashboard() {
   // and navigation performed by Next.js rather than the browser history.
   useEffect(() => {
     const urlPage = searchParams.get("page");
-    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "project-db", "yuki-ai"];
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "project-db"];
     const resolved = validPages.includes(urlPage as DashboardPage) ? (urlPage as DashboardPage) : "dashboard";
     setPage((current) => current === resolved ? current : resolved);
   }, [searchParams]);
@@ -663,83 +653,6 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (authed && page === "apk") void fetchApkSettings();
   }, [authed, page, fetchApkSettings]);
-
-  const fetchYukiAiSettings = useCallback(async () => {
-    setYukiAiLoading(true);
-    setYukiAiNotice("");
-    try {
-      const token = await getAdminToken();
-      if (!token) {
-        setYukiAiNotice("Login admin diperlukan.");
-        return;
-      }
-
-      const res = await fetch("/api/admin/yuki-ai-settings", {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
-      const json = await res.json();
-
-      if (!res.ok) {
-        setYukiAiNotice(json?.error || "Gagal mengambil setting Yuki AI.");
-        return;
-      }
-
-      setYukiAiSettings({
-        enabled: json?.enabled !== false,
-        updated_at: json?.updated_at || null,
-      });
-    } catch (error) {
-      setYukiAiNotice(
-        error instanceof Error ? error.message : "Gagal mengambil setting Yuki AI.",
-      );
-    } finally {
-      setYukiAiLoading(false);
-    }
-  }, [getAdminToken]);
-
-  const saveYukiAiSettings = useCallback(async (enabled: boolean) => {
-    setYukiAiSaving(true);
-    setYukiAiNotice("");
-    try {
-      const token = await getAdminToken();
-      if (!token) {
-        setYukiAiNotice("Login admin diperlukan.");
-        return;
-      }
-
-      const res = await fetch("/api/admin/yuki-ai-settings", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ enabled }),
-      });
-      const json = await res.json();
-
-      if (!res.ok) {
-        setYukiAiNotice(json?.error || "Gagal menyimpan setting Yuki AI.");
-        return;
-      }
-
-      setYukiAiSettings({
-        enabled: json?.enabled !== false,
-        updated_at: json?.updated_at || null,
-      });
-      setYukiAiNotice(json?.message || "Setting Yuki AI berhasil disimpan.");
-    } catch (error) {
-      setYukiAiNotice(
-        error instanceof Error ? error.message : "Gagal menyimpan setting Yuki AI.",
-      );
-    } finally {
-      setYukiAiSaving(false);
-    }
-  }, [getAdminToken]);
-
-  useEffect(() => {
-    if (authed && page === "yuki-ai") void fetchYukiAiSettings();
-  }, [authed, page, fetchYukiAiSettings]);
 
   useEffect(() => {
     if (authed && page === "events") void fetchEventWinners();
@@ -1141,8 +1054,7 @@ export default function AdminDashboard() {
       nextPage === "apk" ||
       nextPage === "codes" ||
       nextPage === "project" ||
-      nextPage === "project-db" ||
-      nextPage === "yuki-ai"
+      nextPage === "project-db"
     ) {
       setPage(nextPage);
       const params = new URLSearchParams(searchParams.toString());
@@ -1352,16 +1264,6 @@ export default function AdminDashboard() {
             fetchSettings={fetchApkSettings}
             saveSettings={saveApkSettings}
             setSettings={setApkSettings}
-          />
-        )}
-        {page === "yuki-ai" && (
-          <YukiAiSettingsTab
-            loading={yukiAiLoading}
-            saving={yukiAiSaving}
-            notice={yukiAiNotice}
-            settings={yukiAiSettings}
-            fetchSettings={fetchYukiAiSettings}
-            saveSettings={saveYukiAiSettings}
           />
         )}
         {page === "comments" && (

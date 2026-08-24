@@ -59,10 +59,28 @@ export async function fetchCachedNotifications(
     try {
       const [eventNotif, result] = await Promise.all([
         ensureTitleRushWeeklyNotification(userId).catch(() => null),
-        socialFetch<{ items: NotificationItem[]; nextCursor?: string | null }>("/api/social/notifications"),
+        (() => {
+          const newestStored = cached?.data.find((item) => item.type !== "title_rush_event");
+          const path = newestStored?.created_at
+            ? `/api/social/notifications?after=${encodeURIComponent(newestStored.created_at)}`
+            : "/api/social/notifications";
+          return socialFetch<{
+            items: NotificationItem[];
+            nextCursor?: string | null;
+            incremental?: boolean;
+          }>(path);
+        })(),
       ]);
-      const notifications = eventNotif ? [eventNotif, ...result.items] : result.items;
-      publish(userId, notifications, result.nextCursor || null);
+      const candidates = result.incremental && cached
+        ? [...(eventNotif ? [eventNotif] : []), ...result.items, ...cached.data]
+        : [...(eventNotif ? [eventNotif] : []), ...result.items];
+      const notifications = [...new Map(candidates.map((item) => [item.id, item])).values()]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 40);
+      const nextCursor = result.incremental
+        ? notificationCursors.get(userId) || null
+        : result.nextCursor || null;
+      publish(userId, notifications, nextCursor);
       return notifications;
     } catch (e) {
       console.error("fetchCachedNotifications error:", e);

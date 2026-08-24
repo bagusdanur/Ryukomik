@@ -5,7 +5,7 @@ import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { decodeSocialCursor, encodeSocialCursor } from "@/lib/social/cursor";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
-const COLUMNS = "id, user_id, actor_id, actor_name, type, slug, chapter, target_id, is_read, created_at";
+const COLUMNS = "id, actor_name, type, slug, target_id, is_read, created_at";
 const SOCIAL_TYPES = ["new_follower", "social_like", "social_reply", "social_mention", "social_collection"];
 const SOCIAL_TYPES_FILTER = `(${SOCIAL_TYPES.join(",")})`;
 
@@ -30,13 +30,19 @@ export async function GET(request: Request) {
     }
 
     await ensureSocialProfile(userId);
-    const cursor = decodeSocialCursor(new URL(request.url).searchParams.get("cursor"));
+    const searchParams = new URL(request.url).searchParams;
+    const cursor = decodeSocialCursor(searchParams.get("cursor"));
+    const requestedAfter = searchParams.get("after");
+    const after = requestedAfter && Number.isFinite(Date.parse(requestedAfter))
+      ? new Date(requestedAfter).toISOString()
+      : null;
     const [socialResult, legacyResult] = await Promise.all([
       socialQuery<NotificationRow>(
-        `select ${COLUMNS} from social_notifications where user_id=$1
+         `select ${COLUMNS} from social_notifications where user_id=$1
          and ($2::timestamptz is null or (created_at,id) < ($2::timestamptz,$3::uuid))
+         and ($4::timestamptz is null or created_at > $4::timestamptz)
          order by created_at desc,id desc limit 21`,
-        [userId, cursor?.createdAt || null, cursor?.id || null],
+        [userId, cursor?.createdAt || null, cursor?.id || null, after],
       ),
       (() => {
         let query = supabaseAdmin
@@ -47,6 +53,7 @@ export async function GET(request: Request) {
           .order("created_at", { ascending: false })
           .limit(21);
         if (cursor?.createdAt) query = query.lt("created_at", cursor.createdAt);
+        if (after) query = query.gt("created_at", after);
         return query;
       })(),
     ]);
@@ -67,6 +74,7 @@ export async function GET(request: Request) {
         items,
         unreadCount: items.filter((item) => !item.is_read).length,
         nextCursor: merged.length > 20 && last ? encodeSocialCursor(last.created_at, last.id) : null,
+        incremental: Boolean(after),
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );
