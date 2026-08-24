@@ -30,6 +30,10 @@ interface TerbaruClientProps {
 
 interface SourceResponse {
   data?: unknown;
+  hasMore?: boolean;
+  meta?: {
+    hasNextPage?: boolean;
+  };
 }
 
 
@@ -534,6 +538,9 @@ export default function TerbaruPage({
       let url = "";
       const params = new URLSearchParams();
       params.append("page", String(p));
+      const filterActive = Boolean(
+        tipe || genre || genre2 || status || (orderby && orderby !== "modified")
+      );
       if (sourceHasFilter(currentSource)) {
         if (orderby) params.append("orderby", orderby);
         if (tipe) params.append("tipe", tipe);
@@ -547,16 +554,16 @@ export default function TerbaruPage({
           url = buildSourceUrl("komiku", "pustaka-filter", params);
           break;
         case "komikid":
-          url = buildSourceUrl("komikid", "pustaka-filter", params);
+          url = buildSourceUrl("komikid", filterActive ? "pustaka-filter" : "pustaka", params);
           break;
         case "josei":
-          url = buildSourceUrl("josei", "pustaka-filter", params);
+          url = buildSourceUrl("josei", filterActive ? "pustaka-filter" : "pustaka", params);
           break;
         case "kiryuu":
           url = buildSourceUrl("kiryuu", "pustaka-filter", params);
           break;
         case "luvyaa":
-          url = buildSourceUrl("luvyaa", "pustaka-filter", params);
+          url = buildSourceUrl("luvyaa", filterActive ? "pustaka-filter" : "pustaka", params);
           break;
         case "sekte":
           url = buildSourceUrl("sekte", "pustaka-filter", params);
@@ -593,7 +600,7 @@ export default function TerbaruPage({
           const newData = nextData.filter((item) => !existingSlugs.has(item.slug));
           return [...prev, ...newData];
         });
-        setHasMore(true);
+        setHasMore(json.hasMore ?? json.meta?.hasNextPage ?? nextData.length > 0);
       } else {
         setHasMore(false);
       }

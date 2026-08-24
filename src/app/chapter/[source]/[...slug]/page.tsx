@@ -20,6 +20,31 @@ function parseSlug(slug: string | string[]) {
   return Array.isArray(slug) ? slug.join("/") : slug;
 }
 
+async function resolveLegacyKiryuuSlug(slugStr: string): Promise<string> {
+  if (slugStr.includes("/")) return slugStr;
+  const match = slugStr.match(/^(.*)-chapter-([\d.]+)$/i);
+  if (!match) return slugStr;
+
+  const [, mangaSlug, chapterNumber] = match;
+  try {
+    const response = await fetch(
+      `https://api.ryukomik.web.id/kiryuu/detail/${encodeURIComponent(mangaSlug)}`,
+      { next: { revalidate: 3600 } },
+    );
+    if (!response.ok) return slugStr;
+    const json = await response.json() as {
+      data?: { chapters?: Array<{ title?: string; slug?: string }> };
+    };
+    const wanted = `chapter ${chapterNumber}`.toLowerCase();
+    const chapter = json.data?.chapters?.find(
+      (item) => item.title?.trim().toLowerCase() === wanted,
+    );
+    return chapter?.slug || slugStr;
+  } catch {
+    return slugStr;
+  }
+}
+
 // React cache() memastikan generateMetadata + ChapterPage SHARE SATU fetch
 // per request — tidak double hit ke DB meskipun force-dynamic aktif
 const getChapter = cache(async (source: string, slugStr: string): Promise<ReaderChapter | null> => {
@@ -54,13 +79,16 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
   }
 
   const apiSource = source;
+  const apiSlug = source === "kiryuu"
+    ? await resolveLegacyKiryuuSlug(slugStr)
+    : slugStr;
   try {
     const res = await fetch(
-      `https://api.ryukomik.web.id/${apiSource}/chapter/${slugStr}`,
+      `https://api.ryukomik.web.id/${apiSource}/chapter/${apiSlug}`,
       {
         next: {
           revalidate: CHAPTER_JSON_TTL,
-          tags: [`chapter:${source}:${slugStr}`],
+          tags: [`chapter:${source}:${apiSlug}`],
         },
       }
     );
