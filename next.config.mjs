@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  skipTrailingSlashRedirect: true,
   turbopack: {},
   experimental: {
     optimizePackageImports: ['react-icons', 'date-fns', 'swiper'],

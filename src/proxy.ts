@@ -14,11 +14,6 @@ export function proxy(request: NextRequest) {
     changed = true;
   }
 
-  if (url.pathname.length > 1 && url.pathname.endsWith("/")) {
-    url.pathname = url.pathname.replace(/\/+$/, "");
-    changed = true;
-  }
-
   const segments = url.pathname.split("/").filter(Boolean);
   if ((segments[0] === "komik" || segments[0] === "chapter") && segments.length >= 3) {
     const source = normalizeSource(segments[1]);

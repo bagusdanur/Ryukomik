@@ -10,12 +10,17 @@ type ApiResponse = { data?: SitemapItem[]; hasMore?: boolean; meta?: { hasMore?:
 async function fetchSource(source: string): Promise<MetadataRoute.Sitemap> {
   const routes: MetadataRoute.Sitemap = [];
   const seen = new Set<string>();
-  for (let page = 1; page <= 50; page += 1) {
+  // Keep the public sitemap responsive. Deeper shards will be supplied from
+  // backend snapshots; live scraper pagination must never hold this route open.
+  for (let page = 1; page <= 3; page += 1) {
     try {
       const endpoint = source === "project"
         ? `https://ryukomik.my.id/api/project/pustaka?page=${page}`
         : `https://api.ryukomik.web.id/${source}/pustaka-filter?page=${page}&orderby=modified`;
-      const response = await fetch(endpoint, { next: { revalidate: 3600 } });
+      const response = await fetch(endpoint, {
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(4_000),
+      });
       if (!response.ok) break;
       const json = await response.json() as ApiResponse;
       const items = Array.isArray(json.data) ? json.data : [];
