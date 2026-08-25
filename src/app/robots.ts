@@ -6,6 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
+        disallow: ["/api/", "/dashboard/", "/files/", "/bookmark/", "/history/", "/setting/"],
       },
     ],
     sitemap: "https://ryukomik.my.id/sitemap.xml",

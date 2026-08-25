@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  skipTrailingSlashRedirect: true,
   turbopack: {},
   experimental: {
     optimizePackageImports: ['react-icons', 'date-fns', 'swiper'],
@@ -123,6 +124,24 @@ const nextConfig = {
             value: "0",
           },
         ],
+      })),
+      ...[
+        "/search",
+        "/bookmark/:path*",
+        "/history/:path*",
+        "/files/:path*",
+        "/setting/:path*",
+        "/settings/:path*",
+        "/login/:path*",
+        "/register/:path*",
+        "/auth/:path*",
+        "/dashboard/:path*",
+        "/social-settings/:path*",
+        "/social-controls/:path*",
+        "/social-moderation/:path*",
+      ].map((source) => ({
+        source,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }],
       })),
       // ✅ SW tidak di-cache lama
       {

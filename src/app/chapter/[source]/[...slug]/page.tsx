@@ -1,8 +1,15 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import Link from "next/link";
 import { cache } from "react";
 import ChapterClient from "./ChapterClient";
 import type { Metadata } from "next";
 import type { ReaderChapter } from "@/types/content";
+import {
+  buildChapterUrl,
+  buildComicUrl,
+  normalizeChapterSlug,
+  normalizeSource,
+} from "@/lib/canonicalUrl";
 
 const CHAPTER_JSON_TTL = 60 * 60 * 24 * 7;
 
@@ -130,22 +137,27 @@ function buildTitle(data: ReaderChapter | null, slugStr: string) {
 
 export async function generateMetadata({ params }: ChapterPageProps): Promise<Metadata> {
   const { source, slug } = await params;
-  const slugStr = parseSlug(slug);
-  const data = await getChapter(source, slugStr);
+  const canonicalSource = normalizeSource(source);
+  if (!canonicalSource) return { robots: { index: false, follow: false } };
+  const normalizedSlug = normalizeChapterSlug(canonicalSource, parseSlug(slug));
+  const slugStr = canonicalSource === "kiryuu"
+    ? await resolveLegacyKiryuuSlug(normalizedSlug)
+    : normalizedSlug;
+  const data = await getChapter(canonicalSource, slugStr);
 
   const title = buildTitle(data, slugStr);
-  const description = `${title} gratis dengan kualitas HD. Baca chapter terbaru lengkap bahasa Indonesia hanya di Ryukomik.`;
-  const url = `https://ryukomik.my.id/chapter/${source}/${slugStr}`;
+  const description = `Baca ${title} bahasa Indonesia dengan navigasi chapter lengkap dan kualitas gambar yang nyaman dibaca di Ryukomik.`;
+  const url = buildChapterUrl(canonicalSource, slugStr);
   const images = data?.images?.[0] ? [data.images[0]] : [];
 
   return {
-    title: `${title} - Ryukomik`,
+    title: { absolute: `${title} | Ryukomik` },
     description,
     alternates: {
       canonical: url,
     },
     openGraph: {
-      title: `${title} - Ryukomik`,
+      title: `${title} | Ryukomik`,
       description,
       url,
       images,
@@ -153,7 +165,7 @@ export async function generateMetadata({ params }: ChapterPageProps): Promise<Me
     },
     twitter: {
       card: "summary_large_image",
-      title: `${title} - Ryukomik`,
+      title: `${title} | Ryukomik`,
       description,
       images,
     },
@@ -162,20 +174,39 @@ export async function generateMetadata({ params }: ChapterPageProps): Promise<Me
 
 export default async function ChapterPage({ params }: ChapterPageProps) {
   const { source, slug } = await params;
-  const slugStr = parseSlug(slug);
-  const data = await getChapter(source, slugStr);
+  const canonicalSource = normalizeSource(source);
+  if (!canonicalSource) notFound();
+  const incomingSlug = parseSlug(slug);
+  const normalizedSlug = normalizeChapterSlug(canonicalSource, incomingSlug);
+  const slugStr = canonicalSource === "kiryuu"
+    ? await resolveLegacyKiryuuSlug(normalizedSlug)
+    : normalizedSlug;
+
+  if (canonicalSource !== source || slugStr !== incomingSlug) {
+    permanentRedirect(`/chapter/${canonicalSource}/${slugStr}`);
+  }
+
+  const data = await getChapter(canonicalSource, slugStr);
 
   if (!data) notFound();
 
   const title = buildTitle(data, slugStr);
+  const canonicalUrl = buildChapterUrl(canonicalSource, slugStr);
+  const mangaSlug = String(data.mangaId || slugStr.split("/")[0]);
+  const comicUrl = buildComicUrl(canonicalSource, mangaSlug);
   
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": title,
+    "@type": "ComicStory",
+    "name": title,
     "image": data.images?.[0] || "",
     "description": `${title} gratis dengan kualitas HD.`,
-    "url": `https://ryukomik.my.id/chapter/${source}/${slugStr}`
+    "url": canonicalUrl,
+    "isPartOf": {
+      "@type": "ComicSeries",
+      "name": mangaSlug.replace(/-/g, " "),
+      "url": comicUrl
+    }
   };
 
   return (
@@ -184,7 +215,28 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ChapterClient data={data} error={undefined} source={source} slugStr={slugStr} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+              { "@type": "ListItem", "position": 1, "name": "Beranda", "item": "https://ryukomik.my.id" },
+              { "@type": "ListItem", "position": 2, "name": mangaSlug.replace(/-/g, " "), "item": comicUrl },
+              { "@type": "ListItem", "position": 3, "name": title, "item": canonicalUrl }
+            ]
+          }),
+        }}
+      />
+      <nav aria-label="Breadcrumb" className="sr-only">
+        <Link href="/">Beranda</Link>
+        <span aria-hidden="true"> / </span>
+        <Link href={comicUrl.replace("https://ryukomik.my.id", "")}>{mangaSlug.replace(/-/g, " ")}</Link>
+        <span aria-hidden="true"> / </span>
+        <span>{title}</span>
+      </nav>
+      <ChapterClient data={data} error={undefined} source={canonicalSource} slugStr={slugStr} />
     </>
   );
 }

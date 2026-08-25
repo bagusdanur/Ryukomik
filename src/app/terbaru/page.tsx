@@ -32,7 +32,7 @@ async function fetchJson(path: string, revalidate: number): Promise<Dict | null>
 }
 
 export const metadata: Metadata = {
-  title: "Komik Terbaru Bahasa Indonesia - Ryukomik",
+  title: { absolute: "Update Manga, Manhwa & Manhua Bahasa Indonesia | Ryukomik" },
   
   description:
     "Baca update manga, manhwa, dan manhua terbaru bahasa Indonesia gratis dan lengkap hanya di Ryukomik.",

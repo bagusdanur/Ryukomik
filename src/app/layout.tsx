@@ -24,22 +24,22 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://ryukomik.my.id"),
   title: {
-    default: "Ryukomik - Baca Manga, Manhwa, Manhua Bahasa Indonesia Update Terbaru",
-    template: "%s | Baca Manga, Manhwa, dan Manhua Gratis Online",
+    default: "Baca Manga, Manhwa & Manhua Bahasa Indonesia Terbaru | Ryukomik",
+    template: "%s | Ryukomik",
   },
   icons: {
     icon: "/icon.png?v=20260523",
     shortcut: "/icon.png?v=20260523",
     apple: "/icon.png?v=20260523",
   },
-  description: "Baca manga, manhwa, dan manhua bahasa Indonesia gratis. Update chapter terbaru setiap hari dengan kualitas gambar HD hanya di Ryukomik.",
+  description: "Baca manga, manhwa, dan manhua bahasa Indonesia dengan daftar chapter terbaru, sinopsis, genre, dan informasi komik lengkap di Ryukomik.",
   manifest: "/manifest.json",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "Ryukomik - Baca Manga, Manhwa, Manhua Bahasa Indonesia Update Terbaru",
-    description: "Baca manga, manhwa, dan manhua bahasa Indonesia gratis. Update chapter terbaru setiap hari dengan kualitas gambar HD hanya di Ryukomik.",
+    title: "Baca Manga, Manhwa & Manhua Bahasa Indonesia Terbaru | Ryukomik",
+    description: "Baca manga, manhwa, dan manhua bahasa Indonesia dengan daftar chapter terbaru dan informasi komik lengkap di Ryukomik.",
     url: "https://ryukomik.my.id",
     siteName: "Ryukomik",
     images: [

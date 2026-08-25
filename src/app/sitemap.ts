@@ -1,70 +1,53 @@
 import type { MetadataRoute } from "next";
+import { buildCanonicalUrl, buildComicUrl, PUBLIC_COMIC_SOURCES } from "@/lib/canonicalUrl";
 
-type KomikItem = {
-  source: string;
-  slug: string;
-  title: string;
-  chapter_awal?: string;
-  chapter_terbaru?: string;
-};
+export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
-type ApiResponse = {
-  data?: KomikItem[];
-};
+type SitemapItem = { slug?: string; source?: string; updated_at?: string; modified?: string };
+type ApiResponse = { data?: SitemapItem[]; hasMore?: boolean; meta?: { hasMore?: boolean } };
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://ryukomik.my.id";
-  const komikRoutes: MetadataRoute.Sitemap = [];
-
-  // Ambil semua komik dari API (loop semua page)
-  let page = 1;
-  let hasMore = true;
-
-  while (hasMore && page <= 50) {
+async function fetchSource(source: string): Promise<MetadataRoute.Sitemap> {
+  const routes: MetadataRoute.Sitemap = [];
+  const seen = new Set<string>();
+  for (let page = 1; page <= 50; page += 1) {
     try {
-      const res = await fetch(
-        `https://api.ryukomik.web.id/komiku/pustaka-filter?page=${page}&orderby=modified`,
-        { next: { revalidate: 3600 } }
-      );
-      const json: ApiResponse = await res.json();
-      const items = json.data || [];
-
-      if (items.length === 0) {
-        hasMore = false;
-        break;
-      }
-
+      const endpoint = source === "project"
+        ? `https://ryukomik.my.id/api/project/pustaka?page=${page}`
+        : `https://api.ryukomik.web.id/${source}/pustaka-filter?page=${page}&orderby=modified`;
+      const response = await fetch(endpoint, { next: { revalidate: 3600 } });
+      if (!response.ok) break;
+      const json = await response.json() as ApiResponse;
+      const items = Array.isArray(json.data) ? json.data : [];
+      if (!items.length) break;
       for (const item of items) {
         if (!item.slug) continue;
-
-        const source = item.source || "komiku";
-
-        // Halaman detail komik
-        komikRoutes.push({
-          url: `${baseUrl}/komik/${source}/${item.slug}`,
-          lastModified: new Date(),
+        const url = buildComicUrl(source, item.slug);
+        if (!url || seen.has(url)) continue;
+        seen.add(url);
+        const rawDate = item.updated_at || item.modified;
+        const parsedDate = rawDate ? new Date(rawDate) : null;
+        routes.push({
+          url,
+          ...(parsedDate && !Number.isNaN(parsedDate.getTime()) ? { lastModified: parsedDate } : {}),
           changeFrequency: "weekly",
           priority: 0.8,
         });
-
-      
       }
-
-      page++;
+      if (json.hasMore === false || json.meta?.hasMore === false) break;
     } catch {
-      hasMore = false;
+      break;
     }
   }
+  return routes;
+}
 
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const sourceRoutes = await Promise.all(PUBLIC_COMIC_SOURCES.map(fetchSource));
   return [
-    // Halaman statis
-    { url: baseUrl, lastModified: new Date(), changeFrequency: "daily", priority: 1.0 },
-    { url: `${baseUrl}/list-komik`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
-    { url: `${baseUrl}/terbaru`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
-    { url: `${baseUrl}/genre`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
-
-    // Semua komik
-    ...komikRoutes,
-
+    { url: buildCanonicalUrl("/"), changeFrequency: "daily", priority: 1 },
+    { url: buildCanonicalUrl("/list-komik"), changeFrequency: "daily", priority: 0.8 },
+    { url: buildCanonicalUrl("/terbaru"), changeFrequency: "daily", priority: 0.8 },
+    ...sourceRoutes.flat(),
   ];
 }

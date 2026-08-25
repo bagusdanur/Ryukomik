@@ -1,8 +1,14 @@
-import { redirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import Link from "next/link";
 import DetailClient from "./DetailClient";
 import type { Metadata } from "next";
 import type { Dict } from "@/types/common";
 import type { Chapter, Series } from "@/types/content";
+import {
+  buildComicUrl,
+  normalizeComicSlug,
+  normalizeSource,
+} from "@/lib/canonicalUrl";
 
 export const revalidate = 3600;
 export const dynamic = "force-static";
@@ -22,12 +28,6 @@ interface ComicDetail extends Series {
   Konsep?: string;
   chapters: Chapter[];
 }
-
-const normalizeSlug = (slug = "", source = "") => {
-  const prefix = `${source}-`;
-
-  return slug.startsWith(prefix) ? slug.slice(prefix.length) : slug;
-};
 
 const normalizeDetail = (json: Dict): ComicDetail | null => {
   const detail = (json.data ?? (json.success ? json : null)) as Dict | null;
@@ -105,26 +105,29 @@ const getDetail = async (source: string, slug: string): Promise<ComicDetail | nu
 
 export async function generateMetadata({ params }: DetailPageProps): Promise<Metadata> {
   const { slug, source } = await params;
-  const cleanSlug = normalizeSlug(slug, source);
-  const data = await getDetail(source, cleanSlug);
+  const canonicalSource = normalizeSource(source);
+  if (!canonicalSource) return { robots: { index: false, follow: false } };
+  const cleanSlug = normalizeComicSlug(canonicalSource, slug);
+  const data = await getDetail(canonicalSource, cleanSlug);
 
   const title = data?.title ?? cleanSlug.replace(/-/g, " ");
   const type = data?.type ?? "Komik";
   const status = data?.status ?? "";
   const genres = data?.genres?.join(", ") ?? "";
-  const description = `Baca ${title} bahasa Indonesia gratis. ${type} ${status} genre ${genres}. Update chapter terbaru hanya di Ryukomik.`;
-  const url = `https://ryukomik.my.id/komik/${source}/${cleanSlug}`;
+  const details = [type, status, genres ? `genre ${genres}` : ""].filter(Boolean).join(", ");
+  const description = `Baca ${title} bahasa Indonesia. Temukan sinopsis, daftar chapter terbaru${details ? `, dan informasi ${details}` : ""} di Ryukomik.`;
+  const url = buildComicUrl(canonicalSource, cleanSlug);
   const images = data?.thumbnail ? [data.thumbnail] : [];
 
   return {
-    title: `Baca ${title} Bahasa Indonesia - Ryukomik`,
+    title: { absolute: `${title} Bahasa Indonesia – Chapter Terbaru | Ryukomik` },
     description,
     keywords: `${title}, baca ${title}, ${title} sub indo, ${title} bahasa indonesia, baca komik online, ${genres}`,
     alternates: {
       canonical: url,
     },
     openGraph: {
-      title: `Baca ${title} Bahasa Indonesia`,
+      title: `${title} Bahasa Indonesia – Chapter Terbaru | Ryukomik`,
       description,
       url,
       images,
@@ -132,7 +135,7 @@ export async function generateMetadata({ params }: DetailPageProps): Promise<Met
     },
     twitter: {
       card: "summary_large_image",
-      title: `Baca ${title} Bahasa Indonesia`,
+      title: `${title} Bahasa Indonesia – Chapter Terbaru | Ryukomik`,
       description,
       images,
     },
@@ -141,13 +144,17 @@ export async function generateMetadata({ params }: DetailPageProps): Promise<Met
 
 export default async function DetailPage({ params }: DetailPageProps) {
   const { slug, source } = await params;
-  const cleanSlug = normalizeSlug(slug, source);
+  const canonicalSource = normalizeSource(source);
+  if (!canonicalSource) notFound();
+  const cleanSlug = normalizeComicSlug(canonicalSource, slug);
 
-  if (cleanSlug !== slug) {
-    redirect(`/komik/${source}/${cleanSlug}`);
+  if (canonicalSource !== source || cleanSlug !== slug) {
+    permanentRedirect(`/komik/${canonicalSource}/${cleanSlug}`);
   }
 
-  const data = await getDetail(source, cleanSlug);
+  const data = await getDetail(canonicalSource, cleanSlug);
+  if (!data) notFound();
+  const canonicalUrl = buildComicUrl(canonicalSource, cleanSlug);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -160,7 +167,7 @@ export default async function DetailPage({ params }: DetailPageProps) {
       "name": data?.author || "Unknown"
     },
     "genre": data?.genres || [],
-    "url": `https://ryukomik.my.id/komik/${source}/${cleanSlug}`
+    "url": canonicalUrl
   };
 
   return (
@@ -186,13 +193,18 @@ export default async function DetailPage({ params }: DetailPageProps) {
                 "@type": "ListItem",
                 "position": 2,
                 "name": data?.title || "Komik",
-                "item": `https://ryukomik.my.id/komik/${source}/${cleanSlug}`
+                "item": canonicalUrl
               }
             ]
           })
         }}
       />
-      <DetailClient data={data} slug={cleanSlug} source={source} />
+      <nav aria-label="Breadcrumb" className="sr-only">
+        <Link href="/">Beranda</Link>
+        <span aria-hidden="true"> / </span>
+        <span>{data.title}</span>
+      </nav>
+      <DetailClient data={data} slug={cleanSlug} source={canonicalSource} />
     </>
   );
 }
