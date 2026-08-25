@@ -15,6 +15,7 @@ import SWRegister from "./sw-register";
 import AdBanner from "@/components/AdBanner";
 import AntiAdblock from "@/components/AntiAdblock";
 import NotificationPrompt from "@/components/NotificationPrompt";
+import YukiChatEmbed from "@/components/YukiChatEmbed";
 
 export const viewport: Viewport = {
   themeColor: "#090a12",
@@ -120,6 +121,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {children}
         <InstallPWA />
         <NotificationPrompt />
+        <YukiChatEmbed />
         
         <AntiAdblock />
         <AdBanner />
