@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { createSocialNotification } from "@/lib/social/notifications";
 
 type CommentRow = {
   id: string;
@@ -186,6 +187,16 @@ export async function POST(req: NextRequest) {
           .maybeSingle();
 
         if (parentComment?.user_id && parentComment.user_id !== user_id) {
+          await createSocialNotification({
+            userId: parentComment.user_id,
+            actorId: user_id,
+            actorName: profile?.username || author_name || "Member",
+            type: "reply",
+            slug: slug || null,
+            chapter: chapter || null,
+            targetId: parent_id,
+          });
+
           // Dapatkan subscription pemilik komentar asli
           const { data: subs } = await supabaseAdmin
             .from("push_subscriptions")

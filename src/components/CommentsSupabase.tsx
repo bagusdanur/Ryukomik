@@ -2,7 +2,6 @@
 import { useEffect, useState, useRef, useCallback, useMemo, memo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import LoginModal from "@/components/LoginModal";
@@ -712,23 +711,6 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
       });
 
       if (res.ok) {
-        // Notification logic
-        if (isReply && user) {
-          const parentComment = commentMap.get(parentId);
-          if (parentComment?.user_id && parentComment.user_id !== user.id) {
-            await supabase.from("notifications").insert([{
-              user_id: parentComment.user_id,
-              actor_id: user.id,
-              actor_name: payload.author_name,
-              target_id: parentId,
-              type: "reply",
-              slug: compoundSlug,
-              chapter: String(chapter || ""),
-              is_read: false,
-            }]);
-          }
-        }
-
         setIsSpoiler(false);
         if (isReply) {
           setReplyContent("");

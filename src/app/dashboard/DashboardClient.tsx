@@ -867,15 +867,18 @@ export default function AdminDashboard() {
           .eq("id", req.user_id);
         clearCachedProfile(req.user_id);
 
-        // 🔥 TAMBAH INI — kirim notif ke user
-        await supabase.from("notifications").insert({
-          user_id: req.user_id,
-          actor_id: req.user_id,
-          actor_name: "Admin",
+        const token = await getAdminToken();
+        if (!token) throw new Error("Sesi admin tidak tersedia.");
+        const notificationResponse = await fetch("/api/admin/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            userId: req.user_id,
+            actorName: "Admin",
           type: "premium_activated",
-          slug: null,
-          target_id: null,
+          }),
         });
+        if (!notificationResponse.ok) throw new Error("Gagal membuat notifikasi premium.");
       }
     }
 

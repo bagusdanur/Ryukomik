@@ -89,7 +89,7 @@ create table if not exists social_notifications (
   user_id uuid not null references social_profiles(user_id) on delete cascade,
   actor_id uuid references social_profiles(user_id) on delete set null,
   actor_name text not null default 'User',
-  type text not null check (type in ('new_follower', 'social_like', 'social_reply', 'social_mention', 'social_collection')),
+  type text not null check (type in ('new_follower', 'social_like', 'social_reply', 'social_mention', 'social_collection', 'reply', 'premium_activated', 'premium_reward')),
   slug text,
   chapter text,
   target_id text,

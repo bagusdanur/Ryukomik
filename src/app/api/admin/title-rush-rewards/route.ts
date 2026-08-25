@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyAdminRequest } from "@/lib/adminApi";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { createSocialNotification } from "@/lib/social/notifications";
 
 type WinnerRow = {
   id?: string;
@@ -250,13 +251,12 @@ export async function POST(request: Request) {
         .eq("user_id", winner.user_id);
 
       if (!winner.awarded_at) {
-        await supabaseAdmin.from("notifications").insert({
-          user_id: winner.user_id,
-          actor_id: winner.user_id,
-          actor_name: `Juara ${winner.rank} - Premium ${winner.prize_days} Hari`,
+        await createSocialNotification({
+          userId: winner.user_id,
+          actorName: `Juara ${winner.rank} - Premium ${winner.prize_days} Hari`,
           type: "premium_reward",
           slug: weekStart,
-          target_id: String(winner.rank),
+          targetId: String(winner.rank),
         });
       }
 
