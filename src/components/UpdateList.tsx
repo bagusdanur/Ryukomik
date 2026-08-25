@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import SeriesCard from "@/components/SeriesCard";
 import { setPendingSource } from "@/store/pendingSource";
@@ -28,6 +29,23 @@ const typeBadge = (type?: string) => {
 
 export default function UpdateList({ list = [] }: { list?: UpdateListItem[] }) {
   const router = useRouter();
+  const [retryItems, setRetryItems] = useState<UpdateListItem[]>([]);
+
+  useEffect(() => {
+    if (list.length) return;
+
+    let cancelled = false;
+    void fetch("/api/source/komiku/terbaru", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
+      .then((payload: { data?: UpdateListItem[] }) => {
+        if (!cancelled && Array.isArray(payload.data) && payload.data.length) setRetryItems(payload.data);
+      })
+      .catch((error) => console.error("Latest update retry failed:", error));
+
+    return () => { cancelled = true; };
+  }, [list]);
+
+  const items = list.length ? list : retryItems;
 
   return (
     <section className="mt-6 px-3">
@@ -50,14 +68,14 @@ export default function UpdateList({ list = [] }: { list?: UpdateListItem[] }) {
         </button>
       </div>
 
-      {list.length === 0 ? (
+      {items.length === 0 ? (
         <div className="rk-state rounded-2xl px-4 py-8 text-center text-sm">
           Belum ada update.
         </div>
       ) : (
         <div className="overflow-x-auto pb-3 no-scrollbar">
           <div className="grid auto-cols-[118px] grid-flow-col gap-3 sm:auto-cols-[138px] md:auto-cols-[150px]">
-            {list.map((item, idx) => {
+            {items.map((item, idx) => {
               const slug = getSlugFromLink(item.link);
 
               return (

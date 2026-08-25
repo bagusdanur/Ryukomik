@@ -50,14 +50,16 @@ export default function PopularSection({
     manhwa: initialData?.manhwa || [],
     manhua: initialData?.manhua || [],
   });
-  const [loading, setLoading] = useState(!initialData);
+  const hasInitialData = Boolean(initialData?.manga?.length || initialData?.manhwa?.length || initialData?.manhua?.length);
+  const [loading, setLoading] = useState(!hasInitialData);
 
   useEffect(() => {
     async function fetchPopular() {
-      if (initialData) return;
+      if (hasInitialData) return;
 
       try {
-        const res = await fetch(`${SOURCE_API_BASE_URL}/komiku/home`);
+        const res = await fetch(`${SOURCE_API_BASE_URL}/komiku/home`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`Popular API returned ${res.status}`);
         const json = (await res.json()) as PopularResponse;
 
         setData({
@@ -72,7 +74,7 @@ export default function PopularSection({
       }
     }
     fetchPopular();
-  }, [initialData]);
+  }, [hasInitialData]);
 
   if (loading) {
     return (

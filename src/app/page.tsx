@@ -13,7 +13,9 @@ import { getTitleRushEventStatus } from "@/lib/titleRushEvent";
 import ProjectUpdateList from "@/components/ProjectUpdateList";
 import { getProjectUpdates } from "@/lib/projectUpdates";
 
-export const revalidate = 600;
+// Update Komiku harus tetap segar; backend memakai stale-while-refresh agar
+// revalidasi singkat tidak membuat homepage kosong saat sumber sedang lambat.
+export const revalidate = 60;
 
 export default async function Home() {
   const [list, projectUpdates, popular, banner, titleRushStatus] = await Promise.all([

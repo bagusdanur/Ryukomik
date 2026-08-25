@@ -31,14 +31,22 @@ export async function getTerbaru(): Promise<KomikuListItem[]> {
   try {
     const json = await fetchContentJson<unknown>(
       `${CONTENT_API_URL}/komiku/terbaru`,
-      { revalidate: 600 },
+      { revalidate: 60, timeoutMs: 27_000 },
     );
 
-    if (Array.isArray(json)) return toKomikuList(json);
+    if (Array.isArray(json)) {
+      const items = toKomikuList(json);
+      if (items.length) return items;
+    }
     const data = json as Dict;
-    if (Array.isArray(data.data)) return toKomikuList(data.data);
+    if (Array.isArray(data.data)) {
+      const items = toKomikuList(data.data);
+      if (items.length) return items;
+    }
     const found = Object.values(data).find((v) => Array.isArray(v));
-    return toKomikuList(found);
+    const items = toKomikuList(found);
+    if (!items.length) throw new Error("Content API returned an empty latest update list");
+    return items;
   } catch (e) {
     console.error("getTerbaru error:", e);
     return [];
@@ -49,16 +57,20 @@ export async function getHomeKomiku(): Promise<KomikuHomeData> {
   try {
     const json = await fetchContentJson<unknown>(
       `${CONTENT_API_URL}/komiku/home`,
-      { revalidate: 600 },
+      { revalidate: 300, timeoutMs: 27_000 },
     );
 
     const d = ((json as Dict).data || {}) as Dict;
 
-    return {
+    const result = {
       manga: toKomikuList(d.populer_manga),
       manhwa: toKomikuList(d.populer_manhwa),
       manhua: toKomikuList(d.populer_manhua),
     };
+    if (!result.manga.length && !result.manhwa.length && !result.manhua.length) {
+      throw new Error("Content API returned empty popular lists");
+    }
+    return result;
   } catch (e) {
     console.error("getHomeKomiku error:", e);
     return { manga: [], manhwa: [], manhua: [] };
