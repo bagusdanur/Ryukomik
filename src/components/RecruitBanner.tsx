@@ -10,12 +10,13 @@ import {
   FaChevronRight,
   FaBan,
   FaGamepad,
+  FaRobot,
   FaBullhorn,
 } from "react-icons/fa";
 import Button from "@/components/Button";
 import type { IconType } from "react-icons";
 
-type SlideIconKey = "ban" | "whatsapp" | "star" | "coffee" | "gamepad" | "bullhorn";
+type SlideIconKey = "ban" | "whatsapp" | "star" | "coffee" | "gamepad" | "robot" | "bullhorn";
 
 type Slide = {
   iconKey: SlideIconKey;
@@ -62,6 +63,21 @@ const SLIDES: Slide[] = [
       external: true,
       className: "bg-green-700 hover:bg-green-600 text-white",
       iconKey: "whatsapp",
+    },
+  },
+  {
+    iconKey: "robot",
+    iconBg: "bg-[var(--accent-2)]/20",
+    iconColor: "text-[var(--accent-2)]",
+    title: "Yuki AI",
+    badge: { label: "AI", className: "bg-[var(--accent-2)]/20 text-[var(--accent-2)]" },
+    sub: "Tanya jawab seputar komik dengan asisten AI kami.",
+    btn: {
+      label: "Coba AI",
+      href: "https://yuki.ryukomik.web.id",
+      external: true,
+      className: "bg-[var(--accent)] hover:bg-[var(--accent-2)] text-white",
+      iconKey: "robot",
     },
   },
    {
@@ -128,6 +144,7 @@ const ICONS: Record<SlideIconKey, IconType> = {
   star: FaStar,
   coffee: FaCoffee,
   gamepad: FaGamepad,
+  robot: FaRobot,
   bullhorn: FaBullhorn,
 };
 
