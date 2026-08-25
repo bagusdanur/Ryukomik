@@ -24,13 +24,13 @@ export default function YukiChatEmbed() {
   }
 
   return (
-    <aside className="fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom))] right-3 z-[55] sm:bottom-5 sm:right-5">
+    <aside className="fixed bottom-[calc(5.1rem+env(safe-area-inset-bottom))] right-2 z-[55] sm:bottom-5 sm:right-5">
       {open ? (
         <section
           role="dialog"
           aria-modal="false"
           aria-label="Chat dengan Yuki"
-          className="flex h-[min(68dvh,590px)] w-[calc(100vw-24px)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-[var(--surface-1)] shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:h-[min(72vh,620px)] sm:w-[390px]"
+          className="flex h-[min(78dvh,700px)] w-[calc(100vw-16px)] flex-col overflow-hidden rounded-3xl border border-white/10 bg-[var(--surface-1)] shadow-[0_24px_80px_rgba(0,0,0,0.55)] sm:h-[min(78vh,720px)] sm:w-[440px]"
         >
           <header className="relative flex shrink-0 items-center justify-between overflow-hidden border-b border-white/[0.08] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent)_18%,var(--surface-1)),color-mix(in_srgb,var(--accent-2)_7%,var(--surface-1)))] px-4 py-3">
             <div className="flex min-w-0 items-center gap-3">
@@ -60,13 +60,15 @@ export default function YukiChatEmbed() {
             <div className="absolute inset-0 flex items-center justify-center text-xs text-white/35">
               Menyiapkan Yuki...
             </div>
-            <iframe
-              src={YUKI_EMBED_URL}
-              title="Yuki"
-              loading="lazy"
-              allow="clipboard-write"
-              className="relative z-[1] h-full w-full border-0 bg-[var(--background)]"
-            />
+            <div className="absolute inset-0 z-[1] overflow-hidden bg-[var(--background)]">
+              <iframe
+                src={YUKI_EMBED_URL}
+                title="Yuki"
+                loading="lazy"
+                allow="clipboard-write"
+                className="h-[113.637%] w-[113.637%] origin-top-left scale-[0.88] border-0 bg-[var(--background)] sm:h-[108.696%] sm:w-[108.696%] sm:scale-[0.92]"
+              />
+            </div>
           </div>
         </section>
       ) : (
