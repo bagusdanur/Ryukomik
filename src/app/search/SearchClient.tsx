@@ -23,9 +23,8 @@ const COMIC_SOURCES: SearchSource[] = [
   ...ADULT_SOURCE_CONFIGS.map(s => ({ id: s.id as SearchSourceId, label: `Source ${s.label}` })),
   ...PROJECT_SOURCES.map(s => ({ id: s.id as SearchSourceId, label: s.label })),
 ];
-// Endpoint /josei/search masih bermasalah di upstream. Listing/detail/reader Josei tetap aktif.
 const PUBLIC_SOURCES = COMIC_SOURCES.filter(
-  (source) => !ADULT_SOURCE_IDS.has(source.id) && source.id !== "josei",
+  (source) => !ADULT_SOURCE_IDS.has(source.id),
 );
 const ADULT_SOURCES = COMIC_SOURCES.filter((source) => ADULT_SOURCE_IDS.has(source.id));
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
