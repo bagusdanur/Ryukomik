@@ -25,7 +25,7 @@ export async function GET(request: Request) {
       from social_posts p join social_profiles sp on sp.user_id=p.author_id
       where (($2::uuid is null and p.parent_id is null) or ($2::uuid is not null and p.parent_id=$2))
       and ($3<>'profile' or p.author_id=$4::uuid)
-      and ($3<>'following' or p.author_id=$1 or exists(select 1 from social_follows f where f.follower_id=$1 and f.following_id=p.author_id))
+      and ($2::uuid is not null or $3<>'following' or p.author_id=$1 or exists(select 1 from social_follows f where f.follower_id=$1 and f.following_id=p.author_id))
       and ($3 not in ('public','explore') or p.visibility='public')
       and (p.visibility='public' or p.author_id=$1 or exists(select 1 from social_follows f where f.follower_id=$1 and f.following_id=p.author_id))
       and not exists(select 1 from social_mutes m where m.user_id=$1 and m.muted_id=p.author_id)
