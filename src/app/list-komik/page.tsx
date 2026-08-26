@@ -7,9 +7,10 @@ import type { ListKomikItem } from "@/types/content";
 
 export const revalidate = 600;
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
-type ListResponse = { data?: ListKomikItem[]; meta?: { totalKomik?: number }; total?: number };
+type CatalogItem = ListKomikItem & { slug?: string };
+type ListResponse = { data?: CatalogItem[]; meta?: { totalKomik?: number }; total?: number };
 const value = (input: string | string[] | undefined) => Array.isArray(input) ? input[0] : input;
-const slugFromLink = (link: string) => link.split("/").filter(Boolean).at(-1) || "";
+const slugFromLink = (link?: string) => (link || "").split("/").filter(Boolean).at(-1) || "";
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const query = await searchParams;
@@ -52,7 +53,7 @@ export default async function KomikList({ searchParams }: Props) {
     <h1 className="mb-3 text-2xl font-black text-white">Daftar Komik Bahasa Indonesia</h1>
     <p className="mb-5 text-sm text-white/60">Total: <b>{total}</b> · Halaman {page}</p>
     {items.length ? <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">{items.map((item, index) => {
-      const href = buildComicUrl(source, slugFromLink(item.link)).replace("https://ryukomik.my.id", "");
+      const href = buildComicUrl(source, item.slug || slugFromLink(item.link)).replace("https://ryukomik.my.id", "");
       return <Link key={`${href}-${index}`} href={href} className="group"><div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04]">
         <Image src={item.image || "/icon.png"} alt={item.title} fill sizes="(max-width: 640px) 33vw, 16vw" className="object-cover" />
       </div><p className="mt-2 line-clamp-2 text-sm font-bold text-white/90 group-hover:text-cyan-100">{item.title}</p><p className="text-xs text-violet-200/70">{item.status}</p></Link>;
