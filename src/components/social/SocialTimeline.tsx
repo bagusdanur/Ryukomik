@@ -26,6 +26,7 @@ type Author = { username?: string; avatar_url?: string | null; level?: number; r
 type Post = {
   id: string;
   author_id: string;
+  parent_id?: string | null;
   content: string;
   image_url?: string | null;
   visibility: string;
@@ -178,11 +179,15 @@ function MediaPicker({
 
 function Composer({
   parentId,
+  replyToId,
+  replyToName,
   compact = false,
   onCreated,
   optimisticAuthor,
 }: {
   parentId?: string;
+  replyToId?: string;
+  replyToName?: string;
   compact?: boolean;
   onCreated: (post?: Post, replaceId?: string) => void;
   optimisticAuthor?: ViewerProfile;
@@ -212,6 +217,7 @@ function Composer({
           image_url: submittedImage,
           visibility,
           parent_id: parentId || null,
+          reply_to_id: replyToId || null,
         }),
       });
       const createdPost: Post = {
@@ -262,7 +268,7 @@ function Composer({
         rows={compact ? 3 : 6}
         placeholder={
           parentId
-            ? "Tulis balasan..."
+            ? replyToName ? `Balas @${replyToName}...` : "Tulis balasan..."
             : "Apa yang ingin kamu bagikan hari ini?"
         }
         className={`${compact ? "min-h-28" : "min-h-44 sm:min-h-48"} w-full resize-y rounded-2xl border border-white/[0.12] bg-[#090b14] px-4 py-4 text-[15px] leading-relaxed text-white shadow-inner outline-none transition placeholder:text-white/35 focus:border-cyan-300/45 focus:bg-[#0b0e18]`}
@@ -329,7 +335,7 @@ function Composer({
   );
 }
 
-function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
+function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post; onChanged: () => void; threadRootId?: string; refreshThread?: () => Promise<void> }) {
   const author = authorOf(post);
   const [liked, setLiked] = useState(post.viewer_liked);
   const [bookmarked, setBookmarked] = useState(false);
@@ -386,6 +392,8 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
     setReplying(true);
     onChanged();
   }
+  const rootId = threadRootId || post.id;
+  const refreshRoot = refreshThread || refreshReplies;
   async function remove() {
     if (!confirm("Hapus posting ini?")) return;
     await socialFetch("/api/social/posts", {
@@ -485,9 +493,15 @@ function PostCard({ post, onChanged }: { post: Post; onChanged: () => void }) {
       </div>
       {replying && (
         <div className="ml-8 border-l border-white/[0.08]">
-          <Composer parentId={post.id} compact onCreated={refreshReplies} />
+          <Composer
+            parentId={rootId}
+            replyToId={post.parent_id ? post.id : undefined}
+            replyToName={post.parent_id ? author.username : undefined}
+            compact
+            onCreated={refreshRoot}
+          />
           {replies.map((reply) => (
-            <PostCard key={reply.id} post={reply} onChanged={refreshReplies} />
+            <PostCard key={reply.id} post={reply} onChanged={refreshRoot} threadRootId={rootId} refreshThread={refreshRoot} />
           ))}
           {loadedReplies && !replies.length && (
             <p className="p-4 text-center text-xs text-white/35">
