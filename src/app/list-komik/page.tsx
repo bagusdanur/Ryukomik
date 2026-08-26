@@ -35,7 +35,10 @@ export default async function KomikList({ searchParams }: Props) {
   if (huruf) params.set("huruf", huruf); if (tipe) params.set("tipe", tipe);
   let payload: ListResponse = {};
   try {
-    const response = await fetch(`https://api.ryukomik.web.id/${source}/list?${params}`, { next: { revalidate: 600 } });
+    const endpoint = source === "project"
+      ? `https://ryukomik.my.id/api/project/pustaka?${params}`
+      : `https://api.ryukomik.web.id/${source}/list?${params}`;
+    const response = await fetch(endpoint, { next: { revalidate: 600 } });
     if (response.ok) payload = await response.json();
   } catch {}
   const items = payload.data || [];

@@ -61,6 +61,7 @@ export async function GET(request: Request) {
               : "",
             type_genre: [item.type, ...(item.genres || [])].filter(Boolean).join(", "),
             chapter_terbaru: item.latest_chapter != null ? `Chapter ${item.latest_chapter}` : "",
+            updated_at: item.latest_chapter_uploaded_at || item.updated_at || null,
             status: item.status || "",
           }));
 
@@ -161,6 +162,7 @@ export async function GET(request: Request) {
         info: latest ? formatRelativeDate(latest.uploaded_at) : "",
         type_genre: [item.type, ...(item.genres || [])].filter(Boolean).join(", "),
         chapter_terbaru: latest ? `Chapter ${latest.chapter_number}` : "",
+        updated_at: latest?.uploaded_at || item.updated_at || null,
         status: item.status || "",
       };
     });
