@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { projectApiUrl } from "@/lib/projectApiServer";
 
+function searchTokens(value: string) {
+  return [...new Set(value.toLocaleLowerCase("id-ID").match(/[\p{L}\p{N}]+/gu) || [])]
+    .filter((token) => token.length >= 2)
+    .slice(0, 8);
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -40,7 +46,9 @@ export async function GET(request: Request) {
       .from("project_manga")
       .select("id", { count: "exact", head: true })
       .eq("is_published", true);
-    if (q) countQuery = countQuery.ilike("title", `%${q}%`);
+    for (const token of searchTokens(q)) {
+      countQuery = countQuery.ilike("title", `%${token}%`);
+    }
 
     const { count: totalCount, error: countError } = await countQuery;
     if (countError) throw countError;
@@ -56,8 +64,8 @@ export async function GET(request: Request) {
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (q) {
-      query = query.ilike("title", `%${q}%`);
+    for (const token of searchTokens(q)) {
+      query = query.ilike("title", `%${token}%`);
     }
 
     const { data: projects, error } = await query;

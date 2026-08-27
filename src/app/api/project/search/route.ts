@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { allowSupabaseProjectReadFallback, projectApiUrl } from "@/lib/projectApiServer";
 
+function searchTokens(value: string) {
+  return [...new Set(value.toLocaleLowerCase("id-ID").match(/[\p{L}\p{N}]+/gu) || [])]
+    .filter((token) => token.length >= 2)
+    .slice(0, 8);
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -50,8 +56,11 @@ export async function GET(request: Request) {
     let query = supabaseAdmin
       .from("project_manga")
       .select("slug, title, cover_url, type, status, genres, updated_at")
-      .eq("is_published", true)
-      .or(`title.ilike.%${q}%,slug.ilike.%${q}%`);
+      .eq("is_published", true);
+
+    for (const token of searchTokens(q)) {
+      query = query.ilike("title", `%${token}%`);
+    }
 
     const { data, error } = await query
       .order("updated_at", { ascending: false })
