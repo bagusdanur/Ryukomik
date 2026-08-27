@@ -103,11 +103,21 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
     const json = await res.json();
     if (!json.success) return null;
 
+    const mangaId = String(json.mangaId || json.series?.slug || "");
+    const qualifyJoseiNavigation = (value: unknown) => {
+      if (source !== "josei" || typeof value !== "string" || !value || value.includes("/")) {
+        return value;
+      }
+      return mangaId ? `${mangaId}/${value}` : value;
+    };
+
     return {
       ...json,
-      mangaId: json.mangaId || json.series?.slug || "",
+      mangaId,
       currentChapter: json.currentChapter || json.title || "",
       images: Array.isArray(json.images) ? json.images : [],
+      prev: qualifyJoseiNavigation(json.prev),
+      next: qualifyJoseiNavigation(json.next),
     };
   } catch {
     return null;
