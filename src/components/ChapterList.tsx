@@ -226,7 +226,7 @@ export default function ChapterList({
           chapter gratis dibaca
         </p>
         <p className="text-[11px] text-white/40 mt-1">
-          Fitur download & batch download khusus Premium
+          Akun gratis mendapat 5 download chapter per hari · Batch khusus Premium
         </p>
       </div>
       {/* ── List ── */}

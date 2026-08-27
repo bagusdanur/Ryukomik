@@ -5,6 +5,7 @@ import { FiDownload, FiX } from "react-icons/fi";
 import type { User } from "@supabase/supabase-js";
 import { loadCachedRole } from "@/utils/roleCache";
 import { blobToPdfImage, fetchDownloadChapter, fetchDownloadImage, imageExtension, saveBlob } from "@/lib/chapterDownload";
+import { getDownloadQuota, updateDownloadQuota, type DownloadQuota } from "@/lib/downloadQuotaClient";
 
 type DownloadType = "pdf" | "zip";
 
@@ -27,6 +28,8 @@ export default function DownloadButton({
   const [progress, setProgress] = useState(0);
   const [open, setOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [quota, setQuota] = useState<DownloadQuota | null>(null);
+  const [quotaLoading, setQuotaLoading] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -37,14 +40,23 @@ export default function DownloadButton({
     fetchRole();
   }, [user?.id]);
 
+  const toggleMenu = async () => {
+    const next = !open;
+    setOpen(next);
+    if (!next || !user || quotaLoading) return;
+    setQuotaLoading(true);
+    try {
+      const result = await getDownloadQuota();
+      setQuota(result.quota);
+    } catch {
+      setQuota(null);
+    } finally {
+      setQuotaLoading(false);
+    }
+  };
+
   const handleDownload = async (type: DownloadType = "pdf") => {
     if (!user) {
-      onPremium?.();
-      setOpen(false);
-      return;
-    }
-
-    if (!isPremium) {
       onPremium?.();
       setOpen(false);
       return;
@@ -54,8 +66,13 @@ export default function DownloadButton({
 
     setLoading(true);
     setProgress(0);
+    let reservationId: string | null = null;
 
     try {
+      const started = await updateDownloadQuota("start");
+      reservationId = started.reservationId || null;
+      setQuota(started.quota);
+
       const data = await fetchDownloadChapter(source, slug);
       const images = data.images;
 
@@ -65,15 +82,11 @@ export default function DownloadButton({
       );
 
       if (images.length === 0) {
-        alert("Gambar tidak ditemukan");
-        setLoading(false);
-        return;
+        throw new Error("Gambar tidak ditemukan");
       }
 
       if (images.length > 80 && !isAdmin) {
-        alert("Chapter terlalu besar");
-        setLoading(false);
-        return;
+        throw new Error("Chapter terlalu besar");
       }
 
       // =========================
@@ -94,10 +107,13 @@ export default function DownloadButton({
 
         const content = await zip.generateAsync({ type: "blob" });
 
-        saveBlob(content, `${chapterTitle}.zip`);
+        if (reservationId) {
+          const completed = await updateDownloadQuota("complete", reservationId);
+          setQuota(completed.quota);
+          reservationId = null;
+        }
 
-        setLoading(false);
-        setProgress(0);
+        saveBlob(content, `${chapterTitle}.zip`);
         return;
       }
 
@@ -138,14 +154,26 @@ export default function DownloadButton({
         setProgress(Math.round((done / images.length) * 100));
       }
 
-      pdf?.save(`${chapterTitle}.pdf`);
+      if (!pdf) throw new Error("PDF gagal dibuat");
+      const content = pdf.output("blob");
+      if (reservationId) {
+        const completed = await updateDownloadQuota("complete", reservationId);
+        setQuota(completed.quota);
+        reservationId = null;
+      }
+      saveBlob(content, `${chapterTitle}.pdf`);
     } catch (e) {
+      if (reservationId) {
+        await updateDownloadQuota("cancel", reservationId)
+          .then((result) => setQuota(result.quota))
+          .catch(() => undefined);
+      }
       console.error(e);
       alert(e instanceof Error ? e.message : "Gagal download");
+    } finally {
+      setLoading(false);
+      setProgress(0);
     }
-
-    setLoading(false);
-    setProgress(0);
   };
 
   function formatTitleFromSlug(slug?: string, currentChapter?: string) {
@@ -196,7 +224,7 @@ export default function DownloadButton({
   return (
     <div className="relative w-full h-full">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={toggleMenu}
         disabled={loading}
         className="
         w-full h-full
@@ -219,7 +247,16 @@ export default function DownloadButton({
 
       {/* dropdown */}
       {open && !loading && (
-        <div className="absolute flex flex-col bg-[#222] p-2 rounded shadow-lg top-10 right-0 z-50 min-w-[120px] gap-2">
+        <div className="absolute flex flex-col bg-[#222] p-2 rounded shadow-lg top-10 right-0 z-50 min-w-[180px] gap-2">
+          <p className="px-2 pt-1 text-[10px] text-white/50">
+            {quotaLoading
+              ? "Memuat kuota..."
+              : quota?.unlimited || isPremium || isAdmin
+                ? "Download tanpa batas"
+                : quota
+                  ? `Sisa ${quota.remaining} dari ${quota.limit} hari ini`
+                  : "Gratis 5 chapter per hari"}
+          </p>
           <button
             onClick={() => {
               handleDownload("pdf");

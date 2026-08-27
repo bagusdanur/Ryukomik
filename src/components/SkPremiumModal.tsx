@@ -33,8 +33,9 @@ export default function SkPremiumModal({ close }: { close: () => void }) {
           <div className="space-y-2">
             <h3 className="font-bold text-white">1. Layanan Premium</h3>
             <p>
-              Layanan premium memberikan fitur tambahan seperti Download Komik,
-              Bebas Iklan, Batch Download, VIP Badge, dan akses komentar eksklusif.
+              Akun gratis mendapat 5 download chapter satuan per hari. Layanan
+              Premium memberikan download tanpa batas, Batch Download hingga 5
+              chapter, Bebas Iklan, VIP Badge, dan akses komentar eksklusif.
             </p>
           </div>
 

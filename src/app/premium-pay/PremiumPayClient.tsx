@@ -31,7 +31,7 @@ const features = [
     icon: <MdOutlineDownloadForOffline size={16} />,
     title: "Download Komik",
     desc: "Simpan chapter favorit buat dibaca offline",
-    basic: null,
+    basic: "5 / Hari",
     premium: "Unlimited",
   },
   {
@@ -51,7 +51,7 @@ const features = [
   {
     icon: <TbLayersLinked size={16} />,
     title: "Batch Download",
-    desc: "Ambil beberapa chapter dalam sekali jalan",
+    desc: "Gratis bisa download satuan; Premium hingga 5 chapter sekaligus",
     basic: null,
     premium: "5 Chapter",
   },
