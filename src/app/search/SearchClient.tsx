@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaCheckCircle, FaTimesCircle, FaSpinner } from "react-icons/fa";
 import SeriesCard from "@/components/SeriesCard";
 import type { Dict } from "@/types/common";
@@ -28,6 +28,40 @@ const PUBLIC_SOURCES = COMIC_SOURCES.filter(
 );
 const ADULT_SOURCES = COMIC_SOURCES.filter((source) => ADULT_SOURCE_IDS.has(source.id));
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
+const SOURCE_PRIORITY = new Map<SearchSourceId, number>([
+  ["project", 0],
+  ...COMIC_SOURCES.filter((source) => source.id !== "project").map(
+    (source, index) => [source.id, index + 1] as const,
+  ),
+]);
+
+const normalizedTitleTokens = (title = "") =>
+  title
+    .normalize("NFKD")
+    .toLocaleLowerCase("id-ID")
+    .replace(/[’'`]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+const titlesMatch = (left = "", right = "") => {
+  const leftTokens = normalizedTitleTokens(left);
+  const rightTokens = normalizedTitleTokens(right);
+  if (!leftTokens.length || !rightTokens.length) return false;
+
+  const leftNormalized = leftTokens.join(" ");
+  const rightNormalized = rightTokens.join(" ");
+  if (leftNormalized === rightNormalized) return true;
+
+  const shorter = leftTokens.length <= rightTokens.length ? leftTokens : rightTokens;
+  const longer = shorter === leftTokens ? rightTokens : leftTokens;
+  if (shorter.length < 4 || shorter.join(" ").length < 18) return false;
+
+  const longerSet = new Set(longer);
+  const matchingTokens = shorter.filter((token) => longerSet.has(token)).length;
+  return matchingTokens / shorter.length >= 0.85 && matchingTokens / longer.length >= 0.55;
+};
 
 const buildSearchUrl = (sourceId: SearchSourceId, query: string) => {
   if (sourceId === "project") {
@@ -224,7 +258,22 @@ export default function SearchClient({
     });
   }
 
-  const combinedData = [...data, ...adultData];
+  const combinedData = useMemo(() => {
+    const allItems = [...data, ...adultData];
+    const projectItems = allItems.filter((item) => item.source === "project");
+
+    return allItems
+      .filter(
+        (item) =>
+          item.source === "project" ||
+          !projectItems.some((project) => titlesMatch(item.title, project.title)),
+      )
+      .sort(
+        (left, right) =>
+          (SOURCE_PRIORITY.get(left.source) ?? Number.MAX_SAFE_INTEGER) -
+          (SOURCE_PRIORITY.get(right.source) ?? Number.MAX_SAFE_INTEGER),
+      );
+  }, [adultData, data]);
 
   return (
     <div className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
