@@ -91,6 +91,16 @@ type RawSearchItem = Dict & {
   link?: string;
   title?: string;
   image?: string;
+  status?: string;
+  update?: string;
+};
+
+const PROJECT_INACTIVE_STATUSES = new Set(["cancelled", "canceled", "dropped"]);
+
+const isInactiveProject = (item: SearchPageResultItem) => {
+  if (item.source !== "project") return false;
+  const status = String(item.status || item.update || "").trim().toLowerCase();
+  return PROJECT_INACTIVE_STATUSES.has(status);
 };
 
 const getSlugFromItem = (item: RawSearchItem) => {
@@ -260,13 +270,15 @@ export default function SearchClient({
 
   const combinedData = useMemo(() => {
     const allItems = [...data, ...adultData];
-    const projectItems = allItems.filter((item) => item.source === "project");
+    const activeProjectItems = allItems.filter(
+      (item) => item.source === "project" && !isInactiveProject(item),
+    );
 
     return allItems
       .filter(
         (item) =>
           item.source === "project" ||
-          !projectItems.some((project) => titlesMatch(item.title, project.title)),
+          !activeProjectItems.some((project) => titlesMatch(item.title, project.title)),
       )
       .sort(
         (left, right) =>

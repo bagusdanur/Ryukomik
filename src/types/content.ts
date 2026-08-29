@@ -90,6 +90,7 @@ export interface SearchResultItem {
   title?: string;
   image?: string;
   info?: string;
+  status?: string;
   update?: string;
   latest_chapter?: string;
   chapter_terbaru?: string;

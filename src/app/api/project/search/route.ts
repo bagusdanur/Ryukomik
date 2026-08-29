@@ -31,6 +31,7 @@ export async function GET(request: Request) {
             title: item.title,
             image: item.cover_url || item.image || "",
             source: "project",
+            status: item.status || "",
             update: item.status || "",
             chapter_terbaru: item.latest_chapter != null ? `Chapter ${item.latest_chapter}` : "",
           }));
@@ -76,6 +77,7 @@ export async function GET(request: Request) {
       title: item.title,
       image: item.cover_url || "",
       source: "project",
+      status: item.status || "",
       update: item.status || "",
       chapter_terbaru: "",
     }));
