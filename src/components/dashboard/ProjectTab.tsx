@@ -48,6 +48,16 @@ function parseSourceInput(
 }
 
 type SourceSearchItem = { slug: string; title: string; image?: string };
+type ThunderMetadata = {
+  slug: string;
+  title: string;
+  cover_url?: string;
+  description?: string;
+  author?: string;
+  status?: string;
+  type?: string;
+  genres?: string[];
+};
 type SourceChapterItem = { slug: string; label: string };
 type AutoImportCandidate = { number: number; slug: string; label: string };
 type AutoImportDiff = { missing: AutoImportCandidate[]; existingCount: number; unparsedCount: number };
@@ -181,6 +191,14 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const [coverSearchFocused, setCoverSearchFocused] = useState(false);
   const [coverSearchResults, setCoverSearchResults] = useState<SourceSearchItem[]>([]);
   const [coverSearchLoading, setCoverSearchLoading] = useState(false);
+
+  // Autofill metadata Project baru dari backend Thunder.
+  const [thunderQuery, setThunderQuery] = useState("");
+  const [thunderResults, setThunderResults] = useState<SourceSearchItem[]>([]);
+  const [thunderSearchLoading, setThunderSearchLoading] = useState(false);
+  const [thunderDetailLoading, setThunderDetailLoading] = useState(false);
+  const [thunderMetadata, setThunderMetadata] = useState<ThunderMetadata | null>(null);
+  const [thunderError, setThunderError] = useState("");
 
   // Search dropdown + pemilihan chapter untuk import gambar chapter
   const [chapterSearchFocused, setChapterSearchFocused] = useState(false);
@@ -364,6 +382,81 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       controller.abort();
     };
   }, [importCoverSlug, importCoverSource, coverSearchFocused]);
+
+  useEffect(() => {
+    const query = thunderQuery.trim();
+    if (view !== "mangaForm" || mangaForm.id || query.length < 2 || thunderMetadata) {
+      setThunderResults([]);
+      setThunderSearchLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setThunderSearchLoading(true);
+      setThunderError("");
+      try {
+        const token = await getAdminToken();
+        const response = await fetch(`/api/admin/project/source-metadata?q=${encodeURIComponent(query)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Gagal mencari Thunder");
+        if (!controller.signal.aborted) setThunderResults(payload.data || []);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setThunderResults([]);
+          setThunderError(error instanceof Error ? error.message : "Gagal mencari Thunder");
+        }
+      } finally {
+        if (!controller.signal.aborted) setThunderSearchLoading(false);
+      }
+    }, 450);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [getAdminToken, mangaForm.id, thunderMetadata, thunderQuery, view]);
+
+  const pickThunderMetadata = async (item: SourceSearchItem) => {
+    setThunderResults([]);
+    setThunderDetailLoading(true);
+    setThunderError("");
+    try {
+      const token = await getAdminToken();
+      const response = await fetch(`/api/admin/project/source-metadata?slug=${encodeURIComponent(item.slug)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Gagal mengambil detail Thunder");
+      setThunderMetadata(payload.data);
+      setThunderQuery(item.title);
+    } catch (error) {
+      setThunderError(error instanceof Error ? error.message : "Gagal mengambil detail Thunder");
+    } finally {
+      setThunderDetailLoading(false);
+    }
+  };
+
+  const applyThunderMetadata = () => {
+    if (!thunderMetadata) return;
+    setMangaForm((current) => ({
+      ...current,
+      slug: thunderMetadata.slug,
+      title: thunderMetadata.title,
+      cover_url: thunderMetadata.cover_url || current.cover_url || "",
+      description: thunderMetadata.description || current.description || "",
+      author: thunderMetadata.author || current.author || "",
+      status: thunderMetadata.status || current.status || "ongoing",
+      type: thunderMetadata.type || current.type || "manga",
+      genres: thunderMetadata.genres?.length ? thunderMetadata.genres : current.genres || [],
+      is_published: current.is_published ?? false,
+    }));
+    setThunderMetadata(null);
+    setThunderQuery("");
+  };
 
   useEffect(() => {
     const query = importChapterSlug.trim();
@@ -1368,6 +1461,105 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
 
           {/* Details */}
           <div className="space-y-5 rounded-2xl border border-white/[.07] bg-white/[.025] p-4 sm:p-5 lg:p-6">
+            {!mangaForm.id && (
+              <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[.055] p-4">
+                <div className="mb-3 flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-300">
+                    <FiDownloadCloudIcon size={17} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-cyan-100">Isi otomatis dari Thunder</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-white/45">
+                      Cari judul, periksa metadata, lalu isi form. Project tetap draft sampai disimpan manual.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#111116] px-3 focus-within:border-cyan-300/40">
+                    <FiSearchIcon className="shrink-0 text-white/35" />
+                    <input
+                      value={thunderQuery}
+                      onChange={(event) => {
+                        setThunderQuery(event.target.value);
+                        setThunderMetadata(null);
+                        setThunderError("");
+                      }}
+                      className="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none placeholder:text-white/25"
+                      placeholder="Cari judul di Thunder..."
+                    />
+                    {(thunderSearchLoading || thunderDetailLoading) && (
+                      <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-cyan-200/20 border-t-cyan-200" />
+                    )}
+                  </div>
+
+                  {thunderResults.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full z-40 mt-1 max-h-72 overflow-y-auto rounded-xl border border-white/10 bg-[#17171f] p-1 shadow-2xl shadow-black/50">
+                      {thunderResults.map((item) => (
+                        <button
+                          key={item.slug}
+                          type="button"
+                          onClick={() => void pickThunderMetadata(item)}
+                          className="flex min-h-[52px] w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition hover:bg-white/[.07]"
+                        >
+                          {item.image ? (
+                            <img src={item.image} alt="" className="h-11 w-8 shrink-0 rounded object-cover bg-white/10" />
+                          ) : (
+                            <div className="h-11 w-8 shrink-0 rounded bg-white/10" />
+                          )}
+                          <span className="line-clamp-2 text-xs font-semibold text-white/80">{item.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {thunderError && <p className="mt-2 text-xs text-rose-300">{thunderError}</p>}
+
+                {thunderMetadata && (
+                  <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
+                    <div className="flex gap-3">
+                      {thunderMetadata.cover_url && (
+                        <img src={thunderMetadata.cover_url} alt="" className="h-24 w-16 shrink-0 rounded-lg object-cover bg-white/10" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-bold text-white">{thunderMetadata.title}</p>
+                        <p className="mt-1 truncate text-[11px] text-white/35">/{thunderMetadata.slug}</p>
+                        <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-bold uppercase tracking-wide">
+                          <span className="rounded-md bg-white/[.07] px-2 py-1 text-white/60">{thunderMetadata.type || "manga"}</span>
+                          <span className="rounded-md bg-emerald-400/10 px-2 py-1 text-emerald-300">{thunderMetadata.status || "ongoing"}</span>
+                          {!!thunderMetadata.genres?.length && (
+                            <span className="rounded-md bg-cyan-400/10 px-2 py-1 text-cyan-200">
+                              {thunderMetadata.genres.length} genre
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setThunderMetadata(null);
+                          setThunderQuery("");
+                        }}
+                        className="rounded-lg px-3 py-2 text-xs font-bold text-white/45 transition hover:bg-white/[.06] hover:text-white"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={applyThunderMetadata}
+                        className="flex items-center justify-center gap-2 rounded-lg bg-cyan-400 px-4 py-2 text-xs font-black text-[#041014] transition hover:bg-cyan-300"
+                      >
+                        <FiCheckIcon /> Isi Form
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex items-center justify-between border-b border-white/[.06] pb-4">
               <div>
                 <p className="text-sm font-bold">Informasi manga</p>
