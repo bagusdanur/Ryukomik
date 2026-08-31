@@ -58,6 +58,7 @@ type ThunderMetadata = {
   type?: string;
   genres?: string[];
 };
+const PROJECT_METADATA_SOURCES = ["thunder", "mgeko", "demon", "evascan"] as const;
 type SourceChapterItem = { slug: string; label: string };
 type AutoImportCandidate = { number: number; slug: string; label: string };
 type AutoImportDiff = { missing: AutoImportCandidate[]; existingCount: number; unparsedCount: number };
@@ -193,6 +194,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const [coverSearchLoading, setCoverSearchLoading] = useState(false);
 
   // Autofill metadata Project baru dari backend Thunder.
+  const [metadataSource, setMetadataSource] = useState<(typeof PROJECT_METADATA_SOURCES)[number]>("thunder");
   const [thunderQuery, setThunderQuery] = useState("");
   const [thunderResults, setThunderResults] = useState<SourceSearchItem[]>([]);
   const [thunderSearchLoading, setThunderSearchLoading] = useState(false);
@@ -397,17 +399,17 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       setThunderError("");
       try {
         const token = await getAdminToken();
-        const response = await fetch(`/api/admin/project/source-metadata?q=${encodeURIComponent(query)}`, {
+        const response = await fetch(`/api/admin/project/source-metadata?source=${metadataSource}&q=${encodeURIComponent(query)}`, {
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
         });
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || "Gagal mencari Thunder");
+        if (!response.ok) throw new Error(payload.error || `Gagal mencari ${metadataSource}`);
         if (!controller.signal.aborted) setThunderResults(payload.data || []);
       } catch (error) {
         if (!controller.signal.aborted) {
           setThunderResults([]);
-          setThunderError(error instanceof Error ? error.message : "Gagal mencari Thunder");
+          setThunderError(error instanceof Error ? error.message : `Gagal mencari ${metadataSource}`);
         }
       } finally {
         if (!controller.signal.aborted) setThunderSearchLoading(false);
@@ -418,7 +420,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [getAdminToken, mangaForm.id, thunderMetadata, thunderQuery, view]);
+  }, [getAdminToken, mangaForm.id, metadataSource, thunderMetadata, thunderQuery, view]);
 
   const pickThunderMetadata = async (item: SourceSearchItem) => {
     setThunderResults([]);
@@ -426,15 +428,15 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     setThunderError("");
     try {
       const token = await getAdminToken();
-      const response = await fetch(`/api/admin/project/source-metadata?slug=${encodeURIComponent(item.slug)}`, {
+      const response = await fetch(`/api/admin/project/source-metadata?source=${metadataSource}&slug=${encodeURIComponent(item.slug)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Gagal mengambil detail Thunder");
+      if (!response.ok) throw new Error(payload.error || `Gagal mengambil detail ${metadataSource}`);
       setThunderMetadata(payload.data);
       setThunderQuery(item.title);
     } catch (error) {
-      setThunderError(error instanceof Error ? error.message : "Gagal mengambil detail Thunder");
+      setThunderError(error instanceof Error ? error.message : `Gagal mengambil detail ${metadataSource}`);
     } finally {
       setThunderDetailLoading(false);
     }
@@ -1468,11 +1470,34 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                     <FiDownloadCloudIcon size={17} />
                   </div>
                   <div>
-                    <p className="text-sm font-black text-cyan-100">Isi otomatis dari Thunder</p>
+                    <p className="text-sm font-black text-cyan-100">Isi otomatis dari Source</p>
                     <p className="mt-0.5 text-xs leading-relaxed text-white/45">
                       Cari judul, periksa metadata, lalu isi form. Project tetap draft sampai disimpan manual.
                     </p>
                   </div>
+                </div>
+
+                <div className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {PROJECT_METADATA_SOURCES.map((source) => (
+                    <button
+                      key={source}
+                      type="button"
+                      onClick={() => {
+                        setMetadataSource(source);
+                        setThunderQuery("");
+                        setThunderResults([]);
+                        setThunderMetadata(null);
+                        setThunderError("");
+                      }}
+                      className={`rounded-lg border px-2.5 py-2 text-xs font-black capitalize transition ${
+                        metadataSource === source
+                          ? "border-cyan-300/35 bg-cyan-400/15 text-cyan-200"
+                          : "border-white/[.08] bg-white/[.035] text-white/45 hover:bg-white/[.07] hover:text-white/75"
+                      }`}
+                    >
+                      {source}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="relative">
@@ -1486,7 +1511,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                         setThunderError("");
                       }}
                       className="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none placeholder:text-white/25"
-                      placeholder="Cari judul di Thunder..."
+                      placeholder={`Cari judul di ${metadataSource}...`}
                     />
                     {(thunderSearchLoading || thunderDetailLoading) && (
                       <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-cyan-200/20 border-t-cyan-200" />

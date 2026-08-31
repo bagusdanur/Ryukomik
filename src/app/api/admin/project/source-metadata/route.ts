@@ -3,6 +3,7 @@ import { verifyAdminRequest } from "@/lib/adminApi";
 import { CONTENT_API_URL } from "@/lib/contentApi";
 
 type ThunderItem = Record<string, unknown>;
+const METADATA_SOURCES = new Set(["thunder", "mgeko", "demon", "evascan"]);
 
 function cleanText(value: unknown) {
   const text = typeof value === "string" ? value.trim() : "";
@@ -22,6 +23,14 @@ function normalizeDetail(item: ThunderItem, slug: string) {
   const genres = Array.isArray(item.genres)
     ? item.genres.map(cleanText).filter(Boolean)
     : [];
+  const rawType = cleanText(item.type).toLowerCase();
+  const type = ["manga", "manhwa", "manhua", "comic", "18+"].includes(rawType)
+    ? rawType
+    : "comic";
+  const rawStatus = cleanText(item.status).toLowerCase();
+  const status = ["ongoing", "completed", "hiatus", "dropped", "cancelled"].includes(rawStatus)
+    ? rawStatus
+    : "ongoing";
 
   return {
     slug,
@@ -29,8 +38,8 @@ function normalizeDetail(item: ThunderItem, slug: string) {
     cover_url: cleanText(item.thumbnail || item.image),
     description: cleanText(item.synopsis || item.description),
     author: cleanText(item.Pengarang || item.author),
-    type: cleanText(item.type).toLowerCase() || "manga",
-    status: cleanText(item.status).toLowerCase() || "ongoing",
+    type,
+    status,
     genres,
   };
 }
@@ -42,8 +51,13 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
+  const source = (searchParams.get("source") || "thunder").trim().toLowerCase();
   const query = (searchParams.get("q") || "").trim().slice(0, 120);
   const slug = (searchParams.get("slug") || "").trim().replace(/^\/+|\/+$/g, "").slice(0, 240);
+
+  if (!METADATA_SOURCES.has(source)) {
+    return NextResponse.json({ error: "Source metadata tidak didukung." }, { status: 400 });
+  }
 
   if (!query && !slug) {
     return NextResponse.json({ error: "Query atau slug Thunder diperlukan." }, { status: 400 });
@@ -51,8 +65,8 @@ export async function GET(request: Request) {
 
   try {
     const path = slug
-      ? `/thunder/detail/${encodeURIComponent(slug)}`
-      : `/thunder/search?q=${encodeURIComponent(query)}`;
+      ? `/${source}/detail/${encodeURIComponent(slug)}`
+      : `/${source}/search?q=${encodeURIComponent(query)}`;
     const response = await fetch(`${CONTENT_API_URL}${path}`, {
       cache: "no-store",
       signal: AbortSignal.timeout(15_000),
@@ -61,7 +75,7 @@ export async function GET(request: Request) {
 
     if (!response.ok || payload?.success === false) {
       return NextResponse.json(
-        { error: payload?.message || `Thunder API gagal (${response.status}).` },
+        { error: payload?.message || `${source} API gagal (${response.status}).` },
         { status: response.status === 404 ? 404 : 502 },
       );
     }
@@ -82,8 +96,8 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error && error.name === "TimeoutError"
-      ? "Thunder API melewati batas waktu."
-      : "Gagal mengambil metadata Thunder.";
+      ? `${source} API melewati batas waktu.`
+      : `Gagal mengambil metadata ${source}.`;
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }
