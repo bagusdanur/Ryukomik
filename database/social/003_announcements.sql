@@ -20,7 +20,7 @@ create index if not exists social_announcements_active_cursor
 
 create table if not exists social_announcement_reads (
   announcement_id uuid not null references social_announcements(id) on delete cascade,
-  user_id uuid not null references social_profiles(user_id) on delete cascade,
+  user_id uuid not null,
   read_at timestamptz not null default now(),
   primary key (announcement_id, user_id)
 );
