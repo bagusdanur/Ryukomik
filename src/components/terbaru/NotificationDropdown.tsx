@@ -60,11 +60,11 @@ export default function NotificationDropdown({
   }, [notifications]);
 
   const infoNotifications = useMemo(
-    () => formattedNotifications.filter((notification) => notification.type === TITLE_RUSH_EVENT_TYPE),
+    () => formattedNotifications.filter((notification) => notification.type === TITLE_RUSH_EVENT_TYPE || notification.type === "announcement"),
     [formattedNotifications],
   );
   const regularNotifications = useMemo(
-    () => formattedNotifications.filter((notification) => notification.type !== TITLE_RUSH_EVENT_TYPE),
+    () => formattedNotifications.filter((notification) => notification.type !== TITLE_RUSH_EVENT_TYPE && notification.type !== "announcement"),
     [formattedNotifications],
   );
   const infoUnreadCount = infoNotifications.filter((notification) => !notification.is_read).length;

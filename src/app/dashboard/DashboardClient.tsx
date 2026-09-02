@@ -16,6 +16,7 @@ import {
   FiShield,
   FiHome,
   FiMessageCircle,
+  FiVolume2,
 } from "react-icons/fi";
 import DashboardHomeTab from "@/components/dashboard/DashboardHomeTab";
 import SourceHealthTab from "@/components/dashboard/SourceHealthTab";
@@ -31,6 +32,7 @@ import ApkSettingsTab, {
 } from "@/components/dashboard/ApkSettingsTab";
 import ProjectTab from "@/components/dashboard/ProjectTab";
 import ProjectDbTab from "@/components/dashboard/ProjectDbTab";
+import AnnouncementsTab from "@/components/dashboard/AnnouncementsTab";
 import { FiBookOpen } from "react-icons/fi";
 
 
@@ -47,6 +49,7 @@ type DashboardPage =
   | "apk"
   | "codes"
   | "project"
+  | "announcements"
   | "project-db";
 
 type AdminUser = User & {
@@ -160,7 +163,7 @@ export default function AdminDashboard() {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [page, setPage] = useState<DashboardPage>(() => {
     const urlPage = searchParams.get("page");
-    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "project-db"];
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "announcements", "project-db"];
     return validPages.includes(urlPage as DashboardPage) ? (urlPage as DashboardPage) : "dashboard";
   });
   const [premiumCodes, setPremiumCodes] = useState<PremiumCode[]>([]);
@@ -1057,6 +1060,7 @@ export default function AdminDashboard() {
       nextPage === "apk" ||
       nextPage === "codes" ||
       nextPage === "project" ||
+      nextPage === "announcements" ||
       nextPage === "project-db"
     ) {
       setPage(nextPage);
@@ -1097,6 +1101,11 @@ export default function AdminDashboard() {
       label: "Health",
     },
 
+    {
+      id: "announcements",
+      icon: <FiVolume2 size={18} />,
+      label: "Info",
+    },
     {
       id: "project",
       icon: <FiBookOpen size={18} />,
@@ -1185,6 +1194,7 @@ export default function AdminDashboard() {
         {page === "project" && (
           <ProjectTab getAdminToken={getAdminToken} />
         )}
+        {page === "announcements" && <AnnouncementsTab getAdminToken={getAdminToken} />}
         {page === "project-db" && <ProjectDbTab getAdminToken={getAdminToken} />}
         {page === "users" && (
           <UsersTab

@@ -128,9 +128,13 @@ export default function Navbar() {
     if (unreadCount === 0 || !user?.id) return;
 
     if (tab === "info") {
+      const announcementIds = notifications
+        .filter((notification) => !notification.is_read && notification.type === "announcement")
+        .map((notification) => notification.id);
+      if (announcementIds.length) await markNotificationsRead(user.id, announcementIds);
       setNotifications((prev) => {
         const next = prev.map((notification) =>
-          notification.type === TITLE_RUSH_EVENT_TYPE
+          notification.type === TITLE_RUSH_EVENT_TYPE || notification.type === "announcement"
             ? { ...notification, is_read: true }
             : notification,
         );
@@ -145,6 +149,7 @@ export default function Navbar() {
         (notification) =>
           !notification.is_read &&
           notification.type !== TITLE_RUSH_EVENT_TYPE &&
+          notification.type !== "announcement" &&
           !String(notification.id).startsWith("title-rush-event-"),
       )
       .map((notification) => notification.id);

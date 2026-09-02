@@ -9,6 +9,7 @@ const YUKI_EMBED_URL = "https://yuki.ryukomik.web.id/embed.html";
 export default function YukiChatEmbed() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const hasMobileCommunityComposer = pathname === "/feed" || pathname === "/files";
 
   useEffect(() => {
     if (!open) return;
@@ -24,7 +25,13 @@ export default function YukiChatEmbed() {
   }
 
   return (
-    <aside className="fixed bottom-[calc(5.1rem+env(safe-area-inset-bottom))] right-2 z-[55] sm:bottom-5 sm:right-5">
+    <aside
+      className={`fixed right-2 z-[55] sm:bottom-5 sm:right-5 ${
+        hasMobileCommunityComposer && !open
+          ? "bottom-[calc(8.5rem+env(safe-area-inset-bottom))]"
+          : "bottom-[calc(5.1rem+env(safe-area-inset-bottom))]"
+      }`}
+    >
       {open ? (
         <section
           role="dialog"

@@ -81,6 +81,8 @@ export interface NotificationItem {
   type?: string;
   slug?: string;
   target_id?: string | null;
+  notification_title?: string | null;
+  notification_message?: string | null;
   is_read?: boolean;
   created_at: string;
 }

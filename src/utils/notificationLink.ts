@@ -17,6 +17,11 @@ type LinkNotification = Pick<NotificationItem, "type" | "slug" | "target_id" | "
 
 export function getNotificationLink(notification: LinkNotification) {
   if (notification.type === "title_rush_weekly") return "/game";
+  if (notification.type === "announcement") {
+    return notification.slug?.startsWith("/") && !notification.slug.startsWith("//")
+      ? notification.slug
+      : "/notifications";
+  }
   if (notification.type === "premium_activated" || notification.type === "premium_reward") return "/premium-pay";
   if (notification.type === "new_follower") {
     const profile = notification.actor_name || notification.target_id;
