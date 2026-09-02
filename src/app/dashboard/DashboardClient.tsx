@@ -16,7 +16,6 @@ import {
   FiShield,
   FiHome,
   FiMessageCircle,
-  FiVolume2,
 } from "react-icons/fi";
 import DashboardHomeTab from "@/components/dashboard/DashboardHomeTab";
 import SourceHealthTab from "@/components/dashboard/SourceHealthTab";
@@ -1101,11 +1100,6 @@ export default function AdminDashboard() {
       label: "Health",
     },
 
-    {
-      id: "announcements",
-      icon: <FiVolume2 size={18} />,
-      label: "Info",
-    },
     {
       id: "project",
       icon: <FiBookOpen size={18} />,

@@ -9,6 +9,7 @@ import {
   FiMessageCircle,
   FiAward,
   FiSmartphone,
+  FiVolume2,
 } from "react-icons/fi";
 import { RiVipCrownLine } from "react-icons/ri";
 import { HiOutlineSparkles } from "react-icons/hi2";
@@ -471,6 +472,21 @@ export default function DashboardHomeTab({
                 Source Health
               </p>
               <p className="text-[10px] text-white/30">Cek latency & error</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setPage("announcements")}
+            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-violet-500/30 hover:bg-violet-500/[.04] transition-all text-left"
+          >
+            <div className="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center">
+              <FiVolume2 size={16} className="text-violet-300" />
+            </div>
+            <div>
+              <p className="text-[12px] font-semibold text-white/70">
+                Pengumuman
+              </p>
+              <p className="text-[10px] text-white/30">Kirim info ke pengguna</p>
             </div>
           </button>
 
