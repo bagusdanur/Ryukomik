@@ -201,6 +201,7 @@ export default function TerbaruPage({
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
   const restoredSourceRef = useRef<SourceId | null>(null);
+  const restoredScrollYRef = useRef<number | null>(null);
   const skipNextStateSaveRef = useRef(false);
   const [navigatingHref, setNavigatingHref] = useState<string | null>(null);
 
@@ -332,6 +333,7 @@ export default function TerbaruPage({
           const restoredData = normalizeListingItems(parsed.data, cachedSource);
           const restoredPage = Number(parsed.page) || 1;
           restoredSourceRef.current = cachedSource;
+          restoredScrollYRef.current = Math.max(0, Number(parsed.scrollY) || 0);
           skipNextStateSaveRef.current = true;
           setSource(cachedSource);
           setData(restoredData);
@@ -364,6 +366,7 @@ export default function TerbaruPage({
         genre,
         genre2,
         status,
+        scrollY: window.scrollY,
         timestamp: Date.now()
       };
       sessionStorage.setItem(GLOBAL_STATE_CACHE_KEY, JSON.stringify(state));
@@ -471,10 +474,33 @@ export default function TerbaruPage({
         genre,
         genre2,
         status,
+        scrollY: window.scrollY,
         timestamp: Date.now(),
       }));
     } catch {}
   }, [data, page, source, orderby, tipe, genre, genre2, status]);
+
+  // Pulihkan posisi hanya setelah snapshot daftar selesai dirender dan tinggi
+  // dokumen cukup. Ini membuat Back dari detail konsisten untuk semua source.
+  useEffect(() => {
+    const targetY = restoredScrollYRef.current;
+    if (targetY === null || data.length === 0) return;
+
+    let frame = 0;
+    let raf = 0;
+    const restore = () => {
+      const canReachTarget = document.documentElement.scrollHeight >= targetY + window.innerHeight;
+      if (canReachTarget || frame >= 60) {
+        window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
+        restoredScrollYRef.current = null;
+        return;
+      }
+      frame += 1;
+      raf = window.requestAnimationFrame(restore);
+    };
+    raf = window.requestAnimationFrame(restore);
+    return () => window.cancelAnimationFrame(raf);
+  }, [data, source]);
 
   const resetListing = useCallback(() => {
     setData([]);
@@ -719,7 +745,6 @@ export default function TerbaruPage({
   useEffect(() => {
     const clearPendingNavigation = () => {
       setNavigatingHref(null);
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     };
     clearPendingNavigation();
     window.addEventListener("pageshow", clearPendingNavigation);
@@ -798,6 +823,8 @@ export default function TerbaruPage({
 
     resetFilterState();
     resetListing();
+    restoredScrollYRef.current = null;
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     setSource(nextSource);
   }, [fetchData, resetFilterState, resetListing, source]);
 
