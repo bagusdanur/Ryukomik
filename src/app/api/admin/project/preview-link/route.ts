@@ -31,7 +31,10 @@ export async function POST(request: Request) {
     }
 
     const token = createDraftPreviewToken(result.data.id);
-    const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || new URL(request.url).origin;
+    const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+    const origin = configuredOrigin && !/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i.test(configuredOrigin)
+      ? configuredOrigin
+      : "https://ryukomik.my.id";
     return NextResponse.json({
       url: `${origin}/preview/project/${encodeURIComponent(token)}`,
       expiresInDays: 7,
