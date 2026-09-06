@@ -13,6 +13,7 @@ export interface CachedProfile {
   premium_until?: string | null;
   created_at?: string | null;
   total_comments?: number | null;
+  total_reads?: number | null;
   show_public_reads?: boolean | null;
   show_public_comments?: boolean | null;
   show_public_join_date?: boolean | null;
@@ -50,7 +51,7 @@ export function loadCachedProfile(userId: string, options: { force?: boolean } =
     supabase
       .from("profiles")
       .select(
-        "id, username, avatar_url, level, xp, role, is_premium, premium_until, created_at, total_comments, show_public_reads, show_public_comments, show_public_join_date",
+        "id, username, avatar_url, level, xp, role, is_premium, premium_until, created_at, total_comments, total_reads, show_public_reads, show_public_comments, show_public_join_date",
       )
       .eq("id", userId)
       .maybeSingle(),

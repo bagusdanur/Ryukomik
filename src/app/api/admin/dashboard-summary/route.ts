@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     { count: commentsToday },
     { count: totalComments },
     { count: readsToday },
-    { count: totalReads },
+    { data: totalReads },
     { count: pendingRequests },
     { data: readRows },
   ] = await Promise.all([
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
       .from("user_reads")
       .select("id", { count: "exact", head: true })
       .gte("created_at", todayISO),
-    supabaseAdmin.from("user_reads").select("id", { count: "exact", head: true }),
+    supabaseAdmin.rpc("get_total_read_count"),
     supabaseAdmin
       .from("premium_requests")
       .select("id", { count: "exact", head: true })
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
       commentsToday: commentsToday ?? 0,
       totalComments: totalComments ?? 0,
       readsToday: readsToday ?? 0,
-      totalReads: totalReads ?? 0,
+      totalReads: Number(totalReads || 0),
     },
     pendingCount: pendingRequests ?? 0,
     activityToday: {

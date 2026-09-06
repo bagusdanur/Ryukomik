@@ -106,11 +106,6 @@ export default function SettingsClient() {
       setProfileLoading(true);
       const profile = await loadCachedProfile(user.id);
 
-      const { count: totalReads } = await supabase
-        .from("user_reads")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id);
-
       if (cancelled) return;
 
       if (profile) {
@@ -127,7 +122,7 @@ export default function SettingsClient() {
           show_public_reads: profile.show_public_reads,
           show_public_comments: profile.show_public_comments,
           show_public_join_date: profile.show_public_join_date,
-          total_reads: totalReads ?? 0,
+          total_reads: profile.total_reads ?? 0,
         });
         setProfileForm({
           username: profile.username || user.user_metadata?.name || "",

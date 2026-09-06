@@ -16,29 +16,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "invalid" }, { status: 400 });
     }
 
-    const today = new Date().toISOString().split("T")[0];
-    const { count: existingReads } = await supabaseAdmin
-      .from("user_reads")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user_id)
-      .eq("chapter_slug", chapter_slug)
-      .gte("created_at", today);
-
-    if ((existingReads || 0) > 0) {
-      return NextResponse.json({ success: true, cached: true });
-    }
-
-    await supabaseAdmin.from("user_reads").insert({
-      user_id,
-      chapter_slug,
+    const { data: recorded, error } = await supabaseAdmin.rpc("record_user_read", {
+      p_user_id: user_id,
+      p_chapter_slug: chapter_slug,
+      p_xp_amount: 5,
     });
 
-    await supabaseAdmin.rpc("increment_xp", {
-      user_id,
-      xp_amount: 5,
-    });
+    if (error) throw error;
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, cached: !recorded });
   } catch (err) {
     console.error("[XP Read] Error:", err);
     return NextResponse.json(
