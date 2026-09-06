@@ -3,9 +3,7 @@
 import { useEffect } from "react";
 
 const VISITOR_KEY = "ryukomik:project-viewer-id";
-const VIEW_PREFIX = "ryukomik:project-view:";
-const VIEW_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-const MIN_READING_MS = 7000;
+const MIN_READING_MS = 2000;
 
 function getVisitorId() {
   const existing = window.localStorage.getItem(VISITOR_KEY);
@@ -23,10 +21,6 @@ export function useProjectViewCounter(source: string, mangaSlug?: string, chapte
     if (!chapterMatch) return;
     const chapterNumber = chapterMatch[1];
 
-    const viewKey = `${VIEW_PREFIX}${mangaSlug}:chapter-${chapterNumber}`;
-    const previous = Number(window.localStorage.getItem(viewKey) || 0);
-    if (Date.now() - previous < VIEW_COOLDOWN_MS) return;
-
     const timer = window.setTimeout(() => {
       if (document.visibilityState !== "visible") return;
       const visitorId = getVisitorId();
@@ -35,8 +29,6 @@ export function useProjectViewCounter(source: string, mangaSlug?: string, chapte
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ visitorId, chapterNumber }),
         keepalive: true,
-      }).then((response) => {
-        if (response.ok) window.localStorage.setItem(viewKey, String(Date.now()));
       }).catch(() => undefined);
     }, MIN_READING_MS);
 
