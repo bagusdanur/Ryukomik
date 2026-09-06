@@ -5,6 +5,7 @@ import { projectApiUrl } from "@/lib/projectApiServer";
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
 const VISITOR_ID_PATTERN = /^[a-f0-9-]{36}$/i;
+const CHAPTER_PATTERN = /^\d+(?:\.\d+)?$/;
 
 export async function POST(
   request: Request,
@@ -24,8 +25,12 @@ export async function POST(
 
     const payload = await request.json().catch(() => null);
     const visitorId = typeof payload?.visitorId === "string" ? payload.visitorId : "";
+    const chapterNumber = String(payload?.chapterNumber || "").trim();
     if (!VISITOR_ID_PATTERN.test(visitorId)) {
       return NextResponse.json({ error: "Visitor tidak valid" }, { status: 400 });
+    }
+    if (!CHAPTER_PATTERN.test(chapterNumber)) {
+      return NextResponse.json({ error: "Chapter tidak valid" }, { status: 400 });
     }
 
     const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -34,7 +39,9 @@ export async function POST(
     }
 
     const visitorHash = createHmac("sha256", secret).update(visitorId).digest("hex");
-    const projectUrl = projectApiUrl(`/projects/${encodeURIComponent(slug)}/view`);
+    const projectUrl = projectApiUrl(
+      `/projects/${encodeURIComponent(slug)}/chapters/${encodeURIComponent(chapterNumber)}/view`,
+    );
     if (projectUrl) {
       await fetch(projectUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ viewerHash: visitorHash }) });
       return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });

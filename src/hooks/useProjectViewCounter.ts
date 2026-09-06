@@ -15,11 +15,15 @@ function getVisitorId() {
   return visitorId;
 }
 
-export function useProjectViewCounter(source: string, mangaSlug?: string) {
+export function useProjectViewCounter(source: string, mangaSlug?: string, chapterSlug?: string) {
   useEffect(() => {
-    if (source !== "project" || !mangaSlug) return;
+    if (source !== "project" || !mangaSlug || !chapterSlug) return;
 
-    const viewKey = `${VIEW_PREFIX}${mangaSlug}`;
+    const chapterMatch = chapterSlug.match(/(?:chapter[-/\s]?)(\d+(?:\.\d+)?)/i);
+    if (!chapterMatch) return;
+    const chapterNumber = chapterMatch[1];
+
+    const viewKey = `${VIEW_PREFIX}${mangaSlug}:chapter-${chapterNumber}`;
     const previous = Number(window.localStorage.getItem(viewKey) || 0);
     if (Date.now() - previous < VIEW_COOLDOWN_MS) return;
 
@@ -29,7 +33,7 @@ export function useProjectViewCounter(source: string, mangaSlug?: string) {
       void fetch(`/api/project/view/${encodeURIComponent(mangaSlug)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visitorId }),
+        body: JSON.stringify({ visitorId, chapterNumber }),
         keepalive: true,
       }).then((response) => {
         if (response.ok) window.localStorage.setItem(viewKey, String(Date.now()));
@@ -37,5 +41,5 @@ export function useProjectViewCounter(source: string, mangaSlug?: string) {
     }, MIN_READING_MS);
 
     return () => window.clearTimeout(timer);
-  }, [source, mangaSlug]);
+  }, [source, mangaSlug, chapterSlug]);
 }

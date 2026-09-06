@@ -39,7 +39,7 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
 
   useXpQueueFlush();
   useXpRead({ user, slugStr });
-  useProjectViewCounter(source, data?.mangaId);
+  useProjectViewCounter(source, data?.mangaId, slugStr);
 
   const settings = useReaderStore();
   const addHistory = useHistoryStore((state) => state.addHistory);

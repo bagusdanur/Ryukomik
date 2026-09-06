@@ -30,6 +30,7 @@ export interface Chapter {
   images?: string[];
   created_at?: string;
   updated_at?: string;
+  view_count?: number;
 }
 
 export interface Genre {

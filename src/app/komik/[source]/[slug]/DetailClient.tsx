@@ -288,6 +288,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
 
       <ChapterList
         data={data}
+        mangaSlug={slug}
         lastRead={lastRead}
         source={source}
         isPremium={isPremium}

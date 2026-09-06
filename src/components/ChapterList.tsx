@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import DownloadButton from "./DownloadButton";
 import BatchDownloadButton from "./BatchDownloadButton";
-import { FiCheckSquare, FiSquare, FiX, FiSearch } from "react-icons/fi";
+import { FiCheckSquare, FiSquare, FiX, FiSearch, FiEye } from "react-icons/fi";
 import { FiDownload } from "react-icons/fi";
 import { RiSortAsc, RiSortDesc } from "react-icons/ri";
 import { HiOutlineBookOpen } from "react-icons/hi2";
@@ -16,6 +16,7 @@ type ChapterItem = {
   slug?: string;
   title?: string;
   date?: string;
+  view_count?: number;
 };
 
 type DetailData = {
@@ -34,6 +35,7 @@ type ChapterListProps = {
   source: string;
   isPremium?: boolean;
   user?: User | null;
+  mangaSlug?: string;
 };
 
 export default function ChapterList({
@@ -42,6 +44,7 @@ export default function ChapterList({
   source,
   isPremium,
   user,
+  mangaSlug,
 }: ChapterListProps) {
   const [reverse, setReverse] = useState(true);
   const [keyword, setKeyword] = useState("");
@@ -49,6 +52,7 @@ export default function ChapterList({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [chapterViews, setChapterViews] = useState<Record<string, number>>({});
 
   const MAX = 5;
 
@@ -57,6 +61,28 @@ export default function ChapterList({
     const id = requestAnimationFrame(() => setMounted(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
+  useEffect(() => {
+    if (source !== "project" || !mangaSlug) return;
+    let cancelled = false;
+    const refresh = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const response = await fetch(`/api/project/${encodeURIComponent(mangaSlug)}/chapter-views`, { cache: "no-store" });
+        const payload = await response.json() as { data?: Array<{ chapter_number?: string; view_count?: number }> };
+        if (!cancelled && response.ok) {
+          const next: Record<string, number> = {};
+          for (const row of payload.data || []) next[String(row.chapter_number)] = Number(row.view_count) || 0;
+          setChapterViews(next);
+        }
+      } catch {
+        // Angka dari render awal tetap dipakai jika refresh gagal.
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 15_000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [source, mangaSlug]);
 
   const filteredChapters = useMemo(() => {
     const chapters = data.chapters || [];
@@ -306,9 +332,15 @@ export default function ChapterList({
                     )}
                   </div>
 
-                  {chap.date && (
-                    <span className="text-[11px] text-white/30 mt-0.5 block">
-                      {chap.date}
+                  {(chap.date || source === "project") && (
+                    <span className="mt-0.5 flex items-center gap-2 text-[11px] text-white/30">
+                      {chap.date && <span>{chap.date}</span>}
+                      {source === "project" && (
+                        <span className="inline-flex items-center gap-1 text-sky-300/60">
+                          <FiEye size={12} />
+                          {(chapterViews[chap.slug?.match(/chapter-(\d+(?:\.\d+)?)/i)?.[1] || ""] ?? chap.view_count ?? 0).toLocaleString("id-ID")}
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>

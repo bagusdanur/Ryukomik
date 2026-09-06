@@ -122,6 +122,7 @@ type Chapter = {
   image_urls: string[];
   uploaded_at: string;
   is_published: boolean;
+  view_count?: number;
 };
 
 type MangaConfirmation = {
@@ -133,6 +134,7 @@ type ProjectViewStats = {
   readersToday: number;
   readers7d: number;
   bySlug: Record<string, number>;
+  byChapter?: Record<string, Record<string, number>>;
   content?: { total: number; published: number; drafts: number; views: number | string };
 };
 type ProjectActivity = { id: number; action: string; entity_type: string; manga_slug?: string | null; detail?: { title?: string }; created_at: string };
@@ -730,6 +732,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           readersToday: Number(statsJson.readersToday) || 0,
           readers7d: Number(statsJson.readers7d) || 0,
           bySlug: statsJson.bySlug || {},
+          byChapter: statsJson.byChapter || {},
           content: statsJson.content,
         });
       }
@@ -743,6 +746,38 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   useEffect(() => {
     if (view === "mangaList") fetchManga();
   }, [view, fetchManga]);
+
+  useEffect(() => {
+    if (view !== "mangaList" && view !== "chapterList") return;
+    let cancelled = false;
+    const refresh = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const token = await getAdminToken();
+        const response = await fetch("/api/admin/project/view-stats", {
+          cache: "no-store",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const payload = await response.json();
+        if (!cancelled && response.ok) {
+          setViewStats({
+            readersToday: Number(payload.readersToday) || 0,
+            readers7d: Number(payload.readers7d) || 0,
+            bySlug: payload.bySlug || {},
+            byChapter: payload.byChapter || {},
+            content: payload.content,
+          });
+        }
+      } catch {
+        // Statistik tidak boleh mengganggu pengelolaan konten.
+      }
+    };
+    const timer = window.setInterval(() => void refresh(), 15_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [view, getAdminToken]);
 
   useEffect(() => {
     if (!activityOpen) return;
@@ -2040,6 +2075,10 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                     </div>
                     <p className="text-[10px] text-white/40 mt-0.5">
                       {chap.image_urls.length} gambar{chap.title ? ` â€¢ ${chap.title}` : ""}
+                    </p>
+                    <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-sky-300/75">
+                      <FiEyeIcon size={11} />
+                      {(viewStats.byChapter?.[chap.manga_slug]?.[String(chap.chapter_number)] || chap.view_count || 0).toLocaleString("id-ID")} views
                     </p>
                   </div>
                   {!bulkMode && (
