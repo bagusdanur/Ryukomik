@@ -20,6 +20,7 @@ import {
   FiExternalLink as FiExternalLinkIcon,
   FiAlertTriangle as FiAlertTriangleIcon,
   FiClock as FiClockIcon,
+  FiLink as FiLinkIcon,
 } from "react-icons/fi";
 import { MANGA_SOURCES } from "@/config/sources";
 
@@ -1114,6 +1115,28 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     }
   };
 
+  const copyDraftPreviewLink = async (chapter: Chapter) => {
+    try {
+      const token = await getAdminToken();
+      const response = await fetch("/api/admin/project/preview-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ chapterId: chapter.id }),
+      });
+      const json = await response.json() as { url?: string; error?: string };
+      if (!response.ok || !json.url) throw new Error(json.error || "Gagal membuat link preview");
+
+      try {
+        await navigator.clipboard.writeText(json.url);
+        alert("Link preview draft disalin. Link berlaku selama 7 hari.");
+      } catch {
+        window.prompt("Salin link preview draft berikut:", json.url);
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Gagal membuat link preview");
+    }
+  };
+
   const deleteChapter = async (id: string) => {
     const chap = chapterList.find((c) => c.id === id);
     const label = chap ? `Chapter ${chap.chapter_number}` : "ini";
@@ -2028,6 +2051,15 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                       >
                         <FiEyeIcon size={14} />
                       </button>
+                      {!chap.is_published && (
+                        <button
+                          onClick={() => void copyDraftPreviewLink(chap)}
+                          className="flex h-8 items-center gap-1.5 rounded-lg bg-violet-500/10 px-2.5 text-[10px] font-bold text-violet-300 hover:bg-violet-500/20"
+                          title="Salin link preview publik (7 hari)"
+                        >
+                          <FiLinkIcon size={13} /> Link
+                        </button>
+                      )}
                       <button
                         onClick={() => togglePublishChapter(chap)}
                         className={`rounded-lg px-2.5 h-8 text-[10px] font-bold ${chap.is_published ? "bg-amber-500/10 text-amber-300" : "bg-emerald-500/10 text-emerald-300"}`}
