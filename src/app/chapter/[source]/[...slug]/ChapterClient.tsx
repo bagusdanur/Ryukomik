@@ -35,6 +35,15 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
   const [showUI, setShowUI] = useState(true);
   const [showSetting, setShowSetting] = useState(false);
   const [showComment, setShowComment] = useState(false);
+  const needsImageAccess = Boolean(data?.images?.some((url) => {
+    try {
+      return new URL(url).hostname === "storage.ryukomik.my.id" && new URL(url).pathname.startsWith("/chapters/");
+    } catch {
+      return false;
+    }
+  }));
+  const [imageAccessReady, setImageAccessReady] = useState(!needsImageAccess);
+  const [imageAccessError, setImageAccessError] = useState(false);
   const { user } = useSupabaseUser();
 
   useXpQueueFlush();
@@ -44,6 +53,47 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
   const settings = useReaderStore();
   const addHistory = useHistoryStore((state) => state.addHistory);
   const autoScroll = useAutoScroll(settings.scrollSpeed);
+
+  useEffect(() => {
+    if (!needsImageAccess) {
+      setImageAccessReady(true);
+      setImageAccessError(false);
+      return;
+    }
+    let cancelled = false;
+    let refreshTimer: ReturnType<typeof setInterval> | undefined;
+
+    const issueAccess = async () => {
+      try {
+        const response = await fetch("/api/image-session", {
+          method: "POST",
+          credentials: "include",
+          cache: "no-store",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ chapter: slugStr }),
+        });
+        if (!response.ok) throw new Error(`image session ${response.status}`);
+        if (!cancelled) {
+          setImageAccessReady(true);
+          setImageAccessError(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setImageAccessReady(false);
+          setImageAccessError(true);
+        }
+      }
+    };
+
+    setImageAccessReady(false);
+    setImageAccessError(false);
+    void issueAccess();
+    refreshTimer = setInterval(() => void issueAccess(), 90 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      if (refreshTimer) clearInterval(refreshTimer);
+    };
+  }, [needsImageAccess, slugStr]);
 
   useScrollBehavior({
     autoNext: settings.autoNext,
@@ -96,7 +146,7 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
 
       <ReaderSupportAd />
 
-      <ReaderImages
+      {imageAccessReady ? <ReaderImages
         images={data.images}
         slugStr={slugStr}
         source={source}
@@ -106,7 +156,15 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
         imageScaling={settings.imageScaling}
         pageSpacing={settings.pageSpacing}
         nextChapterSlug={data.next}
-      />
+      /> : (
+        <div className="flex min-h-[45vh] items-center justify-center px-6 text-center text-sm text-white/60">
+          {imageAccessError ? (
+            <button type="button" onClick={() => window.location.reload()} className="rounded-lg border border-white/15 px-4 py-2 text-white/80">
+              Akses gambar gagal. Ketuk untuk mencoba lagi.
+            </button>
+          ) : "Menyiapkan gambar chapter..."}
+        </div>
+      )}
       <ReaderProgress 
         images={data.images}
         slugStr={slugStr}
