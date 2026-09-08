@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { verifyDraftPreviewToken } from "@/lib/draftPreviewToken";
 import { projectApiFetch } from "@/lib/projectApiServer";
+import DraftPreviewImages from "./DraftPreviewImages";
 
 export const dynamic = "force-dynamic";
 
@@ -53,19 +54,7 @@ export default async function DraftPreviewPage({ params }: { params: Promise<{ t
       </header>
 
       <div className="mx-auto max-w-4xl">
-        {images.map((url, index) => (
-          <img
-            key={`${url}:${index}`}
-            src={url}
-            alt={`Halaman ${index + 1}`}
-            className="block h-auto w-full"
-            loading={index < 2 ? "eager" : "lazy"}
-            referrerPolicy="no-referrer"
-          />
-        ))}
-        {!images.length && (
-          <p className="p-12 text-center text-sm text-white/50">Draft ini belum memiliki gambar.</p>
-        )}
+        <DraftPreviewImages images={images} chapter={`${chapter.manga_slug}/chapter-${chapter.chapter_number}`} />
       </div>
     </main>
   );
