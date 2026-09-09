@@ -117,7 +117,7 @@ type Manga = {
 type Chapter = {
   id: string;
   manga_slug: string;
-  chapter_number: number;
+  chapter_number: number | string;
   title?: string;
   image_urls: string[];
   uploaded_at: string;
@@ -1130,12 +1130,18 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
 
   const saveChapter = async (e: FormEvent) => {
     e.preventDefault();
+    const normalizedChapterNumber = Number(String(chapterForm.chapter_number ?? "").replace(",", "."));
+    if (!Number.isFinite(normalizedChapterNumber) || normalizedChapterNumber < 0) {
+      alert("Nomor chapter tidak valid. Gunakan format seperti 0.5, 2.5, atau 12.");
+      return;
+    }
     setLoading(true);
     try {
       const token = await getAdminToken();
       const method = chapterForm.id ? "PATCH" : "POST";
       const payload = {
         ...chapterForm,
+        chapter_number: normalizedChapterNumber,
         manga_slug: activeManga?.slug,
       };
 
@@ -2214,12 +2220,18 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               <label className="text-xs text-white/40 mb-1 block">Nomor Chapter</label>
               <input
                 required
-                type="number"
-                step="0.1"
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]+([.,][0-9]+)?"
                 value={chapterForm.chapter_number ?? ""}
-                onChange={(e) => setChapterForm({ ...chapterForm, chapter_number: Number(e.target.value) })}
+                onChange={(e) => {
+                  const value = e.target.value.replace(",", ".");
+                  if (/^\d*(?:\.\d*)?$/.test(value)) {
+                    setChapterForm({ ...chapterForm, chapter_number: value });
+                  }
+                }}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm"
-                placeholder="12"
+                placeholder="Contoh: 2.5"
               />
             </div>
             <div>
