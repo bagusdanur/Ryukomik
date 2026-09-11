@@ -35,11 +35,11 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
 
     const projectUrl = projectApiUrl(`/projects/${encodeURIComponent(slug)}`);
     if (projectUrl) {
-      const response = await fetch(projectUrl, { next: { revalidate: 300, tags: [`project-detail:${slug}`] } });
+      const response = await fetch(projectUrl, { next: { revalidate: 60, tags: [`project-detail:${slug}`] } });
       if (!response.ok) return NextResponse.json({ success: false, error: "Project tidak ditemukan" }, { status: response.status });
       const json = await response.json();
       const data = json.data || {};
-      return NextResponse.json({ success: true, data: { ...data, thumbnail: data.thumbnail || data.cover_url, synopsis: data.synopsis || data.description, chapters: (data.chapters || []).map((c: { id?: string; chapter_number: number; title?: string; uploaded_at?: string; view_count?: number }) => ({ id: c.id, slug: `${slug}/chapter-${c.chapter_number}`, title: c.title || `Chapter ${c.chapter_number}`, date: formatRelativeDate(c.uploaded_at || ""), uploaded_at: c.uploaded_at || null, view_count: Number(c.view_count) || 0 })) } }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" } });
+      return NextResponse.json({ success: true, data: { ...data, thumbnail: data.thumbnail || data.cover_url, synopsis: data.synopsis || data.description, chapters: (data.chapters || []).map((c: { id?: string; chapter_number: number; title?: string; uploaded_at?: string; view_count?: number; login_lock_until?: string | null }) => ({ id: c.id, slug: `${slug}/chapter-${c.chapter_number}`, title: c.title || `Chapter ${c.chapter_number}`, date: formatRelativeDate(c.uploaded_at || ""), uploaded_at: c.uploaded_at || null, view_count: Number(c.view_count) || 0, login_lock_until: c.login_lock_until || null })) } }, { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" } });
     }
 
     const { data: manga, error: mangaError } = await supabaseAdmin
@@ -56,7 +56,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
 
     const { data: chapters, error: chapterError } = await supabaseAdmin
       .from("project_chapters")
-      .select("id, chapter_number, title, uploaded_at")
+        .select("id, chapter_number, title, uploaded_at, login_lock_until")
       .eq("manga_slug", slug)
       .eq("is_published", true)
       .order("chapter_number", { ascending: false });
@@ -80,6 +80,7 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
           title: c.title || `Chapter ${c.chapter_number}`,
           date: formatRelativeDate(c.uploaded_at),
           uploaded_at: c.uploaded_at,
+          login_lock_until: c.login_lock_until || null,
         })) || []
       }
     });

@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import DownloadButton from "./DownloadButton";
 import BatchDownloadButton from "./BatchDownloadButton";
-import { FiCheckSquare, FiSquare, FiX, FiSearch, FiEye } from "react-icons/fi";
+import { FiCheckSquare, FiSquare, FiX, FiSearch, FiEye, FiLock } from "react-icons/fi";
 import { FiDownload } from "react-icons/fi";
 import { RiSortAsc, RiSortDesc } from "react-icons/ri";
 import { HiOutlineBookOpen } from "react-icons/hi2";
@@ -17,6 +17,7 @@ type ChapterItem = {
   title?: string;
   date?: string;
   view_count?: number;
+  login_lock_until?: string | null;
 };
 
 type DetailData = {
@@ -52,14 +53,16 @@ export default function ChapterList({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [nowMs, setNowMs] = useState(0);
   const [chapterViews, setChapterViews] = useState<Record<string, number>>({});
 
   const MAX = 5;
 
   // Tunggu client mount sebelum render bagian yang pakai lastRead
   useEffect(() => {
-    const id = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(id);
+    const id = requestAnimationFrame(() => { setMounted(true); setNowMs(Date.now()); });
+    const timer = window.setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => { cancelAnimationFrame(id); window.clearInterval(timer); };
   }, []);
 
   useEffect(() => {
@@ -258,6 +261,9 @@ export default function ChapterList({
       {/* ── List ── */}
       <div className="max-h-[620px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
         {filteredChapters.map((chap) => {
+          const lockUntil = chap.login_lock_until ? new Date(chap.login_lock_until).getTime() : 0;
+          const isLoginLocked = mounted && source === "project" && lockUntil > nowMs;
+          const lockMinutes = Math.max(1, Math.ceil((lockUntil - nowMs) / 60000));
           // isLastRead hanya dihitung setelah mounted
           const isLastRead =
             mounted &&
@@ -341,6 +347,12 @@ export default function ChapterList({
                           {(chapterViews[chap.slug?.match(/chapter-(\d+(?:\.\d+)?)/i)?.[1] || ""] ?? chap.view_count ?? 0).toLocaleString("id-ID")}
                         </span>
                       )}
+                    </span>
+                  )}
+                  {isLoginLocked && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-300">
+                      <FiLock size={11} />
+                      {user ? "Akses member" : `Login · ${lockMinutes >= 60 ? `${Math.floor(lockMinutes / 60)}j ${lockMinutes % 60}m` : `${lockMinutes}m`}`}
                     </span>
                   )}
                 </div>

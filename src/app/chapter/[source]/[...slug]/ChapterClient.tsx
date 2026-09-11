@@ -28,9 +28,10 @@ interface ChapterClientProps {
   error?: unknown;
   source: string;
   slugStr: string;
+  imageAccessToken?: string;
 }
 
-export default function ChapterClient({ data, error, source, slugStr }: ChapterClientProps) {
+export default function ChapterClient({ data, error, source, slugStr, imageAccessToken }: ChapterClientProps) {
   const router = useRouter();
   const [showUI, setShowUI] = useState(true);
   const [showSetting, setShowSetting] = useState(false);
@@ -69,7 +70,10 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
           method: "POST",
           credentials: "include",
           cache: "no-store",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            ...(imageAccessToken ? { authorization: `Bearer ${imageAccessToken}` } : {}),
+          },
           body: JSON.stringify({ chapter: slugStr }),
         });
         if (!response.ok) throw new Error(`image session ${response.status}`);
@@ -93,7 +97,7 @@ export default function ChapterClient({ data, error, source, slugStr }: ChapterC
       cancelled = true;
       if (refreshTimer) clearInterval(refreshTimer);
     };
-  }, [needsImageAccess, slugStr]);
+  }, [imageAccessToken, needsImageAccess, slugStr]);
 
   useScrollBehavior({
     autoNext: settings.autoNext,

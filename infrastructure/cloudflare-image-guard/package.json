@@ -1,0 +1,13 @@
+{
+  "name": "ryukomik-image-guard",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --test test/*.test.js",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.129.0"
+  }
+}

@@ -20,7 +20,14 @@ export async function fetchDownloadChapter(
     url = `https://api.ryukomik.web.id/${encodeURIComponent(source)}/chapter/${slug}`;
   }
 
-  const response = await fetch(url);
+  let headers: HeadersInit | undefined;
+  if (source.toLowerCase() === "project") {
+    const { supabase } = await import("@/lib/supabaseClient");
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token;
+    if (token) headers = { authorization: `Bearer ${token}` };
+  }
+  const response = await fetch(url, { cache: "no-store", headers });
   const data = await response.json().catch(() => null);
   if (!response.ok || data?.success === false) {
     throw new Error(data?.error || `Gagal mengambil chapter (${response.status})`);

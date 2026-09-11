@@ -54,7 +54,7 @@ export default async function DraftPreviewPage({ params }: { params: Promise<{ t
       </header>
 
       <div className="mx-auto max-w-4xl">
-        <DraftPreviewImages images={images} chapter={`${chapter.manga_slug}/chapter-${chapter.chapter_number}`} />
+        <DraftPreviewImages images={images} chapter={`${chapter.manga_slug}/chapter-${chapter.chapter_number}`} previewToken={token} />
       </div>
     </main>
   );

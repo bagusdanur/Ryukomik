@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { projectApiUrl } from "@/lib/projectApiServer";
+import { getVerifiedUserId } from "@/lib/serverRoleCache";
+
+function bearerToken(request: Request) {
+  const header = request.headers.get("authorization") || "";
+  return header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+}
 
 export async function GET(request: Request, props: { params: Promise<{ slug: string, chapter: string }> }) {
   try {
@@ -26,10 +32,22 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
 
     const projectUrl = projectApiUrl(`/projects/${encodeURIComponent(slug)}/chapters/${encodeURIComponent(String(chapterNum))}`);
     if (projectUrl) {
-      const json = await (await fetch(projectUrl, { next: { revalidate: 300, tags: [`project-chapter:${slug}:${chapterNum}`] } })).json();
+      const json = await (await fetch(projectUrl, { cache: "no-store" })).json();
       if (!json?.data) return NextResponse.json({ success: false, error: "Chapter tidak ditemukan" }, { status: 404 });
       const chapterData = json.data;
-      return NextResponse.json({ success: true, title: chapterData.title || `Chapter ${chapterData.chapter_number}`, currentChapter: `Chapter ${chapterData.chapter_number}`, mangaId: slug, series: { slug }, prev: chapterData.prev || null, next: chapterData.next || null, images: chapterData.image_urls || [] }, { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600" } });
+      const lockUntil = chapterData.login_lock_until || null;
+      const locked = Boolean(lockUntil && new Date(lockUntil).getTime() > Date.now());
+      let authenticated = false;
+      if (locked) {
+        const token = bearerToken(request);
+        if (token) {
+          try { await getVerifiedUserId(token); authenticated = true; } catch { authenticated = false; }
+        }
+      }
+      const response = NextResponse.json({ success: true, title: chapterData.title || `Chapter ${chapterData.chapter_number}`, currentChapter: `Chapter ${chapterData.chapter_number}`, mangaId: slug, series: { slug }, prev: chapterData.prev || null, next: chapterData.next || null, locked: locked && !authenticated, lockUntil, images: locked && !authenticated ? [] : (chapterData.image_urls || []) });
+      response.headers.set("Cache-Control", locked ? "private, no-store, max-age=0" : "public, s-maxage=300, stale-while-revalidate=3600");
+      response.headers.set("Vary", "Authorization");
+      return response;
     }
 
     // Dapatkan data manga (untuk prev/next logic dan title)

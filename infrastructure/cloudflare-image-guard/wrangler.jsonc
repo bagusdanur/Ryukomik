@@ -1,0 +1,41 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "ryukomik-image-guard",
+	"main": "src/index.js",
+	"compatibility_date": "2026-09-07",
+	"account_id": "eb536e99161775f25e4c26f4cf75b6e9",
+	"vars": {
+		"REQUIRE_SIGNED_COOKIE": "true"
+	},
+	"routes": [
+		{
+			"pattern": "storage.ryukomik.my.id/chapters/*",
+			"zone_name": "ryukomik.my.id"
+		},
+		{
+			"pattern": "storage.ryukomik.my.id/__ryukomik/image-guard*",
+			"zone_name": "ryukomik.my.id"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "COMICS",
+			"bucket_name": "ryukomik-project"
+		}
+	],
+	"rules": [
+		{
+			"type": "Data",
+			"globs": [
+				"**/*.png"
+			],
+			"fallthrough": true
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "HOTLINK_CONFIG",
+			"id": "631bf2fd97444d6f8bc41f1011becf68"
+		}
+	]
+}

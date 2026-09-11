@@ -2,6 +2,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { cache } from "react";
 import ChapterClient from "./ChapterClient";
+import ProjectChapterGate from "./ProjectChapterGate";
 import type { Metadata } from "next";
 import type { ReaderChapter } from "@/types/content";
 import {
@@ -63,10 +64,7 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
       const chapter = parts.length > 1 ? parts[1] : parts[0]; // fallback
       
       const res = await fetch(`${baseUrl}/api/project/chapter/${mangaSlug}/${chapter}`, {
-        next: {
-          revalidate: 300,
-          tags: [`project-chapter:${mangaSlug}:${chapter}`],
-        },
+        cache: "no-store",
         headers: { Accept: "application/json" }
       });
       
@@ -246,7 +244,11 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
         <span aria-hidden="true"> / </span>
         <span>{title}</span>
       </nav>
-      <ChapterClient data={data} error={undefined} source={canonicalSource} slugStr={slugStr} />
+      {canonicalSource === "project" ? (
+        <ProjectChapterGate initialData={data} source={canonicalSource} slugStr={slugStr} />
+      ) : (
+        <ChapterClient data={data} error={undefined} source={canonicalSource} slugStr={slugStr} />
+      )}
     </>
   );
 }

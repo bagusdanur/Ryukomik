@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export default function DraftPreviewImages({ images, chapter }: { images: string[]; chapter: string }) {
+export default function DraftPreviewImages({ images, chapter, previewToken }: { images: string[]; chapter: string; previewToken: string }) {
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -15,7 +15,7 @@ export default function DraftPreviewImages({ images, chapter }: { images: string
           credentials: "include",
           cache: "no-store",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ context: "public-draft-preview", chapter }),
+          body: JSON.stringify({ context: "public-draft-preview", chapter, previewToken }),
         });
         if (!response.ok) throw new Error(`image session ${response.status}`);
         if (!cancelled) setReady(true);
@@ -25,7 +25,7 @@ export default function DraftPreviewImages({ images, chapter }: { images: string
     };
     void issueAccess();
     return () => { cancelled = true; };
-  }, [chapter]);
+  }, [chapter, previewToken]);
 
   if (!images.length) return <p className="p-12 text-center text-sm text-white/50">Draft ini belum memiliki gambar.</p>;
   if (!ready) {

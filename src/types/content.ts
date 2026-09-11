@@ -46,6 +46,8 @@ export interface ReaderChapter {
   images: string[];
   prev?: string;
   next?: string;
+  locked?: boolean;
+  lockUntil?: string | null;
 }
 
 import type { SourceId as ImportedSourceId } from "@/config/sources";

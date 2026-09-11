@@ -156,34 +156,6 @@ interface ProjectTabProps {
 export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Chapter previews use the protected R2 host. Issue the same short-lived
-  // HttpOnly image ticket as the public reader before an editor opens a
-  // preview; covers and uploads remain unaffected.
-  useEffect(() => {
-    let stopped = false;
-    const issueImageAccess = async (attempt = 0): Promise<void> => {
-      try {
-        const response = await fetch("/api/image-session", {
-          method: "POST",
-          credentials: "include",
-          cache: "no-store",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ context: "dashboard-preview" }),
-        });
-        if (!response.ok) throw new Error(`image session ${response.status}`);
-      } catch {
-        if (!stopped && attempt < 2) {
-          window.setTimeout(() => void issueImageAccess(attempt + 1), 1000 * (attempt + 1));
-        }
-      }
-    };
-    void issueImageAccess();
-    const refresh = window.setInterval(() => void issueImageAccess(), 90 * 60 * 1000);
-    return () => {
-      stopped = true;
-      window.clearInterval(refresh);
-    };
-  }, []);
   type ProjectView = "mangaList" | "mangaForm" | "chapterList" | "chapterForm" | "chapterPreview";
   const [view, setViewState] = useState<ProjectView>(() => searchParams.get("projectView") === "chapterList" ? "chapterList" : "mangaList");
 
@@ -207,6 +179,25 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   // Forms
   const [mangaForm, setMangaForm] = useState<Partial<Manga>>({ is_published: false });
   const [chapterForm, setChapterForm] = useState<Partial<Chapter>>({ is_published: false });
+
+  useEffect(() => {
+    if (view !== "chapterPreview" || !activeManga?.slug || chapterForm.chapter_number === undefined) return;
+    let stopped = false;
+    const issueImageAccess = async () => {
+      try {
+        const token = await getAdminToken();
+        const response = await fetch("/api/image-session", {
+          method: "POST", credentials: "include", cache: "no-store",
+          headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+          body: JSON.stringify({ context: "dashboard-preview", chapter: `${activeManga.slug}/chapter-${chapterForm.chapter_number}` }),
+        });
+        if (!response.ok) throw new Error(`image session ${response.status}`);
+      } catch { /* Preview menampilkan status gagal dari browser bila tiket tidak tersedia. */ }
+    };
+    void issueImageAccess();
+    const refresh = window.setInterval(() => { if (!stopped) void issueImageAccess(); }, 90 * 60 * 1000);
+    return () => { stopped = true; window.clearInterval(refresh); };
+  }, [activeManga?.slug, chapterForm.chapter_number, getAdminToken, view]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadStats, setUploadStats] = useState<{ success: number; failed: number } | null>(null);
