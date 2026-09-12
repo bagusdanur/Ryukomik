@@ -179,11 +179,15 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   // Forms
   const [mangaForm, setMangaForm] = useState<Partial<Manga>>({ is_published: false });
   const [chapterForm, setChapterForm] = useState<Partial<Chapter>>({ is_published: false });
+  const [previewImageAccess, setPreviewImageAccess] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
   useEffect(() => {
-    if (view !== "chapterPreview" || !activeManga?.slug || chapterForm.chapter_number === undefined) return;
+    if (view !== "chapterPreview" || !activeManga?.slug || chapterForm.chapter_number === undefined) {
+      return;
+    }
     let stopped = false;
     const issueImageAccess = async () => {
+      if (!stopped) setPreviewImageAccess("loading");
       try {
         const token = await getAdminToken();
         const response = await fetch("/api/image-session", {
@@ -192,7 +196,10 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           body: JSON.stringify({ context: "dashboard-preview", chapter: `${activeManga.slug}/chapter-${chapterForm.chapter_number}` }),
         });
         if (!response.ok) throw new Error(`image session ${response.status}`);
-      } catch { /* Preview menampilkan status gagal dari browser bila tiket tidak tersedia. */ }
+        if (!stopped) setPreviewImageAccess("ready");
+      } catch {
+        if (!stopped) setPreviewImageAccess("error");
+      }
     };
     void issueImageAccess();
     const refresh = window.setInterval(() => { if (!stopped) void issueImageAccess(); }, 90 * 60 * 1000);
@@ -2179,10 +2186,21 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           </div>
         </div>
         <div className="mx-auto max-w-4xl">
-          {chapterForm.image_urls?.map((url, index) => (
+          {previewImageAccess === "loading" && (
+            <div className="flex min-h-[45vh] items-center justify-center gap-2 text-sm text-white/50">
+              <FiClockIcon className="animate-pulse text-cyan-300" /> Menyiapkan akses gambar preview...
+            </div>
+          )}
+          {previewImageAccess === "error" && (
+            <div className="flex min-h-[45vh] flex-col items-center justify-center gap-3 px-6 text-center">
+              <FiAlertTriangleIcon size={24} className="text-amber-300" />
+              <p className="text-sm text-white/60">Tiket gambar gagal dibuat. Tutup preview lalu coba kembali.</p>
+            </div>
+          )}
+          {previewImageAccess === "ready" && chapterForm.image_urls?.map((url, index) => (
             <img key={url + index} src={url} alt={`Halaman ${index + 1}`} className="block h-auto w-full" loading={index < 2 ? "eager" : "lazy"} />
           ))}
-          {!chapterForm.image_urls?.length && <p className="p-12 text-center text-sm text-white/40">Belum ada gambar untuk dipreview.</p>}
+          {previewImageAccess === "ready" && !chapterForm.image_urls?.length && <p className="p-12 text-center text-sm text-white/40">Belum ada gambar untuk dipreview.</p>}
         </div>
       </div>
     );
