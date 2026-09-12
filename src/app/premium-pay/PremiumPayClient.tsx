@@ -845,13 +845,17 @@ export default function PremiumPayClient() {
               </div>
               
               {isActivePremium ? (
-                <div className="w-full py-2.5 rounded-xl text-sm font-bold bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center gap-2 min-h-[44px]">
+                <button
+                  type="button"
+                  onClick={() => { setPaymentMode("manual"); setSelectedPlanId(manualPlans[0].id); handleActivatePremium(); }}
+                  className="w-full py-2.5 rounded-xl text-sm font-bold bg-amber-500/10 border border-amber-500/20 text-amber-300 hover:bg-amber-500/15 flex items-center justify-center gap-2 min-h-[44px] cursor-pointer transition-colors"
+                >
                   <RiVipCrownLine size={15} />
-                  Aktif
+                  Perpanjang Manual
                   {premiumDaysLeft !== null
                     ? ` · ${premiumDaysLeft} hari lagi`
                     : " · Premium"}
-                </div>
+                </button>
               ) : (
                 <button
                   onClick={handleActivatePremium}
@@ -1343,6 +1347,11 @@ export default function PremiumPayClient() {
                       {step === 3 && (
                         <div className="animate-fadeIn space-y-4">
                           <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 space-y-3">
+                            {isActivePremium && paymentMode === "manual" && (
+                              <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/[0.07] px-3 py-2 text-[11px] leading-relaxed text-cyan-100/80">
+                                Durasi paket manual akan ditambahkan setelah masa Premium aktif kamu. Sisa hari tidak hangus.
+                              </div>
+                            )}
                             <div className="flex items-center justify-between text-xs">
                               <span className="text-white/40">Paket Premium</span>
                               <span className="font-bold text-white">{selectedPlan.name}</span>

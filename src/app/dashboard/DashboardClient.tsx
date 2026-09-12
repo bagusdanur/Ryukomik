@@ -845,47 +845,27 @@ export default function AdminDashboard() {
 
   const handleRequestAction = async (id: string, action: "approve" | "reject") => {
     setActionLoading(id + action);
-    const status = action === "approve" ? "approved" : "rejected";
-
-    await supabase
-      .from("premium_requests")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", id);
-
-    if (action === "approve") {
-      const req = requests.find((r) => r.id === id);
-      if (req?.user_id) {
-        const durationDays = Math.max(
-          1,
-          Math.min(3650, Math.floor(Number(req.duration_days) || 30)),
-        );
-        const premiumUntil = new Date(
-          Date.now() + durationDays * 24 * 60 * 60 * 1000,
-        ).toISOString();
-
-        await supabase
-          .from("profiles")
-          .update({ is_premium: true, premium_until: premiumUntil })
-          .eq("id", req.user_id);
-        clearCachedProfile(req.user_id);
-
-        const token = await getAdminToken();
-        if (!token) throw new Error("Sesi admin tidak tersedia.");
-        const notificationResponse = await fetch("/api/admin/notifications", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            userId: req.user_id,
-            actorName: "Admin",
-          type: "premium_activated",
-          }),
-        });
-        if (!notificationResponse.ok) throw new Error("Gagal membuat notifikasi premium.");
+    try {
+      const token = await getAdminToken();
+      if (!token) throw new Error("Sesi admin tidak tersedia.");
+      const response = await fetch("/api/admin/premium-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id, action }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result?.error || "Permintaan gagal diproses.");
+      const req = requests.find((item) => item.id === id);
+      if (req?.user_id) clearCachedProfile(req.user_id);
+      await Promise.all([fetchRequests(), fetchPendingCount(), fetchStats()]);
+      if (action === "approve" && result.premium_until) {
+        alert(`Premium berhasil ditambahkan sampai ${new Date(result.premium_until).toLocaleString("id-ID")}.`);
       }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Permintaan gagal diproses.");
+    } finally {
+      setActionLoading(null);
     }
-
-    await Promise.all([fetchRequests(), fetchPendingCount(), fetchStats()]);
-    setActionLoading(null);
   };
 
   // ── premium actions ───────────────────────────────────────────────────
