@@ -19,9 +19,9 @@ import ReaderImages from "@/components/reader/ReaderImages";
 import ReaderBottomNav from "@/components/reader/ReaderBottomNav";
 import ReaderSideActions from "@/components/reader/ReaderSideActions";
 import ReaderSettingModal from "@/components/reader/ReaderSettingModal";
-import ReaderCommentModal from "@/components/reader/ReaderCommentModal";
 import ReaderProgress from "@/components/reader/ReaderProgress";
 import ReaderSupportAd from "@/components/reader/ReaderSupportAd";
+import ReaderEndSection from "@/components/reader/ReaderEndSection";
 
 interface ChapterClientProps {
   data: ReaderChapter;
@@ -35,7 +35,6 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
   const router = useRouter();
   const [showUI, setShowUI] = useState(true);
   const [showSetting, setShowSetting] = useState(false);
-  const [showComment, setShowComment] = useState(false);
   const needsImageAccess = Boolean(data?.images?.some((url) => {
     try {
       return new URL(url).hostname === "storage.ryukomik.my.id" && new URL(url).pathname.startsWith("/chapters/");
@@ -116,6 +115,10 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
     setShowUI,
   });
 
+  const scrollToComments = () => {
+    document.getElementById("chapter-comments")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   // History
   useEffect(() => {
     if (!data) return;
@@ -169,6 +172,13 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
           ) : "Menyiapkan gambar chapter..."}
         </div>
       )}
+      <ReaderEndSection
+        source={source}
+        slugStr={slugStr}
+        mangaSlug={data.mangaId}
+        previousSlug={data.prev}
+        nextSlug={data.next}
+      />
       <ReaderProgress 
         images={data.images}
         slugStr={slugStr}
@@ -185,7 +195,7 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
           <ReaderSideActions
             autoScroll={autoScroll.active}
             onToggleAutoScroll={autoScroll.toggle}
-            onComment={() => setShowComment(true)}
+            onComment={scrollToComments}
           />
         </>
       )}
@@ -194,13 +204,6 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
         <ReaderSettingModal
           settings={settings}
           onClose={() => setShowSetting(false)}
-        />
-      )}
-      {showComment && (
-        <ReaderCommentModal
-          source={source}
-          slugStr={slugStr}
-          onClose={() => setShowComment(false)}
         />
       )}
     </div>
