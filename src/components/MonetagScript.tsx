@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import Script from "next/script";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
+
+const RAJAAPK_SCRIPT_URL = "https://gaslah.my.id/aan/siap/1788017146215-rajaapk.js";
 
 export default function MonetagScript() {
   const { loading, isPremium } = usePremiumStatus();
@@ -17,6 +18,7 @@ export default function MonetagScript() {
       // Hapus script tag monetag yang sudah ada
       document.querySelectorAll('script[data-zone]').forEach((el) => el.remove());
       document.querySelectorAll('script[src*="al5sm.com"]').forEach((el) => el.remove());
+      document.querySelectorAll(`script[src="${RAJAAPK_SCRIPT_URL}"]`).forEach((el) => el.remove());
       // Hapus iframe/div iklan yang mungkin sudah ter-inject
       document.querySelectorAll('iframe[src*="al5sm.com"]').forEach((el) => el.remove());
     };
@@ -34,21 +36,27 @@ export default function MonetagScript() {
     };
   }, [loading, isPremium]);
 
-  // Load script monetag secara dinamis menggunakan useEffect
+  // Load script iklan secara dinamis setelah status Premium diketahui.
   useEffect(() => {
     if (loading || isPremium) return;
 
-    const s = document.createElement("script");
-    s.dataset.zone = "10944835";
-    s.src = "https://al5sm.com/tag.min.js";
+    const monetagScript = document.createElement("script");
+    monetagScript.dataset.zone = "10944835";
+    monetagScript.src = "https://al5sm.com/tag.min.js";
+    monetagScript.async = true;
+
+    const rajaApkScript = document.createElement("script");
+    rajaApkScript.src = RAJAAPK_SCRIPT_URL;
+    rajaApkScript.async = true;
 
     const target = [document.documentElement, document.body].filter(Boolean).pop();
     if (target) {
-      target.appendChild(s);
+      target.append(monetagScript, rajaApkScript);
     }
 
     return () => {
-      s.remove();
+      monetagScript.remove();
+      rajaApkScript.remove();
     };
   }, [loading, isPremium]);
 
