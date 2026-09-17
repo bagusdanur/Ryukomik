@@ -11,7 +11,7 @@ const MAX_BYTES = 12 * 1024 * 1024; // 12 MB guard
 
 type Fetched = { status: number; headers: Record<string, string>; body: Buffer };
 
-function getWithNode(url: URL): Promise<Fetched> {
+function getWithNode(url: URL, referer: string): Promise<Fetched> {
   return new Promise((resolve, reject) => {
     const isHttps = url.protocol === "https:";
     const doRequest = isHttps ? httpsRequest : httpRequest;
@@ -27,6 +27,7 @@ function getWithNode(url: URL): Promise<Fetched> {
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
           "Accept-Encoding": "identity",
+          Referer: referer,
         },
         // Hanya berlaku untuk https
         ...(isHttps && ALLOW_INSECURE ? { rejectUnauthorized: false } : {}),
@@ -61,6 +62,47 @@ function getWithNode(url: URL): Promise<Fetched> {
   });
 }
 
+const ALLOWED_IMAGE_HOSTS = new Set([
+  "pic.desu.xxx",
+  "doujin.desu.xxx",
+  "doujindesu.tv",
+  "doujindesu.com",
+  "sektedoujin.com",
+  "kiryuu.org",
+  "kiryuu.to",
+]);
+
+const ALLOWED_IMAGE_HOST_SUFFIXES = [
+  "desu.pics",
+  "desu.photos",
+  "doujindesu.tv",
+  "doujindesu.com",
+  "sektedoujin.com",
+  "kiryuu.org",
+  "kiryuu.to",
+] as const;
+
+function isHostnameOrSubdomain(hostname: string, domain: string) {
+  return hostname === domain || hostname.endsWith(`.${domain}`);
+}
+
+function isAllowedImageHostname(hostname: string) {
+  const normalized = hostname.toLowerCase().replace(/\.$/, "");
+  return (
+    ALLOWED_IMAGE_HOSTS.has(normalized) ||
+    ALLOWED_IMAGE_HOST_SUFFIXES.some((domain) => isHostnameOrSubdomain(normalized, domain))
+  );
+}
+
+function isDesuImageHostname(hostname: string) {
+  const normalized = hostname.toLowerCase().replace(/\.$/, "");
+  return (
+    isHostnameOrSubdomain(normalized, "desu.pics") ||
+    isHostnameOrSubdomain(normalized, "desu.photos") ||
+    normalized === "pic.desu.xxx"
+  );
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const targetUrl = searchParams.get("url");
@@ -70,13 +112,36 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const decodedUrl = decodeURIComponent(targetUrl);
+    const decodedUrl = targetUrl;
     const parsedUrl = new URL(decodedUrl);
-    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-      return new NextResponse("Unsupported protocol", { status: 400 });
+    if (
+      parsedUrl.protocol !== "https:" ||
+      parsedUrl.username ||
+      parsedUrl.password ||
+      parsedUrl.port ||
+      !isAllowedImageHostname(parsedUrl.hostname)
+    ) {
+      return new NextResponse("Image host is not allowed", { status: 403 });
     }
 
-    const response = await getWithNode(parsedUrl);
+    // Tentukan Referer header berdasarkan domain gambar agar tidak terblokir hotlinking
+    let referer = parsedUrl.origin;
+    if (
+      isHostnameOrSubdomain(parsedUrl.hostname, "kiryuu.org") ||
+      isHostnameOrSubdomain(parsedUrl.hostname, "kiryuu.to")
+    ) {
+      referer = "https://kiryuu.org/"; // domain kiryuu untuk bypass referrer check
+    } else if (isDesuImageHostname(parsedUrl.hostname)) {
+      referer = "https://doujin.desu.xxx/";
+    } else if (
+      isHostnameOrSubdomain(parsedUrl.hostname, "doujindesu.tv") ||
+      isHostnameOrSubdomain(parsedUrl.hostname, "doujindesu.com") ||
+      isHostnameOrSubdomain(parsedUrl.hostname, "sektedoujin.com")
+    ) {
+      referer = "https://doujin.desu.xxx/";
+    }
+
+    const response = await getWithNode(parsedUrl, referer);
 
     if (response.status < 200 || response.status >= 300) {
       return new NextResponse(`Failed to fetch image: HTTP ${response.status}`, {
