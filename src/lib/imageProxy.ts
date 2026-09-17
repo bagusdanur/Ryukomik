@@ -3,6 +3,22 @@ import { isAdultSource, ADULT_SOURCE_IDS } from "@/config/sources";
 const PUBLIC_PROXY_IMAGE_SOURCES = ADULT_SOURCE_IDS;
 const PUBLIC_PROXY_IMAGE_HOSTS = new Set(["desu.photos"]);
 const DOUJINDESU_IMAGE_WORKER = "/api/image-proxy";
+const DOUJINDESU_BACKEND_HOST = "api.ryukomik.web.id";
+const DOUJINDESU_BACKEND_IMAGE_PATH = "/doujindesu/image";
+
+function isDoujindesuBackendImageUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.protocol === "https:" &&
+      parsed.hostname === DOUJINDESU_BACKEND_HOST &&
+      parsed.pathname.replace(/\/$/, "") === DOUJINDESU_BACKEND_IMAGE_PATH &&
+      Boolean(parsed.searchParams.get("url"))
+    );
+  } catch {
+    return false;
+  }
+}
 
 export function getOriginalImageUrl(url?: string): string {
   if (!url) return "";
@@ -15,6 +31,10 @@ export function getOriginalImageUrl(url?: string): string {
 
     const base = typeof window !== "undefined" ? window.location.origin : "http://localhost";
     const parsed = new URL(cleanUrl, base);
+
+    // Proxy backend Doujindesu sudah mengirim Referer yang benar ke CDN.
+    // Jangan bongkar query `url`-nya menjadi URL CDN mentah.
+    if (isDoujindesuBackendImageUrl(parsed.href)) return parsed.href;
 
     const isFrontendProxy =
       parsed.origin === "https://proxy.ryukomik.my.id" ||
@@ -65,6 +85,12 @@ export function shouldUsePublicChapterProxy(source: string, url?: string) {
 export function getChapterImageCandidates(source: string, url?: string) {
   const originalUrl = getOriginalImageUrl(url);
   if (!originalUrl) return [];
+
+  // Hindari double proxy: URL ini harus diminta langsung dari backend.
+  if (source === "doujindesu" && isDoujindesuBackendImageUrl(originalUrl)) {
+    return [originalUrl];
+  }
+
   if (!shouldUsePublicChapterProxy(source, originalUrl)) return [originalUrl];
 
   return [
@@ -76,6 +102,10 @@ export function getChapterImageCandidates(source: string, url?: string) {
 export function getProxiedThumbnailUrl(url?: string, source?: string): string {
   if (!url) return "";
   const originalUrl = getOriginalImageUrl(url);
+
+  if (source === "doujindesu" && isDoujindesuBackendImageUrl(originalUrl)) {
+    return originalUrl;
+  }
 
   // Jika URL relatif (tidak dimulai http), skip — biar gak error di image proxy
   if (!originalUrl.startsWith("http")) return "";
