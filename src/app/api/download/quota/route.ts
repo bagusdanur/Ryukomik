@@ -78,7 +78,7 @@ export async function POST(request: Request) {
     if (body.action === "start") {
       const result = await socialTransaction(async (client) => {
         const dayResult = await client.query<{ day: string }>(
-          "select (now() at time zone 'Asia/Jakarta')::date::text day",
+          "select (now() at time zone 'Asia/Jakarta')::date::text AS day",
         );
         const day = dayResult.rows[0].day;
         await client.query("select pg_advisory_xact_lock(hashtextextended($1,0))", [`download:${userId}:${day}`]);
