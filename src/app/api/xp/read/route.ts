@@ -10,7 +10,19 @@ interface XpReadPayload {
 
 export async function POST(req: Request) {
   try {
-    const { user_id, chapter_slug } = (await req.json()) as XpReadPayload;
+    // sendBeacon/fetch occasionally delivers an empty or truncated body. Parse
+    // defensively: a malformed body must return 400, not throw into the 500
+    // handler, because a 500 pushes the client into its retry queue and turns
+    // one bad beacon into several repeat requests.
+    let payload: XpReadPayload = {};
+    try {
+      const text = await req.text();
+      if (text) payload = JSON.parse(text) as XpReadPayload;
+    } catch {
+      return NextResponse.json({ error: "invalid" }, { status: 400 });
+    }
+
+    const { user_id, chapter_slug } = payload;
 
     if (!user_id || !chapter_slug) {
       return NextResponse.json({ error: "invalid" }, { status: 400 });

@@ -45,7 +45,21 @@ export async function fetchDownloadChapter(
 }
 
 export async function fetchDownloadImage(url: string, page: number): Promise<Blob> {
-  const response = await fetch(`/api/image?url=${encodeURIComponent(url)}`);
+  // Locked project chapters require an authenticated caller: the proxy verifies
+  // this token before it will mint the signed image cookie. Sending it for
+  // every source is harmless, since the header is only ever used to identify
+  // the user.
+  let headers: HeadersInit | undefined;
+  try {
+    const { supabase } = await import("@/lib/supabaseClient");
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token;
+    if (token) headers = { authorization: `Bearer ${token}` };
+  } catch {
+    headers = undefined;
+  }
+
+  const response = await fetch(`/api/image?url=${encodeURIComponent(url)}`, { headers });
   if (!response.ok) throw new Error(`Gambar halaman ${page} gagal dimuat (${response.status})`);
 
   const blob = await response.blob();

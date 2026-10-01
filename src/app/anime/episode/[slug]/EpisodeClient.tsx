@@ -1,6 +1,7 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import AnimePlayer from "@/components/anime/AnimePlayer";
 
 type AnimePlayerType = {
   name?: string;
@@ -32,7 +33,6 @@ type EpisodeClientProps = {
 };
 
 export default function EpisodeClient({ data }: EpisodeClientProps) {
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const cleanTitle = data?.title?.replace(" Sub Indo", "") || "";
   const activePlayers = data?.players?.filter((p) => p.iframe) || [];
   const [activePlayer, setActivePlayer] = useState(0);
@@ -43,32 +43,14 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
     <div className="rk-page text-white pb-28" style={{ fontFamily: "'Syne', sans-serif" }}>
         
       {/* ── PLAYER ── */}
+      {/* AnimePlayer = "ryu-lokal": server yang didukung resolver (filedon) akan
+          diputar memakai <video> sendiri sehingga iklan hilang; server lain
+          otomatis fallback ke <iframe>. */}
       <div className="w-full bg-[#0a0a0a] relative">
-        {activePlayers[activePlayer]?.iframe ? (
-          <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
-            <iframe
-              ref={iframeRef}
-              key={activePlayers[activePlayer].iframe}
-              src={activePlayers[activePlayer].iframe}
-              className="absolute inset-0 w-full h-full"
-              allowFullScreen
-              allow="autoplay; fullscreen"
-              referrerPolicy="no-referrer"
-              frameBorder="0"
-            />
-          </div>
-        ) : (
-          <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-cyan-400/10 border border-cyan-300/25 flex items-center justify-center">
-                <svg className="w-5 h-5 text-cyan-200 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-              <p className="text-[9px] font-black text-white/20 tracking-[.18em] uppercase">Pilih server di bawah</p>
-            </div>
-          </div>
-        )}
+        <AnimePlayer
+          key={activePlayers[activePlayer]?.iframe || "none"}
+          src={activePlayers[activePlayer]?.iframe}
+        />
       </div>
 
       <div className="max-w-2xl mx-auto px-4">
@@ -127,26 +109,35 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
           <span className="text-[9px] font-black text-cyan-200 uppercase tracking-[.18em]">Pilih Server</span>
         </div>
         <div className="grid grid-cols-2 gap-2 mb-5">
-          {activePlayers.map((player, idx) => (
-            <button key={idx} onClick={() => setActivePlayer(idx)}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left active:scale-95 transition-colors duration-200 ${
-                activePlayer === idx
-                  ? "bg-cyan-400/10 border-cyan-300/50"
-                  : "bg-white/[0.04] border-white/5 hover:border-cyan-300/25 hover:bg-cyan-400/5"
-              }`}>
-              <div className={`w-2 h-2 rounded-full flex-shrink-0 border ${
-                activePlayer === idx ? "bg-cyan-300 border-cyan-300" : "bg-transparent border-white/15"
-              }`} />
-              <span className={`text-[11px] font-black uppercase tracking-tight truncate ${
-                activePlayer === idx ? "text-cyan-100" : "text-white/35"
-              }`}>
-                {(player.name ?? "Server").replace("S-", "")}
-              </span>
-              {player.streamUrl && (
-                <span className="ml-auto text-[8px] font-black tracking-wider text-cyan-300 bg-cyan-400/15 border border-cyan-300/30 rounded-md px-1.5 py-0.5 uppercase flex-shrink-0">⚡ HD</span>
-              )}
-            </button>
-          ))}
+          {activePlayers.map((player, idx) => {
+            // Server yang didukung resolver "ryu-lokal" = diputar tanpa iklan.
+            const isClean = /filedon\.co/i.test(player.iframe ?? "");
+            return (
+              <button key={idx} onClick={() => setActivePlayer(idx)}
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left active:scale-95 transition-colors duration-200 ${
+                  activePlayer === idx
+                    ? "bg-cyan-400/10 border-cyan-300/50"
+                    : "bg-white/[0.04] border-white/5 hover:border-cyan-300/25 hover:bg-cyan-400/5"
+                }`}>
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 border ${
+                  activePlayer === idx ? "bg-cyan-300 border-cyan-300" : "bg-transparent border-white/15"
+                }`} />
+                <span className={`text-[11px] font-black uppercase tracking-tight truncate ${
+                  activePlayer === idx ? "text-cyan-100" : "text-white/35"
+                }`}>
+                  {(player.name ?? "Server").replace("S-", "")}
+                </span>
+                {(isClean || player.streamUrl) && (
+                  <span
+                    className="ml-auto text-[8px] font-black tracking-wider text-cyan-300 bg-cyan-400/15 border border-cyan-300/30 rounded-md px-1.5 py-0.5 uppercase flex-shrink-0"
+                    title={isClean ? "Diputar tanpa iklan (ryu-lokal)" : "Kualitas HD"}
+                  >
+                    {isClean ? "⚡ Ad-Free" : "⚡ HD"}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* ── DOWNLOAD ── */}

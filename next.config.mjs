@@ -2,6 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   turbopack: {},
+
+  // distDir bisa diarahkan lewat env supaya bisa build ke folder terpisah
+  // TANPA menghentikan situs yang sedang jalan (lalu di-swap).
+  // Default tetap ".next" => perilaku normal tidak berubah.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   experimental: {
     optimizePackageImports: ['react-icons', 'date-fns', 'swiper'],
   },

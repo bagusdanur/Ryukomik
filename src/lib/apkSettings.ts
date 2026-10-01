@@ -1,6 +1,8 @@
+import { revalidateTag, unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
 export const APK_SETTING_KEY = "apk_download";
+export const APK_SETTINGS_CACHE_TAG = "apk-settings";
 
 export type ApkSettings = {
   downloadUrl: string;
@@ -50,7 +52,7 @@ export function normalizeApkSettings(value?: Partial<ApkSettings> | null): ApkSe
   };
 }
 
-export async function getApkSettings(): Promise<ApkSettings> {
+async function readApkSettings(): Promise<ApkSettings> {
   const { data, error } = await supabaseAdmin
     .from("app_settings")
     .select("key, value, updated_at")
@@ -71,6 +73,14 @@ export async function getApkSettings(): Promise<ApkSettings> {
     configured: Boolean(row),
   });
 }
+
+// app_settings is read on every /apk render (twice) plus admin routes, while the
+// row only changes when an admin saves it. Cache across requests and invalidate
+// from setApkSettings so a save is reflected immediately.
+export const getApkSettings = unstable_cache(readApkSettings, [APK_SETTINGS_CACHE_TAG], {
+  revalidate: 300,
+  tags: [APK_SETTINGS_CACHE_TAG],
+});
 
 export async function setApkSettings(settings: ApkSettings): Promise<ApkSettings> {
   const normalized = normalizeApkSettings(settings);
@@ -95,6 +105,7 @@ export async function setApkSettings(settings: ApkSettings): Promise<ApkSettings
     .single();
 
   if (error) throw error;
+  revalidateTag(APK_SETTINGS_CACHE_TAG, { expire: 0 });
 
   const row = data as ApkSettingRow;
   return normalizeApkSettings({

@@ -40,3 +40,8 @@ Thumbs.db
 # Local large release files
 *.apk
 *.aab
+
+# Local backups / scratch (never commit)
+*.bak-*
+.backup-*/
+.backup-tukar-source/

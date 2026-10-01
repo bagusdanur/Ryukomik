@@ -1,5 +1,7 @@
 const PREFIX = "rk";
-const CACHE_VERSION = "v27";
+// v28: bypass request lintas-domain agar beacon/impression iklan (Monetag dll)
+// tidak pernah di-cache atau di-respondWith oleh ServiceWorker → CPM tidak bocor.
+const CACHE_VERSION = "v28";
 const STATIC_CACHE = `${PREFIX}-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `${PREFIX}-images-${CACHE_VERSION}`;
 const CHAPTER_CACHE = `${PREFIX}-chapter-${CACHE_VERSION}`;
@@ -179,7 +181,14 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const sameOrigin = url.origin === self.location.origin;
-  if (sameOrigin && matchesPrefix(url.pathname, PRIVATE_API_PREFIXES)) {
+
+  // ★ LINTAS-DOMAIN: JANGAN sentuh sama sekali.
+  // Request ke domain lain (script iklan Monetag, beacon impression/click,
+  // CDN eksternal) harus diteruskan langsung ke browser. Kalau SW ikut
+  // respondWith/caches.match, tracking iklan bisa hilang → CPM turun.
+  if (!sameOrigin) return;
+
+  if (matchesPrefix(url.pathname, PRIVATE_API_PREFIXES)) {
     return;
   }
 
@@ -286,9 +295,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    fetch(request).catch(() => caches.match(request))
-  );
+  // Fallback terakhir: request same-origin yang tidak cocok aturan di atas.
+  // Teruskan langsung ke jaringan; jangan pakai caches.match agar tidak ada
+  // response salah yang tersaji (mis. endpoint tracking/beacon).
+  event.respondWith(fetch(request));
 });
 
 // === PUSH NOTIFICATION ===

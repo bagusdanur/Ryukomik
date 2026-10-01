@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { FaBell, FaBellSlash } from "react-icons/fa";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { getExistingSubscription, isPushSupported, subscribePush, unsubscribePush } from "@/utils/pushSubscription";
-import { syncBookmarks } from "@/utils/bookmarkSync";
+import { scheduleBookmarkSync, syncBookmarks } from "@/utils/bookmarkSync";
 import { RowLeft } from "@/components/setting/settingUi";
 
 export default function PushNotifToggle() {
@@ -24,7 +24,7 @@ export default function PushNotifToggle() {
 
         // Jika sudah subscribe dan user login, lakukan background sync bookmark
         if (sub && user) {
-          syncBookmarks(user.id).catch(console.error);
+          scheduleBookmarkSync(user.id);
         }
       });
     } else {
@@ -37,12 +37,12 @@ export default function PushNotifToggle() {
     if (!subscribed || !user) return;
 
     const handleBookmarkUpdate = () => {
-      syncBookmarks(user.id).catch(console.error);
+      scheduleBookmarkSync(user.id);
     };
 
     const handleBackupRestore = () => {
       // Tunggu localStorage terupdate
-      setTimeout(() => syncBookmarks(user.id).catch(console.error), 1000);
+      setTimeout(() => scheduleBookmarkSync(user.id), 1000);
     };
 
     window.addEventListener("bookmark-updated", handleBookmarkUpdate);

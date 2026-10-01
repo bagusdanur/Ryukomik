@@ -127,15 +127,87 @@ function getPushUrl(source, slug, item) {
   return `/komik/${source.id}/${slug}`;
 }
 
-async function markNotified(comicSlug, chapter) {
-  const { error } = await supabase.from("notified_chapters").insert({ comic_slug: comicSlug, chapter });
-  if (error) console.error("Gagal menandai chapter sebagai terkirim:", error.message);
+// ── Batched Supabase lookups ────────────────────────────────────────────────
+// The previous implementation issued 2-4 round-trips PER LIST ITEM
+// (notified_chapters check → bookmark_sync → push_subscriptions → markNotified).
+// With ~150 items across 9 sources re-checked every 15 minutes, that produced
+// the ~14.5k/day notified_chapters traffic (each GET looked like
+// `notified_chapters?select=id&comic_slug=in.(...)&chapter=eq.Chapter N&limit=1`).
+// These helpers resolve the same lookups in a handful of batched queries so the
+// cost stays roughly constant no matter how many items the lists return.
+const BATCH_CHUNK = 200;
+const SEP = "\u0000";
+
+function chunked(values, size = BATCH_CHUNK) {
+  const chunks = [];
+  for (let i = 0; i < values.length; i += size) chunks.push(values.slice(i, i + size));
+  return chunks;
+}
+
+// Returns a Set of `${comic_slug}${SEP}${chapter}` already recorded.
+async function fetchNotifiedSet(pairs) {
+  const slugs = [...new Set(pairs.map((p) => p.comic_slug))];
+  const wanted = new Set(pairs.map((p) => `${p.comic_slug}${SEP}${p.chapter}`));
+  const recorded = new Set();
+
+  for (const slugsChunk of chunked(slugs)) {
+    const { data, error } = await supabase
+      .from("notified_chapters")
+      .select("comic_slug, chapter")
+      .in("comic_slug", slugsChunk);
+    if (error) throw new Error(`notified_chapters: ${error.message}`);
+    for (const row of data || []) {
+      const key = `${row.comic_slug}${SEP}${row.chapter}`;
+      if (wanted.has(key)) recorded.add(key);
+    }
+  }
+  return recorded;
+}
+
+// Returns Map<`${comic_slug}${SEP}${source}`, userId[]>.
+async function fetchBookmarksBySlugSource(slugs, sourceIds) {
+  const map = new Map();
+  for (const slugsChunk of chunked(slugs)) {
+    const { data, error } = await supabase
+      .from("bookmark_sync")
+      .select("user_id, comic_slug, source")
+      .in("comic_slug", slugsChunk);
+    if (error) throw new Error(`bookmark_sync: ${error.message}`);
+    for (const row of data || []) {
+      if (!sourceIds.has(row.source)) continue;
+      const key = `${row.comic_slug}${SEP}${row.source}`;
+      const list = map.get(key);
+      if (list) list.push(row.user_id);
+      else map.set(key, [row.user_id]);
+    }
+  }
+  return map;
+}
+
+// Returns Map<userId, subscription[]>.
+async function fetchSubscriptionsByUser(userIds) {
+  const map = new Map();
+  for (const usersChunk of chunked(userIds)) {
+    const { data, error } = await supabase
+      .from("push_subscriptions")
+      .select("id, endpoint, p256dh, auth, user_id")
+      .in("user_id", usersChunk);
+    if (error) throw new Error(`push_subscriptions: ${error.message}`);
+    for (const row of data || []) {
+      const list = map.get(row.user_id);
+      if (list) list.push(row);
+      else map.set(row.user_id, [row]);
+    }
+  }
+  return map;
 }
 
 async function runCron() {
   console.log(`[${new Date().toISOString()}] Memulai pengecekan chapter terbaru...`);
   let notifSentCount = 0;
 
+  // Phase 1 — kumpulkan kandidat dari semua source (hanya fetch jaringan).
+  const candidates = [];
   for (const source of SOURCES) {
     try {
       console.log(`Memeriksa source: ${source.id}`);
@@ -152,93 +224,112 @@ async function runCron() {
         if (!slug) continue;
 
         const chapter = item.chapter_terbaru;
-        const title = item.title || "Chapter Baru";
-        const notificationKey = `${source.id}:${slug}`;
-        console.log(`Cek: [${source.id}] ${title} (${slug}) - ${chapter}`);
-
-        // Key lama (slug polos) ikut dicek agar deploy ini tidak mengirim ulang
-        // semua update yang sudah pernah tercatat oleh cron sebelumnya.
-        const { data: alreadyNotified, error: notifiedError } = await supabase
-          .from("notified_chapters")
-          .select("id")
-          .in("comic_slug", [notificationKey, slug])
-          .eq("chapter", chapter)
-          .limit(1)
-          .maybeSingle();
-
-        if (notifiedError) {
-          console.error(`Gagal membaca penanda notifikasi ${source.id}/${slug}:`, notifiedError.message);
-          continue;
-        }
-        if (alreadyNotified) continue;
-
-        // Bookmark wajib cocok pada slug DAN source. Sebelumnya slug yang sama
-        // dari source lain dapat menerima notifikasi yang salah.
-        const { data: bookmarks, error: bookmarkError } = await supabase
-          .from("bookmark_sync")
-          .select("user_id")
-          .eq("comic_slug", slug)
-          .eq("source", source.id);
-
-        if (bookmarkError) {
-          console.error(`Gagal membaca bookmark ${source.id}/${slug}:`, bookmarkError.message);
-          continue;
-        }
-        if (!bookmarks || bookmarks.length === 0) {
-          await markNotified(notificationKey, chapter);
-          continue;
-        }
-
-        const userIds = [...new Set(bookmarks.map((bookmark) => bookmark.user_id))];
-        const { data: subscriptions, error: subscriptionError } = await supabase
-          .from("push_subscriptions")
-          .select("id, endpoint, p256dh, auth, user_id")
-          .in("user_id", userIds);
-
-        if (subscriptionError) {
-          console.error(`Gagal membaca subscription ${source.id}/${slug}:`, subscriptionError.message);
-          continue;
-        }
-        if (!subscriptions || subscriptions.length === 0) {
-          await markNotified(notificationKey, chapter);
-          continue;
-        }
-
-        const pushUrl = getPushUrl(source, slug, item);
-        const payload = JSON.stringify({
-          title,
-          body: source.isNSFW
-            ? `${chapter} (18+) sudah rilis! Yuk baca sekarang.`
-            : `${chapter} sudah rilis! Yuk baca sekarang.`,
-          url: pushUrl,
-          tag: notificationKey,
-          image: source.isNSFW ? undefined : item.image,
+        candidates.push({
+          source,
+          item,
+          slug,
+          chapter,
+          notificationKey: `${source.id}:${slug}`,
+          title: item.title || "Chapter Baru",
         });
-
-        console.log(`Mengirim ${source.id}/${slug} ${chapter} ke ${subscriptions.length} perangkat via ${pushUrl}`);
-        await Promise.all(subscriptions.map(async (sub) => {
-          const pushSubscription = {
-            endpoint: sub.endpoint,
-            keys: { p256dh: sub.p256dh, auth: sub.auth },
-          };
-
-          try {
-            await webPush.sendNotification(pushSubscription, payload);
-            notifSentCount += 1;
-          } catch (error) {
-            if (error.statusCode === 404 || error.statusCode === 410) {
-              await supabase.from("push_subscriptions").delete().eq("id", sub.id);
-            } else {
-              console.error("Gagal mengirim ke endpoint push:", error);
-            }
-          }
-        }));
-
-        await markNotified(notificationKey, chapter);
       }
     } catch (error) {
       console.error(`Terjadi kesalahan pada source ${source.id}:`, error);
     }
+  }
+
+  if (candidates.length === 0) {
+    console.log(`[${new Date().toISOString()}] Tidak ada kandidat chapter. Selesai.`);
+    return;
+  }
+
+  // Phase 2 — selesaikan notified/bookmark/subscription dengan query batch.
+  // Key lama (slug polos) ikut dicek agar deploy ini tidak mengirim ulang
+  // semua update yang sudah pernah tercatat oleh cron sebelumnya.
+  const notifiedSet = await fetchNotifiedSet(
+    candidates.flatMap((c) => [
+      { comic_slug: c.notificationKey, chapter: c.chapter },
+      { comic_slug: c.slug, chapter: c.chapter },
+    ]),
+  );
+
+  const pending = candidates.filter(
+    (c) => !notifiedSet.has(`${c.notificationKey}${SEP}${c.chapter}`),
+  );
+  if (pending.length === 0) {
+    console.log(`[${new Date().toISOString()}] Semua chapter sudah pernah dinotifikasi. Selesai.`);
+    return;
+  }
+
+  const sourceIds = new Set(pending.map((c) => c.source.id));
+  const bookmarksBySlugSource = await fetchBookmarksBySlugSource(
+    [...new Set(pending.map((c) => c.slug))],
+    sourceIds,
+  );
+
+  // Bookmark wajib cocok pada slug DAN source. Sebelumnya slug yang sama
+  // dari source lain dapat menerima notifikasi yang salah.
+  const toNotify = [];
+  for (const c of pending) {
+    const userIds = [...new Set(bookmarksBySlugSource.get(`${c.slug}${SEP}${c.source.id}`) || [])];
+    if (userIds.length === 0) {
+      // Tidak ada yang bookmark → tetap tandai supaya tidak dicek ulang.
+      toNotify.push({ ...c, markOnly: true });
+      continue;
+    }
+    toNotify.push({ ...c, userIds });
+  }
+
+  const subscriptionsByUser = await fetchSubscriptionsByUser(
+    [...new Set(toNotify.flatMap((c) => c.userIds || []))],
+  );
+
+  // Phase 3 — kirim push, kumpulkan semua baris untuk satu insert penanda.
+  const toMark = [];
+  for (const c of toNotify) {
+    toMark.push({ comic_slug: c.notificationKey, chapter: c.chapter });
+
+    if (c.markOnly) continue;
+
+    const subscriptions = (c.userIds || []).flatMap(
+      (userId) => subscriptionsByUser.get(userId) || [],
+    );
+    if (subscriptions.length === 0) continue;
+
+    const pushUrl = getPushUrl(c.source, c.slug, c.item);
+    const payload = JSON.stringify({
+      title: c.title,
+      body: c.source.isNSFW
+        ? `${c.chapter} (18+) sudah rilis! Yuk baca sekarang.`
+        : `${c.chapter} sudah rilis! Yuk baca sekarang.`,
+      url: pushUrl,
+      tag: c.notificationKey,
+      image: c.source.isNSFW ? undefined : c.item.image,
+    });
+
+    console.log(`Mengirim ${c.source.id}/${c.slug} ${c.chapter} ke ${subscriptions.length} perangkat via ${pushUrl}`);
+    await Promise.all(subscriptions.map(async (sub) => {
+      const pushSubscription = {
+        endpoint: sub.endpoint,
+        keys: { p256dh: sub.p256dh, auth: sub.auth },
+      };
+      try {
+        await webPush.sendNotification(pushSubscription, payload);
+        notifSentCount += 1;
+      } catch (error) {
+        if (error.statusCode === 404 || error.statusCode === 410) {
+          await supabase.from("push_subscriptions").delete().eq("id", sub.id);
+        } else {
+          console.error("Gagal mengirim ke endpoint push:", error);
+        }
+      }
+    }));
+  }
+
+  // Satu insert batch, bukan insert per item.
+  for (const rows of chunked(toMark)) {
+    const { error } = await supabase.from("notified_chapters").insert(rows);
+    if (error) console.error("Gagal menandai chapter sebagai terkirim:", error.message);
   }
 
   console.log(`[${new Date().toISOString()}] Selesai. Total push terkirim: ${notifSentCount}`);

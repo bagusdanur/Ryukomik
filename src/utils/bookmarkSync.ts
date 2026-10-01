@@ -26,7 +26,6 @@ function readLocalBookmarks(): LocalBookmark[] {
 export async function syncBookmarks(userId: string): Promise<boolean> {
   try {
     const bookmarks = readLocalBookmarks();
-
     // 1. Hapus semua bookmark_sync milik user ini
     const { error: deleteError } = await supabase
       .from("bookmark_sync")
@@ -71,4 +70,21 @@ export async function syncBookmarks(userId: string): Promise<boolean> {
     console.error("Gagal sync bookmarks:", err);
     return false;
   }
+}
+
+// Coalesce bursts of triggers (mount + "bookmark-updated" + restore) into one
+// full-replace sync. syncBookmarks is a delete+upsert of the whole set, so
+// running it several times within a second wastes two Supabase writes per call
+// with identical results. The debounce collapses a burst to a single run.
+const SYNC_DEBOUNCE_MS = 2000;
+const pendingSyncs = new Map<string, number>();
+
+export function scheduleBookmarkSync(userId: string): void {
+  const existing = pendingSyncs.get(userId);
+  if (existing) window.clearTimeout(existing);
+  const handle = window.setTimeout(() => {
+    pendingSyncs.delete(userId);
+    syncBookmarks(userId).catch(console.error);
+  }, SYNC_DEBOUNCE_MS);
+  pendingSyncs.set(userId, handle);
 }

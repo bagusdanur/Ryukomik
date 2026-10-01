@@ -19,9 +19,63 @@ export interface CachedProfile {
   show_public_join_date?: boolean | null;
 }
 
-const PROFILE_TTL = 5 * 60 * 1000;
+const PROFILE_SELECT =
+  "id, username, avatar_url, level, xp, role, is_premium, premium_until, created_at, total_comments, total_reads, show_public_reads, show_public_comments, show_public_join_date";
+
+// Profile rows change rarely (username/avatar/premium), yet this is read by
+// Navbar + every ad component on nearly every navigation. Serve cached data for
+// PROFILE_TTL, then keep serving it while a single background refresh runs
+// (stale-while-revalidate) up to PROFILE_STALE_TTL. Explicit invalidation
+// (clearCachedProfile / "rk-profile-updated") still forces a fresh read right
+// after a user edits their profile or activates premium, so nothing important
+// stays stale.
+const PROFILE_TTL = 15 * 60 * 1000;
+const PROFILE_STALE_TTL = 60 * 60 * 1000;
+const STORAGE_PREFIX = "rk-profile:";
+const STORAGE_MAX = 8;
+
 const profileCache = new Map<string, { at: number; data: CachedProfile | null }>();
 const profileRequests = new Map<string, Promise<CachedProfile | null>>();
+
+function readStored(userId: string): { at: number; data: CachedProfile | null } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(STORAGE_PREFIX + userId);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { at: number; data: CachedProfile | null };
+    return typeof parsed?.at === "number" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStored(userId: string, entry: { at: number; data: CachedProfile | null }) {
+  if (typeof window === "undefined") return;
+  try {
+    // Bound storage so a long session switching accounts cannot grow without
+    // limit: drop the oldest entry beyond STORAGE_MAX.
+    const keys: { key: string; at: number }[] = [];
+    for (let i = 0; i < window.sessionStorage.length; i += 1) {
+      const key = window.sessionStorage.key(i);
+      if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
+      try {
+        const parsed = JSON.parse(window.sessionStorage.getItem(key) || "") as { at?: number };
+        keys.push({ key, at: parsed?.at || 0 });
+      } catch {
+        keys.push({ key, at: 0 });
+      }
+    }
+    if (keys.length >= STORAGE_MAX) {
+      keys.sort((a, b) => a.at - b.at);
+      for (const stale of keys.slice(0, keys.length - STORAGE_MAX + 1)) {
+        window.sessionStorage.removeItem(stale.key);
+      }
+    }
+    window.sessionStorage.setItem(STORAGE_PREFIX + userId, JSON.stringify(entry));
+  } catch {
+    // sessionStorage unavailable/full — the in-memory cache still applies.
+  }
+}
 
 export function isActivePremiumProfile(
   profile?: Pick<CachedProfile, "is_premium" | "premium_until"> | null,
@@ -36,32 +90,54 @@ export function clearCachedProfile(userId?: string | null) {
   if (!userId) return;
   profileCache.delete(userId);
   profileRequests.delete(userId);
+  if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage.removeItem(STORAGE_PREFIX + userId);
+    } catch {
+      // ignore
+    }
+  }
 }
 
-export function loadCachedProfile(userId: string, options: { force?: boolean } = {}) {
-  const cached = profileCache.get(userId);
-  if (!options.force && cached && Date.now() - cached.at < PROFILE_TTL) {
-    return Promise.resolve(cached.data);
-  }
-
-  const pending = profileRequests.get(userId);
-  if (!options.force && pending) return pending;
-
-  const request = Promise.resolve(
+function fetchProfile(userId: string): Promise<CachedProfile | null> {
+  return Promise.resolve(
     supabase
       .from("profiles")
-      .select(
-        "id, username, avatar_url, level, xp, role, is_premium, premium_until, created_at, total_comments, total_reads, show_public_reads, show_public_comments, show_public_join_date",
-      )
+      .select(PROFILE_SELECT)
       .eq("id", userId)
       .maybeSingle(),
   ).then(({ data }) => {
     const profile = (data || null) as CachedProfile | null;
-    profileCache.set(userId, { at: Date.now(), data: profile });
+    const entry = { at: Date.now(), data: profile };
+    profileCache.set(userId, entry);
+    writeStored(userId, entry);
     profileRequests.delete(userId);
     return profile;
   });
+}
 
+export function loadCachedProfile(userId: string, options: { force?: boolean } = {}) {
+  const now = Date.now();
+  const cached = profileCache.get(userId) || readStored(userId);
+  if (cached && !profileCache.has(userId)) profileCache.set(userId, cached);
+
+  const pending = profileRequests.get(userId);
+  if (pending) return pending;
+
+  if (!options.force && cached) {
+    const age = now - cached.at;
+    if (age < PROFILE_TTL) {
+      return Promise.resolve(cached.data);
+    }
+    if (age < PROFILE_STALE_TTL) {
+      // Serve the stale copy immediately; kick off exactly one refresh that
+      // updates the cache for the next caller instead of blocking every mount.
+      profileRequests.set(userId, fetchProfile(userId));
+      return Promise.resolve(cached.data);
+    }
+  }
+
+  const request = fetchProfile(userId);
   profileRequests.set(userId, request);
   return request;
 }

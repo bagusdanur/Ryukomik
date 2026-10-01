@@ -29,6 +29,9 @@ import EventRewardsTab, {
 import ApkSettingsTab, {
   type ApkSettingsForm,
 } from "@/components/dashboard/ApkSettingsTab";
+import QuickAdsTab, {
+  type AdsConfigForm,
+} from "@/components/dashboard/QuickAdsTab";
 import ProjectTab from "@/components/dashboard/ProjectTab";
 import ProjectDbTab from "@/components/dashboard/ProjectDbTab";
 import AnnouncementsTab from "@/components/dashboard/AnnouncementsTab";
@@ -46,6 +49,7 @@ type DashboardPage =
   | "comments"
   | "events"
   | "apk"
+  | "quick-ads"
   | "codes"
   | "project"
   | "announcements"
@@ -162,7 +166,7 @@ export default function AdminDashboard() {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [page, setPage] = useState<DashboardPage>(() => {
     const urlPage = searchParams.get("page");
-    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "announcements", "project-db"];
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "announcements", "project-db"];
     return validPages.includes(urlPage as DashboardPage) ? (urlPage as DashboardPage) : "dashboard";
   });
   const [premiumCodes, setPremiumCodes] = useState<PremiumCode[]>([]);
@@ -247,6 +251,20 @@ export default function AdminDashboard() {
   const [apkSettingsSaving, setApkSettingsSaving] = useState(false);
   const [apkSettingsNotice, setApkSettingsNotice] = useState("");
 
+  const [adsConfig, setAdsConfig] = useState<AdsConfigForm>({
+    masterEnabled: true,
+    validationMode: "bebas",
+    allowedHosts: [],
+    providers: [],
+    updatedAt: null,
+    updatedBy: null,
+    hasPrevious: false,
+  });
+  const [adsLoading, setAdsLoading] = useState(false);
+  const [adsSaving, setAdsSaving] = useState(false);
+  const [adsRolling, setAdsRolling] = useState(false);
+  const [adsNotice, setAdsNotice] = useState("");
+
   const getAdminToken = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
     return data.session?.access_token || "";
@@ -301,7 +319,7 @@ export default function AdminDashboard() {
 
   // Sync page state with URL on back/forward navigation
   useEffect(() => {
-    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "project-db"];
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "project-db"];
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const urlPage = params.get("page");
@@ -316,7 +334,7 @@ export default function AdminDashboard() {
   // and navigation performed by Next.js rather than the browser history.
   useEffect(() => {
     const urlPage = searchParams.get("page");
-    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "codes", "project", "project-db"];
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "project-db"];
     const resolved = validPages.includes(urlPage as DashboardPage) ? (urlPage as DashboardPage) : "dashboard";
     setPage((current) => current === resolved ? current : resolved);
   }, [searchParams]);
@@ -655,6 +673,188 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (authed && page === "apk") void fetchApkSettings();
   }, [authed, page, fetchApkSettings]);
+
+  const fetchAdsSettings = useCallback(async () => {
+    setAdsLoading(true);
+    setAdsNotice("");
+    try {
+      const token = await getAdminToken();
+      if (!token) {
+        setAdsNotice("Login admin diperlukan.");
+        return;
+      }
+
+      const res = await fetch("/api/admin/ads-settings", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        setAdsNotice(json?.error || "Gagal mengambil konfigurasi iklan.");
+        return;
+      }
+
+      setAdsConfig({
+        masterEnabled: json?.masterEnabled !== false,
+        validationMode: json?.validationMode === "terkunci" ? "terkunci" : "bebas",
+        allowedHosts: Array.isArray(json?.allowedHosts) ? json.allowedHosts : [],
+        providers: Array.isArray(json?.providers)
+          ? json.providers.map((p: Record<string, unknown>) => ({
+              id: String(p.id || ""),
+              name: String(p.name || ""),
+              enabled: p.enabled !== false,
+              scriptUrl: String(p.scriptUrl || ""),
+              zoneId: String(p.zoneId || ""),
+              imageUrl: String(p.imageUrl || ""),
+              targetUrl: String(p.targetUrl || ""),
+            }))
+          : [],
+        updatedAt: json?.updatedAt || null,
+        updatedBy: json?.updatedBy || null,
+        hasPrevious: Boolean(json?.previous),
+      });
+    } catch (error) {
+      setAdsNotice(
+        error instanceof Error ? error.message : "Gagal mengambil konfigurasi iklan.",
+      );
+    } finally {
+      setAdsLoading(false);
+    }
+  }, [getAdminToken]);
+
+  const saveAdsSettings = useCallback(
+    async (nextSettings?: AdsConfigForm) => {
+      const toSave = nextSettings || adsConfig;
+
+      setAdsSaving(true);
+      setAdsNotice("");
+      try {
+        const token = await getAdminToken();
+        if (!token) {
+          setAdsNotice("Login admin diperlukan.");
+          return;
+        }
+
+        const res = await fetch("/api/admin/ads-settings", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            masterEnabled: toSave.masterEnabled,
+            validationMode: toSave.validationMode,
+            allowedHosts: toSave.allowedHosts,
+            providers: toSave.providers.map((p) => ({
+              id: p.id,
+              name: p.name,
+              enabled: p.enabled,
+              scriptUrl: p.scriptUrl,
+              zoneId: p.zoneId,
+              imageUrl: p.imageUrl,
+              targetUrl: p.targetUrl,
+            })),
+          }),
+        });
+        const json = await res.json();
+
+        if (!res.ok) {
+          setAdsNotice(json?.error || "Gagal menyimpan konfigurasi iklan.");
+          if (nextSettings) void fetchAdsSettings();
+          return;
+        }
+
+        setAdsConfig({
+          masterEnabled: json?.masterEnabled !== false,
+          validationMode: json?.validationMode === "terkunci" ? "terkunci" : "bebas",
+          allowedHosts: Array.isArray(json?.allowedHosts) ? json.allowedHosts : [],
+          providers: Array.isArray(json?.providers)
+            ? json.providers.map((p: Record<string, unknown>) => ({
+                id: String(p.id || ""),
+                name: String(p.name || ""),
+                enabled: p.enabled !== false,
+                scriptUrl: String(p.scriptUrl || ""),
+                zoneId: String(p.zoneId || ""),
+                imageUrl: String(p.imageUrl || ""),
+                targetUrl: String(p.targetUrl || ""),
+              }))
+            : toSave.providers,
+          updatedAt: json?.updatedAt || null,
+          updatedBy: json?.updatedBy || null,
+          hasPrevious: Boolean(json?.previous),
+        });
+
+        const newHosts = Array.isArray(json?.newHosts) ? json.newHosts : [];
+        setAdsNotice(
+          newHosts.length
+            ? `Tersimpan. Domain baru: ${newHosts.join(", ")}`
+            : json?.message || "Konfigurasi iklan berhasil disimpan.",
+        );
+      } catch (error) {
+        setAdsNotice(
+          error instanceof Error ? error.message : "Gagal menyimpan konfigurasi iklan.",
+        );
+      } finally {
+        setAdsSaving(false);
+      }
+    },
+    [adsConfig, fetchAdsSettings, getAdminToken],
+  );
+
+  const rollbackAdsSettings = useCallback(async () => {
+    setAdsRolling(true);
+    setAdsNotice("");
+    try {
+      const token = await getAdminToken();
+      if (!token) {
+        setAdsNotice("Login admin diperlukan.");
+        return;
+      }
+
+      const res = await fetch("/api/admin/ads-settings/rollback", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        setAdsNotice(json?.error || "Gagal memulihkan konfigurasi.");
+        return;
+      }
+
+      setAdsConfig({
+        masterEnabled: json?.masterEnabled !== false,
+        validationMode: json?.validationMode === "terkunci" ? "terkunci" : "bebas",
+        allowedHosts: Array.isArray(json?.allowedHosts) ? json.allowedHosts : [],
+        providers: Array.isArray(json?.providers)
+          ? json.providers.map((p: Record<string, unknown>) => ({
+              id: String(p.id || ""),
+              name: String(p.name || ""),
+              enabled: p.enabled !== false,
+              scriptUrl: String(p.scriptUrl || ""),
+              zoneId: String(p.zoneId || ""),
+              imageUrl: String(p.imageUrl || ""),
+              targetUrl: String(p.targetUrl || ""),
+            }))
+          : [],
+        updatedAt: json?.updatedAt || null,
+        updatedBy: json?.updatedBy || null,
+        hasPrevious: Boolean(json?.previous),
+      });
+      setAdsNotice(json?.message || "Konfigurasi sebelumnya berhasil dipulihkan.");
+    } catch (error) {
+      setAdsNotice(
+        error instanceof Error ? error.message : "Gagal memulihkan konfigurasi.",
+      );
+    } finally {
+      setAdsRolling(false);
+    }
+  }, [getAdminToken]);
+
+  useEffect(() => {
+    if (authed && page === "quick-ads") void fetchAdsSettings();
+  }, [authed, page, fetchAdsSettings]);
 
   useEffect(() => {
     if (authed && page === "events") void fetchEventWinners();
@@ -1037,6 +1237,7 @@ export default function AdminDashboard() {
       nextPage === "comments" ||
       nextPage === "events" ||
       nextPage === "apk" ||
+      nextPage === "quick-ads" ||
       nextPage === "codes" ||
       nextPage === "project" ||
       nextPage === "announcements" ||
@@ -1251,6 +1452,19 @@ export default function AdminDashboard() {
             fetchSettings={fetchApkSettings}
             saveSettings={saveApkSettings}
             setSettings={setApkSettings}
+          />
+        )}
+        {page === "quick-ads" && (
+          <QuickAdsTab
+            loading={adsLoading}
+            saving={adsSaving}
+            rolling={adsRolling}
+            notice={adsNotice}
+            settings={adsConfig}
+            fetchSettings={fetchAdsSettings}
+            saveSettings={saveAdsSettings}
+            rollbackSettings={rollbackAdsSettings}
+            setSettings={setAdsConfig}
           />
         )}
         {page === "comments" && (

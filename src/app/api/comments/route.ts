@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { revalidateTag, unstable_cache } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { createSocialNotification } from "@/lib/social/notifications";
@@ -28,20 +28,49 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Terjadi kesalahan";
 }
 
-// Komentar baru tetap langsung membatalkan cache lewat revalidateTag di POST.
+// Komentar baru langsung membatalkan cache manga/chapter terkait lewat
+// invalidateComments di POST — bukan revalidateTag global yang menghapus cache
+// semua manga sekaligus.
 const COMMENTS_REVALIDATE_SECONDS = 1800;
 
-const getCachedComments = unstable_cache(
-  async (
-    type: string,
-    slug: string | null,
-    chapter: string | null,
-    sort: string,
-    limit: number,
-  ) => {
-    let query = supabaseAdmin
-      .from("comments")
-      .select(`
+// In-memory per-(type, slug, chapter) cache. Server ini single instance (pm2),
+// jadi Map cukup. unstable_cache tidak bisa dipakai karena tag-nya statis: satu
+// komentar baru di manga A dulu menghapus cache semua manga (query comments bolak
+// -balik ke Supabase tiap komentar masuk). Cache per-slug + invalidasi per-slug
+// menghilangkan itu.
+type CommentsPayload = unknown[];
+const commentsCache = new Map<string, { at: number; data: CommentsPayload }>();
+const commentsRequests = new Map<string, Promise<CommentsPayload>>();
+
+function commentsPrefix(type: string, slug: string | null, chapter: string | null) {
+  return `${type}\u0000${slug || ""}\u0000${chapter || ""}\u0000`;
+}
+
+function commentsKey(type: string, slug: string | null, chapter: string | null, sort: string, limit: number) {
+  return `${commentsPrefix(type, slug, chapter)}${sort}\u0000${limit}`;
+}
+
+// Hapus hanya cache yang berhubungan dengan manga/chapter ini (semua sort/limit).
+function invalidateComments(type: string, slug: string | null, chapter: string | null) {
+  const prefix = commentsPrefix(type, slug, chapter);
+  for (const key of [...commentsCache.keys()]) {
+    if (key.startsWith(prefix)) commentsCache.delete(key);
+  }
+  for (const key of [...commentsRequests.keys()]) {
+    if (key.startsWith(prefix)) commentsRequests.delete(key);
+  }
+}
+
+async function fetchComments(
+  type: string,
+  slug: string | null,
+  chapter: string | null,
+  sort: string,
+  limit: number,
+): Promise<CommentsPayload> {
+  let query = supabaseAdmin
+    .from("comments")
+    .select(`
         id,
         content,
         parent_id,
@@ -59,41 +88,69 @@ const getCachedComments = unstable_cache(
           avatar_url
         )
       `)
-      .limit(limit);
+    .limit(limit);
 
-    query = query.eq("type", type);
-    if (slug) query = query.eq("slug", slug);
-    if (chapter) {
-      query = query.eq("chapter", chapter);
-    } else {
-      query = query.is("chapter", null);
-    }
+  query = query.eq("type", type);
+  if (slug) query = query.eq("slug", slug);
+  if (chapter) {
+    query = query.eq("chapter", chapter);
+  } else {
+    query = query.is("chapter", null);
+  }
 
-    query = query.order("created_at", { ascending: sort === "old" });
+  query = query.order("created_at", { ascending: sort === "old" });
 
-    const { data, error } = await query;
-    if (error) throw error;
+  const { data, error } = await query;
+  if (error) throw error;
 
-    return ((data || []) as CommentRow[]).map((item) => ({
-      id: item.id,
-      content: item.content,
-      parent_id: item.parent_id,
-      author_name: item.author_name,
-      user_id: item.user_id,
+  return ((data || []) as CommentRow[]).map((item) => ({
+    id: item.id,
+    content: item.content,
+    parent_id: item.parent_id,
+    author_name: item.author_name,
+    user_id: item.user_id,
+    avatar_url: item.avatar_url,
+    is_spoiler: item.is_spoiler,
+    created_at: item.created_at,
+    profiles: item.profiles || {
+      level: 1,
+      xp: 0,
+      username: item.author_name,
       avatar_url: item.avatar_url,
-      is_spoiler: item.is_spoiler,
-      created_at: item.created_at,
-      profiles: item.profiles || {
-        level: 1,
-        xp: 0,
-        username: item.author_name,
-        avatar_url: item.avatar_url,
-      },
-    }));
-  },
-  ["comments-v2"],
-  { revalidate: COMMENTS_REVALIDATE_SECONDS, tags: ["comments"] },
-);
+    },
+  }));
+}
+
+function getCachedComments(
+  type: string,
+  slug: string | null,
+  chapter: string | null,
+  sort: string,
+  limit: number,
+): Promise<CommentsPayload> {
+  const key = commentsKey(type, slug, chapter, sort, limit);
+  const now = Date.now();
+  const cached = commentsCache.get(key);
+  if (cached && now - cached.at < COMMENTS_REVALIDATE_SECONDS * 1000) {
+    return Promise.resolve(cached.data);
+  }
+
+  const pending = commentsRequests.get(key);
+  if (pending) return pending;
+
+  const request = fetchComments(type, slug, chapter, sort, limit)
+    .then((data) => {
+      commentsCache.set(key, { at: Date.now(), data });
+      commentsRequests.delete(key);
+      return data;
+    })
+    .catch((error) => {
+      commentsRequests.delete(key);
+      throw error;
+    });
+  commentsRequests.set(key, request);
+  return request;
+}
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -174,6 +231,10 @@ export async function POST(req: NextRequest) {
   if (rpcError) console.error("Gagal tambah XP:", rpcError.message);
 }
 
+    // Invalidate hanya cache manga/chapter ini, lalu refresh daftar global
+    // (LatestComments + halaman komentar) yang memang harus menampilkan komentar
+    // baru dari manga apa pun.
+    invalidateComments(type, slug, chapter);
     revalidateTag("comments", { expire: 0 });
 
     // ── Kirim notifikasi reply ─────────────────────────────────────

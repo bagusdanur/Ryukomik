@@ -3,30 +3,89 @@
 import { useEffect } from "react";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
 
-const RAJAAPK_SCRIPT_URL = "https://gaslah.my.id/aan/siap/1788017146215-rajaapk.js";
+type PublicAdProvider = {
+  id: string;
+  enabled: boolean;
+  scriptUrl: string;
+  zoneId: string | null;
+  imageUrl: string | null;
+  targetUrl: string | null;
+};
+
+type PublicAdsConfig = {
+  masterEnabled: boolean;
+  providers: PublicAdProvider[];
+};
+
+const PROVIDER_ATTR = "data-ad-provider";
+
+function cleanupAds() {
+  document
+    .querySelectorAll(`script[${PROVIDER_ATTR}]`)
+    .forEach((el) => el.remove());
+  document
+    .querySelectorAll(`iframe[${PROVIDER_ATTR}]`)
+    .forEach((el) => el.remove());
+  document
+    .querySelectorAll(`div[${PROVIDER_ATTR}], ins[${PROVIDER_ATTR}]`)
+    .forEach((el) => el.remove());
+}
+
+function mountAds(config: PublicAdsConfig) {
+  if (typeof document === "undefined") return;
+
+  if (!config.masterEnabled) {
+    cleanupAds();
+    return;
+  }
+
+  const target = [document.body, document.documentElement].filter(Boolean).pop();
+  if (!target) return;
+
+  const activeIds = new Set<string>();
+
+  for (const provider of config.providers) {
+    if (!provider.enabled || !provider.scriptUrl) continue;
+    activeIds.add(provider.id);
+
+    // Cegah script ganda (navigasi Next.js / re-mount).
+    const existing = document.querySelector(
+      `script[${PROVIDER_ATTR}="${provider.id}"]`,
+    );
+    if (existing) continue;
+
+    const script = document.createElement("script");
+    script.src = provider.scriptUrl;
+    script.async = true;
+    script.setAttribute(PROVIDER_ATTR, provider.id);
+    // data-cfasync="false" → cegah Cloudflare Rocket Loader merusak script iklan
+    script.setAttribute("data-cfasync", "false");
+    if (provider.zoneId) script.dataset.zone = provider.zoneId;
+    target.appendChild(script);
+  }
+
+  // Hapus provider yang sudah dimatikan / di-remove dari config.
+  document.querySelectorAll(`script[${PROVIDER_ATTR}]`).forEach((el) => {
+    const id = el.getAttribute(PROVIDER_ATTR);
+    if (id && !activeIds.has(id)) el.remove();
+  });
+}
 
 export default function MonetagScript() {
   const { loading, isPremium } = usePremiumStatus();
 
-  // Aktif bersihkan semua trace Monetag jika user premium
+  // Bersihkan semua trace iklan jika user premium.
   useEffect(() => {
     if (loading || !isPremium) return;
 
     let idleId: number | null = null;
-
-    const cleanup = () => {
-      // Hapus script tag monetag yang sudah ada
-      document.querySelectorAll('script[data-zone]').forEach((el) => el.remove());
-      document.querySelectorAll('script[src*="al5sm.com"]').forEach((el) => el.remove());
-      document.querySelectorAll(`script[src="${RAJAAPK_SCRIPT_URL}"]`).forEach((el) => el.remove());
-      // Hapus iframe/div iklan yang mungkin sudah ter-inject
-      document.querySelectorAll('iframe[src*="al5sm.com"]').forEach((el) => el.remove());
-    };
+    const cleanup = () => cleanupAds();
 
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
       idleId = window.requestIdleCallback(cleanup);
     } else {
-      setTimeout(cleanup, 100);
+      const t = setTimeout(cleanup, 100);
+      return () => clearTimeout(t);
     }
 
     return () => {
@@ -36,27 +95,32 @@ export default function MonetagScript() {
     };
   }, [loading, isPremium]);
 
-  // Load script iklan secara dinamis setelah status Premium diketahui.
+  // Pasang iklan setelah status premium diketahui & config diambil.
   useEffect(() => {
     if (loading || isPremium) return;
 
-    const monetagScript = document.createElement("script");
-    monetagScript.dataset.zone = "10944835";
-    monetagScript.src = "https://al5sm.com/tag.min.js";
-    monetagScript.async = true;
+    let cancelled = false;
 
-    const rajaApkScript = document.createElement("script");
-    rajaApkScript.src = RAJAAPK_SCRIPT_URL;
-    rajaApkScript.async = true;
-
-    const target = [document.documentElement, document.body].filter(Boolean).pop();
-    if (target) {
-      target.append(monetagScript, rajaApkScript);
+    async function load() {
+      try {
+        const res = await fetch("/api/ads-config", { cache: "no-store" });
+        if (!res.ok) return;
+        const config = (await res.json()) as PublicAdsConfig;
+        if (cancelled) return;
+        if (!config?.masterEnabled) {
+          cleanupAds();
+          return;
+        }
+        mountAds(config);
+      } catch {
+        // Diamkan — iklan gagal load tidak boleh mengganggu halaman.
+      }
     }
 
+    void load();
+
     return () => {
-      monetagScript.remove();
-      rajaApkScript.remove();
+      cancelled = true;
     };
   }, [loading, isPremium]);
 
