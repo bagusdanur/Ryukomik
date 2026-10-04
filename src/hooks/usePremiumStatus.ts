@@ -2,12 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
-import { loadCachedProfile } from "@/utils/profileCache";
-
-interface PremiumProfile {
-  is_premium?: boolean;
-  premium_until?: string | null;
-}
+import { getProfile, isActivePremiumProfile, loadCachedProfile, subscribeProfile } from "@/utils/profileCache";
+import { startPremiumStatusSync } from "@/utils/premiumStatusSync";
 
 export function usePremiumStatus() {
   const [loading, setLoading] = useState(true);
@@ -28,33 +24,36 @@ export function usePremiumStatus() {
       }
 
       setLoading(true);
-      const data = await loadCachedProfile(user.id);
+      const unsubscribe = subscribeProfile(user.id, updateState);
+      const stopSync = startPremiumStatusSync(user.id);
+      const data = getProfile(user.id) || await loadCachedProfile(user.id);
 
-      if (cancelled) return;
+      if (cancelled) {
+        unsubscribe();
+        stopSync();
+        return;
+      }
       if (data) updateState(data);
 
       setLoading(false);
+      cleanup = () => {
+        unsubscribe();
+        stopSync();
+      };
     }
 
-    function updateState(profile: PremiumProfile) {
-      if (!profile?.is_premium) {
-        setIsPremium(false);
-        setPremiumUntil(null);
-        return;
-      }
-
-      const active =
-        !profile.premium_until ||
-        new Date(profile.premium_until) > new Date();
-
+    function updateState(profile: Parameters<typeof isActivePremiumProfile>[0]) {
+      const active = isActivePremiumProfile(profile);
       setIsPremium(active);
-      setPremiumUntil(active ? profile.premium_until : null);
+      setPremiumUntil(active ? profile?.premium_until || null : null);
     }
 
+    let cleanup = () => {};
     init();
 
     return () => {
       cancelled = true;
+      cleanup();
     };
   }, [user?.id, userLoading]);
 

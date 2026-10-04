@@ -239,7 +239,9 @@ export default function ReaderImages({
     return () => observer.disconnect();
   }, [images, slugStr]);
 
-  // Preload 2 halaman berikutnya di chapter saat ini
+  // Preload the same primary candidate as the renderer, once per URL.
+  const preloadedUrls = useRef(new Set<string>());
+  useEffect(() => { preloadedUrls.current.clear(); }, [slugStr, source]);
   useEffect(() => {
     const preloadIndices = [activePage + 1, activePage + 2];
     preloadIndices.forEach((idx) => {
@@ -247,8 +249,10 @@ export default function ReaderImages({
         const nextSrc = images[idx];
         const candidates = getChapterImageCandidates(source, nextSrc);
         const primarySrc = candidates[0] || nextSrc;
-        if (primarySrc) {
+        if (primarySrc && !preloadedUrls.current.has(primarySrc)) {
+          preloadedUrls.current.add(primarySrc);
           const img = new Image();
+          img.referrerPolicy = "no-referrer";
           img.src = primarySrc;
         }
       }
@@ -287,8 +291,10 @@ export default function ReaderImages({
           nextImages.forEach((imgUrl: string) => {
             const candidates = getChapterImageCandidates(nextSource, imgUrl);
             const primarySrc = candidates[0] || imgUrl;
-            if (primarySrc) {
+            if (primarySrc && !preloadedUrls.current.has(primarySrc)) {
+              preloadedUrls.current.add(primarySrc);
               const img = new Image();
+              img.referrerPolicy = "no-referrer";
               img.src = primarySrc;
             }
           });

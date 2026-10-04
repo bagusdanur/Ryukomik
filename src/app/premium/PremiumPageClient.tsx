@@ -24,6 +24,7 @@ import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache"
 import LoginModal from "@/components/LoginModal";
 import SkPremiumModal from "@/components/SkPremiumModal";
 import Button from "@/components/Button";
+import { markPremiumRequestPending } from "@/utils/premiumStatusSync";
 
 const features = [
   {
@@ -239,6 +240,7 @@ export default function PremiumPage() {
 
         if (data && data.length > 0) {
           setHasPendingRequest(true);
+          markPremiumRequestPending(user.id, data[0].id);
         } else {
           setHasPendingRequest(false);
         }
@@ -340,7 +342,7 @@ export default function PremiumPage() {
       if (!imgData.success || !imgData.data?.url) {
         throw new Error("Upload gambar gagal. Coba format lain atau kompres file.");
       }
-      const { error: dbErr } = await supabase.from("premium_requests").insert({
+      const { data: requestRow, error: dbErr } = await supabase.from("premium_requests").insert({
         user_id: user.id,
         name: profile?.username || user.email || "User",
         proof_url: imgData.data.url,
@@ -349,8 +351,11 @@ export default function PremiumPage() {
         amount: selectedPlan.amount,
         sk_agreed: true,
         sk_agreed_at: new Date().toISOString(),
-      });
+      }).select("id").single();
       if (dbErr) throw new Error(dbErr.message);
+
+      markPremiumRequestPending(user.id, requestRow?.id);
+      setHasPendingRequest(true);
 
       setSuccess(true);
     } catch (err) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { adminErrorResponse, privateAdminJson, verifyAdminRequest } from "@/lib/adminApi";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { createSocialNotification } from "@/lib/social/notifications";
+import { sendPremiumActivatedPush } from "@/lib/premiumPush";
 
 export async function GET(request: Request) {
   const admin = await verifyAdminRequest(request);
@@ -72,13 +73,15 @@ export async function POST(request: Request) {
       throw new Error("Hasil aktivasi premium tidak valid.");
     }
 
-    await createSocialNotification({
+    const notification = createSocialNotification({
       userId: result.user_id,
       actorName: `Admin · Premium +${result.duration_days} Hari`,
       type: "premium_activated",
       slug: body.id,
       targetId: body.id,
     });
+    const push = sendPremiumActivatedPush(result.user_id, body.id);
+    await Promise.allSettled([notification, push]);
 
     return privateAdminJson({ success: true, status: "approved", ...result });
   } catch (error) {

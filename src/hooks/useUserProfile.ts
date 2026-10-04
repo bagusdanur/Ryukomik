@@ -2,33 +2,33 @@
 
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { clearCachedProfile, loadCachedProfile } from "@/utils/profileCache";
+import { getProfile, loadCachedProfile, refreshProfile, subscribeProfile } from "@/utils/profileCache";
 import type { CachedProfile } from "@/utils/profileCache";
 
 export function useUserProfile(user: User | null) {
-  const [profile, setProfile] = useState<CachedProfile | null>(null);
+  const [profile, setProfile] = useState<CachedProfile | null>(() => getProfile(user?.id));
 
   useEffect(() => {
     let cancelled = false;
 
     if (!user?.id) return;
 
-    const fetchProfile = async () => {
-      const data = await loadCachedProfile(user.id);
-      if (!cancelled) setProfile(data);
-    };
+    const fetchProfile = async () => loadCachedProfile(user.id);
 
-    fetchProfile();
+    const unsubscribe = subscribeProfile(user.id, (data) => {
+      if (!cancelled) setProfile(data);
+    });
+    void fetchProfile();
 
     const handleProfileUpdated = () => {
-      clearCachedProfile(user.id);
-      fetchProfile();
+      void refreshProfile(user.id);
     };
 
     window.addEventListener("rk-profile-updated", handleProfileUpdated);
 
     return () => {
       cancelled = true;
+      unsubscribe();
       window.removeEventListener("rk-profile-updated", handleProfileUpdated);
     };
   }, [user?.id]);

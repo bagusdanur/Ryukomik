@@ -1,156 +1,48 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import type { User } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabaseClient";
 
-interface UseXpReadArgs {
-  user: User | null;
-  slugStr: string;
-}
-
-interface XpQueueItem {
-  user_id: string;
-  chapter_slug: string;
-  retryCount: number;
-}
-
-// A single read must be recorded at most once per (user, chapter) per session.
-// localStorage alone is not enough: it is only written after the request
-// resolves, so two fast mounts (or a remount on navigation) can both fire before
-// either write lands. This in-memory set blocks the duplicate the moment the
-// first send starts. Next.js re-renders ChapterClient on slug change without
-// remounting, so a single boolean ref would leak across chapters — a set keyed
-// per chapter is required for both correctness and dedup.
+interface UseXpReadArgs { user: User | null; slugStr: string }
+interface XpQueueItem { user_id: string; chapter_slug: string; retryCount: number }
+const QUEUE_KEY = "xp_queue", BATCH_SIZE = 10, MAX_BATCH = 20, FLUSH_MS = 5 * 60 * 1000;
 const sentReads = new Set<string>();
+let flushPromise: Promise<void> | null = null;
 
-function readStringArray(key: string): string[] {
-  try {
-    const value = JSON.parse(localStorage.getItem(key) || "[]");
-    return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-  } catch {
-    return [];
-  }
+function readStringArray(key: string): string[] { try { const v=JSON.parse(localStorage.getItem(key)||"[]"); return Array.isArray(v)?v.filter((x):x is string=>typeof x==="string"):[]; } catch { return []; } }
+function readQueue(): XpQueueItem[] { try { const v=JSON.parse(localStorage.getItem(QUEUE_KEY)||"[]"); return Array.isArray(v)?v.filter((x)=>x?.user_id&&x?.chapter_slug):[]; } catch { return []; } }
+function writeQueue(items: XpQueueItem[]) { if(items.length)localStorage.setItem(QUEUE_KEY,JSON.stringify(items.slice(-100))); else localStorage.removeItem(QUEUE_KEY); }
+function dailyKey(){return `xp_tracked_${new Date().toISOString().split("T")[0]}`;}
+function alreadyTracked(uid:string,slug:string){return sentReads.has(`${uid}:${slug}`)||readStringArray(dailyKey()).includes(slug);}
+function markTracked(uid:string,slugs:string[]){const done=new Set(readStringArray(dailyKey())); for(const slug of slugs){sentReads.add(`${uid}:${slug}`);done.add(slug);} localStorage.setItem(dailyKey(),JSON.stringify([...done].slice(-200)));}
+
+function enqueue(uid:string,slug:string){
+  if(alreadyTracked(uid,slug))return;
+  sentReads.add(`${uid}:${slug}`);
+  const queue=readQueue();
+  if(!queue.some((x)=>x.user_id===uid&&x.chapter_slug===slug)){queue.push({user_id:uid,chapter_slug:slug,retryCount:0});writeQueue(queue);}
+  if(queue.filter((x)=>x.user_id===uid).length>=BATCH_SIZE)void flushXpQueue(uid);
 }
 
-function readQueue(): XpQueueItem[] {
-  try {
-    const value = JSON.parse(localStorage.getItem("xp_queue") || "[]");
-    return Array.isArray(value) ? value : [];
-  } catch {
-    return [];
-  }
-}
-
-function markTracked(userId: string, chapterSlug: string) {
-  sentReads.add(`${userId}:${chapterSlug}`);
-  try {
-    const today = new Date().toISOString().split("T")[0];
-    const trackedKey = `xp_tracked_${today}`;
-    const tracked = readStringArray(trackedKey);
-    if (!tracked.includes(chapterSlug)) {
-      tracked.push(chapterSlug);
-      localStorage.setItem(trackedKey, JSON.stringify(tracked.slice(-200)));
+async function flushXpQueue(uid:string){
+  if(flushPromise)return flushPromise;
+  flushPromise=(async()=>{
+    const selected=readQueue().filter((x)=>x.user_id===uid).slice(0,MAX_BATCH);
+    if(!selected.length)return;
+    const {data}=await supabase.auth.getSession(); const token=data.session?.access_token; if(!token)return;
+    const slugs=[...new Set(selected.map((x)=>x.chapter_slug))];
+    try{
+      const response=await fetch("/api/xp/read",{method:"POST",headers:{"Content-Type":"application/json",authorization:`Bearer ${token}`},body:JSON.stringify({chapter_slugs:slugs}),keepalive:true});
+      if(!response.ok)throw new Error(`HTTP ${response.status}`);
+      markTracked(uid,slugs); const sent=new Set(slugs);
+      writeQueue(readQueue().filter((x)=>x.user_id!==uid||!sent.has(x.chapter_slug)));
+    }catch{
+      const attempted=new Set(slugs);
+      writeQueue(readQueue().flatMap((x)=>x.user_id!==uid||!attempted.has(x.chapter_slug)?[x]:x.retryCount<3?[{...x,retryCount:x.retryCount+1}]:[]));
     }
-  } catch {
-    // localStorage unavailable — the in-memory set still prevents duplicates.
-  }
+  })().finally(()=>{flushPromise=null;});
+  return flushPromise;
 }
 
-function alreadyTracked(userId: string, chapterSlug: string): boolean {
-  if (sentReads.has(`${userId}:${chapterSlug}`)) return true;
-  const today = new Date().toISOString().split("T")[0];
-  return readStringArray(`xp_tracked_${today}`).includes(chapterSlug);
-}
-
-export function useXpRead({ user, slugStr }: UseXpReadArgs) {
-  const userId = user?.id;
-
-  useEffect(() => {
-    if (!userId || !slugStr) return;
-    if (alreadyTracked(userId, slugStr)) return;
-
-    // Debounce 30 detik supaya scroll/redirect cepat tidak memicu request.
-    const timer = setTimeout(() => {
-      if (alreadyTracked(userId, slugStr)) return;
-
-      const payload = { user_id: userId, chapter_slug: slugStr };
-
-      // ✅ Beacon API (tidak dihitung Edge Request)
-      if (navigator.sendBeacon) {
-        const blob = new Blob([JSON.stringify(payload)], {
-          type: "application/json",
-        });
-        const success = navigator.sendBeacon("/api/xp/read", blob);
-
-        if (success) {
-          markTracked(userId, slugStr);
-          return;
-        }
-      }
-
-      // Fallback fetch
-      fetch("/api/xp/read", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      })
-        .then(() => {
-          markTracked(userId, slugStr);
-        })
-        .catch(() => {
-          // Queue untuk retry
-          const queue = readQueue();
-          if (!queue.some((item) => item.user_id === userId && item.chapter_slug === slugStr)) {
-            queue.push({ ...payload, retryCount: 0 });
-            localStorage.setItem("xp_queue", JSON.stringify(queue.slice(-20)));
-          }
-        });
-    }, 30000);
-
-    return () => clearTimeout(timer);
-  }, [userId, slugStr]);
-}
-
-export function useXpQueueFlush() {
-  useEffect(() => {
-    const flush = async () => {
-      const queue = readQueue();
-      if (queue.length === 0) return;
-      const failed: XpQueueItem[] = [];
-      for (const item of queue) {
-        // Skip anything already recorded this session to avoid a second RPC.
-        if (alreadyTracked(item.user_id, item.chapter_slug)) continue;
-        try {
-          const res = await fetch("/api/xp/read", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              user_id: item.user_id,
-              chapter_slug: item.chapter_slug,
-            }),
-          });
-          if (!res.ok && res.status < 500) {
-            // 4xx = payload permanen tidak valid; retry tidak akan membantu.
-            markTracked(item.user_id, item.chapter_slug);
-            continue;
-          }
-          if (!res.ok) throw new Error("Failed");
-          markTracked(item.user_id, item.chapter_slug);
-        } catch {
-          if (item.retryCount < 3) {
-            failed.push({ ...item, retryCount: (item.retryCount || 0) + 1 });
-          }
-        }
-      }
-
-      if (failed.length === 0) {
-        localStorage.removeItem("xp_queue");
-      } else {
-        localStorage.setItem("xp_queue", JSON.stringify(failed));
-      }
-    };
-
-    const timer = setTimeout(flush, 10000);
-    return () => clearTimeout(timer);
-  }, []);
-}
+export function useXpRead({user,slugStr}:UseXpReadArgs){const uid=user?.id;useEffect(()=>{if(!uid||!slugStr||alreadyTracked(uid,slugStr))return;const timer=window.setTimeout(()=>enqueue(uid,slugStr),30_000);return()=>window.clearTimeout(timer);},[uid,slugStr]);}
+export function useXpQueueFlush(){useEffect(()=>{let stopped=false;const flush=async()=>{if(stopped)return;const {data}=await supabase.auth.getSession();if(data.session?.user.id)await flushXpQueue(data.session.user.id);};const interval=window.setInterval(()=>void flush(),FLUSH_MS);const onVisibility=()=>{if(document.visibilityState==="hidden")void flush();};document.addEventListener("visibilitychange",onVisibility);void flush();return()=>{stopped=true;window.clearInterval(interval);document.removeEventListener("visibilitychange",onVisibility);};},[]);}

@@ -1,47 +1,21 @@
 import { NextResponse } from "next/server";
+import { requireUserId } from "@/lib/social/auth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-
 export const runtime = "nodejs";
 
-interface XpReadPayload {
-  user_id?: string;
-  chapter_slug?: string;
-}
-
-export async function POST(req: Request) {
-  try {
-    // sendBeacon/fetch occasionally delivers an empty or truncated body. Parse
-    // defensively: a malformed body must return 400, not throw into the 500
-    // handler, because a 500 pushes the client into its retry queue and turns
-    // one bad beacon into several repeat requests.
-    let payload: XpReadPayload = {};
-    try {
-      const text = await req.text();
-      if (text) payload = JSON.parse(text) as XpReadPayload;
-    } catch {
-      return NextResponse.json({ error: "invalid" }, { status: 400 });
-    }
-
-    const { user_id, chapter_slug } = payload;
-
-    if (!user_id || !chapter_slug) {
-      return NextResponse.json({ error: "invalid" }, { status: 400 });
-    }
-
-    const { data: recorded, error } = await supabaseAdmin.rpc("record_user_read", {
-      p_user_id: user_id,
-      p_chapter_slug: chapter_slug,
-      p_xp_amount: 5,
-    });
-
-    if (error) throw error;
-
-    return NextResponse.json({ success: true, cached: !recorded });
-  } catch (err) {
-    console.error("[XP Read] Error:", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Unknown error" },
-      { status: 500 },
-    );
+export async function POST(request:Request){
+  try{
+    const userId=await requireUserId(request);
+    const body=await request.json().catch(()=>null) as {chapter_slugs?:unknown}|null;
+    const chapterSlugs=Array.isArray(body?.chapter_slugs)?[...new Set(body.chapter_slugs.filter((s):s is string=>typeof s==="string").map((s)=>s.trim()).filter(Boolean))].slice(0,20):[];
+    if(!chapterSlugs.length)return NextResponse.json({error:"invalid"},{status:400});
+    const {data,error}=await supabaseAdmin.rpc("record_user_reads_batch",{p_user_id:userId,p_chapter_slugs:chapterSlugs,p_xp_amount:5});
+    if(error)throw error;
+    const result=Array.isArray(data)?data[0]:data;
+    return NextResponse.json({success:true,recorded_count:result?.recorded_count||0,xp_added:result?.xp_added||0});
+  }catch(error){
+    const unauthorized=error instanceof Error&&error.message==="UNAUTHORIZED";
+    if(!unauthorized)console.error("[XP Read Batch] Error:",error);
+    return NextResponse.json({error:unauthorized?"unauthorized":"failed"},{status:unauthorized?401:500});
   }
 }

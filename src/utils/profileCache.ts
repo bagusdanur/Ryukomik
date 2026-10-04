@@ -36,6 +36,33 @@ const STORAGE_MAX = 8;
 
 const profileCache = new Map<string, { at: number; data: CachedProfile | null }>();
 const profileRequests = new Map<string, Promise<CachedProfile | null>>();
+const profileListeners = new Map<string, Set<(profile: CachedProfile | null) => void>>();
+
+function publishProfile(userId: string, profile: CachedProfile | null) {
+  profileListeners.get(userId)?.forEach((listener) => listener(profile));
+}
+
+export function getProfile(userId?: string | null): CachedProfile | null {
+  if (!userId) return null;
+  return (profileCache.get(userId) || readStored(userId))?.data || null;
+}
+
+export function subscribeProfile(
+  userId: string,
+  listener: (profile: CachedProfile | null) => void,
+) {
+  let listeners = profileListeners.get(userId);
+  if (!listeners) {
+    listeners = new Set();
+    profileListeners.set(userId, listeners);
+  }
+  listeners.add(listener);
+  listener(getProfile(userId));
+  return () => {
+    listeners?.delete(listener);
+    if (!listeners?.size) profileListeners.delete(userId);
+  };
+}
 
 function readStored(userId: string): { at: number; data: CachedProfile | null } | null {
   if (typeof window === "undefined") return null;
@@ -97,6 +124,7 @@ export function clearCachedProfile(userId?: string | null) {
       // ignore
     }
   }
+  publishProfile(userId, null);
 }
 
 function fetchProfile(userId: string): Promise<CachedProfile | null> {
@@ -112,8 +140,25 @@ function fetchProfile(userId: string): Promise<CachedProfile | null> {
     profileCache.set(userId, entry);
     writeStored(userId, entry);
     profileRequests.delete(userId);
+    publishProfile(userId, profile);
     return profile;
+  }).catch((error) => {
+    profileRequests.delete(userId);
+    throw error;
   });
+}
+
+export function refreshProfile(userId: string) {
+  profileCache.delete(userId);
+  profileRequests.delete(userId);
+  if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage.removeItem(STORAGE_PREFIX + userId);
+    } catch {
+      // ignore
+    }
+  }
+  return loadCachedProfile(userId, { force: true });
 }
 
 export function loadCachedProfile(userId: string, options: { force?: boolean } = {}) {

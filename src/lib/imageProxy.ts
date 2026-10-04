@@ -1,4 +1,5 @@
 import { isAdultSource, ADULT_SOURCE_IDS } from "@/config/sources";
+import { parseProxyImageUrl, resolveProxyImageUrl } from "./imageProxyPolicy";
 
 const PUBLIC_PROXY_IMAGE_SOURCES = ADULT_SOURCE_IDS;
 const PUBLIC_PROXY_IMAGE_HOSTS = new Set(["desu.photos"]);
@@ -59,7 +60,7 @@ export function getOriginalImageUrl(url?: string): string {
         return getOriginalImageUrl(nestedUrl);
       }
     }
-    return cleanUrl;
+    return resolveProxyImageUrl(cleanUrl)?.href || cleanUrl;
   } catch {
     return url;
   }
@@ -67,11 +68,13 @@ export function getOriginalImageUrl(url?: string): string {
 
 export function toDoujindesuWorkerImageUrl(url?: string) {
   if (!url) return "";
+  if (!parseProxyImageUrl(url)) return url;
   return `${DOUJINDESU_IMAGE_WORKER}?url=${encodeURIComponent(url)}`;
 }
 
 export function shouldUsePublicChapterProxy(source: string, url?: string) {
   if (!url) return false;
+  if (!parseProxyImageUrl(url)) return false;
   if (PUBLIC_PROXY_IMAGE_SOURCES.has(source)) return true;
 
   try {

@@ -1,7 +1,7 @@
 const PREFIX = "rk";
 // v28: bypass request lintas-domain agar beacon/impression iklan (Monetag dll)
 // tidak pernah di-cache atau di-respondWith oleh ServiceWorker → CPM tidak bocor.
-const CACHE_VERSION = "v28";
+const CACHE_VERSION = "v29";
 const STATIC_CACHE = `${PREFIX}-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `${PREFIX}-images-${CACHE_VERSION}`;
 const CHAPTER_CACHE = `${PREFIX}-chapter-${CACHE_VERSION}`;
@@ -309,12 +309,24 @@ self.addEventListener("push", (event) => {
     body: data.body || "Ada chapter baru dari komik bookmarkmu",
     icon: "/icon.png?v=20260523",
     image: data.image, // Gambar banner komik (opsional)
-    data: { url: data.url || "/" },
+    data: { url: data.url || "/", type: data.type, requestId: data.requestId },
     vibrate: [100, 50, 100],
     tag: data.tag || "new-chapter",
     renotify: true,
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(title, options),
+      data.type === "premium_activated"
+        ? clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) =>
+            Promise.all(list.map((client) => client.postMessage({
+              type: "premium_activated",
+              requestId: data.requestId,
+            }))),
+          )
+        : Promise.resolve(),
+    ])
+  );
 });
 
 // Klik notifikasi → buka halaman
