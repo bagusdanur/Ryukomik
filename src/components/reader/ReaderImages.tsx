@@ -3,6 +3,7 @@ import { FiArrowDown, FiRefreshCw } from "react-icons/fi";
 import { getChapterImageCandidates } from "@/lib/imageProxy";
 import type { ImageScaling, PageSpacing, ReadingMode } from "@/store/readerStore";
 import RecruitmentBanner from "./RecruitmentBanner";
+import PremiumBanner from "./PremiumBanner";
 
 const BOTTOM_ZONE = 0.35;
 const EAGER_IMAGE_COUNT = 1;
@@ -342,7 +343,7 @@ export default function ReaderImages({
 
   return (
     <>
-      <RecruitmentBanner />
+      <PremiumBanner />
 
       <div className={containerClass}>
         {images.map((src, i) => (
