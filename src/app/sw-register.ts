@@ -7,7 +7,7 @@ export default function SWRegister() {
     if (!("serviceWorker" in navigator)) return;
 
     navigator.serviceWorker
-      .register("/sw.js?v=29")
+      .register("/sw.js?v=30")
       .then((registration) => {
         console.log("SW registered:", registration.scope);
 

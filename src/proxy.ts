@@ -7,6 +7,15 @@ import {
 
 export function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
+  // Protected Project images must use their scoped image-session cookie.
+  // Next's public image optimizer cannot carry that authorization safely.
+  if (url.pathname === '/_next/image') {
+    try {
+      const image = new URL(url.searchParams.get('url') || '');
+      if (image.hostname === 'storage.ryukomik.my.id' && image.pathname.startsWith('/chapters/')) return new NextResponse('Use the protected chapter reader.', { status: 403, headers: { 'Cache-Control': 'no-store' } });
+    } catch { /* Non-Project image. */ }
+    return NextResponse.next();
+  }
   let changed = false;
 
   if (url.hostname === "www.ryukomik.my.id") {
@@ -34,5 +43,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|icon.png).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|icon.png).*)", '/_next/image'],
 };

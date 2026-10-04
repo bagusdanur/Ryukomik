@@ -1,8 +1,9 @@
-import { createHmac, randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
-import { getRoleFromBearerToken, getVerifiedUserId } from "@/lib/serverRoleCache";
-import { projectApiFetch, projectApiUrl } from "@/lib/projectApiServer";
+import { getRoleFromBearerToken } from "@/lib/serverRoleCache";
+import { projectApiFetch } from "@/lib/projectApiServer";
 import { verifyDraftPreviewToken } from "@/lib/draftPreviewToken";
+import { getChapterAccess } from '@/lib/chapterAccess';
+import { signImageAccessCookie } from '@/lib/imageAccessCookie';
 
 export const dynamic = "force-dynamic";
 const COOKIE_NAME = "ryu_image_access";
@@ -47,6 +48,9 @@ export async function POST(request: Request) {
   if (!chapter) return NextResponse.json({ error: "Chapter tidak valid" }, { status: 400 });
 
   const context = typeof body.context === "string" ? body.context : "reader";
+  let expires = Math.floor(Date.now() / 1000) + MAX_AGE_SECONDS;
+  let grant: 'public' | 'premium' | 'preview' = 'preview';
+  let lockVersion = '0';
   if (context === "public-draft-preview") {
     const preview = typeof body.previewToken === "string" ? verifyDraftPreviewToken(body.previewToken) : null;
     if (!preview) return NextResponse.json({ error: "Link preview tidak valid" }, { status: 401 });
@@ -63,23 +67,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Akses dashboard ditolak" }, { status: 403 });
     }
   } else {
-    const url = projectApiUrl(`/projects/${encodeURIComponent(chapter.mangaSlug)}/chapters/${encodeURIComponent(chapter.chapterNumber)}`);
-    if (url) {
-      const payload = await fetch(url, { cache: "no-store" }).then((value) => value.json()).catch(() => null);
-      if (!payload?.data) return NextResponse.json({ error: "Chapter tidak ditemukan" }, { status: 404 });
-      const lockUntil = payload.data.login_lock_until ? new Date(payload.data.login_lock_until).getTime() : 0;
-      if (lockUntil > Date.now()) {
-        try { await getVerifiedUserId(bearer(request)); }
-        catch { return NextResponse.json({ error: "Login diperlukan selama chapter dikunci", lockUntil: payload.data.login_lock_until }, { status: 401 }); }
-      }
-    }
+    try {
+      const access = await getChapterAccess(chapter.mangaSlug, chapter.chapterNumber, bearer(request));
+      if (!access.allowed) return NextResponse.json({ error: 'Premium aktif diperlukan.', lockUntil: access.lockUntil }, { status: bearer(request) ? 403 : 401, headers: { 'Cache-Control': 'no-store' } });
+      expires = access.expires; grant = access.grant; lockVersion = access.lockVersion;
+    } catch { return NextResponse.json({ error: 'Layanan akses gambar belum tersedia.' }, { status: 503, headers: { 'Cache-Control': 'no-store' } }); }
   }
 
-  const expires = Math.floor(Date.now() / 1000) + MAX_AGE_SECONDS;
-  const nonce = randomBytes(12).toString("base64url");
-  const encodedScope = Buffer.from(chapter.scope).toString("base64url");
-  const payload = `v2.${expires}.${nonce}.${encodedScope}`;
-  const signature = createHmac("sha256", secret).update(payload).digest("base64url");
   const response = NextResponse.json({ ok: true, expires });
   response.cookies.set(COOKIE_NAME, "", {
     secure: process.env.NODE_ENV === "production",
@@ -88,13 +82,13 @@ export async function POST(request: Request) {
     path: "/",
     maxAge: 0,
   });
-  response.cookies.set(COOKIE_NAME, `${payload}.${signature}`, {
+  response.cookies.set(COOKIE_NAME, signImageAccessCookie(chapter.scope, grant, lockVersion, expires), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     domain: process.env.NODE_ENV === "production" ? ".ryukomik.my.id" : undefined,
     path: chapter.scope,
-    maxAge: MAX_AGE_SECONDS,
+    maxAge: Math.max(0, expires - Math.floor(Date.now() / 1000)),
   });
   response.headers.set("cache-control", "private, no-store, max-age=0");
   return response;

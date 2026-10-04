@@ -150,6 +150,14 @@ const nextConfig = {
       })),
       // ✅ SW tidak di-cache lama
       {
+        source: '/chapter/project/:path*',
+        headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }, { key: 'CDN-Cache-Control', value: 'no-store' }],
+      },
+      {
+        source: '/komik/project/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=0, s-maxage=15' }],
+      },
+      {
         source: "/sw.js",
         headers: [
           {

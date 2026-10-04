@@ -23,6 +23,7 @@ import {
   FiLink as FiLinkIcon,
 } from "react-icons/fi";
 import { MANGA_SOURCES } from "@/config/sources";
+import ChapterLockControls, { ChapterLockBadge } from './ChapterLockControls';
 
 function parseSourceInput(
   raw: string,
@@ -123,6 +124,8 @@ type Chapter = {
   uploaded_at: string;
   is_published: boolean;
   view_count?: number;
+  premium_lock_started_at?: string | null;
+  premium_lock_until?: string | null;
 };
 
 type MangaConfirmation = {
@@ -1103,6 +1106,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
         const json = await res.json();
         if (!res.ok) throw new Error(json?.error || "Gagal memuat chapter");
         setChapterList(json.data || []);
+        setSelectedChapters(new Set());
         setChapterTotal(Number(json.total) || 0);
       } catch (error) {
         setDataError(error instanceof Error ? error.message : "Gagal memuat chapter");
@@ -1849,6 +1853,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 >
                   Publish ({selectedChapters.size})
                 </button>
+                <ChapterLockControls chapters={chapterList.filter(chapter => selectedChapters.has(chapter.id))} getAdminToken={getAdminToken} onChanged={async () => { setSelectedChapters(new Set()); await fetchChapters(activeManga.slug); }} />
                 <button
                   onClick={bulkDeleteChapters}
                   disabled={selectedChapters.size === 0}
@@ -2065,6 +2070,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           </div>
           <select value={chapterStatus} onChange={(e) => setChapterStatus(e.target.value)} className="rounded-xl border border-white/10 bg-[#0d0d12] px-3 py-2.5 text-xs text-white/70 outline-none focus:border-emerald-400/50">
             <option value="all">Semua chapter</option><option value="published">Publik</option><option value="draft">Draft</option>
+            <option value="premium">Premium terkunci</option>
           </select>
         </div>
 
@@ -2085,7 +2091,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           ) : (
             <div className="divide-y divide-white/5">
               {filteredChapters.map((chap) => (
-                <div key={chap.id} className="p-3 sm:p-4 flex items-center gap-3 hover:bg-white/[.02] transition-colors">
+                <div key={chap.id} className="p-3 sm:p-4 flex flex-wrap items-center gap-3 hover:bg-white/[.02] transition-colors">
                   {bulkMode && (
                     <button
                       onClick={() => toggleChapterSelect(chap.id)}
@@ -2105,6 +2111,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                         {chap.is_published ? "PUBLIK" : "DRAFT"}
                       </span>
                     </div>
+                    <ChapterLockBadge chapter={chap} />
                     <p className="text-[10px] text-white/40 mt-0.5">
                       {chap.image_urls.length} gambar{chap.title ? ` â€¢ ${chap.title}` : ""}
                     </p>
@@ -2114,7 +2121,8 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                     </p>
                   </div>
                   {!bulkMode && (
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="ml-auto flex max-w-full flex-wrap items-center gap-2">
+                      <ChapterLockControls chapters={[chap]} getAdminToken={getAdminToken} onChanged={() => fetchChapters(activeManga.slug)} />
                       <button
                         onClick={() => { setChapterForm(chap); setView("chapterPreview"); }}
                         className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center hover:bg-sky-500/20"

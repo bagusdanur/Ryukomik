@@ -12,6 +12,14 @@ export function usePremiumStatus() {
   const { user, loading: userLoading } = useSupabaseUser();
 
   useEffect(() => {
+    if (!premiumUntil) return;
+    const remaining = Date.parse(premiumUntil) - Date.now();
+    if (remaining > 2147483647) return;
+    const timer = window.setTimeout(() => { setIsPremium(false); setPremiumUntil(null); }, Math.max(0, remaining));
+    return () => window.clearTimeout(timer);
+  }, [premiumUntil]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function init() {

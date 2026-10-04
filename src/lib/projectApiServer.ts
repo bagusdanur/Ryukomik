@@ -10,6 +10,10 @@ export function allowSupabaseProjectReadFallback(): boolean {
   return process.env.NODE_ENV !== "production";
 }
 
+export class ProjectApiError extends Error {
+  constructor(message: string, public status: number) { super(message); this.name = 'ProjectApiError'; }
+}
+
 export async function projectApiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const url = projectApiUrl(path);
   if (!url) throw new Error("PROJECT_API_URL is not configured");
@@ -19,7 +23,7 @@ export async function projectApiFetch<T>(path: string, init?: RequestInit): Prom
   const response = await fetch(url, { ...init, headers });
   if (!response.ok) {
     const payload = await response.json().catch(() => null) as { error?: string } | null;
-    throw new Error(payload?.error || `Project API failed with status ${response.status}`);
+    throw new ProjectApiError(payload?.error || `Project API failed with status ${response.status}`, response.status);
   }
   return response.json() as Promise<T>;
 }

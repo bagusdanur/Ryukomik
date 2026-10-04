@@ -1,9 +1,9 @@
-import { createHmac, randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { request as httpsRequest } from "node:https";
 import { request as httpRequest } from "node:http";
-import { projectApiUrl } from "@/lib/projectApiServer";
-import { getVerifiedUserId } from "@/lib/serverRoleCache";
+import { bearerToken, getChapterAccess } from "@/lib/chapterAccess";
+import { parseProjectImageScope } from "@/lib/chapterAccessPolicy";
+import { signImageAccessCookie } from "@/lib/imageAccessCookie";
 
 const IMAGE_TTL = 60 * 60 * 24 * 7;
 const MAX_BYTES = 12 * 1024 * 1024; // 12 MB guard
@@ -73,62 +73,6 @@ function getReferers(url: string) {
 // ---------------------------------------------------------------------------
 const IMAGE_GUARD_HOST = "storage.ryukomik.my.id";
 const IMAGE_GUARD_REFERER = "https://ryukomik.my.id/";
-const IMAGE_ACCESS_SECRET = process.env.IMAGE_ACCESS_SECRET || "";
-const IMAGE_COOKIE_NAME = "ryu_image_access";
-
-function getGuardedScope(url: string): string | null {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname !== IMAGE_GUARD_HOST) return null;
-    const match = parsed.pathname.match(/^\/chapters\/([a-z0-9][a-z0-9-]*)\/(\d+(?:\.\d+)?)\//i);
-    if (!match) return null;
-    return `/chapters/${match[1].toLowerCase()}/${match[2]}/`;
-  } catch {
-    return null;
-  }
-}
-
-function signImageAccessCookie(scope: string): string | null {
-  if (!IMAGE_ACCESS_SECRET || IMAGE_ACCESS_SECRET.length < 32) return null;
-  const expires = Math.floor(Date.now() / 1000) + 2 * 60 * 60;
-  const nonce = randomBytes(12).toString("base64url");
-  const encodedScope = Buffer.from(scope).toString("base64url");
-  const payload = `v2.${expires}.${nonce}.${encodedScope}`;
-  const signature = createHmac("sha256", IMAGE_ACCESS_SECRET).update(payload).digest("base64url");
-  return `${IMAGE_COOKIE_NAME}=${payload}.${signature}`;
-}
-
-function bearerToken(req: Request): string {
-  const value = req.headers.get("authorization") || "";
-  return value.startsWith("Bearer ") ? value.slice(7).trim() : "";
-}
-
-// New project chapters stay readable only by logged-in users during the first
-// hours. /api/image-session enforces that, but this proxy is the other door to
-// the same objects: without this check, minting a cookie here would let an
-// anonymous caller download a locked chapter that the reader refuses to open.
-// A download fetches one image per page, so the lookup is cached briefly
-// instead of hitting the project API dozens of times per chapter.
-const LOCK_CACHE_TTL_MS = 30_000;
-const lockCache = new Map<string, { locked: boolean; at: number }>();
-
-async function chapterIsLoginLocked(scope: string): Promise<boolean> {
-  const cached = lockCache.get(scope);
-  if (cached && Date.now() - cached.at < LOCK_CACHE_TTL_MS) return cached.locked;
-
-  const parts = scope.replace(/^\/chapters\/|\/$/g, "").split("/");
-  const mangaSlug = parts[0];
-  const chapterNumber = parts[1];
-  const url = projectApiUrl(`/projects/${encodeURIComponent(mangaSlug)}/chapters/${encodeURIComponent(chapterNumber)}`);
-  if (!url) return false;
-  const payload = await fetch(url, { cache: "no-store" }).then((value) => value.json()).catch(() => null);
-  const lockUntil = payload?.data?.login_lock_until;
-  const locked = Boolean(lockUntil && new Date(lockUntil).getTime() > Date.now());
-  if (lockCache.size > 500) lockCache.clear();
-  lockCache.set(scope, { locked, at: Date.now() });
-  return locked;
-}
-
 // fetch() bawaan Next.js (undici) memakai verifikasi TLS ketat dan tidak bisa
 // dilonggarkan per-request. Pakai http(s).request native Node agar bisa.
 function fetchImage(url: string, referer: string, cookie?: string, timeoutMs = 15000): Promise<Fetched> {
@@ -202,30 +146,20 @@ export async function GET(req: Request) {
       return new NextResponse("Invalid url", { status: 400 });
     }
 
+    const guarded = parseProjectImageScope(url);
+    let cookie: string | null = null;
+    if (guarded) {
+      try {
+        const access = await getChapterAccess(guarded.slug, guarded.chapter, bearerToken(req));
+        if (!access.allowed) return new NextResponse('Premium aktif diperlukan.', { status: bearerToken(req) ? 403 : 401, headers: { 'Cache-Control': 'no-store' } });
+        cookie = `ryu_image_access=${signImageAccessCookie(guarded.scope, access.grant, access.lockVersion, access.expires)}`;
+      } catch { return new NextResponse('Layanan akses chapter belum tersedia.', { status: 503, headers: { 'Cache-Control': 'no-store' } }); }
+    }
     const etag = getEtag(url);
-    if (req.headers.get("if-none-match") === etag) {
-      return new NextResponse(null, { status: 304, headers: getCacheHeaders(etag) });
-    }
-
-    // For guarded chapter objects, the official Referer and the signed cookie
-    // are both required; the promo placeholder is a 200 image/png, so it must
-    // be rejected explicitly rather than treated as a successful download.
-    const guardedScope = getGuardedScope(url);
-    if (guardedScope && await chapterIsLoginLocked(guardedScope)) {
-      const token = bearerToken(req);
-      let authenticated = false;
-      if (token) {
-        try { await getVerifiedUserId(token); authenticated = true; } catch { authenticated = false; }
-      }
-      if (!authenticated) {
-        return new NextResponse("Login diperlukan selama chapter dikunci.", {
-          status: 401,
-          headers: { "Cache-Control": "no-store" },
-        });
-      }
-    }
-    const cookie = guardedScope ? signImageAccessCookie(guardedScope) : null;
-    const referers = guardedScope ? [IMAGE_GUARD_REFERER] : getReferers(url);
+    const cacheHeaders = guarded ? { 'Cache-Control': 'private, no-store, max-age=0', 'CDN-Cache-Control': 'no-store', Vary: 'Authorization' } : getCacheHeaders(etag);
+    if (!guarded && req.headers.get("if-none-match") === etag) return new NextResponse(null, { status: 304, headers: cacheHeaders });
+    const guardedScope = guarded?.scope;
+    const referers = guarded ? [IMAGE_GUARD_REFERER] : getReferers(url);
 
     let result: Fetched | null = null;
     let guardedDenial: string | null = null;
@@ -275,7 +209,7 @@ export async function GET(req: Request) {
     const contentType = result.headers["content-type"] || "image/jpeg";
 
     return new NextResponse(new Uint8Array(result.body), {
-      headers: getCacheHeaders(etag, contentType),
+      headers: { ...cacheHeaders, "Content-Type": contentType },
     });
   } catch (error) {
     console.error(`Image route error: ${(error as Error)?.message || "unknown"} :: ${target}`);

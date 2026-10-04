@@ -25,11 +25,11 @@ export type AuthenticatedRole = CachedRole & {
 // page that calls several admin endpoints in parallel — so we reuse a
 // validated token for a short window instead of re-verifying it every time.
 const AUTH_USER_CACHE_MS = 5 * 60 * 1000;
-const authUserCache = new Map<string, { at: number; userId: string }>();
+const authUserCache = new Map<string, { at: number; userId: string; expiresAt: number }>();
 
 function pruneAuthUserCache(now: number) {
   for (const [token, entry] of authUserCache) {
-    if (now - entry.at >= AUTH_USER_CACHE_MS) {
+    if (now - entry.at >= AUTH_USER_CACHE_MS || now >= entry.expiresAt) {
       authUserCache.delete(token);
     }
   }
@@ -38,7 +38,7 @@ function pruneAuthUserCache(now: number) {
 export async function getVerifiedUserId(token: string): Promise<string> {
   const now = Date.now();
   const cached = authUserCache.get(token);
-  if (cached && now - cached.at < AUTH_USER_CACHE_MS) {
+  if (cached && now - cached.at < AUTH_USER_CACHE_MS && now < cached.expiresAt) {
     return cached.userId;
   }
 
@@ -51,7 +51,9 @@ export async function getVerifiedUserId(token: string): Promise<string> {
   }
 
   pruneAuthUserCache(now);
-  authUserCache.set(token, { at: now, userId });
+  const expiresAt = Number(claimsData?.claims?.exp) * 1000;
+  if (!Number.isFinite(expiresAt) || expiresAt <= now) throw new Error('Sesi login sudah berakhir.');
+  authUserCache.set(token, { at: now, userId, expiresAt });
   return userId;
 }
 

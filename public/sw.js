@@ -1,7 +1,7 @@
 const PREFIX = "rk";
 // v28: bypass request lintas-domain agar beacon/impression iklan (Monetag dll)
 // tidak pernah di-cache atau di-respondWith oleh ServiceWorker → CPM tidak bocor.
-const CACHE_VERSION = "v29";
+const CACHE_VERSION = "v30";
 const STATIC_CACHE = `${PREFIX}-static-${CACHE_VERSION}`;
 const IMAGE_CACHE = `${PREFIX}-images-${CACHE_VERSION}`;
 const CHAPTER_CACHE = `${PREFIX}-chapter-${CACHE_VERSION}`;
@@ -219,6 +219,9 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (sameOrigin && url.pathname.startsWith("/api/image")) {
+    try {
+      if (new URL(url.searchParams.get('url')).hostname === 'storage.ryukomik.my.id') return;
+    } catch { /* Not a Project image proxy request. */ }
     event.respondWith(cacheFirst(request, IMAGE_CACHE));
     return;
   }

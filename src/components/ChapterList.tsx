@@ -17,7 +17,7 @@ type ChapterItem = {
   title?: string;
   date?: string;
   view_count?: number;
-  login_lock_until?: string | null;
+  premium_lock_until?: string | null;
 };
 
 type DetailData = {
@@ -261,9 +261,8 @@ export default function ChapterList({
       {/* ── List ── */}
       <div className="max-h-[620px] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
         {filteredChapters.map((chap) => {
-          const lockUntil = chap.login_lock_until ? new Date(chap.login_lock_until).getTime() : 0;
-          const isLoginLocked = mounted && source === "project" && lockUntil > nowMs;
-          const lockMinutes = Math.max(1, Math.ceil((lockUntil - nowMs) / 60000));
+          const lockUntil = chap.premium_lock_until ? new Date(chap.premium_lock_until).getTime() : 0;
+          const isPremiumLocked = mounted && source === "project" && lockUntil > nowMs;
           // isLastRead hanya dihitung setelah mounted
           const isLastRead =
             mounted &&
@@ -349,10 +348,10 @@ export default function ChapterList({
                       )}
                     </span>
                   )}
-                  {isLoginLocked && (
+                  {isPremiumLocked && (
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-300">
                       <FiLock size={11} />
-                      {user ? "Akses member" : `Login · ${lockMinutes >= 60 ? `${Math.floor(lockMinutes / 60)}j ${lockMinutes % 60}m` : `${lockMinutes}m`}`}
+                      Premium · Dibuka {new Date(lockUntil).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'short', timeStyle: 'short' })} WIB
                     </span>
                   )}
                 </div>

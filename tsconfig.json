@@ -35,9 +35,12 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     ".next-new/types/**/*.ts",
-    ".next-new/dev/types/**/*.ts"
+    ".next-new/dev/types/**/*.ts",
+    ".next-final/types/**/*.ts",
+    ".next-final/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "infrastructure/project-db"
   ]
 }

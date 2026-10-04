@@ -1,10 +1,12 @@
 import "server-only";
 import webPush from "web-push";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { invalidatePremiumAccess } from "@/lib/chapterAccess";
 
 type PushRow = { id: string; endpoint: string; p256dh: string; auth: string };
 
 export async function sendPremiumActivatedPush(userId: string, requestId: string) {
+  invalidatePremiumAccess(userId);
   const publicKey = process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   if (!publicKey || !privateKey) return { sent: 0, skipped: true };

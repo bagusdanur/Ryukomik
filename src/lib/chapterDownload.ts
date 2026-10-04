@@ -32,6 +32,7 @@ export async function fetchDownloadChapter(
   if (!response.ok || data?.success === false) {
     throw new Error(data?.error || `Gagal mengambil chapter (${response.status})`);
   }
+  if (data?.locked) throw new Error('Chapter ini khusus premium aktif selama masa lock.');
 
   const images = Array.isArray(data?.images)
     ? data.images.filter((item: unknown): item is string => typeof item === "string" && item.length > 0)

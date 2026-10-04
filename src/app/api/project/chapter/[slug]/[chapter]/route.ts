@@ -1,132 +1,27 @@
-import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabaseServer";
-import { projectApiUrl } from "@/lib/projectApiServer";
-import { getVerifiedUserId } from "@/lib/serverRoleCache";
+import { NextResponse } from 'next/server';
+import { projectApiFetch } from '@/lib/projectApiServer';
+import { bearerToken, getChapterAccess } from '@/lib/chapterAccess';
+import type { ChapterLock } from '@/lib/chapterAccessPolicy';
+export const dynamic = 'force-dynamic';
 
-function bearerToken(request: Request) {
-  const header = request.headers.get("authorization") || "";
-  return header.startsWith("Bearer ") ? header.slice(7).trim() : "";
-}
-
-export async function GET(request: Request, props: { params: Promise<{ slug: string, chapter: string }> }) {
+type ChapterData = ChapterLock & { chapter_number: string | number; title?: string; image_urls?: string[]; prev?: string | null; next?: string | null };
+export async function GET(request: Request, props: { params: Promise<{ slug: string; chapter: string }> }) {
+  const { slug, chapter } = await props.params;
+  const match = chapter.match(/^(?:chapter-)?(\d+(?:\.\d+)?)$/i);
+  if (!slug || !match) return NextResponse.json({ success: false, error: 'Chapter tidak valid' }, { status: 400 });
   try {
-    const params = await props.params;
-    const { slug, chapter } = params;
-
-    if (!slug || !chapter) {
-      return NextResponse.json({ success: false, error: "Slug and chapter are required" }, { status: 400 });
-    }
-
-    // Ekstrak angka dari chapter string (misal: "chapter-1.5" -> 1.5)
-    let chapterNum = 0;
-    const match = chapter.match(/chapter-([\d.]+)/i);
-    if (match) {
-      chapterNum = parseFloat(match[1]);
-    } else {
-      chapterNum = parseFloat(chapter);
-    }
-
-    if (isNaN(chapterNum)) {
-      return NextResponse.json({ success: false, error: "Invalid chapter number" }, { status: 400 });
-    }
-
-    const projectUrl = projectApiUrl(`/projects/${encodeURIComponent(slug)}/chapters/${encodeURIComponent(String(chapterNum))}`);
-    if (projectUrl) {
-      const json = await (await fetch(projectUrl, { cache: "no-store" })).json();
-      if (!json?.data) return NextResponse.json({ success: false, error: "Chapter tidak ditemukan" }, { status: 404 });
-      const chapterData = json.data;
-      const lockUntil = chapterData.login_lock_until || null;
-      const locked = Boolean(lockUntil && new Date(lockUntil).getTime() > Date.now());
-      let authenticated = false;
-      if (locked) {
-        const token = bearerToken(request);
-        if (token) {
-          try { await getVerifiedUserId(token); authenticated = true; } catch { authenticated = false; }
-        }
-      }
-      const response = NextResponse.json({ success: true, title: chapterData.title || `Chapter ${chapterData.chapter_number}`, currentChapter: `Chapter ${chapterData.chapter_number}`, mangaId: slug, series: { slug }, prev: chapterData.prev || null, next: chapterData.next || null, locked: locked && !authenticated, lockUntil, images: locked && !authenticated ? [] : (chapterData.image_urls || []) });
-      response.headers.set("Cache-Control", locked ? "private, no-store, max-age=0" : "public, s-maxage=300, stale-while-revalidate=3600");
-      response.headers.set("Vary", "Authorization");
-      return response;
-    }
-
-    // Dapatkan data manga (untuk prev/next logic dan title)
-    const { data: manga, error: mangaError } = await supabaseAdmin
-      .from("project_manga")
-      .select("title")
-      .eq("slug", slug)
-      .eq("is_published", true)
-      .maybeSingle();
-
-    if (mangaError) throw mangaError;
-    if (!manga) {
-      return NextResponse.json({ success: false, error: "Project tidak ditemukan" }, { status: 404 });
-    }
-
-    // Dapatkan data chapter aktif + navigasi secara paralel
-    const [
-      { data: chapData, error: chapterError },
-      { data: nextChapData },
-      { data: prevChapData },
-    ] = await Promise.all([
-      supabaseAdmin
-        .from("project_chapters")
-        .select("chapter_number, title, image_urls")
-        .eq("manga_slug", slug)
-        .eq("chapter_number", chapterNum)
-        .eq("is_published", true)
-        .single(),
-      supabaseAdmin
-        .from("project_chapters")
-        .select("chapter_number")
-        .eq("manga_slug", slug)
-        .eq("is_published", true)
-        .gt("chapter_number", chapterNum)
-        .order("chapter_number", { ascending: true })
-        .limit(1)
-        .maybeSingle(),
-      supabaseAdmin
-        .from("project_chapters")
-        .select("chapter_number")
-        .eq("manga_slug", slug)
-        .eq("is_published", true)
-        .lt("chapter_number", chapterNum)
-        .order("chapter_number", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
-
-    if (chapterError) throw chapterError;
-
-    // Reader Project memakai URL /chapter/project/{manga-slug}/chapter-{nomor}.
-    // Sertakan manga slug di respons navigasi agar tombol, auto-next, dan
-    // prefetch tidak membentuk /chapter/project/chapter-{nomor} (404).
-    const nextChapter = nextChapData
-      ? `${slug}/chapter-${nextChapData.chapter_number}`
-      : null;
-    const prevChapter = prevChapData
-      ? `${slug}/chapter-${prevChapData.chapter_number}`
-      : null;
-
-    // Normalize ke format ReaderChapter
-    const response = NextResponse.json({
-      success: true,
-      title: chapData.title || `Chapter ${chapData.chapter_number}`,
-      currentChapter: `Chapter ${chapData.chapter_number}`,
-      mangaId: slug,
-      series: {
-        slug: slug
-      },
-      prev: prevChapter,
-      next: nextChapter,
-      images: chapData.image_urls || []
-    });
-    response.headers.set(
-      "Cache-Control",
-      "public, s-maxage=300, stale-while-revalidate=3600",
-    );
-    return response;
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    const payload = await projectApiFetch<{ data?: ChapterData }>(`/projects/${encodeURIComponent(slug)}/chapters/${encodeURIComponent(match[1])}`, { cache: 'no-store' });
+    if (!payload.data || !Object.hasOwn(payload.data, 'premium_lock_until')) throw new Error('Metadata akses chapter tidak tersedia.');
+    const data = payload.data;
+    const access = await getChapterAccess(slug, match[1], bearerToken(request), request.headers.get('x-refresh-premium') === 'true', data);
+    return NextResponse.json({
+      success: true, title: data.title || `Chapter ${data.chapter_number}`, currentChapter: `Chapter ${data.chapter_number}`,
+      mangaId: slug, series: { slug }, prev: data.prev || null, next: data.next || null,
+      locked: !access.allowed, lockUntil: access.lockUntil, accessRequirement: access.locked ? 'premium' : null,
+      images: access.allowed ? data.image_urls || [] : [],
+    }, { headers: { 'Cache-Control': 'private, no-store, max-age=0', 'CDN-Cache-Control': 'no-store', Vary: 'Authorization' } });
+  } catch (error) {
+    const missing = error instanceof Error && /Chapter not found|404/.test(error.message);
+    return NextResponse.json({ success: false, error: missing ? 'Chapter tidak ditemukan.' : 'Layanan akses chapter belum tersedia. Coba kembali.' }, { status: missing ? 404 : 503, headers: { 'Cache-Control': 'no-store' } });
   }
 }

@@ -48,6 +48,7 @@ export interface ReaderChapter {
   next?: string;
   locked?: boolean;
   lockUntil?: string | null;
+  accessRequirement?: 'premium' | null;
 }
 
 import type { SourceId as ImportedSourceId } from "@/config/sources";

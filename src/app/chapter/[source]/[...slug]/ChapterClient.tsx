@@ -61,7 +61,7 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
       return;
     }
     let cancelled = false;
-    let refreshTimer: ReturnType<typeof setInterval> | undefined;
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
 
     const issueAccess = async () => {
       try {
@@ -76,9 +76,12 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
           body: JSON.stringify({ chapter: slugStr }),
         });
         if (!response.ok) throw new Error(`image session ${response.status}`);
+        const access = await response.json() as { expires: number };
         if (!cancelled) {
           setImageAccessReady(true);
           setImageAccessError(false);
+          const remaining = access.expires * 1000 - Date.now();
+          refreshTimer = setTimeout(() => void issueAccess(), Math.max(1000, Math.min(90 * 60 * 1000, remaining / 2)));
         }
       } catch {
         if (!cancelled) {
@@ -91,10 +94,9 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
     setImageAccessReady(false);
     setImageAccessError(false);
     void issueAccess();
-    refreshTimer = setInterval(() => void issueAccess(), 90 * 60 * 1000);
     return () => {
       cancelled = true;
-      if (refreshTimer) clearInterval(refreshTimer);
+      if (refreshTimer) clearTimeout(refreshTimer);
     };
   }, [imageAccessToken, needsImageAccess, slugStr]);
 
