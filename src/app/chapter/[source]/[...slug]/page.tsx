@@ -5,6 +5,8 @@ import ChapterClient from "./ChapterClient";
 import ProjectChapterGate from "./ProjectChapterGate";
 import type { Metadata } from "next";
 import type { ReaderChapter } from "@/types/content";
+import { projectApiFetch, ProjectApiError } from "@/lib/projectApiServer";
+import { evaluateChapterAccess, type ChapterLock } from "@/lib/chapterAccessPolicy";
 import {
   buildChapterUrl,
   buildComicUrl,
@@ -58,28 +60,34 @@ async function resolveLegacyKiryuuSlug(slugStr: string): Promise<string> {
 const getChapter = cache(async (source: string, slugStr: string): Promise<ReaderChapter | null> => {
   if (source === "project") {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
       const parts = slugStr.split("/");
       const mangaSlug = parts[0];
       const chapter = parts.length > 1 ? parts[1] : parts[0]; // fallback
       
-      const res = await fetch(`${baseUrl}/api/project/chapter/${mangaSlug}/${chapter}`, {
+      const number = chapter.match(/^(?:chapter-)?(\d+(?:\.\d+)?)$/i)?.[1];
+      if (!number) return null;
+      const json = await projectApiFetch<{ data?: ChapterLock & { chapter_number: number; title?: string; image_urls?: string[]; prev?: string; next?: string } }>(`/projects/${encodeURIComponent(mangaSlug)}/chapters/${encodeURIComponent(number)}`, {
         cache: "no-store",
         headers: { Accept: "application/json" }
       });
       
-      if (!res.ok) return null;
-      const json = await res.json();
-      if (!json.success) return null;
+      if (!json.data || !Object.hasOwn(json.data, 'premium_lock_until')) throw new Error('Metadata akses chapter tidak tersedia.');
+      const data = json.data;
+      // Server-render as an anonymous visitor; the client gate verifies the session.
+      const access = evaluateChapterAccess(data, null);
       
       return {
-        ...json,
-        mangaId: json.mangaId || json.series?.slug || "",
-        currentChapter: json.currentChapter || json.title || "",
-        images: Array.isArray(json.images) ? json.images : [],
+        title: data.title || `Chapter ${data.chapter_number}`,
+        mangaId: mangaSlug,
+        currentChapter: `Chapter ${data.chapter_number}`,
+        prev: data.prev, next: data.next,
+        locked: !access.allowed, lockUntil: access.lockUntil,
+        accessRequirement: access.locked ? 'premium' : null,
+        images: access.allowed && Array.isArray(data.image_urls) ? data.image_urls : [],
       };
-    } catch {
-      return null;
+    } catch (error) {
+      if (error instanceof ProjectApiError && error.status === 404) return null;
+      throw error;
     }
   }
 

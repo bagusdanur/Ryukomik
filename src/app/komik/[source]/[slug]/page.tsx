@@ -4,6 +4,7 @@ import DetailClient from "./DetailClient";
 import type { Metadata } from "next";
 import type { Dict } from "@/types/common";
 import type { Chapter, Series } from "@/types/content";
+import { projectApiFetch, ProjectApiError } from "@/lib/projectApiServer";
 import {
   buildComicUrl,
   normalizeComicSlug,
@@ -48,19 +49,29 @@ const normalizeDetail = (json: Dict): ComicDetail | null => {
 const getDetail = async (source: string, slug: string): Promise<ComicDetail | null> => {
   if (source === "project") {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-      const res = await fetch(`${baseUrl}/api/project/${encodeURIComponent(slug)}`, {
+      const json = await projectApiFetch<{ data?: Dict }>(`/projects/${encodeURIComponent(slug)}`, {
         next: {
           revalidate: 15,
           tags: [`project-detail:${slug}`],
         },
         headers: { Accept: "application/json" }
       });
-      if (!res.ok) return null;
-      const json = await res.json();
-      return normalizeDetail(json);
-    } catch {
-      return null;
+      if (!json.data) return null;
+      const detail = json.data;
+      return normalizeDetail({ data: {
+        ...detail,
+        thumbnail: detail.thumbnail || detail.cover_url,
+        synopsis: detail.synopsis || detail.description,
+        chapters: Array.isArray(detail.chapters) ? detail.chapters.map((chapter: Dict) => ({
+          ...chapter,
+          slug: `${slug}/chapter-${chapter.chapter_number}`,
+          title: chapter.title || `Chapter ${chapter.chapter_number}`,
+          premium_lock_until: chapter.premium_lock_until || null,
+        })) : [],
+      } });
+    } catch (error) {
+      if (error instanceof ProjectApiError && error.status === 404) return null;
+      throw error;
     }
   }
 
