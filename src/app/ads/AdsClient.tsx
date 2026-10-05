@@ -1,12 +1,12 @@
 "use client";
 
-import { FaChartLine, FaUsers, FaEye, FaArrowRight, FaDesktop, FaMobileAlt } from "react-icons/fa";
+import { FaArrowRight, FaDesktop, FaMobileAlt } from "react-icons/fa";
 
 const SPOTS = [
   {
     id: 1,
-    name: "Leaderboard Top",
-    location: "Semua Halaman (Bawah Navigasi)",
+    name: "Banner Utama",
+    location: "Area atas halaman; lokasi disepakati sebelum tayang",
     size: "728 × 90 px",
     devices: ["Desktop", "Tablet"],
     rating: 5,
@@ -102,8 +102,8 @@ const SPOTS = [
   },
   {
     id: 6,
-    name: "Chapter Top / Bottom",
-    location: "Halaman Baca (Atas/Bawah Gambar)",
+    name: "Banner Reader",
+    location: "Awal atau akhir chapter, bukan di tengah cerita",
     size: "320 × 100 px",
     devices: ["Mobile", "Desktop"],
     rating: 5,
@@ -129,7 +129,7 @@ const SPOTS = [
       </div>
     )
   }
-];
+].filter((spot) => spot.id === 1 || spot.id === 6);
 
 export default function AdsClient() {
   return (
@@ -141,41 +141,34 @@ export default function AdsClient() {
         <div className="text-center py-12 md:py-20 flex flex-col items-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface-3)] border border-[var(--line-strong)] text-[var(--accent-2)] text-xs font-bold mb-6">
             <span className="w-2 h-2 rounded-full bg-[var(--accent-2)] animate-pulse" />
-            Media Kit Iklan Ryukomik
+            Kerja sama iklan Ryukomik
           </div>
           <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight tracking-tight">
-            Jangkau Lebih Banyak<br />
+            Brand Anda, di antara<br />
             <span className="text-[var(--accent)]">
-              Audiens Tertarget
+              cerita favorit pembaca.
             </span>
           </h1>
           <p className="text-[var(--muted)] max-w-2xl text-sm md:text-base leading-relaxed mb-10">
-            Tingkatkan brand awareness dan konversi bisnis Anda dengan memasang banner di Ryukomik. Kami memiliki basis audiens yang besar, aktif, dan sangat *engaged* dengan konten manga, manhwa, dan manhua bahasa Indonesia setiap harinya.
+            Perkenalkan produk, game, atau campaign Anda kepada pembaca manga, manhwa, dan manhua berbahasa Indonesia. Dua pilihan banner, dengan lokasi, durasi, dan biaya yang dibahas langsung bersama tim kami.
           </p>
           <a 
-            href="mailto:ryuzunime17@gmail.com?subject=Tanya%20Pasang%20Iklan%20Ryukomik"
+            href="mailto:ads@ryukomik.id?subject=Tanya%20Paket%20Iklan%20Ryukomik"
             className="flex items-center gap-3 px-8 py-4 bg-[var(--accent)] text-white rounded-2xl font-black text-sm md:text-base hover:opacity-90 active:scale-95 transition-all shadow-xl"
           >
-            Hubungi Kami via Email <FaArrowRight />
+            Minta Penawaran <FaArrowRight />
           </a>
         </div>
 
-        {/* STATS SECTION */}
-        <div className="flex justify-center mb-16">
-          <div className="rk-card p-4 md:px-8 rounded-2xl bg-[var(--surface-1)] border border-[var(--line-soft)] flex flex-col items-center text-center">
-            <span className="text-xs text-[var(--muted)] font-bold uppercase tracking-wider mb-3">Statistik Pengunjung (Live)</span>
-            <div id="histats_counter" className="min-h-[30px]" />
-          </div>
-        </div>
 
         {/* CATALOG SECTION */}
         <div className="mb-20">
           <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-4xl font-black mb-3">Spot Iklan Strategis</h2>
-            <p className="text-[var(--muted)] text-sm md:text-base">Pilih lokasi banner yang paling sesuai dengan kebutuhan campaign Anda.</p>
+            <h2 className="text-2xl md:text-4xl font-black mb-3">Dua Pilihan Banner. Mudah Mulai.</h2>
+            <p className="text-[var(--muted)] text-sm md:text-base">Banner utama atau banner reader. Ukuran sebagai acuan materi; lokasi akhir mengikuti ketersediaan slot.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="mx-auto max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-5">
             {SPOTS.map((spot) => (
               <div key={spot.id} className="rk-card flex flex-col bg-[var(--surface-1)] border border-[var(--line-soft)] rounded-3xl overflow-hidden hover:border-[var(--line-strong)] transition-colors group">
                 
@@ -193,11 +186,6 @@ export default function AdsClient() {
                 <div className="p-5 flex-1 flex flex-col">
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="text-lg font-black text-white">{spot.name}</h3>
-                    <div className="flex text-amber-400 text-xs">
-                      {Array.from({ length: spot.rating }).map((_, i) => (
-                        <span key={i}>★</span>
-                      ))}
-                    </div>
                   </div>
                   
                   <div className="flex flex-col gap-2 mt-2 mb-6 text-sm">
@@ -220,10 +208,10 @@ export default function AdsClient() {
 
                   <div className="mt-auto">
                     <a 
-                      href={`mailto:ryuzunime17@gmail.com?subject=Tanya%20Harga%20Spot%20Iklan%20%23${spot.id}%20(${spot.name})`}
+                      href={`mailto:ads@ryukomik.id?subject=${encodeURIComponent(`Tanya Penawaran ${spot.name} Ryukomik`)}`}
                       className="w-full block text-center py-2.5 rounded-xl bg-[var(--surface-3)] hover:bg-[var(--accent)] hover:text-white border border-[var(--line-soft)] font-bold text-sm transition-colors text-white"
                     >
-                      Hubungi Kami
+                      Tanya Harga & Ketersediaan
                     </a>
                   </div>
                 </div>
@@ -238,16 +226,16 @@ export default function AdsClient() {
           
           <h2 className="text-2xl md:text-3xl font-black mb-4">Siap untuk Menjangkau Audiens Kami?</h2>
           <p className="text-[var(--muted)] max-w-xl mx-auto mb-8 text-sm md:text-base">
-            Jangan ragu untuk bertanya terkait harga, penawaran bundle, atau custom spot. Kami siap berdiskusi untuk memberikan hasil maksimal untuk brand Anda.
+            Kirim nama brand, tautan tujuan, pilihan banner, dan perkiraan durasi campaign. Kami akan membahas ketersediaan, harga, serta data trafik yang dapat dibagikan sebelum Anda memutuskan. Materi iklan ditinjau agar tetap sesuai dengan pengalaman pembaca.
           </p>
           <a 
-            href="mailto:ryuzunime17@gmail.com?subject=Kerja%20Sama%20Iklan%20Ryukomik"
+            href="mailto:ads@ryukomik.id?subject=Kerja%20Sama%20Iklan%20Ryukomik"
             className="inline-flex items-center gap-2 px-8 py-3.5 bg-[var(--accent)] hover:opacity-90 text-white rounded-xl font-black transition-colors"
           >
             Kirim Email Sekarang
           </a>
           <p className="mt-4 text-xs text-[var(--muted-soft)]">
-            ryuzunime17@gmail.com
+            ads@ryukomik.id
           </p>
         </div>
 

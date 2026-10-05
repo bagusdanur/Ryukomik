@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { FaBolt, FaDiscord, FaPen, FaPalette, FaUsers } from "react-icons/fa";
 
 const STEPS = [
@@ -47,7 +48,10 @@ export default function RyukomikStaffRecruitmentBanner({
               <button type="button" onClick={() => setShowSteps(true)} className="px-1 text-[9px] font-bold text-[var(--accent-2)] hover:underline">Lihat alur</button>
             </div>
           </div>
-          <a href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer" className="rk-btn-primary relative shrink-0 whitespace-nowrap rounded-xl px-2.5 py-2 text-[10px] font-bold text-white transition-transform active:scale-95 sm:px-3 sm:text-[11px]">Gabung</a>
+          <div className="relative flex shrink-0 flex-col gap-1.5 sm:flex-row sm:items-center">
+            <Link href="/ads" className="whitespace-nowrap rounded-xl border border-amber-400/25 bg-amber-400/10 px-2.5 py-2 text-center text-[10px] font-bold text-amber-200 transition-colors hover:bg-amber-400/20 sm:px-3 sm:text-[11px]">Pasang Iklan</Link>
+            <a href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer" className="rk-btn-primary whitespace-nowrap rounded-xl px-2.5 py-2 text-center text-[10px] font-bold text-white transition-transform active:scale-95 sm:px-3 sm:text-[11px]">Gabung</a>
+          </div>
         </div>
       </div>
 

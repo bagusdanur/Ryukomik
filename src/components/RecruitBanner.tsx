@@ -113,7 +113,7 @@ const SLIDES: Slide[] = [
     iconColor: "text-orange-400",
     title: "Pasang Iklan",
     badge: { label: "Ads", className: "bg-orange-500/20 text-orange-300" },
-    sub: "Jangkau ratusan ribu pembaca dengan banner iklan.",
+    sub: "Kenalkan brand Anda kepada pembaca komik Ryukomik.",
     btn: {
       label: "Pasang",
       href: "/ads",

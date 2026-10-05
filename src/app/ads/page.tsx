@@ -3,7 +3,7 @@ import AdsClient from "./AdsClient";
 
 export const metadata: Metadata = {
   title: "Pasang Iklan - Ryukomik",
-  description: "Media Kit Ryukomik. Jangkau ratusan ribu pembaca komik aktif setiap bulan dengan memasang banner iklan di spot-spot strategis Ryukomik.",
+  description: "Pasang banner iklan di Ryukomik untuk menjangkau pembaca manga, manhwa, dan manhua Indonesia. Hubungi ads@ryukomik.id untuk harga dan ketersediaan slot.",
   alternates: {
     canonical: "https://ryukomik.my.id/ads",
   },
