@@ -28,23 +28,23 @@ export default function RyukomikStaffRecruitmentBanner({
 
   return (
     <div className={`px-3 pb-1 pt-2 sm:px-6 ${className}`}>
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
       <div className="relative overflow-hidden rounded-2xl border border-[var(--accent)]/25 bg-[var(--surface-1)] transition-colors hover:border-[var(--accent)]/45">
-        <div className="rk-card group relative flex w-full items-center gap-2.5 overflow-hidden px-3 py-3 sm:px-4">
+        <div className="rk-card group relative flex h-full w-full flex-wrap items-center gap-2 overflow-hidden px-2 py-2.5 sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:py-3">
           <FaDiscord className="pointer-events-none absolute -right-3 -top-4 h-24 w-24 text-[var(--accent)] opacity-[0.08]" />
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/25 bg-[var(--accent)]/10 text-[var(--accent-2)]">
+          <div className="relative hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/25 bg-[var(--accent)]/10 text-[var(--accent-2)] sm:flex">
             <FaDiscord className="h-4 w-4" />
           </div>
-          <div className="relative min-w-0 flex-1">
+          <div className="relative min-w-0 basis-full sm:flex-1 sm:basis-auto">
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.12em] text-[var(--accent-2)]"><FaBolt className="text-[8px]" /> Urgent recruitment</span>
+              <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.04em] text-[var(--accent-2)] sm:text-[9px] sm:tracking-[0.12em]"><FaBolt className="text-[8px]" /> Urgent recruitment</span>
               <span className="inline-flex items-center gap-1 rounded-full border border-[var(--accent)]/25 bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-black text-[var(--accent-2)]"><FaUsers className="text-[8px]" /> Semua posisi dibayar</span>
             </div>
-            <p className="mt-0.5 truncate text-[12px] font-extrabold text-white sm:text-[13px]">Ryukomik butuh Translator & Typesetter</p>
+            <p className="mt-0.5 text-[11px] font-extrabold leading-snug text-white sm:text-[13px]"><span className="hidden sm:inline">Ryukomik butuh </span>Translator & Typesetter</p>
             <div className="mt-1 flex flex-wrap items-center gap-1">
               {POSITIONS.map((position) => {
                 const Icon = position.icon;
-                return <span key={position.role} className="inline-flex items-center gap-1 rounded-full bg-white/[0.045] px-1.5 py-0.5 text-[8.5px] font-semibold text-white/65"><Icon className="text-[9px] text-[var(--accent-2)]" />{position.role}</span>;
+                return <span key={position.role} className="hidden items-center gap-1 rounded-full bg-white/[0.045] px-1.5 py-0.5 text-[8.5px] font-semibold text-white/65 sm:inline-flex"><Icon className="text-[9px] text-[var(--accent-2)]" />{position.role}</span>;
               })}
               <button type="button" onClick={() => setShowSteps(true)} className="px-1 text-[9px] font-bold text-[var(--accent-2)] hover:underline">Lihat alur</button>
             </div>
@@ -55,13 +55,13 @@ export default function RyukomikStaffRecruitmentBanner({
         </div>
       </div>
 
-      <div className="relative flex items-center gap-2.5 overflow-hidden rounded-2xl border border-amber-400/25 bg-[var(--surface-1)] px-3 py-3 transition-colors hover:border-amber-400/45 sm:px-4">
+      <div className="relative flex flex-wrap items-center gap-2 overflow-hidden rounded-2xl border border-amber-400/25 bg-[var(--surface-1)] px-2 py-2.5 transition-colors hover:border-amber-400/45 sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:py-3">
         <FaBullhorn aria-hidden="true" className="pointer-events-none absolute -right-3 -top-4 h-24 w-24 text-amber-400 opacity-[0.08]" />
-        <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-amber-400/25 bg-amber-400/10 text-amber-300"><FaBullhorn aria-hidden="true" className="h-4 w-4" /></div>
-        <div className="relative min-w-0 flex-1">
+        <div className="relative hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-amber-400/25 bg-amber-400/10 text-amber-300 sm:flex"><FaBullhorn aria-hidden="true" className="h-4 w-4" /></div>
+        <div className="relative min-w-0 basis-full sm:flex-1 sm:basis-auto">
           <span className="text-[9px] font-black uppercase tracking-[0.12em] text-amber-300">Ads · Kerja sama iklan</span>
           <p className="mt-0.5 text-[12px] font-extrabold text-white sm:text-[13px]">Brand Anda bisa hadir di sini</p>
-          <p className="mt-1 text-[10px] leading-snug text-white/65">Jangkau pembaca komik Ryukomik. <span className="inline-block">ads@ryukomik.id</span></p>
+          <p className="mt-1 text-[10px] leading-snug text-white/65"><span className="hidden sm:inline">Jangkau pembaca komik Ryukomik. </span><span className="inline-block">ads@ryukomik.id</span></p>
         </div>
         <Link href="/ads" className="relative shrink-0 whitespace-nowrap rounded-xl border border-amber-400/25 bg-amber-400/10 px-2.5 py-2 text-center text-[10px] font-bold text-amber-200 transition-colors hover:bg-amber-400/20 sm:px-3 sm:text-[11px]">Pasang Iklan</Link>
       </div>
