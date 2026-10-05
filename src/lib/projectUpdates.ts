@@ -5,7 +5,7 @@ type ProjectUpdatesResponse = {
   data?: UpdateItem[];
 };
 
-function formatRelativeDate(dateStr?: string): string {
+export function formatRelativeDate(dateStr?: string): string {
   if (!dateStr) return "";
   const time = new Date(dateStr).getTime();
   if (!Number.isFinite(time)) return "";

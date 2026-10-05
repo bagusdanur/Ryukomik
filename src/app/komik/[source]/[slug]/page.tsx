@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import type { Dict } from "@/types/common";
 import type { Chapter, Series } from "@/types/content";
 import { projectApiFetch, ProjectApiError } from "@/lib/projectApiServer";
+import { formatRelativeDate } from "@/lib/projectUpdates";
 import {
   buildComicUrl,
   normalizeComicSlug,
@@ -66,6 +67,7 @@ const getDetail = async (source: string, slug: string): Promise<ComicDetail | nu
           ...chapter,
           slug: `${slug}/chapter-${chapter.chapter_number}`,
           title: chapter.title || `Chapter ${chapter.chapter_number}`,
+          date: formatRelativeDate(typeof chapter.uploaded_at === 'string' ? chapter.uploaded_at : undefined),
           premium_lock_until: chapter.premium_lock_until || null,
         })) : [],
       } });
