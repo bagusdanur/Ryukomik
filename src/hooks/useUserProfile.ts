@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { getProfile, loadCachedProfile, refreshProfile, subscribeProfile } from "@/utils/profileCache";
 import type { CachedProfile } from "@/utils/profileCache";
+import { startProfileVisibilityRefresh } from "@/utils/profileVisibilityRefresh";
 
 export function useUserProfile(user: User | null) {
   const [profile, setProfile] = useState<CachedProfile | null>(() => getProfile(user?.id));
@@ -20,6 +21,8 @@ export function useUserProfile(user: User | null) {
     });
     void fetchProfile();
 
+    const stopVisibilityRefresh = startProfileVisibilityRefresh(user.id);
+
     const handleProfileUpdated = () => {
       void refreshProfile(user.id);
     };
@@ -29,6 +32,7 @@ export function useUserProfile(user: User | null) {
     return () => {
       cancelled = true;
       unsubscribe();
+      stopVisibilityRefresh();
       window.removeEventListener("rk-profile-updated", handleProfileUpdated);
     };
   }, [user?.id]);

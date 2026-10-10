@@ -10,7 +10,7 @@ import {
 } from "@/components/ThemeColorProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
-import { clearCachedProfile, loadCachedProfile } from "@/utils/profileCache";
+import { clearCachedProfile, loadCachedProfile, subscribeProfile } from "@/utils/profileCache";
 import { createBackup, restoreBackup } from "@/utils/backup";
 import { getCacheSizeMB } from "@/utils/getCacheSizeMB";
 import {
@@ -102,45 +102,52 @@ export default function SettingsClient() {
     if (!user) return;
     let cancelled = false;
 
+    const applyProfile = (profile: Awaited<ReturnType<typeof loadCachedProfile>>) => {
+      if (cancelled || !profile) return;
+      setStats({
+        total_comments: profile.total_comments ?? 0,
+        level: profile.level ?? 1,
+        xp: profile.xp ?? 0,
+        username: profile.username || "",
+        avatar_url: profile.avatar_url || "",
+        role: profile.role,
+        is_premium: profile.is_premium ?? false,
+        premium_until: profile.premium_until,
+        created_at: profile.created_at,
+        show_public_reads: profile.show_public_reads,
+        show_public_comments: profile.show_public_comments,
+        show_public_join_date: profile.show_public_join_date,
+        total_reads: profile.total_reads ?? 0,
+      });
+      setProfileForm({
+        username: profile.username || user.user_metadata?.name || "",
+        avatar_url: profile.avatar_url || user.user_metadata?.avatar_url || "",
+      });
+      setPrivacy({
+        show_public_reads: profile.show_public_reads !== false,
+        show_public_comments: profile.show_public_comments !== false,
+        show_public_join_date: profile.show_public_join_date !== false,
+      });
+    };
+
     const fetchStats = async () => {
       setProfileLoading(true);
       const profile = await loadCachedProfile(user.id);
-
       if (cancelled) return;
-
-      if (profile) {
-        setStats({
-          total_comments: profile.total_comments ?? 0,
-          level: profile.level ?? 1,
-          xp: profile.xp ?? 0,
-          username: profile.username || "",
-          avatar_url: profile.avatar_url || "",
-          role: profile.role,
-          is_premium: profile.is_premium ?? false,
-          premium_until: profile.premium_until,
-          created_at: profile.created_at,
-          show_public_reads: profile.show_public_reads,
-          show_public_comments: profile.show_public_comments,
-          show_public_join_date: profile.show_public_join_date,
-          total_reads: profile.total_reads ?? 0,
-        });
-        setProfileForm({
-          username: profile.username || user.user_metadata?.name || "",
-          avatar_url: profile.avatar_url || user.user_metadata?.avatar_url || "",
-        });
-        setPrivacy({
-          show_public_reads: profile.show_public_reads !== false,
-          show_public_comments: profile.show_public_comments !== false,
-          show_public_join_date: profile.show_public_join_date !== false,
-        });
-      }
+      applyProfile(profile);
       setProfileLoading(false);
     };
+
+    // Stay reactive: when the shared profile cache refreshes (e.g. an admin
+    // approval arriving while this tab is open), the premium card updates
+    // without a reload.
+    const unsubscribe = subscribeProfile(user.id, (profile) => applyProfile(profile));
 
     fetchStats();
 
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, [user]);
 
