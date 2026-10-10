@@ -117,3 +117,43 @@ test('simultaneous image access shares one premium query, and activation invalid
   premium = true; access.invalidatePremiumAccess(id);
   assert.equal((await access.getPremiumAccess('verified-token')).is_premium, true); assert.equal(queries, 2);
 });
+
+// --- Bagian B: premium realtime propagation ---
+
+function webhookSupabase(tx, profile) {
+  return {
+    from: (table) => ({
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: table === 'payment_transactions' ? tx : profile, error: null }) }) }),
+      update: () => ({ eq: async () => ({ error: null }) }),
+    }),
+  };
+}
+
+test('payment webhook sends the same premium_activated signal as manual approval', async () => {
+  delete process.env.PAYMENT_GATEWAY_PROJECT_SLUG;
+  delete process.env.PAYMENT_GATEWAY_API_KEY;
+  const tx = { id: 't1', user_id: 'u1', amount: 12000, duration_days: 30, status: 'pending' };
+  let push = null, notif = null;
+  const route = loadTs('src/app/api/payment/webhook/route.ts', {
+    'next/server': { NextResponse: Response },
+    '@/lib/supabaseServer': { supabaseAdmin: webhookSupabase(tx, { premium_until: null }) },
+    '@/lib/premiumPush': { sendPremiumActivatedPush: async (userId, requestId) => { push = [userId, requestId]; return { sent: 1 }; } },
+    '@/lib/social/notifications': { createSocialNotification: async (input) => { notif = input; } },
+  });
+  const response = await route.POST(new Request('https://test/api/payment/webhook', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ status: 'completed', order_id: 'RYU-1', amount: 12000 }),
+  }));
+  assert.equal(response.status, 200);
+  assert.deepEqual(push, ['u1', 'RYU-1']);
+  assert.equal(notif?.type, 'premium_activated');
+  assert.equal(notif?.userId, 'u1');
+});
+
+test('locked premium gate forces a premium refresh and schedules a re-check', () => {
+  const { gateRefreshPlan, LOCKED_RECHECK_MS } = loadTs('src/utils/premiumGatePolicy.ts');
+  assert.deepEqual(gateRefreshPlan({ locked: true, hasUser: true }), { pollMs: LOCKED_RECHECK_MS, forcePremium: true });
+  assert.deepEqual(gateRefreshPlan({ locked: true, hasUser: false }), { pollMs: null, forcePremium: false });
+  assert.deepEqual(gateRefreshPlan({ locked: false, hasUser: true }), { pollMs: null, forcePremium: false });
+  assert.equal(LOCKED_RECHECK_MS, 60000);
+});

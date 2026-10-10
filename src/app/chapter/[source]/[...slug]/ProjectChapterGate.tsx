@@ -6,6 +6,8 @@ import { FiClock, FiLock } from 'react-icons/fi';
 import LoginModal from '@/components/LoginModal';
 import { useSupabaseUser } from '@/hooks/useSupabaseUser';
 import { usePremiumStatus } from '@/hooks/usePremiumStatus';
+import { refreshProfile } from '@/utils/profileCache';
+import { gateRefreshPlan } from '@/utils/premiumGatePolicy';
 import { supabase } from '@/lib/supabaseClient';
 import type { ReaderChapter } from '@/types/content';
 import ChapterClient from './ChapterClient';
@@ -21,6 +23,10 @@ export default function ProjectChapterGate({ initialData, source, slugStr }: Pro
   const [error, setError] = useState('');
   const inflight = useRef(false);
   const controller = useRef<AbortController | null>(null);
+  const lockedRef = useRef(false);
+  lockedRef.current = Boolean(data.locked);
+  const hasUserRef = useRef(false);
+  hasUserRef.current = Boolean(user?.id);
   const lockUntil = data.lockUntil ? Date.parse(data.lockUntil) : 0;
   const refresh = useCallback(async () => {
     if (inflight.current) return;
@@ -33,17 +39,25 @@ export default function ProjectChapterGate({ initialData, source, slugStr }: Pro
       const accessToken = session.data.session?.access_token;
       const [slug] = slugStr.split('/');
       const chapter = slugStr.split('/').at(-1) || '';
+      // Force a fresh premium check whenever the chapter is locked and the user
+      // is logged in — the server throttles this (10s) so it stays cheap, and
+      // it lets an approval land without the user leaving the page.
+      const forcePremium = isPremium || (lockedRef.current && hasUserRef.current);
       const response = await fetch(`/api/project/chapter/${encodeURIComponent(slug)}/${encodeURIComponent(chapter)}`, {
         cache: 'no-store', signal: abort.signal,
-        headers: { ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}), ...(isPremium ? { 'x-refresh-premium': 'true' } : {}) },
+        headers: { ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}), ...(forcePremium ? { 'x-refresh-premium': 'true' } : {}) },
       });
       const payload = await response.json();
       if (!response.ok || !payload.success) throw new Error(payload.error || 'Chapter gagal dibuka.');
-      if (!abort.signal.aborted) { setData(payload); setToken(accessToken); setError(''); }
+      if (!abort.signal.aborted) {
+        const justUnlocked = lockedRef.current && !payload.locked;
+        setData(payload); setToken(accessToken); setError('');
+        if (justUnlocked && user?.id) void refreshProfile(user.id);
+      }
     } catch (cause) {
       if (!abort.signal.aborted) { setError(cause instanceof Error ? cause.message : 'Chapter gagal dibuka.'); setData(current => ({ ...current, locked: true, images: [] })); }
     } finally { if (controller.current === abort) { inflight.current = false; controller.current = null; } }
-  }, [slugStr, isPremium]);
+  }, [slugStr, isPremium, user?.id]);
 
   useEffect(() => {
     if (loading || premiumLoading) return;
@@ -64,6 +78,16 @@ export default function ProjectChapterGate({ initialData, source, slugStr }: Pro
     schedule();
     return () => { window.clearInterval(timer); window.clearTimeout(expiry); };
   }, [lockUntil, refresh]);
+
+  // While a logged-in user waits on a locked chapter, re-check periodically so
+  // an admin approval unlocks the page without them leaving. Only runs for that
+  // narrow case (server throttles the underlying premium read to 1/10s).
+  useEffect(() => {
+    const plan = gateRefreshPlan({ locked: Boolean(data.locked), hasUser: Boolean(user?.id) });
+    if (!plan.pollMs) return;
+    const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, plan.pollMs);
+    return () => window.clearInterval(timer);
+  }, [data.locked, user?.id, refresh]);
 
   if (!data.locked && !error) return <ChapterClient data={data} source={source} slugStr={slugStr} imageAccessToken={token} />;
   const seconds = Math.max(0, Math.ceil((lockUntil - now) / 1000));

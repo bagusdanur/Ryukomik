@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { createSocialNotification } from "@/lib/social/notifications";
+import { sendPremiumActivatedPush } from "@/lib/premiumPush";
 
 export async function POST(request: Request) {
   try {
@@ -98,6 +100,22 @@ export async function POST(request: Request) {
 
     if (profileError) {
       console.error("Failed to update profile:", profileError);
+    }
+
+    // Same realtime signal as manual approval: invalidate the server-side
+    // premium cache, notify the user, and push so an already-open tab unlocks
+    // without a reload.
+    if (!profileError) {
+      await Promise.allSettled([
+        createSocialNotification({
+          userId: tx.user_id,
+          actorName: "Pembayaran · Premium Aktif",
+          type: "premium_activated",
+          slug: order_id,
+          targetId: order_id,
+        }),
+        sendPremiumActivatedPush(tx.user_id, order_id),
+      ]);
     }
 
     return NextResponse.json({ success: true });
