@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
-import { getProfile, isActivePremiumProfile, loadCachedProfile, subscribeProfile } from "@/utils/profileCache";
+import {
+  getProfile,
+  isActivePremiumProfile,
+  isProfileStale,
+  loadCachedProfile,
+  refreshProfile,
+  subscribeProfile,
+} from "@/utils/profileCache";
 import { startPremiumStatusSync } from "@/utils/premiumStatusSync";
 
 export function usePremiumStatus() {
@@ -34,7 +41,25 @@ export function usePremiumStatus() {
       setLoading(true);
       const unsubscribe = subscribeProfile(user.id, updateState);
       const stopSync = startPremiumStatusSync(user.id);
-      const data = getProfile(user.id) || await loadCachedProfile(user.id);
+
+      // Do not resolve a stale cache into `loading=false`: a user who was just
+      // approved could otherwise be briefly treated as non-premium, which
+      // loads an ad script that cannot be fully torn down afterwards. When the
+      // cache is stale we wait for the fresh read instead.
+      // Use loadCachedProfile({force}) rather than refreshProfile: it de-dupes
+      // concurrent mounts into ONE Supabase read instead of one per component.
+      let data: Awaited<ReturnType<typeof loadCachedProfile>> | null = null;
+      if (isProfileStale(user.id)) {
+        try {
+          data = await loadCachedProfile(user.id, { force: true });
+        } catch {
+          // Network hiccup: fall back to whatever the cache holds so the UI
+          // (and ads) are not stuck waiting forever.
+          data = getProfile(user.id);
+        }
+      } else {
+        data = getProfile(user.id) ?? (await loadCachedProfile(user.id));
+      }
 
       if (cancelled) {
         unsubscribe();

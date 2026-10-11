@@ -1,13 +1,14 @@
 "use client";
 
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
+import { shouldShowSupportAd } from "@/lib/adGatingPolicy";
 import { FiExternalLink, FiServer } from "react-icons/fi";
 
 const SUPPORT_URL = "https://omg10.com/4/10352759";
 
 export default function ReaderSupportAd() {
-  const { isPremium } = usePremiumStatus();
-  if (isPremium) return null;
+  const { loading, isPremium } = usePremiumStatus();
+  if (!shouldShowSupportAd({ loading, isPremium })) return null;
 
   return (
     <div className="w-full pb-0 sm:mx-auto sm:max-w-[520px] sm:px-3 sm:pt-16 sm:pb-3">

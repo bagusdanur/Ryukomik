@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 import { usePremiumStatus } from "@/hooks/usePremiumStatus";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { AD_REMOVAL_SELECTORS, shouldLoadAdScripts } from "@/lib/adGatingPolicy";
 
 type PublicAdProvider = {
   id: string;
@@ -20,15 +22,9 @@ type PublicAdsConfig = {
 const PROVIDER_ATTR = "data-ad-provider";
 
 function cleanupAds() {
-  document
-    .querySelectorAll(`script[${PROVIDER_ATTR}]`)
-    .forEach((el) => el.remove());
-  document
-    .querySelectorAll(`iframe[${PROVIDER_ATTR}]`)
-    .forEach((el) => el.remove());
-  document
-    .querySelectorAll(`div[${PROVIDER_ATTR}], ins[${PROVIDER_ATTR}]`)
-    .forEach((el) => el.remove());
+  for (const selector of AD_REMOVAL_SELECTORS) {
+    document.querySelectorAll(selector).forEach((el) => el.remove());
+  }
 }
 
 function mountAds(config: PublicAdsConfig) {
@@ -72,11 +68,18 @@ function mountAds(config: PublicAdsConfig) {
 }
 
 export default function MonetagScript() {
-  const { loading, isPremium } = usePremiumStatus();
+  const { loading: premiumLoading, isPremium } = usePremiumStatus();
+  const { user, loading: userLoading } = useSupabaseUser();
+  const allowAds = shouldLoadAdScripts({
+    userLoading,
+    hasUser: Boolean(user?.id),
+    premiumLoading,
+    isPremium,
+  });
 
   // Bersihkan semua trace iklan jika user premium.
   useEffect(() => {
-    if (loading || !isPremium) return;
+    if (premiumLoading || !isPremium) return;
 
     let idleId: number | null = null;
     const cleanup = () => cleanupAds();
@@ -93,11 +96,11 @@ export default function MonetagScript() {
         window.cancelIdleCallback(idleId);
       }
     };
-  }, [loading, isPremium]);
+  }, [premiumLoading, isPremium]);
 
   // Pasang iklan setelah status premium diketahui & config diambil.
   useEffect(() => {
-    if (loading || isPremium) return;
+    if (!allowAds) return;
 
     let cancelled = false;
 
@@ -122,7 +125,7 @@ export default function MonetagScript() {
     return () => {
       cancelled = true;
     };
-  }, [loading, isPremium]);
+  }, [allowAds]);
 
   return null;
 }

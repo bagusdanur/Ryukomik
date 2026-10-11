@@ -113,6 +113,25 @@ export function isActivePremiumProfile(
   );
 }
 
+/** Pure staleness check so it can be unit-tested without a DOM. */
+export function isStaleAt(at: number | null | undefined, now: number, ttl: number = PROFILE_TTL) {
+  if (typeof at !== "number" || !Number.isFinite(at)) return true;
+  return now - at >= ttl;
+}
+
+/**
+ * True when the cached profile is missing or older than PROFILE_TTL.
+ * Used to keep premium status "loading" during the stale-while-revalidate
+ * window, so ads are never injected for a user whose premium state is not yet
+ * confirmed by a fresh read.
+ */
+export function isProfileStale(userId?: string | null, now: number = Date.now()) {
+  if (!userId) return true;
+  const entry = profileCache.get(userId) || readStored(userId);
+  if (!entry) return true;
+  return isStaleAt(entry.at, now);
+}
+
 export function clearCachedProfile(userId?: string | null) {
   if (!userId) return;
   profileCache.delete(userId);
