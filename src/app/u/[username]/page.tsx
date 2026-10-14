@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FiArrowLeft, FiHome } from "react-icons/fi";
-import XPublicProfileHeader from "@/components/social/XPublicProfileHeader";
-import PublicProfilePosts from "@/components/social/PublicProfilePosts";
-import PublicProfileSections from "@/components/social/PublicProfileSections";
+import PublicProfileView from "@/components/social/PublicProfileView";
 import { getPublicProfileByUsernameCached } from "@/lib/profileServerCache";
 
 type RouteProps = {
@@ -64,9 +62,7 @@ export default async function PublicSocialProfilePage({ params }: RouteProps) {
           </Link>
         </div>
 
-        <XPublicProfileHeader username={username} />
-        <PublicProfilePosts username={username} />
-        <PublicProfileSections username={username} />
+        <PublicProfileView username={username} />
       </div>
     </main>
   );

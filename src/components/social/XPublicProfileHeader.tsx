@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  FiActivity,
   FiBell,
   FiCalendar,
   FiEdit3,
@@ -48,7 +49,9 @@ function profileVisualType(profile: SocialProfile) {
   return "normal";
 }
 
-export default function XPublicProfileHeader({ username }: { username: string }) {
+type ProfileTab = "posts" | "collections" | "activity";
+
+export default function XPublicProfileHeader({ username, activeTab = "posts", onTabChange }: { username: string; activeTab?: ProfileTab; onTabChange?: (tab: ProfileTab) => void }) {
   const [profile, setProfile] = useState<SocialProfile | null>(null);
   const [following, setFollowing] = useState(false);
   const [ownProfile, setOwnProfile] = useState(false);
@@ -303,18 +306,23 @@ export default function XPublicProfileHeader({ username }: { username: string })
       </div>
 
       <nav className="grid grid-cols-3 overflow-hidden border-t border-white/[0.08]" aria-label="Navigasi profil">
-        <a href="#social-profile-posts" className="relative flex h-12 min-w-0 items-center justify-center gap-1.5 px-1 text-xs font-bold transition hover:bg-white/[0.04] sm:gap-2 sm:text-sm">
-          <FiMessageCircle className="shrink-0" />
-          <span className="truncate">Postingan</span>
-          <span className="absolute bottom-0 h-1 w-12 rounded-full bg-[var(--accent-2)] sm:w-14" />
-        </a>
-        <a href="#profile-collections" className="flex h-12 min-w-0 items-center justify-center gap-1.5 px-1 text-xs font-bold text-white/55 transition hover:bg-white/[0.04] sm:gap-2 sm:text-sm">
-          <FiGrid className="shrink-0" />
-          <span className="truncate">Koleksi</span>
-        </a>
-        <a href="#profile-activity" className="flex h-12 min-w-0 items-center justify-center px-1 text-xs font-bold text-white/55 transition hover:bg-white/[0.04] sm:text-sm">
-          <span className="truncate">Aktivitas</span>
-        </a>
+        {([
+          { key: "posts" as const, label: "Postingan", icon: <FiMessageCircle className="shrink-0" /> },
+          { key: "collections" as const, label: "Koleksi", icon: <FiGrid className="shrink-0" /> },
+          { key: "activity" as const, label: "Aktivitas", icon: <FiActivity className="shrink-0" /> },
+        ]).map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => onTabChange?.(item.key)}
+            aria-current={activeTab === item.key ? "page" : undefined}
+            className={`relative flex h-12 min-w-0 items-center justify-center gap-1.5 px-1 text-xs font-bold transition hover:bg-white/[0.04] sm:gap-2 sm:text-sm ${activeTab === item.key ? "text-white" : "text-white/55"}`}
+          >
+            {item.icon}
+            <span className="truncate">{item.label}</span>
+            {activeTab === item.key && <span className="absolute bottom-0 h-1 w-12 rounded-full bg-[var(--accent-2)] sm:w-14" />}
+          </button>
+        ))}
       </nav>
     </header>
   );

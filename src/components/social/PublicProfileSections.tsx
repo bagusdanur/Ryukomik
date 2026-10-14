@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FiBookOpen, FiGrid, FiHeart, FiMessageCircle, FiUserPlus } from "react-icons/fi";
+import { supabase } from "@/lib/supabaseClient";
 import { relativeTime } from "@/lib/social/relativeTime";
 
 type Collection = {
@@ -37,25 +38,34 @@ function activityText(item: Activity) {
   }
 }
 
-export default function PublicProfileSections({ username }: { username: string }) {
+export default function PublicProfileSections({ username, section, viewerId }: { username: string; section: "collections" | "activity"; viewerId?: string | null }) {
   const [collections, setCollections] = useState<Collection[] | null>(null);
   const [activities, setActivities] = useState<Activity[] | null>(null);
 
   useEffect(() => {
     let active = true;
-    Promise.all([
-      fetch(`/api/social/profile/${encodeURIComponent(username)}/collections`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : { items: [] })).catch(() => ({ items: [] })),
-      fetch(`/api/social/profile/${encodeURIComponent(username)}/activity`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : { items: [] })).catch(() => ({ items: [] })),
-    ]).then(([c, a]) => {
-      if (!active) return;
-      setCollections((c as { items: Collection[] }).items || []);
-      setActivities((a as { items: Activity[] }).items || []);
-    });
+    if (section === "collections") {
+      setActivities(null);
+      fetch(`/api/social/profile/${encodeURIComponent(username)}/collections`, { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : { items: [] }))
+        .then((r) => { if (active) setCollections((r as { items: Collection[] }).items || []); })
+        .catch(() => { if (active) setCollections([]); });
+    } else {
+      setCollections(null);
+      supabase.auth.getSession()
+        .then(({ data }) => {
+          const token = data.session?.access_token;
+          return fetch(`/api/social/profile/${encodeURIComponent(username)}/activity`, { cache: "no-store", headers: token ? { authorization: token } : undefined });
+        })
+        .then((r) => (r.ok ? r.json() : { items: [] }))
+        .then((r) => { if (active) setActivities((r as { items: Activity[] }).items || []); })
+        .catch(() => { if (active) setActivities([]); });
+    }
     return () => { active = false; };
-  }, [username]);
+  }, [username, section, viewerId]);
 
-  return (
-    <>
+  if (section === "collections") {
+    return (
       <section id="profile-collections" className="mx-auto max-w-2xl border-x border-b border-white/[0.08] bg-[var(--surface-0)] text-white">
         <div className="flex items-center justify-between border-b border-white/[0.08] px-4 py-3">
           <h2 className="flex items-center gap-2 text-sm font-black"><FiGrid /> Koleksi</h2>
@@ -78,33 +88,35 @@ export default function PublicProfileSections({ username }: { username: string }
           </Link>
         ))}
       </section>
+    );
+  }
 
-      <section id="profile-activity" className="mx-auto max-w-2xl border-x border-b border-white/[0.08] bg-[var(--surface-0)] text-white">
-        <div className="border-b border-white/[0.08] px-4 py-3">
-          <h2 className="text-sm font-black">Aktivitas</h2>
-        </div>
-        {activities === null && (
-          <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-10 animate-pulse rounded-xl bg-white/5" />)}</div>
-        )}
-        {activities?.length === 0 && <p className="px-4 py-8 text-center text-sm text-white/35">Belum ada aktivitas terbaru.</p>}
-        {activities?.map((item) => {
-          const info = activityText(item);
-          const inner = (
-            <>
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/5 text-[var(--accent-2)]">{info.icon}</span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-white/85">{info.text}</p>
-                <p className="text-[10px] text-white/35">{relativeTime(item.created_at)}</p>
-              </div>
-            </>
-          );
-          return info.href ? (
-            <Link key={item.id} href={info.href} className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3 transition last:border-b-0 hover:bg-white/[0.02]">{inner}</Link>
-          ) : (
-            <div key={item.id} className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3 last:border-b-0">{inner}</div>
-          );
-        })}
-      </section>
-    </>
+  return (
+    <section id="profile-activity" className="mx-auto max-w-2xl border-x border-b border-white/[0.08] bg-[var(--surface-0)] text-white">
+      <div className="border-b border-white/[0.08] px-4 py-3">
+        <h2 className="text-sm font-black">Aktivitas</h2>
+      </div>
+      {activities === null && (
+        <div className="space-y-2 p-4">{[0, 1, 2].map((i) => <div key={i} className="h-10 animate-pulse rounded-xl bg-white/5" />)}</div>
+      )}
+      {activities?.length === 0 && <p className="px-4 py-8 text-center text-sm text-white/35">Belum ada aktivitas terbaru.</p>}
+      {activities?.map((item) => {
+        const info = activityText(item);
+        const inner = (
+          <>
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/5 text-[var(--accent-2)]">{info.icon}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm text-white/85">{info.text}</p>
+              <p className="text-[10px] text-white/35">{relativeTime(item.created_at)}</p>
+            </div>
+          </>
+        );
+        return info.href ? (
+          <Link key={item.id} href={info.href} className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3 transition last:border-b-0 hover:bg-white/[0.02]">{inner}</Link>
+        ) : (
+          <div key={item.id} className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3 last:border-b-0">{inner}</div>
+        );
+      })}
+    </section>
   );
 }
