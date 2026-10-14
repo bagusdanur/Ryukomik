@@ -164,7 +164,9 @@ export async function generateMetadata({ params }: ChapterPageProps): Promise<Me
   const title = buildTitle(data, slugStr);
   const description = `Baca ${title} bahasa Indonesia dengan navigasi chapter lengkap dan kualitas gambar yang nyaman dibaca di Ryukomik.`;
   const url = buildChapterUrl(canonicalSource, slugStr);
-  const images = data?.images?.[0] ? [data.images[0]] : [];
+  // og:image selalu ada; chapter yang gambar-nya belum termuat/kosong tetap
+  // dapat card dengan icon site.
+  const images = [data?.images?.[0] || "/icon.png"];
 
   return {
     title: { absolute: `${title} | Ryukomik` },

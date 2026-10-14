@@ -130,7 +130,9 @@ export async function generateMetadata({ params }: DetailPageProps): Promise<Met
   const details = [type, status, genres ? `genre ${genres}` : ""].filter(Boolean).join(", ");
   const description = `Baca ${title} bahasa Indonesia. Temukan sinopsis, daftar chapter terbaru${details ? `, dan informasi ${details}` : ""} di Ryukomik.`;
   const url = buildComicUrl(canonicalSource, cleanSlug);
-  const images = data?.thumbnail ? [data.thumbnail] : [];
+  // og:image wajib selalu ada — tanpa gambar, share ke Telegram/WA/Discord
+  // jadi card polos. Kalau thumbnail kosong (API sumber gagal), pakai icon site.
+  const images = [data?.thumbnail || "/icon.png"];
 
   return {
     title: { absolute: `${title} Bahasa Indonesia – Chapter Terbaru | Ryukomik` },
