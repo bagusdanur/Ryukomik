@@ -176,7 +176,7 @@ const StickerPicker = memo(({ onSelect, onClose }: StickerPickerProps) => {
   }, [imageUrl, onSelect, onClose]);
 
   return (
-    <div className="rk-card absolute bottom-12 left-0 z-50 w-64 rounded-2xl p-3">
+    <div className="rk-card absolute bottom-12 left-0 z-50 w-[min(16rem,calc(100vw-4rem))] rounded-2xl p-3">
       <div className="mb-2 flex rounded-xl bg-black/25 p-1">
         {["sticker", "link"].map((tab) => (
           <button
