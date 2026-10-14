@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FiHeart, FiMessageCircle } from "react-icons/fi";
+import { supabase } from "@/lib/supabaseClient";
 import { parseComicPost } from "@/lib/social/comicLink";
 import { relativeTime } from "@/lib/social/relativeTime";
 import ComicLinkCard from "@/components/social/ComicLinkCard";
@@ -46,9 +47,11 @@ export default function PublicProfilePosts({ username }: { username: string }) {
   async function load(reset = false) {
     setLoading(true);
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
       const response = await fetch(
         `/api/social/profile/${encodeURIComponent(username)}/posts${!reset && cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
-        { cache: "no-store" },
+        { cache: "no-store", headers: token ? { authorization: token } : undefined },
       );
       if (!response.ok) return;
       const result = (await response.json()) as { items: Post[]; nextCursor: string | null };
