@@ -18,6 +18,8 @@ import {
 } from "react-icons/fi";
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { socialFetch } from "@/lib/social/client";
+import { parseComicPost } from "@/lib/social/comicLink";
+import ComicLinkCard from "@/components/social/ComicLinkCard";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { stickers } from "@/data/stickers";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
@@ -339,6 +341,7 @@ function Composer({
 
 function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post; onChanged: () => void; threadRootId?: string; refreshThread?: () => Promise<void> }) {
   const author = authorOf(post);
+  const comic = parseComicPost(post.content);
   const [liked, setLiked] = useState(post.viewer_liked);
   const [bookmarked, setBookmarked] = useState(Boolean(post.viewer_bookmarked));
   const [likes, setLikes] = useState(post.likes_count);
@@ -462,19 +465,25 @@ function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post
               {post.pending ? <FiRefreshCw className="animate-spin" size={14} /> : post.viewer_owns ? <FiTrash2 size={14} /> : <FiMoreHorizontal />}
             </button>
           </div>
-          {post.content !== "[sticker]" && (
-            <p className="mt-2 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-white/85">
-              {post.content}
-            </p>
-          )}
-          {post.image_url && (
-            <img
-              src={post.image_url}
-              alt="Sticker atau gambar posting"
-              className={`mt-3 border border-white/10 object-contain ${post.content === "[sticker]" ? "mx-auto max-h-24 max-w-24 rounded-xl" : "max-h-96 w-full rounded-2xl"}`}
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
+          {comic ? (
+            <ComicLinkCard content={post.content} imageUrl={post.image_url} />
+          ) : (
+            <>
+              {post.content !== "[sticker]" && (
+                <p className="mt-2 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-white/85">
+                  {post.content}
+                </p>
+              )}
+              {post.image_url && (
+                <img
+                  src={post.image_url}
+                  alt="Sticker atau gambar posting"
+                  className={`mt-3 border border-white/10 object-contain ${post.content === "[sticker]" ? "mx-auto max-h-24 max-w-24 rounded-xl" : "max-h-80 w-full rounded-2xl"}`}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+              )}
+            </>
           )}
           <div className="mt-4 flex max-w-sm items-center justify-between gap-3 text-white/40">
             <button

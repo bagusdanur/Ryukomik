@@ -17,6 +17,8 @@ import {
   FiX,
 } from "react-icons/fi";
 import { socialFetch } from "@/lib/social/client";
+import { parseComicPost } from "@/lib/social/comicLink";
+import ComicLinkCard from "@/components/social/ComicLinkCard";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
 
@@ -210,8 +212,10 @@ export default function PostDetailClient({ id }: { id: string }) {
           </div>
 
           <div className="mt-5">
-            {editing ? <textarea value={content} onChange={(event) => setContent(event.target.value.slice(0, 500))} className="rk-input min-h-36 w-full rounded-xl p-4" /> : post.content !== "[sticker]" && <p className="whitespace-pre-wrap break-words text-[16px] leading-relaxed text-white/90 sm:text-[17px]">{post.content}</p>}
-            {post.image_url && <img src={post.image_url} alt="Media postingan" className={`mt-4 border border-white/10 object-contain ${post.content === "[sticker]" ? "mx-auto max-h-24 max-w-24 rounded-xl" : "max-h-[34rem] w-full rounded-2xl"}`} referrerPolicy="no-referrer" />}
+            {editing ? <textarea value={content} onChange={(event) => setContent(event.target.value.slice(0, 500))} className="rk-input min-h-36 w-full rounded-xl p-4" /> : parseComicPost(post.content) ? null : post.content !== "[sticker]" && <p className="whitespace-pre-wrap break-words text-[16px] leading-relaxed text-white/90 sm:text-[17px]">{post.content}</p>}
+            {parseComicPost(post.content) ? (
+              <ComicLinkCard content={post.content} imageUrl={post.image_url} />
+            ) : post.image_url && <img src={post.image_url} alt="Media postingan" className={`mt-4 border border-white/10 object-contain ${post.content === "[sticker]" ? "mx-auto max-h-24 max-w-24 rounded-xl" : "max-h-[34rem] w-full rounded-2xl"}`} referrerPolicy="no-referrer" />}
           </div>
 
           <div className="mt-6 flex items-center justify-around border-y border-white/[0.08] py-2 text-white/45">

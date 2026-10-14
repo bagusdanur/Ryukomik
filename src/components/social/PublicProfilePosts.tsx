@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FiHeart, FiMessageCircle } from "react-icons/fi";
+import { parseComicPost } from "@/lib/social/comicLink";
+import ComicLinkCard from "@/components/social/ComicLinkCard";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
 
@@ -90,8 +92,14 @@ export default function PublicProfilePosts({ username }: { username: string }) {
                   </time>
                 </div>
               </div>
-              {post.content !== "[sticker]" && <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed text-white/90">{post.content}</p>}
-              {post.image_url && <img src={post.image_url} alt="Lampiran posting" className={`mt-3 border border-white/10 object-contain ${post.content === "[sticker]" ? "mx-auto max-h-24 max-w-24 rounded-xl" : "max-h-[480px] w-full rounded-2xl"}`} loading="lazy" referrerPolicy="no-referrer" />}
+              {parseComicPost(post.content) ? (
+                <ComicLinkCard content={post.content} imageUrl={post.image_url} />
+              ) : (
+                <>
+                  {post.content !== "[sticker]" && <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed text-white/90">{post.content}</p>}
+                  {post.image_url && <img src={post.image_url} alt="Lampiran posting" className={`mt-3 border border-white/10 object-contain ${post.content === "[sticker]" ? "mx-auto max-h-24 max-w-24 rounded-xl" : "max-h-80 w-full rounded-2xl"}`} loading="lazy" referrerPolicy="no-referrer" />}
+                </>
+              )}
               <div className="mt-3 flex gap-8 text-xs text-white/50">
                 <Link href={`/post/${post.id}`} className="flex items-center gap-2 hover:text-cyan-200"><FiMessageCircle />{post.replies_count}</Link>
                 <span className="flex items-center gap-2"><FiHeart />{post.likes_count}</span>
