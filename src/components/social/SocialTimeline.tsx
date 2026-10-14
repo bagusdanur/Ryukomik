@@ -34,6 +34,7 @@ type Post = {
   replies_count: number;
   created_at: string;
   viewer_liked: boolean;
+  viewer_bookmarked?: boolean;
   viewer_owns: boolean;
   profiles?: Author | Author[] | null;
   pending?: boolean;
@@ -338,11 +339,14 @@ function Composer({
 function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post; onChanged: () => void; threadRootId?: string; refreshThread?: () => Promise<void> }) {
   const author = authorOf(post);
   const [liked, setLiked] = useState(post.viewer_liked);
-  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarked, setBookmarked] = useState(Boolean(post.viewer_bookmarked));
   const [likes, setLikes] = useState(post.likes_count);
   const [replying, setReplying] = useState(false);
   const [replies, setReplies] = useState<Post[]>([]);
   const [loadedReplies, setLoadedReplies] = useState(false);
+
+  // Sinkronkan dengan keadaan server terbaru (mis. setelah refetch timeline).
+  useEffect(() => { setBookmarked(Boolean(post.viewer_bookmarked)); }, [post.viewer_bookmarked]);
 
   async function toggleLike() {
     if (post.pending) return;
@@ -395,6 +399,7 @@ function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post
   const rootId = threadRootId || post.id;
   const refreshRoot = refreshThread || refreshReplies;
   async function remove() {
+    if (post.pending) return;
     if (!confirm("Hapus posting ini?")) return;
     await socialFetch("/api/social/posts", {
       method: "DELETE",

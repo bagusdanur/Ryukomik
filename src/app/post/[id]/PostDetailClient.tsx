@@ -13,6 +13,7 @@ import {
   FiRefreshCw,
   FiSave,
   FiSend,
+  FiTrash2,
   FiX,
 } from "react-icons/fi";
 import { socialFetch } from "@/lib/social/client";
@@ -161,6 +162,27 @@ export default function PostDetailClient({ id }: { id: string }) {
     window.setTimeout(() => setCopied(false), 1800);
   }
 
+  async function removePost() {
+    if (!post || !confirm("Hapus postingan ini? Semua balasan di dalamnya juga akan ikut terhapus.")) return;
+    try {
+      await socialFetch("/api/social/posts", { method: "DELETE", body: JSON.stringify({ id: post.id }) });
+      window.location.assign("/files?tab=timeline");
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Postingan gagal dihapus.");
+    }
+  }
+
+  async function removeReply(reply: Post) {
+    if (!confirm("Hapus balasan ini?")) return;
+    try {
+      await socialFetch("/api/social/posts", { method: "DELETE", body: JSON.stringify({ id: reply.id }) });
+      setReplies((current) => current.filter((item) => item.id !== reply.id));
+      setPost((current) => current ? { ...current, replies_count: Math.max(0, current.replies_count - 1) } : current);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Balasan gagal dihapus.");
+    }
+  }
+
   if (error && !post) return <div className="mx-3 rounded-2xl border border-red-400/20 bg-red-400/5 p-8 text-center text-red-200 sm:mx-0">{error}</div>;
   if (!post) return <div className="mx-3 rounded-2xl border border-white/10 py-20 text-center text-white/40 sm:mx-0"><FiRefreshCw className="mx-auto mb-3 animate-spin" />Memuat postingan...</div>;
 
@@ -197,7 +219,7 @@ export default function PostDetailClient({ id }: { id: string }) {
             <button onClick={toggleLike} className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs hover:bg-white/5 ${post.viewer_liked ? "text-pink-400" : "hover:text-pink-400"}`}><FiHeart fill={post.viewer_liked ? "currentColor" : "none"} /> {post.likes_count}</button>
             <button onClick={toggleBookmark} className={`grid h-9 w-9 place-items-center rounded-full hover:bg-white/5 ${post.viewer_bookmarked ? "text-cyan-300" : ""}`} aria-label="Simpan postingan"><FiBookmark fill={post.viewer_bookmarked ? "currentColor" : "none"} /></button>
             <button onClick={copyLink} className="grid h-9 w-9 place-items-center rounded-full hover:bg-white/5 hover:text-cyan-200" aria-label="Salin tautan">{copied ? <FiCheck /> : <FiCopy />}</button>
-            {post.viewer_owns && (editing ? <><button onClick={() => setEditing(false)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-white/5"><FiX /></button><button onClick={save} className="grid h-9 w-9 place-items-center rounded-full text-cyan-200 hover:bg-white/5"><FiSave /></button></> : <button onClick={() => setEditing(true)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-white/5" aria-label="Edit postingan"><FiEdit3 /></button>)}
+            {post.viewer_owns && (editing ? <><button onClick={() => setEditing(false)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-white/5"><FiX /></button><button onClick={save} className="grid h-9 w-9 place-items-center rounded-full text-cyan-200 hover:bg-white/5"><FiSave /></button></> : <><button onClick={() => setEditing(true)} className="grid h-9 w-9 place-items-center rounded-full hover:bg-white/5" aria-label="Edit postingan"><FiEdit3 /></button><button onClick={removePost} className="grid h-9 w-9 place-items-center rounded-full text-red-300/70 hover:bg-white/5 hover:text-red-300" aria-label="Hapus postingan"><FiTrash2 /></button></>)}
           </div>
 
           <form onSubmit={submitReply} className="mt-4 flex items-end gap-2">
@@ -212,7 +234,7 @@ export default function PostDetailClient({ id }: { id: string }) {
         <h2 className="border-b border-white/[0.08] px-4 py-4 font-black sm:px-6">Balasan <span className="ml-1 text-sm text-white/35">{replies.length}</span></h2>
         {replies.map((item) => {
           const replyAuthor = authorOf(item);
-          return <article key={item.id} id={`reply-${item.id}`} className={`relative overflow-hidden border-b border-white/[0.06] p-4 last:border-0 transition-colors duration-700 sm:px-6 ${highlightReplyId === item.id ? "border-cyan-300/30 bg-cyan-300/[0.06] shadow-[inset_0_0_0_1px_rgba(103,232,249,0.25)]" : ""}`}><ExclusiveCommentWallpaper type={visualType(replyAuthor)} /><div className="relative z-[1] flex gap-3"><Link href={`/u/${encodeURIComponent(replyAuthor.username || item.author_id)}`} className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-white/5 text-xs font-black">{replyAuthor.avatar_url ? <img src={replyAuthor.avatar_url} alt="" className="h-full w-full object-cover" /> : (replyAuthor.username || "U")[0]}</Link><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5"><Link href={`/u/${encodeURIComponent(replyAuthor.username || item.author_id)}`} className="text-sm font-black hover:text-cyan-200">{replyAuthor.username || "User"}</Link><UserBadges role={replyAuthor.role} isPremium={replyAuthor.is_premium} /></div><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-white/80">{item.content}</p><time className="mt-2 block text-[10px] text-white/35">{relativeTime(item.created_at)}</time></div></div></article>;
+          return <article key={item.id} id={`reply-${item.id}`} className={`relative overflow-hidden border-b border-white/[0.06] p-4 last:border-0 transition-colors duration-700 sm:px-6 ${highlightReplyId === item.id ? "border-cyan-300/30 bg-cyan-300/[0.06] shadow-[inset_0_0_0_1px_rgba(103,232,249,0.25)]" : ""}`}><ExclusiveCommentWallpaper type={visualType(replyAuthor)} /><div className="relative z-[1] flex gap-3"><Link href={`/u/${encodeURIComponent(replyAuthor.username || item.author_id)}`} className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-white/5 text-xs font-black">{replyAuthor.avatar_url ? <img src={replyAuthor.avatar_url} alt="" className="h-full w-full object-cover" /> : (replyAuthor.username || "U")[0]}</Link><div className="min-w-0 flex-1"><div className="flex items-start justify-between gap-2"><div className="flex flex-wrap items-center gap-1.5"><Link href={`/u/${encodeURIComponent(replyAuthor.username || item.author_id)}`} className="text-sm font-black hover:text-cyan-200">{replyAuthor.username || "User"}</Link><UserBadges role={replyAuthor.role} isPremium={replyAuthor.is_premium} /></div>{item.viewer_owns && <button onClick={() => void removeReply(item)} className="shrink-0 rounded-full p-1.5 text-white/30 hover:bg-white/5 hover:text-red-300" aria-label="Hapus balasan"><FiTrash2 size={14} /></button>}</div><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-white/80">{item.content}</p><time className="mt-2 block text-[10px] text-white/35">{relativeTime(item.created_at)}</time></div></div></article>;
         })}
         {!replies.length && <p className="px-4 py-12 text-center text-sm text-white/35">Belum ada balasan. Jadilah yang pertama membalas.</p>}
       </section>
