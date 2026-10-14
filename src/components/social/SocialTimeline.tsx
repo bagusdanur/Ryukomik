@@ -6,6 +6,7 @@ import {
   FiBookmark,
   FiCopy,
   FiEdit3,
+  FiExternalLink,
   FiHeart,
   FiLink,
   FiMessageCircle,
@@ -483,7 +484,7 @@ function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post
               <FiMessageCircle size={17} />
               {post.replies_count || "Balas"}
             </button>
-            <Link href={`/post/${post.id}`} aria-label="Buka posting" className="hover:text-cyan-300"><FiMessageCircle size={17}/></Link>
+            <Link href={`/post/${post.id}`} aria-label="Buka posting" className="hover:text-cyan-300"><FiExternalLink size={16}/></Link>
             <button onClick={copyLink} aria-label="Salin tautan" className="hover:text-cyan-300"><FiCopy size={16}/></button>
             <button onClick={toggleBookmark} aria-label="Simpan posting" className={bookmarked ? "text-cyan-300" : "hover:text-cyan-300"}><FiBookmark size={17} fill={bookmarked ? "currentColor" : "none"}/></button>
             <button
