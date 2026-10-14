@@ -108,7 +108,6 @@ const nextConfig = {
         "/premium-pay/:path*",
         "/auth/:path*",
         "/u/:path*",
-        "/api/comments",
         "/api/comment-like",
         "/api/reactions",
         "/api/xp/:path*",
