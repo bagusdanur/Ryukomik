@@ -28,7 +28,12 @@ export function getNotificationLink(notification: LinkNotification) {
     return profile ? `/u/${encodeURIComponent(profile)}` : "/connections";
   }
   if ((notification.type === "social_reply" || notification.type === "social_like") && notification.target_id) {
-    return `/post/${encodeURIComponent(notification.target_id)}`;
+    const base = `/post/${encodeURIComponent(notification.target_id)}`;
+    // social_reply stores the new reply's own id in `slug` so the recipient
+    // lands on the thread with that specific reply highlighted.
+    return notification.type === "social_reply" && notification.slug
+      ? `${base}?reply=${encodeURIComponent(notification.slug)}`
+      : base;
   }
 
   let rawSlug = String(notification.slug || "").trim();

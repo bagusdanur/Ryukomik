@@ -71,6 +71,7 @@ export default function PostDetailClient({ id }: { id: string }) {
   const [reply, setReply] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [highlightReplyId, setHighlightReplyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -91,6 +92,21 @@ export default function PostDetailClient({ id }: { id: string }) {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  // Notification deep-link: ?reply=<id> scrolls to and highlights that reply.
+  useEffect(() => {
+    const target = new URLSearchParams(window.location.search).get("reply");
+    if (!target) return;
+    setHighlightReplyId(target);
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`reply-${target}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    const clear = window.setTimeout(() => setHighlightReplyId(null), 6000);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(clear);
+    };
+  }, [replies]);
 
   async function submitReply(event: FormEvent) {
     event.preventDefault();
@@ -154,7 +170,7 @@ export default function PostDetailClient({ id }: { id: string }) {
   return (
     <div className="space-y-4">
       <div className="sticky top-14 z-30 flex h-14 items-center gap-3 border-y border-white/[0.08] bg-[color:color-mix(in_srgb,var(--surface-0)_90%,transparent)] px-3 backdrop-blur-xl sm:top-16 sm:rounded-2xl sm:border-x">
-        <Link href="/files" aria-label="Kembali ke komunitas" className="grid h-9 w-9 place-items-center rounded-full text-white/70 hover:bg-white/[0.07] hover:text-white"><FiArrowLeft /></Link>
+        <Link href="/files?tab=timeline" aria-label="Kembali ke timeline" className="grid h-9 w-9 place-items-center rounded-full text-white/70 hover:bg-white/[0.07] hover:text-white"><FiArrowLeft /></Link>
         <div><h1 className="font-black">Postingan</h1><p className="text-[10px] text-white/35">RyuSpace Community</p></div>
       </div>
 
@@ -196,7 +212,7 @@ export default function PostDetailClient({ id }: { id: string }) {
         <h2 className="border-b border-white/[0.08] px-4 py-4 font-black sm:px-6">Balasan <span className="ml-1 text-sm text-white/35">{replies.length}</span></h2>
         {replies.map((item) => {
           const replyAuthor = authorOf(item);
-          return <article key={item.id} className="relative overflow-hidden border-b border-white/[0.06] p-4 last:border-0 sm:px-6"><ExclusiveCommentWallpaper type={visualType(replyAuthor)} /><div className="relative z-[1] flex gap-3"><Link href={`/u/${encodeURIComponent(replyAuthor.username || item.author_id)}`} className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-white/5 text-xs font-black">{replyAuthor.avatar_url ? <img src={replyAuthor.avatar_url} alt="" className="h-full w-full object-cover" /> : (replyAuthor.username || "U")[0]}</Link><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5"><Link href={`/u/${encodeURIComponent(replyAuthor.username || item.author_id)}`} className="text-sm font-black hover:text-cyan-200">{replyAuthor.username || "User"}</Link><UserBadges role={replyAuthor.role} isPremium={replyAuthor.is_premium} /></div><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-white/80">{item.content}</p><time className="mt-2 block text-[10px] text-white/35">{relativeTime(item.created_at)}</time></div></div></article>;
+          return <article key={item.id} id={`reply-${item.id}`} className={`relative overflow-hidden border-b border-white/[0.06] p-4 last:border-0 transition-colors duration-700 sm:px-6 ${highlightReplyId === item.id ? "border-cyan-300/30 bg-cyan-300/[0.06] shadow-[inset_0_0_0_1px_rgba(103,232,249,0.25)]" : ""}`}><ExclusiveCommentWallpaper type={visualType(replyAuthor)} /><div className="relative z-[1] flex gap-3"><Link href={`/u/${encodeURIComponent(replyAuthor.username || item.author_id)}`} className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-white/5 text-xs font-black">{replyAuthor.avatar_url ? <img src={replyAuthor.avatar_url} alt="" className="h-full w-full object-cover" /> : (replyAuthor.username || "U")[0]}</Link><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-1.5"><Link href={`/u/${encodeURIComponent(replyAuthor.username || item.author_id)}`} className="text-sm font-black hover:text-cyan-200">{replyAuthor.username || "User"}</Link><UserBadges role={replyAuthor.role} isPremium={replyAuthor.is_premium} /></div><p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-white/80">{item.content}</p><time className="mt-2 block text-[10px] text-white/35">{relativeTime(item.created_at)}</time></div></div></article>;
         })}
         {!replies.length && <p className="px-4 py-12 text-center text-sm text-white/35">Belum ada balasan. Jadilah yang pertama membalas.</p>}
       </section>
