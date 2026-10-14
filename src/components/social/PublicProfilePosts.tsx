@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FiHeart, FiMessageCircle } from "react-icons/fi";
 import { parseComicPost } from "@/lib/social/comicLink";
+import { relativeTime } from "@/lib/social/relativeTime";
 import ComicLinkCard from "@/components/social/ComicLinkCard";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
@@ -88,7 +89,7 @@ export default function PublicProfilePosts({ username }: { username: string }) {
                     <UserBadges role={author.role} isPremium={author.is_premium} />
                   </div>
                   <time className="text-[10px] text-white/40">
-                    Level {author.level || 1} · {new Date(post.created_at).toLocaleString("id-ID")}
+                    Level {author.level || 1} · {relativeTime(post.created_at)}
                   </time>
                 </div>
               </div>

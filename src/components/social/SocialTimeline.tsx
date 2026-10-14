@@ -19,6 +19,7 @@ import {
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { socialFetch } from "@/lib/social/client";
 import { parseComicPost } from "@/lib/social/comicLink";
+import { relativeTime } from "@/lib/social/relativeTime";
 import ComicLinkCard from "@/components/social/ComicLinkCard";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { stickers } from "@/data/stickers";
@@ -253,7 +254,7 @@ function Composer({
       onSubmit={submit}
       className={
         compact
-          ? "border-t border-white/[0.08] p-3"
+          ? "relative z-[1] border-t border-white/[0.08] bg-[#0a0e19]/95 p-3 backdrop-blur-sm"
           : "rounded-2xl border border-white/[0.1] bg-[linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.018))] p-4 shadow-[inset_0_1px_rgba(255,255,255,.025)] sm:p-5"
       }
     >
@@ -452,10 +453,7 @@ function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post
               </div>
               <span className="text-[11px] text-white/35">
                 Lv.{author.level || 1} ·{" "}
-                {post.pending ? "Mengirim..." : new Date(post.created_at).toLocaleDateString("id-ID", {
-                  day: "numeric",
-                  month: "short",
-                })}
+                {post.pending ? "Mengirim..." : relativeTime(post.created_at)}
               </span>
             </div>
             <button
@@ -507,7 +505,7 @@ function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post
         </div>
       </div>
       {replying && (
-        <div className="ml-8 border-l border-white/[0.08]">
+        <div className="relative z-[1] ml-8 border-l border-white/[0.08]">
           <Composer
             parentId={rootId}
             replyToId={post.parent_id ? post.id : undefined}
