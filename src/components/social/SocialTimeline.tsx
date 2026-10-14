@@ -8,13 +8,13 @@ import {
   FiEdit3,
   FiExternalLink,
   FiHeart,
+  FiImage,
   FiLink,
   FiMessageCircle,
   FiMoreHorizontal,
   FiRefreshCw,
   FiSend,
   FiTrash2,
-  FiUpload,
   FiX,
 } from "react-icons/fi";
 import { RiEmojiStickerLine } from "react-icons/ri";
@@ -67,10 +67,9 @@ function MediaPicker({
   onSelect: (url: string) => void;
   onClose: () => void;
 }) {
-  const [tab, setTab] = useState<"sticker" | "link" | "upload">("sticker");
+  const [tab, setTab] = useState<"sticker" | "link">("sticker");
   const [manualUrl, setManualUrl] = useState("");
   const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Panel bisa kebablasan keluar viewport kalau tombol Sticker berada di
@@ -83,31 +82,6 @@ function MediaPicker({
       node.style.width = `${Math.max(200, available)}px`;
     }
   }, [tab]);
-
-  async function uploadToImgbb(file: File) {
-    if (!file.type.startsWith("image/")) return setError("File harus berupa gambar.");
-    if (file.size > 8 * 1024 * 1024) return setError("Ukuran gambar maksimal 8 MB.");
-    const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
-    if (!apiKey) return setError("Upload gambar belum dikonfigurasi.");
-    setUploading(true);
-    setError("");
-    try {
-      const formData = new FormData();
-      formData.append("image", file);
-      const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-        method: "POST",
-        body: formData,
-      });
-      const result = (await response.json()) as { success?: boolean; data?: { url?: string } };
-      if (!result.success || !result.data?.url) throw new Error("Upload imgbb gagal");
-      onSelect(result.data.url);
-      onClose();
-    } catch {
-      setError("Upload gambar gagal. Coba lagi.");
-    } finally {
-      setUploading(false);
-    }
-  }
 
   function addManualUrl() {
     const value = manualUrl.trim();
@@ -124,8 +98,8 @@ function MediaPicker({
   return (
     <div ref={panelRef} className="absolute bottom-12 left-0 z-30 w-[min(21rem,calc(100vw-2.5rem))] overflow-hidden rounded-2xl border border-white/10 bg-[var(--surface-2)] p-3 shadow-2xl">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="grid flex-1 grid-cols-3 rounded-xl bg-black/25 p-1">
-          {(["sticker", "link", "upload"] as const).map((item) => (
+        <div className="grid flex-1 grid-cols-2 rounded-xl bg-black/25 p-1">
+          {(["sticker", "link"] as const).map((item) => (
             <button
               key={item}
               type="button"
@@ -139,13 +113,9 @@ function MediaPicker({
                 <>
                   <RiEmojiStickerLine /> Sticker
                 </>
-              ) : item === "link" ? (
-                <>
-                  <FiLink /> Link
-                </>
               ) : (
                 <>
-                  <FiUpload /> Upload
+                  <FiLink /> Link
                 </>
               )}
             </button>
@@ -221,29 +191,6 @@ function MediaPicker({
           </button>
         </div>
       )}
-      {tab === "upload" && (
-        <div className="space-y-3">
-          {error && <p className="text-[10px] text-red-300">{error}</p>}
-          <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed border-white/20 bg-black/20 px-3 py-7 text-center transition hover:border-cyan-300/40 hover:bg-white/[0.03]">
-            <FiUpload className="text-xl text-white/50" />
-            <span className="text-xs font-bold text-white/60">
-              {uploading ? "Mengunggah ke imgbb..." : "Pilih gambar dari perangkat"}
-            </span>
-            <span className="text-[10px] text-white/30">JPG/PNG/WebP, maks 8 MB</span>
-            <input
-              type="file"
-              accept="image/*"
-              disabled={uploading}
-              className="hidden"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                event.target.value = "";
-                if (file) void uploadToImgbb(file);
-              }}
-            />
-          </label>
-        </div>
-      )}
     </div>
   );
 }
@@ -269,6 +216,32 @@ function Composer({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function uploadToImgbb(file: File) {
+    if (!file.type.startsWith("image/")) return setError("File harus berupa gambar.");
+    if (file.size > 8 * 1024 * 1024) return setError("Ukuran gambar maksimal 8 MB.");
+    const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+    if (!apiKey) return setError("Upload gambar belum dikonfigurasi.");
+    setUploading(true);
+    setError("");
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        method: "POST",
+        body: formData,
+      });
+      const result = (await response.json()) as { success?: boolean; data?: { url?: string } };
+      if (!result.success || !result.data?.url) throw new Error("Upload imgbb gagal");
+      setImage(result.data.url);
+    } catch {
+      setError("Upload gambar gagal. Coba lagi.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -368,10 +341,10 @@ function Composer({
             <button
               type="button"
               onClick={() => setShowMediaPicker((value) => !value)}
-              className={`flex items-center gap-1.5 rounded-full px-2.5 py-2 text-[10px] font-bold transition hover:bg-white/5 ${image ? "bg-cyan-300/10 text-cyan-200" : "text-[var(--accent-2)]"}`}
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-2 text-[10px] font-bold text-[var(--accent-2)] transition hover:bg-white/5 ${showMediaPicker ? "bg-white/5" : ""}`}
             >
               <RiEmojiStickerLine className="text-base" />
-              <span>{image ? "Ganti media" : "Sticker"}</span>
+              <span>Sticker</span>
             </button>
             {showMediaPicker && (
               <MediaPicker
@@ -380,6 +353,26 @@ function Composer({
               />
             )}
           </div>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="flex items-center gap-1.5 rounded-full px-2.5 py-2 text-[10px] font-bold text-[var(--accent-2)] transition hover:bg-white/5 disabled:opacity-50"
+          >
+            {uploading ? <FiRefreshCw className="animate-spin text-base" /> : <FiImage className="text-base" />}
+            <span>{uploading ? "Mengunggah..." : "Gambar"}</span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (file) void uploadToImgbb(file);
+            }}
+          />
           {!parentId && (
             <select
               value={visibility}
