@@ -111,7 +111,10 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
         <div className="grid grid-cols-2 gap-2 mb-5">
           {activePlayers.map((player, idx) => {
             // Server yang didukung resolver "ryu-lokal" = diputar tanpa iklan.
-            const isClean = /filedon\.co/i.test(player.iframe ?? "");
+            // filedon & mega di-resolve jadi <video> lokal; Blogger sudah
+            // bersih dari sananya jadi iframe-nya dipakai langsung.
+            const iframe = player.iframe ?? "";
+            const isClean = /filedon\.co|mega\.nz|blogger\.com/i.test(iframe) || Boolean(player.streamUrl);
             return (
               <button key={idx} onClick={() => setActivePlayer(idx)}
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left active:scale-95 transition-colors duration-200 ${
@@ -127,12 +130,12 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
                 }`}>
                   {(player.name ?? "Server").replace("S-", "")}
                 </span>
-                {(isClean || player.streamUrl) && (
+                {(isClean) && (
                   <span
                     className="ml-auto text-[8px] font-black tracking-wider text-cyan-300 bg-cyan-400/15 border border-cyan-300/30 rounded-md px-1.5 py-0.5 uppercase flex-shrink-0"
-                    title={isClean ? "Diputar tanpa iklan (ryu-lokal)" : "Kualitas HD"}
+                    title="Diputar tanpa iklan (ryu-lokal)"
                   >
-                    {isClean ? "⚡ Ad-Free" : "⚡ HD"}
+                    ⚡ Ryu-lokal
                   </span>
                 )}
               </button>
