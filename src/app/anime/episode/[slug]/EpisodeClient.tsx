@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import AnimePlayer from "@/components/anime/AnimePlayer";
 
@@ -32,9 +32,27 @@ type EpisodeClientProps = {
   data: AnimeEpisode | null;
 };
 
+/** Server tanpa iklan ("ryu-lokal"): filedon & mega di-resolve jadi <video>
+ *  lokal; Blogger bersih dari sananya jadi iframe-nya dipakai langsung. */
+function isCleanPlayer(player: AnimePlayerType) {
+  return /filedon\.co|mega\.nz|blogger\.com/i.test(player.iframe ?? "") || Boolean(player.streamUrl);
+}
+
 export default function EpisodeClient({ data }: EpisodeClientProps) {
   const cleanTitle = data?.title?.replace(" Sub Indo", "") || "";
-  const activePlayers = data?.players?.filter((p) => p.iframe) || [];
+  // Server "Ryu-lokal" (filedon/mega/blogger = tanpa iklan) selalu diurutkan
+  // paling atas dan namanya diseragamkan: "Ryu-lokal 360p", "Ryu-lokal 480p", ...
+  const activePlayers = useMemo(() => {
+    const list = data?.players?.filter((p) => p.iframe) || [];
+    return list
+      .map((p, order) => ({ p, order, clean: isCleanPlayer(p) }))
+      .sort((a, b) => Number(b.clean) - Number(a.clean) || a.order - b.order)
+      .map(({ p, clean }) => {
+        if (!clean) return p;
+        const quality = (p.name || "").match(/(\d{3,4}\s*p)/i)?.[1]?.replace(/\s+/g, "") || "";
+        return { ...p, name: `Ryu-lokal${quality ? ` ${quality}` : ""}` };
+      });
+  }, [data]);
   const [activePlayer, setActivePlayer] = useState(0);
 
   if (!data) return <div>Error</div>;
@@ -110,11 +128,7 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
         </div>
         <div className="grid grid-cols-2 gap-2 mb-5">
           {activePlayers.map((player, idx) => {
-            // Server yang didukung resolver "ryu-lokal" = diputar tanpa iklan.
-            // filedon & mega di-resolve jadi <video> lokal; Blogger sudah
-            // bersih dari sananya jadi iframe-nya dipakai langsung.
-            const iframe = player.iframe ?? "";
-            const isClean = /filedon\.co|mega\.nz|blogger\.com/i.test(iframe) || Boolean(player.streamUrl);
+            const isClean = isCleanPlayer(player);
             return (
               <button key={idx} onClick={() => setActivePlayer(idx)}
                 className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left active:scale-95 transition-colors duration-200 ${
@@ -132,10 +146,10 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
                 </span>
                 {(isClean) && (
                   <span
-                    className="ml-auto text-[8px] font-black tracking-wider text-cyan-300 bg-cyan-400/15 border border-cyan-300/30 rounded-md px-1.5 py-0.5 uppercase flex-shrink-0"
+                    className="ml-auto text-[10px] font-black tracking-wider text-cyan-300 bg-cyan-400/15 border border-cyan-300/30 rounded-md px-1.5 py-0.5 flex-shrink-0"
                     title="Diputar tanpa iklan (ryu-lokal)"
                   >
-                    ⚡ Ryu-lokal
+                    ⚡
                   </span>
                 )}
               </button>
