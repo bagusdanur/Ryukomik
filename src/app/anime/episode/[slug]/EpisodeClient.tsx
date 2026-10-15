@@ -48,9 +48,13 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
       .map((p, order) => ({ p, order, clean: isCleanPlayer(p) }))
       .sort((a, b) => Number(b.clean) - Number(a.clean) || a.order - b.order)
       .map(({ p, clean }) => {
-        if (!clean) return p;
-        const quality = (p.name || "").match(/(\d{3,4}\s*p)/i)?.[1]?.replace(/\s+/g, "") || "";
-        return { ...p, name: `Ryu-lokal${quality ? ` ${quality}` : ""}` };
+        // Kualitas dipisah jadi field sendiri supaya tidak ikut terpotong
+        // truncate di layar sempit (mobile) — selalu tampil sebagai badge.
+        const quality = (p.name || "").match(/(\d{3,4}\s*p)/i)?.[1]?.replace(/\s+/g, "").toUpperCase() || "";
+        const label = clean
+          ? "Ryu-lokal"
+          : (p.name || "Server").replace("S-", "").replace(/\d{3,4}\s*p/i, "").trim() || "Server";
+        return { p, clean, quality, label };
       });
   }, [data]);
   const [activePlayer, setActivePlayer] = useState(0);
@@ -66,8 +70,8 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
           otomatis fallback ke <iframe>. */}
       <div className="w-full bg-[#0a0a0a] relative">
         <AnimePlayer
-          key={activePlayers[activePlayer]?.iframe || "none"}
-          src={activePlayers[activePlayer]?.iframe}
+          key={activePlayers[activePlayer]?.p.iframe || "none"}
+          src={activePlayers[activePlayer]?.p.iframe}
         />
       </div>
 
@@ -127,11 +131,11 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
           <span className="text-[9px] font-black text-cyan-200 uppercase tracking-[.18em]">Pilih Server</span>
         </div>
         <div className="grid grid-cols-2 gap-2 mb-5">
-          {activePlayers.map((player, idx) => {
-            const isClean = isCleanPlayer(player);
+          {activePlayers.map((item, idx) => {
+            const isClean = item.clean;
             return (
               <button key={idx} onClick={() => setActivePlayer(idx)}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left active:scale-95 transition-colors duration-200 ${
+                className={`flex items-center gap-2 px-2.5 py-2.5 rounded-xl border text-left active:scale-95 transition-colors duration-200 ${
                   activePlayer === idx
                     ? "bg-cyan-400/10 border-cyan-300/50"
                     : "bg-white/[0.04] border-white/5 hover:border-cyan-300/25 hover:bg-cyan-400/5"
@@ -139,17 +143,21 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 border ${
                   activePlayer === idx ? "bg-cyan-300 border-cyan-300" : "bg-transparent border-white/15"
                 }`} />
-                <span className={`text-[11px] font-black uppercase tracking-tight truncate ${
+                <span className={`min-w-0 flex-1 text-[11px] font-black uppercase tracking-tight truncate ${
                   activePlayer === idx ? "text-cyan-100" : "text-white/35"
                 }`}>
-                  {(player.name ?? "Server").replace("S-", "")}
+                  {item.label}
                 </span>
-                {(isClean) && (
+                {item.quality && (
                   <span
-                    className="ml-auto text-[10px] font-black tracking-wider text-cyan-300 bg-cyan-400/15 border border-cyan-300/30 rounded-md px-1.5 py-0.5 flex-shrink-0"
-                    title="Diputar tanpa iklan (ryu-lokal)"
+                    className={`shrink-0 rounded-md border px-1.5 py-0.5 text-[9px] font-black tracking-wider ${
+                      isClean
+                        ? "text-cyan-300 bg-cyan-400/15 border-cyan-300/30"
+                        : "text-white/45 bg-white/[0.06] border-white/10"
+                    }`}
+                    title={isClean ? "Diputar tanpa iklan (ryu-lokal)" : "Kualitas server"}
                   >
-                    ⚡
+                    {isClean && "⚡"}{item.quality}
                   </span>
                 )}
               </button>
