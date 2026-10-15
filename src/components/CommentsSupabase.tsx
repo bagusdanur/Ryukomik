@@ -394,7 +394,7 @@ const CommentItem = memo(({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 mb-0.5">
-              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap min-w-0 flex-1">
                 {profileHref ? (
                   <ProfilePopover profile={profile} href={profileHref}>
                     <span className="max-w-[9rem] truncate text-[13px] font-black text-white transition-colors duration-200 hover:text-cyan-200 sm:max-w-[14rem]">

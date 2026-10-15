@@ -366,15 +366,15 @@ function CommentCard({
         <div className="flex-1 min-w-0">
           {/* Baris nama */}
           <div className="flex items-start justify-between gap-2 mb-0.5">
-            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap min-w-0 flex-1">
               {profileLink ? (
                 <ProfilePopover profile={profile} href={profileLink}>
-                  <span className="truncate text-[13px] font-black leading-none text-gray-100 hover:text-cyan-200">
+                  <span className="max-w-[9rem] truncate text-[13px] font-black leading-none text-gray-100 hover:text-cyan-200 sm:max-w-[14rem]">
                     {authorName}
                   </span>
                 </ProfilePopover>
               ) : (
-                <span className="truncate text-[13px] font-black leading-none text-gray-100">
+                <span className="max-w-[9rem] truncate text-[13px] font-black leading-none text-gray-100 sm:max-w-[14rem]">
                   {authorName}
                 </span>
               )}
@@ -411,7 +411,7 @@ function CommentCard({
             <>
               {texts && (
                 <p
-                  className={`text-[12.5px] leading-relaxed line-clamp-2 ${
+                  className={`break-words text-[12.5px] leading-relaxed line-clamp-2 ${
                     type !== "normal" ? "text-white/60" : "text-gray-400"
                   }`}
                 >
@@ -448,7 +448,7 @@ function CommentCard({
             <Link
               prefetch={false}
               href={getLink(comment.slug)}
-              className="flex max-w-[180px] items-center gap-1 truncate text-[11px] font-medium text-[var(--accent)]/80 opacity-75 hover:opacity-100"
+              className="flex min-w-0 max-w-[45vw] items-center gap-1 truncate text-[11px] font-medium text-[var(--accent)]/80 opacity-75 hover:opacity-100 sm:max-w-[180px]"
             >
               <FiBookOpen className="w-3 h-3 flex-shrink-0" />
               {formatTitle(comment.slug)} {getChapter(comment.slug)}
