@@ -87,8 +87,8 @@ export default function PublicProfilePosts({ username }: { username: string }) {
                   )}
                 </Link>
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Link href={`/u/${encodeURIComponent(displayName)}`} className="truncate text-sm font-black hover:underline">{displayName}</Link>
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                    <Link href={`/u/${encodeURIComponent(displayName)}`} className="max-w-[10rem] truncate text-sm font-black hover:underline sm:max-w-[14rem]">{displayName}</Link>
                     <UserBadges role={author.role} isPremium={author.is_premium} />
                   </div>
                   <time className="text-[10px] text-white/40">

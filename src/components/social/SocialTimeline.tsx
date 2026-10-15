@@ -504,8 +504,8 @@ function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Link href={profileHref} className="block truncate text-sm font-black hover:underline">
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <Link href={profileHref} className="block max-w-[10rem] truncate text-sm font-black hover:underline sm:max-w-[14rem]">
                   {author.username || "User"}
                 </Link>
                 <UserBadges role={author.role} isPremium={author.is_premium} />

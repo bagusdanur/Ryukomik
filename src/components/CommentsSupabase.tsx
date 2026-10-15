@@ -153,7 +153,7 @@ const UserInfo = memo(({ user, profile }: UserInfoProps) => {
         {displayName.charAt(0).toUpperCase()}
       </div>
     )}
-    <span className="text-sm font-bold text-gray-200">
+    <span className="min-w-0 max-w-[10rem] truncate text-sm font-bold text-gray-200">
       {displayName}
     </span>
   </div>
@@ -397,12 +397,12 @@ const CommentItem = memo(({
               <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                 {profileHref ? (
                   <ProfilePopover profile={profile} href={profileHref}>
-                    <span className="truncate text-[13px] font-black text-white transition-colors duration-200 hover:text-cyan-200">
+                    <span className="max-w-[9rem] truncate text-[13px] font-black text-white transition-colors duration-200 hover:text-cyan-200 sm:max-w-[14rem]">
                     {displayName}
                     </span>
                   </ProfilePopover>
                 ) : (
-                  <span className="truncate text-[13px] font-black text-white">
+                  <span className="max-w-[9rem] truncate text-[13px] font-black text-white sm:max-w-[14rem]">
                     {displayName}
                   </span>
                 )}
