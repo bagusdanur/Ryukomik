@@ -9,18 +9,21 @@
  *  - Halaman detail anime (`<NobarCard animeSlug="..." />`): hanya ruang anime
  *    itu, tanpa tombol "Lihat semua".
  *
- * Tiap kartu menampilkan thumbnail anime (16:9), judul, episode, host, jumlah
- * penonton, dan tombol IKUT. Kalau tidak ada ruang aktif, komponen tidak
- * menampilkan apa pun supaya halaman tidak penuh kartu kosong.
+ * Poster anime asli berbentuk portrait (2:3), jadi ditampilkan utuh dalam
+ * bingkai portrait — bukan dipaksa 16:9 yang membuatnya terpotong. Gambar
+ * dialihkan lewat /api/anime/thumb supaya tetap tampil walau situs sumber
+ * diblokir di jaringan pengguna.
  *
- * Poll 15 detik, berhenti saat tab disembunyikan.
+ * Refresh: polling 10 detik, DAN langsung menyegarkan begitu tab kembali aktif
+ * (visibilitychange) — jadi ruang baru muncul tanpa perlu reload manual.
  */
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FiRadio, FiArrowRight, FiUsers } from "react-icons/fi";
+import { Radio, ArrowRight, Users, Play, Signal } from "lucide-react";
 import { socialRead } from "@/lib/social/client";
+import { thumbUrl } from "@/lib/anime/thumb";
 
 type Room = {
   id: string;
@@ -62,15 +65,24 @@ export default function NobarCard({ animeSlug }: { animeSlug?: string }) {
     const start = () => {
       if (timer) return;
       void load();
-      timer = setInterval(() => void load(), 15_000);
+      timer = setInterval(() => void load(), 10_000);
     };
     const stop = () => {
       if (timer) clearInterval(timer);
       timer = null;
     };
-    const onVisibility = () => (document.visibilityState === "visible" ? start() : stop());
+    // Begitu tab kembali aktif, tarik data terbaru SEKARANG (bukan menunggu
+    // interval berikutnya) supaya ruang baru langsung kelihatan tanpa refresh.
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        stop();
+        start();
+      } else {
+        stop();
+      }
+    };
 
-    onVisibility();
+    start();
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       alive = false;
@@ -103,79 +115,91 @@ export default function NobarCard({ animeSlug }: { animeSlug?: string }) {
             href="/anime/nobar"
             className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-rose-200/80 active:opacity-60"
           >
-            Lihat semua <FiArrowRight size={11} />
+            Lihat semua <ArrowRight size={11} />
           </Link>
         )}
       </div>
 
       {/* Slide ke samping */}
       <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {rooms.map(({ room, memberCount }) => (
-          <button
-            key={room.id}
-            onClick={() => router.push(`/anime/nobar/${room.id}`)}
-            className="group w-[168px] shrink-0 snap-start overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] text-left transition active:scale-[0.97]"
-          >
-            {/* Thumbnail 16:9 */}
-            <span className="relative block aspect-video w-full overflow-hidden bg-white/[0.06]">
-              {room.thumbnail ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={room.thumbnail}
-                  alt={stripSuffix(room.animeTitle) || "Anime"}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                />
-              ) : (
-                <span className="grid h-full w-full place-items-center text-white/20">
-                  <FiRadio size={22} />
+        {rooms.map(({ room, memberCount }) => {
+          const poster = thumbUrl(room.thumbnail);
+          return (
+            <button
+              key={room.id}
+              onClick={() => router.push(`/anime/nobar/${room.id}`)}
+              className="group w-[132px] shrink-0 snap-start overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] text-left transition active:scale-[0.97]"
+            >
+              {/* Poster portrait 2:3 (bentuk asli poster anime) */}
+              <span className="relative block aspect-[2/3] w-full overflow-hidden bg-white/[0.06]">
+                {poster ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={poster}
+                    alt={stripSuffix(room.animeTitle) || "Anime"}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <span className="grid h-full w-full place-items-center text-white/20">
+                    <Radio size={22} />
+                  </span>
+                )}
+                <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/5 to-transparent" />
+                {/* LIVE */}
+                <span className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-md bg-rose-600/90 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-white backdrop-blur">
+                  <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                  Live
                 </span>
-              )}
-              <span className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-              {/* LIVE badge */}
-              <span className="absolute left-2 top-2 flex items-center gap-1 rounded-md bg-rose-600/90 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-white backdrop-blur">
-                <span className="h-1 w-1 rounded-full bg-white" />
-                Live
+                {/* Penonton */}
+                <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[8px] font-bold text-white/90 backdrop-blur">
+                  <Users size={9} />
+                  {memberCount}
+                </span>
+                {/* Judul di gradient bawah */}
+                <span className="absolute inset-x-0 bottom-0 line-clamp-2 px-2 pb-1.5 text-[10px] font-black leading-tight text-white drop-shadow">
+                  {stripSuffix(room.animeTitle) || stripSuffix(room.episodeTitle) || "Nobar"}
+                </span>
               </span>
-              {/* Penonton */}
-              <span className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[8px] font-bold text-white/90 backdrop-blur">
-                <FiUsers size={9} />
-                {memberCount}
-              </span>
-              {/* Judul di atas gradient */}
-              <span className="absolute inset-x-0 bottom-0 line-clamp-2 px-2 pb-1.5 text-[11px] font-black leading-tight text-white drop-shadow">
-                {stripSuffix(room.animeTitle) || stripSuffix(room.episodeTitle) || "Nobar"}
-              </span>
-            </span>
 
-            {/* Info */}
-            <span className="block px-2.5 py-2">
-              <span className="block truncate text-[10px] font-semibold text-white/45">
-                {room.animeTitle
-                  ? stripSuffix(room.episodeTitle) || "Episode"
-                  : `Host: ${room.hostName}`}
-              </span>
-              <span className="mt-1.5 flex items-center justify-between gap-1">
-                <span className="flex min-w-0 items-center gap-1 truncate text-[9px] font-semibold text-white/35">
-                  {room.animeTitle && <span className="truncate">Host: {room.hostName}</span>}
-                  {room.isPlaying && <span className="shrink-0 text-cyan-300">▶</span>}
+              {/* Info */}
+              <span className="block px-2 py-1.5">
+                <span className="block truncate text-[9px] font-semibold text-white/45">
+                  {room.animeTitle
+                    ? stripSuffix(room.episodeTitle) || "Episode"
+                    : `Host: ${room.hostName}`}
                 </span>
-                <span className="flex shrink-0 items-center gap-0.5 rounded-lg bg-rose-500 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white">
-                  Ikut
+                <span className="mt-1 flex items-center justify-between gap-1">
+                  <span className="flex min-w-0 items-center gap-1 text-[9px] font-semibold text-white/35">
+                    {room.isPlaying ? (
+                      <>
+                        <Play size={9} className="shrink-0 fill-cyan-300 text-cyan-300" />
+                        <span className="truncate text-cyan-200/80">diputar</span>
+                      </>
+                    ) : room.playerLabel ? (
+                      <>
+                        <Signal size={9} className="shrink-0" />
+                        <span className="truncate">{room.playerLabel}</span>
+                      </>
+                    ) : null}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-0.5 rounded-lg bg-rose-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+                    Ikut
+                  </span>
                 </span>
               </span>
-            </span>
-          </button>
-        ))}
+            </button>
+          );
+        })}
 
         {/* Kartu "lihat semua" di ujung slide */}
         {showAll && (
           <Link
             href="/anime/nobar"
-            className="grid w-[88px] shrink-0 snap-start place-items-center rounded-2xl border border-dashed border-white/15 bg-white/[0.02] text-white/45 transition active:scale-[0.97]"
+            className="grid w-[92px] shrink-0 snap-start place-items-center rounded-2xl border border-dashed border-white/15 bg-white/[0.02] text-white/45 transition active:scale-[0.97]"
           >
             <span className="flex flex-col items-center gap-1.5">
-              <FiArrowRight size={18} />
+              <ArrowRight size={18} />
               <span className="text-[9px] font-black uppercase tracking-wider">Lihat semua</span>
             </span>
           </Link>

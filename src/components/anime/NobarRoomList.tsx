@@ -4,13 +4,14 @@
  * NobarRoomList — daftar semua ruang nobar aktif (halaman /anime/nobar).
  *
  * Berbeda dari NobarCard (slide ke samping), di sini ditampilkan sebagai
- * daftar vertikal dengan thumbnail besar supaya mudah dipilih. Auto-refresh
- * 15 detik supaya ruang yang baru dibuka / sudah tutup langsung terlihat.
+ * daftar vertikal dengan poster portrait supaya mudah dipilih. Auto-refresh
+ * 10 detik dan langsung menyegarkan saat tab kembali aktif.
  */
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FiRadio, FiUsers, FiArrowRight } from "react-icons/fi";
+import { Radio, Users, ArrowRight, Play } from "lucide-react";
+import { thumbUrl } from "@/lib/anime/thumb";
 
 export type NobarListRoom = {
   id: string;
@@ -63,15 +64,24 @@ export default function NobarRoomList({ rooms: initial }: { rooms: NobarListRoom
 
     const start = () => {
       if (timer) return;
-      timer = setInterval(() => void load(), 15_000);
+      void load();
+      timer = setInterval(() => void load(), 10_000);
     };
     const stop = () => {
       if (timer) clearInterval(timer);
       timer = null;
     };
-    const onVisibility = () => (document.visibilityState === "visible" ? start() : stop());
+    // Tab kembali aktif -> tarik data terbaru segera (tanpa tunggu interval).
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        stop();
+        start();
+      } else {
+        stop();
+      }
+    };
 
-    onVisibility();
+    start();
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       alive = false;
@@ -93,53 +103,63 @@ export default function NobarRoomList({ rooms: initial }: { rooms: NobarListRoom
 
   return (
     <div className="space-y-2.5">
-      {rooms.map((room) => (
-        <button
-          key={room.id}
-          onClick={() => router.push(`/anime/nobar/${room.id}`)}
-          className="group flex w-full items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-2.5 text-left transition active:scale-[0.99]"
-        >
-          <span className="relative block h-[62px] w-[110px] shrink-0 overflow-hidden rounded-xl bg-white/[0.06]">
-            {room.thumbnail ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={room.thumbnail}
-                alt={stripSuffix(room.anime_title) || "Anime"}
-                loading="lazy"
-                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-              />
-            ) : (
-              <span className="grid h-full w-full place-items-center text-white/20">
-                <FiRadio size={20} />
+      {rooms.map((room) => {
+        const poster = thumbUrl(room.thumbnail);
+        return (
+          <button
+            key={room.id}
+            onClick={() => router.push(`/anime/nobar/${room.id}`)}
+            className="group flex w-full items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-2.5 text-left transition active:scale-[0.99]"
+          >
+            {/* Poster portrait, tinggi tetap */}
+            <span className="relative block h-[84px] w-[58px] shrink-0 overflow-hidden rounded-xl bg-white/[0.06]">
+              {poster ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={poster}
+                  alt={stripSuffix(room.anime_title) || "Anime"}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                />
+              ) : (
+                <span className="grid h-full w-full place-items-center text-white/20">
+                  <Radio size={20} />
+                </span>
+              )}
+              <span className="absolute left-1 top-1 flex items-center gap-1 rounded bg-rose-600/90 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-white">
+                <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
+                Live
               </span>
-            )}
-            <span className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded bg-rose-600/90 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-white">
-              <span className="h-1 w-1 rounded-full bg-white" />
-              Live
             </span>
-          </span>
 
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-black text-white">
-              {stripSuffix(room.anime_title) || stripSuffix(room.episode_title) || "Nobar"}
-            </span>
-            <span className="mt-0.5 block truncate text-[11px] font-semibold text-white/40">
-              {room.anime_title ? stripSuffix(room.episode_title) || "Episode" : `Host: ${room.host_name}`}
-            </span>
-            <span className="mt-1 flex items-center gap-2 text-[10px] font-semibold text-white/45">
-              <span className="flex items-center gap-1">
-                <FiUsers size={10} />
-                {room.member_count} nonton
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[13px] font-black text-white">
+                {stripSuffix(room.anime_title) || stripSuffix(room.episode_title) || "Nobar"}
               </span>
-              {room.is_playing && <span className="text-cyan-300">▶ diputar</span>}
+              <span className="mt-0.5 block truncate text-[11px] font-semibold text-white/40">
+                {room.anime_title ? stripSuffix(room.episode_title) || "Episode" : `Host: ${room.host_name}`}
+              </span>
+              <span className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] font-semibold text-white/45">
+                <span className="flex items-center gap-1">
+                  <Users size={10} />
+                  {room.member_count} nonton
+                </span>
+                {room.is_playing && (
+                  <span className="flex items-center gap-1 text-cyan-300">
+                    <Play size={9} className="fill-cyan-300" />
+                    diputar
+                  </span>
+                )}
+                {room.player_label && <span className="truncate text-white/35">{room.player_label}</span>}
+              </span>
             </span>
-          </span>
 
-          <span className="flex shrink-0 items-center gap-1 rounded-lg bg-rose-500 px-2.5 py-2 text-[10px] font-black uppercase tracking-wider text-white">
-            Ikut <FiArrowRight size={12} />
-          </span>
-        </button>
-      ))}
+            <span className="flex shrink-0 items-center gap-1 rounded-lg bg-rose-500 px-2.5 py-2 text-[10px] font-black uppercase tracking-wider text-white">
+              Ikut <ArrowRight size={12} />
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

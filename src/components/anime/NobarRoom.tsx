@@ -11,13 +11,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { FiSend, FiCopy, FiCheck, FiX, FiUsers, FiMessageCircle, FiRadio } from "react-icons/fi";
+import { Send, Copy, Check, X, Users, MessageCircle, Radio } from "lucide-react";
 import AnimePlayer, { type AnimePlayerSyncState } from "@/components/anime/AnimePlayer";
 import { supabase } from "@/lib/supabaseClient";
 import { socialFetch, socialRead } from "@/lib/social/client";
 import { relativeTime } from "@/lib/social/relativeTime";
 import { NOBAR_EMOJIS, NOBAR_POLL_MS } from "@/lib/social/nobarShared";
 import { playerDisplayName } from "@/lib/anime/playerName";
+import { thumbUrl } from "@/lib/anime/thumb";
 
 type Player = { name?: string; iframe?: string; streamUrl?: string };
 type Member = { userId: string; name: string; avatarUrl: string | null; isHost: boolean };
@@ -27,6 +28,8 @@ type Room = {
   id: string;
   episodeSlug: string;
   episodeTitle: string | null;
+  animeTitle?: string | null;
+  thumbnail?: string | null;
   hostId: string;
   hostName: string;
   playerLabel: string | null;
@@ -72,6 +75,10 @@ export default function NobarRoom({
 
   const cursorRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Selisih jam server vs jam klien. `playbackUpdatedAt` memakai jam server,
+  // jadi tanpa koreksi ini penonton menghitung posisi dari jam yang berbeda dan
+  // melompat jauh (itulah kenapa dulu selalu "ketinggalan").
+  const clockOffsetRef = useRef(0);
   const isHost = Boolean(room && viewerId && room.hostId === viewerId);
 
   const players = useMemo(
@@ -88,6 +95,9 @@ export default function NobarRoom({
     setMembers(data.members);
     setReactions(data.reactions);
     setViewerId(data.viewerId);
+    // Jam klien - jam server (perkiraan; galat = setengah latensi jaringan).
+    const serverMs = new Date(data.serverNow).getTime();
+    if (Number.isFinite(serverMs)) clockOffsetRef.current = Date.now() - serverMs;
     if (data.messages.length) {
       setMessages((current) => {
         const seen = new Set(current.map((m) => m.id));
@@ -111,19 +121,28 @@ export default function NobarRoom({
     }
   }, [roomId, applyPoll]);
 
-  // Polling: 2,5s saat tab aktif, berhenti saat disembunyikan.
+  // Polling: 2,5s saat tab aktif; saat tab disembunyikan TETAP jalan tapi jauh
+  // lebih lambat (20s). Kalau berhenti total, heartbeat hilang dan ruang akan
+  // dianggap nganggur lalu ditutup otomatis padahal host masih ada (cuma pindah
+  // tab). Saat tab kembali aktif, poll SEKARANG supaya tidak menunggu interval.
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | null = null;
-    const start = () => {
-      if (timer) return;
+    const start = (interval: number) => {
+      if (timer) clearInterval(timer);
       void poll();
-      timer = setInterval(() => void poll(), POLL_MS);
+      timer = setInterval(() => void poll(), interval);
     };
     const stop = () => {
       if (timer) clearInterval(timer);
       timer = null;
     };
-    const onVisibility = () => (document.visibilityState === "visible" ? start() : stop());
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        start(POLL_MS);
+      } else {
+        start(20_000);
+      }
+    };
     onVisibility();
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
@@ -138,11 +157,13 @@ export default function NobarRoom({
   }, [messages.length, tab]);
 
   // Host: laporkan posisi berkala saat video jalan (poll sudah 2,5s).
+  // `playbackUpdatedAt` dari server memakai jam server; tambahkan offset supaya
+  // `atClientMs` berada di jam klien dan bisa dibandingkan dengan Date.now().
   const syncState: AnimePlayerSyncState | null = room
     ? {
         isPlaying: room.isPlaying,
         basePosition: room.positionSeconds,
-        atClientMs: new Date(room.playbackUpdatedAt).getTime(),
+        atClientMs: new Date(room.playbackUpdatedAt).getTime() + clockOffsetRef.current,
       }
     : null;
 
@@ -223,9 +244,20 @@ export default function NobarRoom({
     <div className="mx-auto max-w-6xl px-3 pb-24 pt-5 text-white sm:px-4">
       {/* ── Header ── */}
       <div className="mb-4 flex min-w-0 items-center gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-rose-400/30 bg-rose-500/15">
-          <FiRadio className="text-rose-200" size={17} />
-        </span>
+        {thumbUrl(room?.thumbnail) ? (
+          <span className="relative h-12 w-[34px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-white/[0.06]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={thumbUrl(room?.thumbnail)!}
+              alt={room?.animeTitle || "Anime"}
+              className="h-full w-full object-cover"
+            />
+          </span>
+        ) : (
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-rose-400/30 bg-rose-500/15">
+            <Radio className="text-rose-200" size={17} />
+          </span>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[.2em] text-rose-300">
@@ -245,7 +277,7 @@ export default function NobarRoom({
           onClick={copyLink}
           className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-[11px] font-bold text-white/75 transition hover:bg-white/[0.1] hover:text-white"
         >
-          {copied ? <FiCheck className="text-emerald-300" /> : <FiCopy />}
+          {copied ? <Check className="text-emerald-300" /> : <Copy />}
           <span className="hidden sm:inline">{copied ? "Tersalin" : "Bagikan"}</span>
         </button>
       </div>
@@ -356,7 +388,7 @@ export default function NobarRoom({
                 onClick={() => void closeRoom()}
                 className="ml-auto flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-1.5 text-[11px] font-bold text-white/50 transition hover:border-rose-400/30 hover:text-rose-300"
               >
-                <FiX size={13} /> Tutup ruang
+                <X size={13} /> Tutup ruang
               </button>
             )}
           </div>
@@ -367,8 +399,8 @@ export default function NobarRoom({
           <div className="flex shrink-0 border-b border-white/[0.08]">
             {(
               [
-                ["chat", "Obrolan", FiMessageCircle],
-                ["members", `Peserta`, FiUsers],
+                ["chat", "Obrolan", MessageCircle],
+                ["members", `Peserta`, Users],
               ] as const
             ).map(([key, label, Icon]) => (
               <button
@@ -427,7 +459,7 @@ export default function NobarRoom({
                     className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-300 text-black transition disabled:opacity-35"
                     aria-label="Kirim"
                   >
-                    <FiSend size={15} />
+                    <Send size={15} />
                   </button>
                 </form>
               )}

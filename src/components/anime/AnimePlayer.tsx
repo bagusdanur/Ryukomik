@@ -184,7 +184,9 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
     syncRef.current?.onCapable?.(syncCapable);
   }, [syncCapable]);
 
-  // Host: laporkan play/pause/seek ke ruang.
+  // Host: laporkan play/pause/seek SEKETIKA, lalu heartbeat posisi tiap 4 detik
+  // selama diputar. Heartbeat inilah yang memberi penonton (termasuk yang baru
+  // masuk) titik acuan segar — bukan cuma saat seek.
   useEffect(() => {
     if (syncRole !== "host" || !syncCapable) return;
     const v = videoRef.current;
@@ -196,38 +198,56 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
     v.addEventListener("play", report);
     v.addEventListener("pause", report);
     v.addEventListener("seeked", report);
+    const beat = setInterval(() => {
+      if (!v.paused && Number.isFinite(v.currentTime)) report();
+    }, 4000);
     return () => {
       v.removeEventListener("play", report);
       v.removeEventListener("pause", report);
       v.removeEventListener("seeked", report);
+      clearInterval(beat);
     };
   }, [syncRole, syncCapable]);
 
-  // Penonton: ikuti posisi host; "snap" hanya kalau selisihnya besar (>2,5s).
-  const syncState = sync?.state ?? null;
-  const syncSignature = syncState
-    ? `${syncState.isPlaying}:${Math.round(syncState.basePosition)}:${syncState.atClientMs}`
-    : null;
-  const lastSyncRef = useRef<string | null>(null);
+  // Penonton: ikuti host secara MENERUS (koreksi tiap detik), bukan sekali.
+  // Kalau hanya mengandalkan perubahan state, penonton yang sempat buffering
+  // akan tertinggal selamanya karena state host tidak berubah. Selisih kecil
+  // dikejar lewat playbackRate (halus, ala Discord); selisih besar dilompat.
   useEffect(() => {
-    if (syncRole !== "viewer" || !syncCapable || !syncState || !syncSignature) return;
+    if (syncRole !== "viewer" || !syncCapable) return;
     const v = videoRef.current;
     if (!v) return;
-    if (lastSyncRef.current === syncSignature) return;
-    lastSyncRef.current = syncSignature;
 
-    const driftMs = Date.now() - syncState.atClientMs;
-    const target = syncState.basePosition + (syncState.isPlaying ? Math.max(0, driftMs) / 1000 : 0);
-    if (v.paused === syncState.isPlaying) {
-      // v.paused=true & host playing, atau v.paused=false & host paused.
-      if (syncState.isPlaying) v.play().catch(() => {});
-      else v.pause();
-    }
-    if (Math.abs(v.currentTime - target) > 2.5) {
-      const upper = Number.isFinite(v.duration) && v.duration > 0 ? Math.max(0, v.duration - 1) : Number.MAX_SAFE_INTEGER;
-      v.currentTime = Math.min(target, upper);
-    }
-  }, [syncRole, syncCapable, syncState, syncSignature]);
+    const correct = () => {
+      const st = syncRef.current?.state;
+      if (!st) return;
+      const driftMs = Date.now() - st.atClientMs;
+      const target = st.basePosition + (st.isPlaying ? Math.max(0, driftMs) / 1000 : 0);
+      const upper =
+        Number.isFinite(v.duration) && v.duration > 0 ? Math.max(0, v.duration - 1) : Number.MAX_SAFE_INTEGER;
+      const goal = Math.min(target, upper);
+
+      // Ikuti play/pause host.
+      if (v.paused === st.isPlaying) {
+        if (st.isPlaying) v.play().catch(() => {});
+        else v.pause();
+      }
+
+      const drift = goal - v.currentTime;
+      if (Math.abs(drift) > 2.5) {
+        v.currentTime = goal; // jauh: lompat langsung
+        v.playbackRate = 1;
+      } else if (Math.abs(drift) > 0.4) {
+        v.playbackRate = drift > 0 ? 1.08 : 0.92; // dekat: kejar perlahan
+      } else if (v.playbackRate !== 1) {
+        v.playbackRate = 1;
+      }
+    };
+
+    correct();
+    const timer = setInterval(correct, 1000);
+    return () => clearInterval(timer);
+  }, [syncRole, syncCapable]);
 
   const togglePlay = () => {
     const v = videoRef.current;

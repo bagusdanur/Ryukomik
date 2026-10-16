@@ -141,7 +141,7 @@ export async function closeIdleRooms(slug?: string) {
         and (
           not exists (
             select 1 from nobar_members m
-             where m.room_id=r.id and m.last_seen > now() - interval '90 seconds'
+             where m.room_id=r.id and m.last_seen > now() - interval '120 seconds'
           )
           or r.playback_updated_at < now() - ($1 || ' minutes')::interval
         )
