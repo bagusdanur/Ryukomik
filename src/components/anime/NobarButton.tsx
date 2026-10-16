@@ -23,6 +23,7 @@ export default function NobarButton({
   title,
   animeSlug,
   animeTitle,
+  thumbnail,
   playerLabel,
   playerUrl,
 }: {
@@ -30,6 +31,7 @@ export default function NobarButton({
   title?: string;
   animeSlug?: string;
   animeTitle?: string;
+  thumbnail?: string;
   playerLabel?: string;
   playerUrl?: string;
 }) {
@@ -83,7 +85,7 @@ export default function NobarButton({
       }
       const result = await socialFetch<{ room: { id: string } }>("/api/social/nobar", {
         method: "POST",
-        body: JSON.stringify({ episodeSlug: slug, episodeTitle: title, playerLabel, playerUrl, animeSlug, animeTitle }),
+        body: JSON.stringify({ episodeSlug: slug, episodeTitle: title, playerLabel, playerUrl, animeSlug, animeTitle, thumbnail }),
       });
       router.push(`/anime/nobar/${result.room.id}`);
     } catch {

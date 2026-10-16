@@ -34,6 +34,21 @@ async function getEpisode(slug: string): Promise<AnimeEpisode | null> {
   }
 }
 
+async function getAnimeThumbnail(animeSlug?: string): Promise<string | null> {
+  if (!animeSlug) return null;
+  try {
+    const res = await fetch(
+      `https://apiv2.ryukomik.web.id/animeid/detail/${encodeURIComponent(animeSlug)}`,
+      { next: { revalidate: 3600 } }
+    );
+    if (!res.ok) return null;
+    const json = (await res.json()) as ApiResponse<{ thumbnail?: string }>;
+    return json.data?.thumbnail || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
   const { slug } = await params;
   const data = await getEpisode(slug);
@@ -54,5 +69,9 @@ export default async function EpisodePage({ params }: RouteProps) {
 
   if (!data) notFound();
 
-  return <EpisodeClient data={data} slug={slug} />;
+  const thumbnail = await getAnimeThumbnail(
+    typeof data.allEpisode === "string" ? data.allEpisode : undefined
+  );
+
+  return <EpisodeClient data={data} slug={slug} thumbnail={thumbnail} />;
 }

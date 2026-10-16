@@ -34,13 +34,14 @@ type AnimeEpisode = {
 type EpisodeClientProps = {
   data: AnimeEpisode | null;
   slug: string;
+  thumbnail?: string | null;
 };
 
 /** Server tanpa iklan ("ryu-lokal"): filedon & mega di-resolve jadi <video>
  *  lokal; Blogger bersih dari sananya jadi iframe-nya dipakai langsung.
  *  Definisi aslinya di @/lib/anime/playerName supaya sama dengan nobar. */
 
-export default function EpisodeClient({ data, slug }: EpisodeClientProps) {
+export default function EpisodeClient({ data, slug, thumbnail }: EpisodeClientProps) {
   const cleanTitle = data?.title?.replace(" Sub Indo", "") || "";
   // Server "Ryu-lokal" (filedon/mega/blogger = tanpa iklan) selalu diurutkan
   // paling atas dan namanya diseragamkan: "Ryu-lokal 360p", "Ryu-lokal 480p", ...
@@ -129,6 +130,7 @@ export default function EpisodeClient({ data, slug }: EpisodeClientProps) {
             title={cleanTitle}
             animeSlug={data.allEpisode}
             animeTitle={cleanTitle}
+            thumbnail={thumbnail || undefined}
             playerLabel={activePlayers[activePlayer]?.display}
             playerUrl={activePlayers[activePlayer]?.p.iframe}
           />

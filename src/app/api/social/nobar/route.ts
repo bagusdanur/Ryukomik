@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     await ensureSocialProfile(userId);
     if (!socialLimit(request, userId, 10)) return socialJson({ error: "Terlalu banyak membuat ruang." }, { status: 429 });
 
-    const body = (await request.json()) as { episodeSlug?: string; episodeTitle?: string; playerLabel?: string; playerUrl?: string; animeSlug?: string; animeTitle?: string };
+    const body = (await request.json()) as { episodeSlug?: string; episodeTitle?: string; playerLabel?: string; playerUrl?: string; animeSlug?: string; animeTitle?: string; thumbnail?: string };
     const episodeSlug = String(body.episodeSlug || "").trim().slice(0, 200);
     if (!episodeSlug) return socialJson({ error: "Episode tidak disebutkan." }, { status: 400 });
     const episodeTitle = body.episodeTitle ? String(body.episodeTitle).trim().slice(0, 200) : null;
@@ -90,6 +90,8 @@ export async function POST(request: Request) {
     // animeSlug/animeTitle dipakai agar card nobar bisa muncul di halaman anime.
     const animeSlug = body.animeSlug ? String(body.animeSlug).trim().slice(0, 200) : null;
     const animeTitle = body.animeTitle ? String(body.animeTitle).trim().slice(0, 200) : null;
+    // Thumbnail anime untuk card nobar (URL gambar publik).
+    const thumbnail = body.thumbnail && /^https?:\/\//i.test(body.thumbnail) ? String(body.thumbnail).trim().slice(0, 1024) : null;
     // URL iframe server yang dipilih host; dipakai semua penonton supaya
     // menonton aliran yang sama.
     const playerUrl = body.playerUrl && /^https?:\/\//i.test(body.playerUrl) ? String(body.playerUrl).trim().slice(0, 2048) : null;
@@ -107,9 +109,9 @@ export async function POST(request: Request) {
         [episodeSlug],
       );
       const inserted = await client.query<NobarRoomRow>(
-        `insert into nobar_rooms(episode_slug,episode_title,host_id,host_name,player_label,player_url,anime_slug,anime_title)
-         values($1,$2,$3,$4,$5,$6,$7,$8) returning *`,
-        [episodeSlug, episodeTitle, userId, name, playerLabel, playerUrl, animeSlug, animeTitle],
+        `insert into nobar_rooms(episode_slug,episode_title,host_id,host_name,player_label,player_url,anime_slug,anime_title,thumbnail)
+         values($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *`,
+        [episodeSlug, episodeTitle, userId, name, playerLabel, playerUrl, animeSlug, animeTitle, thumbnail],
       );
       await client.query(
         `insert into nobar_members(room_id,user_id,name,avatar_url) values($1,$2,$3,$4)
