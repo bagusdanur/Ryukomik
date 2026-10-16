@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import AnimePlayer from "@/components/anime/AnimePlayer";
 import AnimeComments from "@/components/anime/AnimeComments";
+import NobarButton from "@/components/anime/NobarButton";
 
 type AnimePlayerType = {
   name?: string;
@@ -200,6 +201,16 @@ export default function EpisodeClient({ data, slug }: EpisodeClientProps) {
             <span className="text-[9px] font-black uppercase tracking-[.18em] text-white/25">Thumbnail</span>
             <span className="text-[12px] font-black uppercase tracking-tight text-white leading-snug">{cleanTitle}</span>
           </div>
+        </div>
+
+        {/* ── NOBAR ── */}
+        <div className="mb-5">
+          <NobarButton
+            slug={slug}
+            title={cleanTitle}
+            playerLabel={activePlayers[activePlayer]?.p.name}
+            playerUrl={activePlayers[activePlayer]?.p.iframe}
+          />
         </div>
 
         {/* ── KOMENTAR ANIME (PostgreSQL VPS, bukan Supabase) ── */}

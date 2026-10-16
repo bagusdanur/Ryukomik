@@ -55,7 +55,26 @@ function formatSize(bytes?: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function AnimePlayer({ src }: { src?: string }) {
+/**
+ * Sinkronisasi nobar (opsional). Hanya berlaku saat server diputar memakai
+ * <video> milik kita (server "Ryu-lokal"); untuk iframe pihak ketiga tidak ada
+ * yang bisa dikendalikan, jadi `onCapable(false)` dan nobar jalan mode chat.
+ */
+export type AnimePlayerSyncState = {
+  isPlaying: boolean;
+  /** Posisi (detik) pada saat state ini disusun di klien. */
+  basePosition: number;
+  /** Jam klien (Date.now()) saat basePosition disusun. */
+  atClientMs: number;
+};
+export type AnimePlayerSync = {
+  role: "host" | "viewer";
+  state?: AnimePlayerSyncState | null;
+  onHostState?: (state: { isPlaying: boolean; positionSeconds: number }) => void;
+  onCapable?: (capable: boolean) => void;
+};
+
+export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimePlayerSync }) {
   const [loading, setLoading] = useState(false);
   const [stream, setStream] = useState<ResolvedStream | null>(null);
   const [failed, setFailed] = useState(false);
@@ -152,6 +171,63 @@ export default function AnimePlayer({ src }: { src?: string }) {
     document.addEventListener("fullscreenchange", onFs);
     return () => document.removeEventListener("fullscreenchange", onFs);
   }, []);
+
+  // ── Sinkronisasi nobar (hanya untuk <video> milik kita) ──
+  const syncCapable = Boolean(sync && stream?.url_proxy && !failed);
+  const syncRole = sync?.role ?? null;
+  // Callback & state disimpan di ref supaya effect tidak dipasang-ulang tiap
+  // render (objek `sync` dibuat ulang oleh komponen induk).
+  const syncRef = useRef(sync);
+  syncRef.current = sync;
+
+  useEffect(() => {
+    syncRef.current?.onCapable?.(syncCapable);
+  }, [syncCapable]);
+
+  // Host: laporkan play/pause/seek ke ruang.
+  useEffect(() => {
+    if (syncRole !== "host" || !syncCapable) return;
+    const v = videoRef.current;
+    if (!v) return;
+    const report = () => {
+      const current = syncRef.current;
+      if (current?.onHostState) current.onHostState({ isPlaying: !v.paused, positionSeconds: v.currentTime });
+    };
+    v.addEventListener("play", report);
+    v.addEventListener("pause", report);
+    v.addEventListener("seeked", report);
+    return () => {
+      v.removeEventListener("play", report);
+      v.removeEventListener("pause", report);
+      v.removeEventListener("seeked", report);
+    };
+  }, [syncRole, syncCapable]);
+
+  // Penonton: ikuti posisi host; "snap" hanya kalau selisihnya besar (>2,5s).
+  const syncState = sync?.state ?? null;
+  const syncSignature = syncState
+    ? `${syncState.isPlaying}:${Math.round(syncState.basePosition)}:${syncState.atClientMs}`
+    : null;
+  const lastSyncRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (syncRole !== "viewer" || !syncCapable || !syncState || !syncSignature) return;
+    const v = videoRef.current;
+    if (!v) return;
+    if (lastSyncRef.current === syncSignature) return;
+    lastSyncRef.current = syncSignature;
+
+    const driftMs = Date.now() - syncState.atClientMs;
+    const target = syncState.basePosition + (syncState.isPlaying ? Math.max(0, driftMs) / 1000 : 0);
+    if (v.paused === syncState.isPlaying) {
+      // v.paused=true & host playing, atau v.paused=false & host paused.
+      if (syncState.isPlaying) v.play().catch(() => {});
+      else v.pause();
+    }
+    if (Math.abs(v.currentTime - target) > 2.5) {
+      const upper = Number.isFinite(v.duration) && v.duration > 0 ? Math.max(0, v.duration - 1) : Number.MAX_SAFE_INTEGER;
+      v.currentTime = Math.min(target, upper);
+    }
+  }, [syncRole, syncCapable, syncState, syncSignature]);
 
   const togglePlay = () => {
     const v = videoRef.current;

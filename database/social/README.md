@@ -19,6 +19,8 @@ Jalankan berurutan sesuai nomor prefix:
 003_announcements.sql        — pengumuman global + reads
 004_anime_comments.sql       — kolom context_type/context_id di social_posts
                                (komentar anime per episode menumpang tabel ini)
+005_nobar.sql                — nobar_rooms/members/messages/reactions
+                               (nonton bareng; polling delta, tanpa Supabase)
 ```
 
 ## ⚠️ Jangan salah paham
