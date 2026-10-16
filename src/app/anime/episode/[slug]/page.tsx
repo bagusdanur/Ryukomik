@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import EpisodeClient from "./EpisodeClient";
+import AnimeComments from "@/components/anime/AnimeComments";
 
 export const revalidate = 900;
 export const dynamic = "force-static";
@@ -53,5 +54,5 @@ export default async function EpisodePage({ params }: RouteProps) {
 
   if (!data) notFound();
 
-  return <EpisodeClient data={data} />;
+  return <EpisodeClient data={data} slug={slug} />;
 }

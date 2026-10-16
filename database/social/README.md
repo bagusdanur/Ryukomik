@@ -17,6 +17,8 @@ Jalankan berurutan sesuai nomor prefix:
 002_download_quota.sql       — kuota unduhan
 002_notification_cutover.sql — notifikasi pindah dari Supabase ke PostgreSQL
 003_announcements.sql        — pengumuman global + reads
+004_anime_comments.sql       — kolom context_type/context_id di social_posts
+                               (komentar anime per episode menumpang tabel ini)
 ```
 
 ## ⚠️ Jangan salah paham

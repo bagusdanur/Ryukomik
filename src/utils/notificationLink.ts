@@ -28,6 +28,15 @@ export function getNotificationLink(notification: LinkNotification) {
     return profile ? `/u/${encodeURIComponent(profile)}` : "/connections";
   }
   if ((notification.type === "social_reply" || notification.type === "social_like") && notification.target_id) {
+    // Balasan komentar anime menyimpan `anime:<episode-slug>:<reply-id>` di slug,
+    // supaya notifikasi mengarah ke episode (komentar anime tidak punya halaman
+    // /post sendiri) dan balasannya tetap disorot.
+    if (notification.type === "social_reply" && notification.slug?.startsWith("anime:")) {
+      const [, episodeSlug, replyId] = notification.slug.split(":");
+      if (episodeSlug) {
+        return `/anime/episode/${encodeURIComponent(episodeSlug)}${replyId ? `?reply=${encodeURIComponent(replyId)}` : ""}`;
+      }
+    }
     const base = `/post/${encodeURIComponent(notification.target_id)}`;
     // social_reply stores the new reply's own id in `slug` so the recipient
     // lands on the thread with that specific reply highlighted.

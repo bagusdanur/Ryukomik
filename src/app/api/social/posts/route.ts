@@ -15,10 +15,19 @@ function validMedia(value: unknown) {
 
 export async function GET(request: Request) {
   try {
-    const viewerId=await requireUserId(request); await ensureSocialProfile(viewerId);
     const url=new URL(request.url), scope=url.searchParams.get("scope")||"following", profileId=url.searchParams.get("userId"), parentId=url.searchParams.get("parentId"), cursor=decodeSocialCursor(url.searchParams.get("cursor"));
+    // Konteks: "anime" + slug episode -> komentar per-episode. Null = timeline biasa.
+    const contextType=url.searchParams.get("contextType")==="anime"?"anime":null;
+    const contextId=contextType?url.searchParams.get("contextId")||null:null;
+    if(contextType&&!contextId)return socialJson({error:"Konteks tidak lengkap."},{status:400});
+    // Komentar anime boleh dibaca tanpa login (pengunjung streaming kebanyakan
+    // anonim). Viewer anonim pakai UUID nol: semua cek "milik saya"/like/follow
+    // otomatis false, tanpa perlu menyentuh Supabase.
+    let viewerId:string;
+    if(contextType){viewerId=await requireUserId(request).catch(()=>"00000000-0000-0000-0000-000000000000");}
+    else{viewerId=await requireUserId(request);await ensureSocialProfile(viewerId);}
     const asc=Boolean(parentId), direction=asc?">":"<", order=asc?"asc":"desc";
-    const result=await socialQuery(`select p.id,p.author_id,p.parent_id,p.content,p.image_url,p.visibility,p.likes_count,p.replies_count,p.created_at,p.updated_at,p.edited_at,
+    const result=await socialQuery(`select p.id,p.author_id,p.parent_id,p.content,p.image_url,p.visibility,p.likes_count,p.replies_count,p.created_at,p.updated_at,p.edited_at,p.context_type,p.context_id,
       json_build_object('username',sp.username,'avatar_url',sp.avatar_url,'level',sp.level,'role',sp.role,'is_premium',sp.is_premium) profiles,
       exists(select 1 from social_post_likes l where l.post_id=p.id and l.user_id=$1) viewer_liked,
       exists(select 1 from social_post_bookmarks k where k.post_id=p.id and k.user_id=$1) viewer_bookmarked,(p.author_id=$1) viewer_owns
@@ -28,10 +37,11 @@ export async function GET(request: Request) {
       and ($2::uuid is not null or $3<>'following' or p.author_id=$1 or exists(select 1 from social_follows f where f.follower_id=$1 and f.following_id=p.author_id))
       and ($3 not in ('public','explore') or p.visibility='public')
       and (p.visibility='public' or p.author_id=$1 or exists(select 1 from social_follows f where f.follower_id=$1 and f.following_id=p.author_id))
+      and (($7::text is null and p.context_type is null) or (p.context_type=$7 and p.context_id=$8))
       and not exists(select 1 from social_mutes m where m.user_id=$1 and m.muted_id=p.author_id)
       and not exists(select 1 from social_blocks b where (b.blocker_id=$1 and b.blocked_id=p.author_id) or (b.blocker_id=p.author_id and b.blocked_id=$1))
       and ($5::timestamptz is null or (p.created_at,p.id) ${direction} ($5::timestamptz,$6::uuid)) order by p.created_at ${order},p.id ${order} limit 21`,
-      [viewerId,parentId||null,scope,profileId||null,cursor?.createdAt||null,cursor?.id||null]);
+      [viewerId,parentId||null,scope,profileId||null,cursor?.createdAt||null,cursor?.id||null,contextType,contextId]);
     const items=result.rows.slice(0,20);
     return socialJson({items,nextCursor:result.rows.length>20?encodeSocialCursor(items.at(-1)?.created_at as string,items.at(-1)?.id as string):null},{headers:{"Cache-Control":"private, no-store, max-age=0",Vary:"Authorization"}});
   } catch(error){return socialError(error);}
@@ -41,16 +51,21 @@ export async function POST(request: Request) {
   try {
     assertSameOrigin(request); const userId=await requireUserId(request); await ensureSocialProfile(userId);
     if(!socialLimit(request,userId,12)) return socialJson({error:"Terlalu banyak posting."},{status:429});
-    const body=await request.json() as {content?:string;image_url?:string;visibility?:string;parent_id?:string;reply_to_id?:string};
+    const body=await request.json() as {content?:string;image_url?:string;visibility?:string;parent_id?:string;reply_to_id?:string;contextType?:string;contextId?:string};
+    // Komentar anime: context_type='anime' + slug episode. Tidak masuk aktivitas
+    // sosial (biar timeline tidak banjir komentar anime) dan selalu publik.
+    const contextType=body.contextType==="anime"?"anime":null;
+    const contextId=contextType?String(body.contextId||"").trim().slice(0,200)||null:null;
+    if(contextType&&!contextId)return socialJson({error:"Konteks tidak lengkap."},{status:400});
     const media=validMedia(body.image_url), content=body.content?.trim().slice(0,500)||(media?"[sticker]":"");
     if(!content)return socialJson({error:"Posting tidak boleh kosong."},{status:400});
-    const visibility=body.visibility==="followers"?"followers":"public";
-    let parent:{id:string;author_id:string}|undefined, replyTarget:{id:string;author_id:string;parent_id:string|null}|undefined;
-    if(body.parent_id){const found=await socialQuery<{id:string;author_id:string}>("select id,author_id from social_posts where id=$1 and parent_id is null",[body.parent_id]);parent=found.rows[0];if(!parent)return socialJson({error:"Posting induk tidak ditemukan."},{status:404});await ensureSocialProfile(parent.author_id);}
+    const visibility=contextType?"public":body.visibility==="followers"?"followers":"public";
+    let parent:{id:string;author_id:string;context_id?:string|null}|undefined, replyTarget:{id:string;author_id:string;parent_id:string|null}|undefined;
+    if(body.parent_id){const found=await socialQuery<{id:string;author_id:string;context_id:string|null}>("select id,author_id,context_id from social_posts where id=$1 and parent_id is null",[body.parent_id]);parent=found.rows[0];if(!parent)return socialJson({error:"Posting induk tidak ditemukan."},{status:404});await ensureSocialProfile(parent.author_id);}
     if(body.reply_to_id&&parent){const found=await socialQuery<{id:string;author_id:string;parent_id:string|null}>("select id,author_id,parent_id from social_posts where id=$1",[body.reply_to_id]);replyTarget=found.rows[0];if(!replyTarget||(replyTarget.id!==parent.id&&replyTarget.parent_id!==parent.id))return socialJson({error:"Balasan yang dituju tidak ditemukan."},{status:404});await ensureSocialProfile(replyTarget.author_id);}
     const notificationTarget=replyTarget||parent;
     const notify=notificationTarget&&notificationTarget.author_id!==userId?await allowsSocialNotification(notificationTarget.author_id,"replies"):false;
-    const post=await socialTransaction(async client=>{const actor=await client.query<{username:string;avatar_url:string|null;level:number;role:string|null;is_premium:boolean}>("select username,avatar_url,level,role,is_premium from social_profiles where user_id=$1",[userId]);const profile=actor.rows[0]||{username:"User",avatar_url:null,level:1,role:null,is_premium:false};const name=profile.username;const inserted=await client.query<{id:string;author_id:string;created_at:string}>("insert into social_posts(author_id,parent_id,content,image_url,visibility) values($1,$2,$3,$4,$5) returning id,author_id,created_at",[userId,parent?.id||null,content,media,visibility]);if(notificationTarget&&notify)await client.query("insert into social_notifications(user_id,actor_id,actor_name,type,slug,target_id) values($1,$2,$3,'social_reply',$5,$4)",[notificationTarget.author_id,userId,name,parent?.id||notificationTarget.id,inserted.rows[0].id]);await client.query("insert into social_activity_events(actor_id,actor_name,event_type,entity_id,entity_label,visibility) values($1,$2,$3,$4,$5,$6)",[userId,name,parent?"replied_post":"created_post",inserted.rows[0].id,content.slice(0,80),visibility]);return {...inserted.rows[0],profiles:profile};});
+    const post=await socialTransaction(async client=>{const actor=await client.query<{username:string;avatar_url:string|null;level:number;role:string|null;is_premium:boolean}>("select username,avatar_url,level,role,is_premium from social_profiles where user_id=$1",[userId]);const profile=actor.rows[0]||{username:"User",avatar_url:null,level:1,role:null,is_premium:false};const name=profile.username;const inserted=await client.query<{id:string;author_id:string;created_at:string}>("insert into social_posts(author_id,parent_id,content,image_url,visibility,context_type,context_id) values($1,$2,$3,$4,$5,$6,$7) returning id,author_id,created_at",[userId,parent?.id||null,content,media,visibility,contextType,contextId]);if(notificationTarget&&notify)await client.query("insert into social_notifications(user_id,actor_id,actor_name,type,slug,target_id) values($1,$2,$3,'social_reply',$5,$4)",[notificationTarget.author_id,userId,name,parent?.id||notificationTarget.id,parent?.context_id?`anime:${parent.context_id}:${inserted.rows[0].id}`:inserted.rows[0].id]);if(!contextType)await client.query("insert into social_activity_events(actor_id,actor_name,event_type,entity_id,entity_label,visibility) values($1,$2,$3,$4,$5,$6)",[userId,name,parent?"replied_post":"created_post",inserted.rows[0].id,content.slice(0,80),visibility]);return {...inserted.rows[0],profiles:profile};});
     revalidateTag("social-posts",{expire:0});return socialJson({post},{status:201});
   }catch(error){if(error instanceof Error&&error.message==="INVALID_MEDIA")return socialJson({error:"Gambar wajib URL HTTPS publik."},{status:400});return socialError(error);}
 }

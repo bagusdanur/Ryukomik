@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import AnimePlayer from "@/components/anime/AnimePlayer";
+import AnimeComments from "@/components/anime/AnimeComments";
 
 type AnimePlayerType = {
   name?: string;
@@ -30,6 +31,7 @@ type AnimeEpisode = {
 
 type EpisodeClientProps = {
   data: AnimeEpisode | null;
+  slug: string;
 };
 
 /** Server tanpa iklan ("ryu-lokal"): filedon & mega di-resolve jadi <video>
@@ -38,7 +40,7 @@ function isCleanPlayer(player: AnimePlayerType) {
   return /filedon\.co|mega\.nz|blogger\.com/i.test(player.iframe ?? "") || Boolean(player.streamUrl);
 }
 
-export default function EpisodeClient({ data }: EpisodeClientProps) {
+export default function EpisodeClient({ data, slug }: EpisodeClientProps) {
   const cleanTitle = data?.title?.replace(" Sub Indo", "") || "";
   // Server "Ryu-lokal" (filedon/mega/blogger = tanpa iklan) selalu diurutkan
   // paling atas dan namanya diseragamkan: "Ryu-lokal 360p", "Ryu-lokal 480p", ...
@@ -199,6 +201,9 @@ export default function EpisodeClient({ data }: EpisodeClientProps) {
             <span className="text-[12px] font-black uppercase tracking-tight text-white leading-snug">{cleanTitle}</span>
           </div>
         </div>
+
+        {/* ── KOMENTAR ANIME (PostgreSQL VPS, bukan Supabase) ── */}
+        <AnimeComments slug={slug} />
 
       </div>
     </div>
