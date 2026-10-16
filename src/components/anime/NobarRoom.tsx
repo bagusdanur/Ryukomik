@@ -72,13 +72,12 @@ export default function NobarRoom({
   const [syncCapable, setSyncCapable] = useState(false);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
+  // Titik acuan sinkron: posisi video (detik) pada saat data diterima, plus jam
+  // KLIEN saat itu. AnimePlayer menambah (Date.now() - atClientMs) sendiri.
+  const [syncPoint, setSyncPoint] = useState<{ basePosition: number; atClientMs: number } | null>(null);
 
   const cursorRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  // Selisih jam server vs jam klien. `playbackUpdatedAt` memakai jam server,
-  // jadi tanpa koreksi ini penonton menghitung posisi dari jam yang berbeda dan
-  // melompat jauh (itulah kenapa dulu selalu "ketinggalan").
-  const clockOffsetRef = useRef(0);
   const isHost = Boolean(room && viewerId && room.hostId === viewerId);
 
   const players = useMemo(
@@ -95,9 +94,19 @@ export default function NobarRoom({
     setMembers(data.members);
     setReactions(data.reactions);
     setViewerId(data.viewerId);
-    // Jam klien - jam server (perkiraan; galat = setengah latensi jaringan).
-    const serverMs = new Date(data.serverNow).getTime();
-    if (Number.isFinite(serverMs)) clockOffsetRef.current = Date.now() - serverMs;
+
+    // Posisi host "saat respons server dibuat":
+    //   base = positionSeconds + (serverNow - playbackUpdatedAt) bila diputar.
+    // Keduanya jam SERVER, jadi selisihnya konsisten. Lalu dicatat pada jam
+    // KLIEN (receivedAtRef) supaya AnimePlayer bisa menambah waktu berjalan
+    // sendiri tanpa membandingkan dua jam yang berbeda.
+    const serverNowMs = new Date(data.serverNow).getTime();
+    const updatedMs = new Date(data.room.playbackUpdatedAt).getTime();
+    if (Number.isFinite(serverNowMs) && Number.isFinite(updatedMs)) {
+      const elapsed = data.room.isPlaying ? Math.max(0, (serverNowMs - updatedMs) / 1000) : 0;
+      setSyncPoint({ basePosition: data.room.positionSeconds + elapsed, atClientMs: Date.now() });
+    }
+
     if (data.messages.length) {
       setMessages((current) => {
         const seen = new Set(current.map((m) => m.id));
@@ -156,16 +165,15 @@ export default function NobarRoom({
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length, tab]);
 
-  // Host: laporkan posisi berkala saat video jalan (poll sudah 2,5s).
-  // `playbackUpdatedAt` dari server memakai jam server; tambahkan offset supaya
-  // `atClientMs` berada di jam klien dan bisa dibandingkan dengan Date.now().
-  const syncState: AnimePlayerSyncState | null = room
-    ? {
-        isPlaying: room.isPlaying,
-        basePosition: room.positionSeconds,
-        atClientMs: new Date(room.playbackUpdatedAt).getTime() + clockOffsetRef.current,
-      }
-    : null;
+  // Titik acuan sinkron untuk AnimePlayer (sudah dihitung di applyPoll).
+  const syncState: AnimePlayerSyncState | null =
+    room && syncPoint
+      ? {
+          isPlaying: room.isPlaying,
+          basePosition: syncPoint.basePosition,
+          atClientMs: syncPoint.atClientMs,
+        }
+      : null;
 
   const patchRoom = useCallback(
     async (body: Record<string, unknown>) => {

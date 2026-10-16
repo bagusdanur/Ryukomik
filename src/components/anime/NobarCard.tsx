@@ -21,7 +21,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Radio, ArrowRight, Users, Play, Signal } from "lucide-react";
+import { Radio, ArrowRight, Users } from "lucide-react";
 import { socialRead } from "@/lib/social/client";
 import { thumbUrl } from "@/lib/anime/thumb";
 
@@ -120,17 +120,18 @@ export default function NobarCard({ animeSlug }: { animeSlug?: string }) {
         )}
       </div>
 
-      {/* Slide ke samping */}
-      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* Slide ke samping — ukuran kartu SAMA dengan kartu anime di grid
+          "Semua Update" (3 kolom, poster 2:3): lebar = (lebar - 2 gap)/3. */}
+      <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-5 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {rooms.map(({ room, memberCount }) => {
           const poster = thumbUrl(room.thumbnail);
           return (
             <button
               key={room.id}
               onClick={() => router.push(`/anime/nobar/${room.id}`)}
-              className="group w-[132px] shrink-0 snap-start overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] text-left transition active:scale-[0.97]"
+              className="group w-[calc((100%-1rem)/3)] shrink-0 snap-start overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] text-left transition active:scale-[0.97]"
             >
-              {/* Poster portrait 2:3 (bentuk asli poster anime) */}
+              {/* Poster portrait 2:3 (sama seperti kartu anime) */}
               <span className="relative block aspect-[2/3] w-full overflow-hidden bg-white/[0.06]">
                 {poster ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -138,6 +139,7 @@ export default function NobarCard({ animeSlug }: { animeSlug?: string }) {
                     src={poster}
                     alt={stripSuffix(room.animeTitle) || "Anime"}
                     loading="lazy"
+                    decoding="async"
                     className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                   />
                 ) : (
@@ -145,46 +147,27 @@ export default function NobarCard({ animeSlug }: { animeSlug?: string }) {
                     <Radio size={22} />
                   </span>
                 )}
-                <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/5 to-transparent" />
+                <span className="absolute inset-0 bg-gradient-to-t from-[#090a12] via-[#090a12]/25 to-transparent" />
                 {/* LIVE */}
-                <span className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-md bg-rose-600/90 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-white backdrop-blur">
+                <span className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-md bg-rose-500 px-1.5 py-0.5">
                   <span className="h-1 w-1 animate-pulse rounded-full bg-white" />
-                  Live
+                  <span className="text-[8px] font-black leading-none tracking-wide text-white">LIVE</span>
                 </span>
                 {/* Penonton */}
-                <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[8px] font-bold text-white/90 backdrop-blur">
+                <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[8px] font-bold leading-none text-white/90 backdrop-blur">
                   <Users size={9} />
                   {memberCount}
                 </span>
-                {/* Judul di gradient bawah */}
-                <span className="absolute inset-x-0 bottom-0 line-clamp-2 px-2 pb-1.5 text-[10px] font-black leading-tight text-white drop-shadow">
-                  {stripSuffix(room.animeTitle) || stripSuffix(room.episodeTitle) || "Nobar"}
-                </span>
-              </span>
-
-              {/* Info */}
-              <span className="block px-2 py-1.5">
-                <span className="block truncate text-[9px] font-semibold text-white/45">
-                  {room.animeTitle
-                    ? stripSuffix(room.episodeTitle) || "Episode"
-                    : `Host: ${room.hostName}`}
-                </span>
-                <span className="mt-1 flex items-center justify-between gap-1">
-                  <span className="flex min-w-0 items-center gap-1 text-[9px] font-semibold text-white/35">
-                    {room.isPlaying ? (
-                      <>
-                        <Play size={9} className="shrink-0 fill-cyan-300 text-cyan-300" />
-                        <span className="truncate text-cyan-200/80">diputar</span>
-                      </>
-                    ) : room.playerLabel ? (
-                      <>
-                        <Signal size={9} className="shrink-0" />
-                        <span className="truncate">{room.playerLabel}</span>
-                      </>
-                    ) : null}
+                {/* Judul di gradient bawah (gaya kartu anime) */}
+                <span className="absolute inset-x-0 bottom-0 px-2 pb-2 pt-8">
+                  <span className="mb-1 flex items-center gap-1">
+                    <span className={`h-1 w-1 rounded-full ${room.isPlaying ? "bg-rose-400" : "bg-white/40"}`} />
+                    <span className="text-[7px] font-semibold uppercase tracking-widest text-white/50">
+                      {room.isPlaying ? "Diputar" : "Nobar"}
+                    </span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-0.5 rounded-lg bg-rose-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
-                    Ikut
+                  <span className="block line-clamp-2 text-[10px] font-bold leading-snug text-white">
+                    {stripSuffix(room.animeTitle) || stripSuffix(room.episodeTitle) || "Nobar"}
                   </span>
                 </span>
               </span>
@@ -192,15 +175,15 @@ export default function NobarCard({ animeSlug }: { animeSlug?: string }) {
           );
         })}
 
-        {/* Kartu "lihat semua" di ujung slide */}
+        {/* Kartu "lihat semua" di ujung slide (ukuran sama) */}
         {showAll && (
           <Link
             href="/anime/nobar"
-            className="grid w-[92px] shrink-0 snap-start place-items-center rounded-2xl border border-dashed border-white/15 bg-white/[0.02] text-white/45 transition active:scale-[0.97]"
+            className="grid w-[calc((100%-1rem)/3)] shrink-0 snap-start place-items-center rounded-2xl border border-dashed border-white/15 bg-white/[0.02] text-white/45 transition active:scale-[0.97]"
           >
-            <span className="flex flex-col items-center gap-1.5">
+            <span className="flex flex-col items-center gap-1.5 px-2 text-center">
               <ArrowRight size={18} />
-              <span className="text-[9px] font-black uppercase tracking-wider">Lihat semua</span>
+              <span className="text-[9px] font-black uppercase leading-tight tracking-wider">Lihat semua</span>
             </span>
           </Link>
         )}

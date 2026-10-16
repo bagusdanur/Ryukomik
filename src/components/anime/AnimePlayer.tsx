@@ -209,10 +209,12 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
     };
   }, [syncRole, syncCapable]);
 
-  // Penonton: ikuti host secara MENERUS (koreksi tiap detik), bukan sekali.
-  // Kalau hanya mengandalkan perubahan state, penonton yang sempat buffering
-  // akan tertinggal selamanya karena state host tidak berubah. Selisih kecil
-  // dikejar lewat playbackRate (halus, ala Discord); selisih besar dilompat.
+  // Penonton: ikuti host secara MENERUS (koreksi tiap 500ms), bukan sekali.
+  // Prinsip: jangan pernah biarkan penonton MENDAHULUI host. Selisih besar
+  // dilompat; selisih kecil dikejar lewat playbackRate (halus, ala Discord).
+  // Karena acuan syncState.basePosition sudah dihitung dari jam server dan
+  // atClientMs dari jam klien saat data diterima, target selalu sedikit di
+  // belakang host (sebesar latensi) — tidak mungkin lari ke depan.
   useEffect(() => {
     if (syncRole !== "viewer" || !syncCapable) return;
     const v = videoRef.current;
@@ -221,11 +223,11 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
     const correct = () => {
       const st = syncRef.current?.state;
       if (!st) return;
-      const driftMs = Date.now() - st.atClientMs;
-      const target = st.basePosition + (st.isPlaying ? Math.max(0, driftMs) / 1000 : 0);
+      const elapsed = st.isPlaying ? Math.max(0, Date.now() - st.atClientMs) / 1000 : 0;
+      const target = st.basePosition + elapsed;
       const upper =
-        Number.isFinite(v.duration) && v.duration > 0 ? Math.max(0, v.duration - 1) : Number.MAX_SAFE_INTEGER;
-      const goal = Math.min(target, upper);
+        Number.isFinite(v.duration) && v.duration > 0 ? Math.max(0, v.duration - 0.5) : Number.MAX_SAFE_INTEGER;
+      const goal = Math.max(0, Math.min(target, upper));
 
       // Ikuti play/pause host.
       if (v.paused === st.isPlaying) {
@@ -233,19 +235,25 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
         else v.pause();
       }
 
-      const drift = goal - v.currentTime;
-      if (Math.abs(drift) > 2.5) {
+      const drift = goal - v.currentTime; // + = penonton tertinggal, - = kecepetan
+      if (Math.abs(drift) > 3) {
         v.currentTime = goal; // jauh: lompat langsung
         v.playbackRate = 1;
-      } else if (Math.abs(drift) > 0.4) {
-        v.playbackRate = drift > 0 ? 1.08 : 0.92; // dekat: kejar perlahan
-      } else if (v.playbackRate !== 1) {
-        v.playbackRate = 1;
+        return;
       }
+      if (!st.isPlaying) {
+        // Saat host pause, jangan geser kecepatan; cukup pastikan posisi pas.
+        if (Math.abs(drift) > 0.5) v.currentTime = goal;
+        v.playbackRate = 1;
+        return;
+      }
+      // Koreksi halus proporsional, maksimum ±12%.
+      const rate = 1 + Math.max(-0.12, Math.min(0.12, drift * 0.12));
+      v.playbackRate = Math.abs(drift) < 0.2 ? 1 : rate;
     };
 
     correct();
-    const timer = setInterval(correct, 1000);
+    const timer = setInterval(correct, 500);
     return () => clearInterval(timer);
   }, [syncRole, syncCapable]);
 
