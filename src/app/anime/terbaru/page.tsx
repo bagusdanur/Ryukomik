@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import NobarCard from "@/components/anime/NobarCard";
 
 export const revalidate = 120;
 
@@ -140,6 +141,9 @@ export default async function TerbaruPage() {
             Sub indo · update
           </p>
         </div>
+
+        {/* ── NOBAR AKTIF (di atas list anime) ── */}
+        <NobarCard />
 
         {/* SECTION */}
         <div className="flex items-center justify-between px-5 mb-3">

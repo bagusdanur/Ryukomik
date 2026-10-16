@@ -17,6 +17,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { socialFetch, socialRead } from "@/lib/social/client";
 import { relativeTime } from "@/lib/social/relativeTime";
 import { NOBAR_EMOJIS, NOBAR_POLL_MS } from "@/lib/social/nobarShared";
+import { playerDisplayName } from "@/lib/anime/playerName";
 
 type Player = { name?: string; iframe?: string; streamUrl?: string };
 type Member = { userId: string; name: string; avatarUrl: string | null; isHost: boolean };
@@ -197,7 +198,8 @@ export default function NobarRoom({
   }
 
   async function pickPlayer(player: Player) {
-    const label = player.name || "Server";
+    // Nama server diseragamkan dengan halaman episode ("Ryu-lokal 480p").
+    const label = playerDisplayName(player);
     await patchRoom({ playerUrl: player.iframe || player.streamUrl || "", playerLabel: label }).catch(() => {});
     await poll();
   }
@@ -319,7 +321,7 @@ export default function NobarRoom({
                           : "border-white/10 bg-white/[0.04] text-white/65 hover:border-white/20 hover:text-white"
                       }`}
                     >
-                      {player.name || `Server ${index + 1}`}
+                      {playerDisplayName(player)}
                     </button>
                   );
                 })}

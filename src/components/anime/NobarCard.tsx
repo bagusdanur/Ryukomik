@@ -19,12 +19,16 @@ type Room = {
   id: string;
   episodeSlug: string;
   episodeTitle: string | null;
+  animeSlug: string | null;
+  animeTitle: string | null;
   hostName: string;
   playerLabel: string | null;
   isPlaying: boolean;
 };
 
-export default function NobarCard({ animeSlug }: { animeSlug: string }) {
+/** `animeSlug` = daftar ruang anime itu (halaman detail).
+ *  Tanpa prop = semua ruang aktif (halaman utama anime). */
+export default function NobarCard({ animeSlug }: { animeSlug?: string }) {
   const router = useRouter();
   const [rooms, setRooms] = useState<{ room: Room; memberCount: number }[]>([]);
   const [ready, setReady] = useState(false);
@@ -33,10 +37,12 @@ export default function NobarCard({ animeSlug }: { animeSlug: string }) {
     let alive = true;
     let timer: ReturnType<typeof setInterval> | null = null;
 
+    const endpoint = animeSlug
+      ? `/api/social/nobar?anime=${encodeURIComponent(animeSlug)}`
+      : "/api/social/nobar?all=1";
+
     const load = () =>
-      socialRead<{ rooms: { room: Room; memberCount: number }[] }>(
-        `/api/social/nobar?anime=${encodeURIComponent(animeSlug)}`,
-      )
+      socialRead<{ rooms: { room: Room; memberCount: number }[] }>(endpoint)
         .then((data) => {
           if (alive) setRooms(data.rooms || []);
         })
@@ -88,11 +94,20 @@ export default function NobarCard({ animeSlug }: { animeSlug: string }) {
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[12px] font-black text-white">
-                {room.episodeTitle?.replace(" Sub Indo", "") || "Episode"}
+                {room.animeTitle?.replace(" Sub Indo", "") || room.episodeTitle?.replace(" Sub Indo", "") || "Nobar"}
+              </span>
+              <span className="mt-0.5 block truncate text-[10px] font-semibold text-white/40">
+                {room.animeTitle
+                  ? room.episodeTitle?.replace(" Sub Indo", "") || "Episode"
+                  : `Host: ${room.hostName}`}
               </span>
               <span className="mt-0.5 flex items-center gap-1.5 text-[10px] font-semibold text-white/45">
-                <span className="truncate">Host: {room.hostName}</span>
-                <span className="h-1 w-1 shrink-0 rounded-full bg-white/20" />
+                {room.animeTitle && (
+                  <>
+                    <span className="truncate">Host: {room.hostName}</span>
+                    <span className="h-1 w-1 shrink-0 rounded-full bg-white/20" />
+                  </>
+                )}
                 <span className="shrink-0">
                   {memberCount > 0 ? `${memberCount} nonton` : "baru dibuka"}
                 </span>

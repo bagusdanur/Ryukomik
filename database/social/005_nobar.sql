@@ -13,6 +13,7 @@ create table if not exists nobar_rooms (
   episode_slug text not null,
   episode_title text,
   anime_slug text,
+  anime_title text,
   host_id uuid not null references social_profiles(user_id) on delete cascade,
   host_name text not null,
   player_label text,

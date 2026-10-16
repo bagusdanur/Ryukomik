@@ -19,6 +19,7 @@ export type NobarRoomRow = {
   player_label: string | null;
   player_url: string | null;
   anime_slug: string | null;
+  anime_title: string | null;
   is_playing: boolean;
   position_seconds: string | number;
   playback_updated_at: string;
@@ -35,6 +36,7 @@ export type NobarRoom = {
   playerLabel: string | null;
   playerUrl: string | null;
   animeSlug: string | null;
+  animeTitle: string | null;
   isPlaying: boolean;
   positionSeconds: number;
   playbackUpdatedAt: string;
@@ -76,6 +78,7 @@ export function toRoom(row: NobarRoomRow): NobarRoom {
     playerLabel: row.player_label,
     playerUrl: row.player_url,
     animeSlug: row.anime_slug,
+    animeTitle: row.anime_title,
     isPlaying: Boolean(row.is_playing),
     positionSeconds: Number(row.position_seconds) || 0,
     playbackUpdatedAt: row.playback_updated_at,

@@ -4,6 +4,7 @@ import Link from "next/link";
 import AnimePlayer from "@/components/anime/AnimePlayer";
 import AnimeComments from "@/components/anime/AnimeComments";
 import NobarButton from "@/components/anime/NobarButton";
+import { isCleanPlayer, playerBaseName, playerDisplayName, playerQuality } from "@/lib/anime/playerName";
 
 type AnimePlayerType = {
   name?: string;
@@ -36,10 +37,8 @@ type EpisodeClientProps = {
 };
 
 /** Server tanpa iklan ("ryu-lokal"): filedon & mega di-resolve jadi <video>
- *  lokal; Blogger bersih dari sananya jadi iframe-nya dipakai langsung. */
-function isCleanPlayer(player: AnimePlayerType) {
-  return /filedon\.co|mega\.nz|blogger\.com/i.test(player.iframe ?? "") || Boolean(player.streamUrl);
-}
+ *  lokal; Blogger bersih dari sananya jadi iframe-nya dipakai langsung.
+ *  Definisi aslinya di @/lib/anime/playerName supaya sama dengan nobar. */
 
 export default function EpisodeClient({ data, slug }: EpisodeClientProps) {
   const cleanTitle = data?.title?.replace(" Sub Indo", "") || "";
@@ -53,11 +52,9 @@ export default function EpisodeClient({ data, slug }: EpisodeClientProps) {
       .map(({ p, clean }) => {
         // Kualitas dipisah jadi field sendiri supaya tidak ikut terpotong
         // truncate di layar sempit (mobile) — selalu tampil sebagai badge.
-        const quality = (p.name || "").match(/(\d{3,4}\s*p)/i)?.[1]?.replace(/\s+/g, "").toUpperCase() || "";
-        const label = clean
-          ? "Ryu-lokal"
-          : (p.name || "Server").replace("S-", "").replace(/\d{3,4}\s*p/i, "").trim() || "Server";
-        return { p, clean, quality, label };
+        const quality = playerQuality(p).toUpperCase();
+        const label = clean ? "Ryu-lokal" : playerBaseName(p);
+        return { p, clean, quality, label, display: playerDisplayName(p) };
       });
   }, [data]);
   const [activePlayer, setActivePlayer] = useState(0);
@@ -131,7 +128,8 @@ export default function EpisodeClient({ data, slug }: EpisodeClientProps) {
             slug={slug}
             title={cleanTitle}
             animeSlug={data.allEpisode}
-            playerLabel={activePlayers[activePlayer]?.p.name}
+            animeTitle={cleanTitle}
+            playerLabel={activePlayers[activePlayer]?.display}
             playerUrl={activePlayers[activePlayer]?.p.iframe}
           />
         </div>

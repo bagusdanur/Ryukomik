@@ -28,11 +28,18 @@ type Ctx = { params: Promise<{ id: string }> };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function loadRoom(id: string) {
-  // Lazy auto-tutup ruang nganggur (tanpa cron).
+  // Lazy auto-tutup (tanpa cron): ruang mati kalau tak ada peserta aktif
+  // dalam 90 detik, atau playback sudah lama beku.
   await socialQuery(
-    `update nobar_rooms set ended_at=now()
-      where id=$1 and ended_at is null
-        and playback_updated_at < now() - ($2 || ' minutes')::interval`,
+    `update nobar_rooms r set ended_at=now()
+      where r.id=$1 and r.ended_at is null
+        and (
+          not exists (
+            select 1 from nobar_members m
+             where m.room_id=r.id and m.last_seen > now() - interval '90 seconds'
+          )
+          or r.playback_updated_at < now() - ($2 || ' minutes')::interval
+        )`,
     [id, ROOM_IDLE_MINUTES],
   );
   const result = await socialQuery<NobarRoomRow>("select * from nobar_rooms where id=$1", [id]);
