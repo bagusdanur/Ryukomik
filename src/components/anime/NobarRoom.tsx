@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { FiSend, FiCopy, FiCheck, FiX, FiUsers, FiMessageCircle } from "react-icons/fi";
+import { FiSend, FiCopy, FiCheck, FiX, FiUsers, FiMessageCircle, FiRadio } from "react-icons/fi";
 import AnimePlayer, { type AnimePlayerSyncState } from "@/components/anime/AnimePlayer";
 import { supabase } from "@/lib/supabaseClient";
 import { socialFetch, socialRead } from "@/lib/social/client";
@@ -218,76 +218,93 @@ export default function NobarRoom({
   const ended = Boolean(room?.endedAt);
 
   return (
-    <div className="mx-auto max-w-6xl px-3 pb-24 pt-4 text-white sm:px-4">
-      <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2">
-        <span className="flex items-center gap-1.5 rounded-full border border-red-400/30 bg-red-500/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-red-200">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" /> Nobar
+    <div className="mx-auto max-w-6xl px-3 pb-24 pt-5 text-white sm:px-4">
+      {/* ── Header ── */}
+      <div className="mb-4 flex min-w-0 items-center gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-rose-400/30 bg-rose-500/15">
+          <FiRadio className="text-rose-200" size={17} />
         </span>
-        <h1 className="min-w-0 flex-1 truncate text-sm font-black sm:text-base">
-          {episode.title?.replace(" Sub Indo", "") || room?.episodeTitle || "Ruang Nobar"}
-        </h1>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[.2em] text-rose-300">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-400" /> Nobar
+            </span>
+            {room && !ended && (
+              <span className="text-[9px] font-bold text-white/35">
+                {members.length} di ruangan
+              </span>
+            )}
+          </div>
+          <h1 className="mt-0.5 truncate text-[15px] font-black leading-tight text-white sm:text-base">
+            {episode.title?.replace(" Sub Indo", "") || room?.episodeTitle || "Ruang Nobar"}
+          </h1>
+        </div>
         <button
           onClick={copyLink}
-          className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-bold hover:bg-white/[0.08]"
+          className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-[11px] font-bold text-white/75 transition hover:bg-white/[0.1] hover:text-white"
         >
-          {copied ? <FiCheck className="text-emerald-300" /> : <FiCopy />} {copied ? "Tersalin" : "Bagikan"}
+          {copied ? <FiCheck className="text-emerald-300" /> : <FiCopy />}
+          <span className="hidden sm:inline">{copied ? "Tersalin" : "Bagikan"}</span>
         </button>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_350px]">
         {/* ── Video ── */}
         <div className="min-w-0">
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
+          <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-black">
             {room?.playerUrl ? (
               <AnimePlayer key={room.playerUrl} src={room.playerUrl} sync={sync} />
             ) : (
               <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
-                <div className="absolute inset-0 grid place-items-center gap-2 text-center">
-                  <div>
-                    <p className="text-xs font-black text-white/40">
-                      {isHost ? "Pilih server di bawah untuk mulai" : "Menunggu host memilih server..."}
-                    </p>
-                  </div>
+                <div className="absolute inset-0 grid place-items-center px-6 text-center">
+                  <p className="text-xs font-bold text-white/45">
+                    {isHost ? "Pilih server di bawah untuk mulai menonton" : "Menunggu host memilih server..."}
+                  </p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Status sinkron */}
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-bold text-white/60">
-              👤 Host: {room?.hostName || "-"}
-            </span>
+          {/* Info bar */}
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-white/[0.07] bg-white/[0.02] px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-[9px] font-black uppercase tracking-[.15em] text-white/30">Host</p>
+              <p className="truncate text-[12px] font-bold text-white/85">{room?.hostName || "-"}</p>
+            </div>
             {room?.playerLabel && (
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-bold text-white/60">
-                🖥️ {room.playerLabel}
-              </span>
+              <div className="min-w-0 border-l border-white/10 pl-4">
+                <p className="text-[9px] font-black uppercase tracking-[.15em] text-white/30">Server</p>
+                <p className="truncate text-[12px] font-bold text-white/85">{room.playerLabel}</p>
+              </div>
             )}
-            <span
-              className={`rounded-full border px-2.5 py-1 font-bold ${
-                syncCapable
-                  ? "border-emerald-300/25 bg-emerald-400/10 text-emerald-200"
-                  : "border-amber-300/25 bg-amber-400/10 text-amber-200"
-              }`}
-            >
-              {syncCapable ? "🔗 Video tersinkron" : "💬 Mode chat saja (server ini tak bisa disinkronkan)"}
-            </span>
-            {room?.isPlaying && syncCapable && (
-              <span className="rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2.5 py-1 font-bold text-cyan-200">
-                ▶ Host sedang memutar
-              </span>
-            )}
+            <div className="min-w-0 border-l border-white/10 pl-4">
+              <p className="text-[9px] font-black uppercase tracking-[.15em] text-white/30">Sinkron</p>
+              <p className={`flex items-center gap-1.5 text-[12px] font-bold ${syncCapable ? "text-emerald-300" : "text-amber-300"}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${syncCapable ? "bg-emerald-400" : "bg-amber-400"}`} />
+                {syncCapable ? (room?.isPlaying ? "Berjalan" : "Siap") : "Chat saja"}
+              </p>
+            </div>
             {ended && (
-              <span className="rounded-full border border-red-300/25 bg-red-400/10 px-2.5 py-1 font-bold text-red-200">
-                Ruang sudah ditutup
-              </span>
+              <div className="min-w-0 border-l border-white/10 pl-4">
+                <p className="text-[9px] font-black uppercase tracking-[.15em] text-white/30">Status</p>
+                <p className="text-[12px] font-bold text-rose-300">Ruang ditutup</p>
+              </div>
             )}
           </div>
 
+          {!syncCapable && room?.playerUrl && !ended && (
+            <p className="mt-2 text-[11px] leading-relaxed text-white/40">
+              Server ini tidak bisa disinkronkan otomatis, jadi tonton sendiri-sendiri sambil ngobrol. Pilih server
+              &ldquo;Ryu-lokal&rdquo; untuk nonton bareng yang benar-benar sinkron.
+            </p>
+          )}
+
           {/* Host: pilih server */}
           {isHost && !ended && players.length > 0 && (
-            <div className="mt-3">
-              <p className="mb-1.5 text-[10px] font-black uppercase tracking-wider text-white/35">Pilih server (semua ikut)</p>
+            <div className="mt-4">
+              <p className="mb-2 text-[10px] font-black uppercase tracking-[.15em] text-white/40">
+                Server untuk semua orang
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {players.map((player, index) => {
                   const url = player.iframe || player.streamUrl || "";
@@ -296,10 +313,10 @@ export default function NobarRoom({
                     <button
                       key={index}
                       onClick={() => void pickPlayer(player)}
-                      className={`max-w-full truncate rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition ${
+                      className={`max-w-full truncate rounded-xl border px-3 py-2 text-[11px] font-bold transition ${
                         active
-                          ? "border-cyan-300/40 bg-cyan-400/15 text-cyan-100"
-                          : "border-white/10 bg-white/[0.04] text-white/60 hover:bg-white/[0.08]"
+                          ? "border-cyan-300/45 bg-cyan-400/15 text-cyan-100"
+                          : "border-white/10 bg-white/[0.04] text-white/65 hover:border-white/20 hover:text-white"
                       }`}
                     >
                       {player.name || `Server ${index + 1}`}
@@ -311,7 +328,8 @@ export default function NobarRoom({
           )}
 
           {/* Reaksi */}
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <div className="mt-4 flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-[10px] font-black uppercase tracking-[.15em] text-white/35">Reaksi</span>
             {NOBAR_EMOJIS.map((emoji) => {
               const count = reactions.find((r) => r.emoji === emoji)?.count || 0;
               return (
@@ -320,90 +338,103 @@ export default function NobarRoom({
                   onClick={() => void react(emoji)}
                   disabled={!signedIn || ended}
                   title={signedIn ? "Kirim reaksi" : "Masuk dulu untuk bereaksi"}
-                  className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-sm transition hover:bg-white/[0.09] disabled:opacity-40"
+                  className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-sm transition disabled:opacity-40 ${
+                    count > 0
+                      ? "border-cyan-300/30 bg-cyan-400/10"
+                      : "border-white/10 bg-white/[0.04] hover:bg-white/[0.09]"
+                  }`}
                 >
                   <span>{emoji}</span>
-                  {count > 0 && <span className="text-[11px] font-black text-white/60">{count}</span>}
+                  {count > 0 && <span className="text-[11px] font-black text-cyan-100">{count}</span>}
                 </button>
               );
             })}
             {isHost && !ended && (
               <button
                 onClick={() => void closeRoom()}
-                className="ml-auto flex items-center gap-1.5 rounded-full border border-red-400/25 bg-red-500/10 px-3 py-1.5 text-[11px] font-bold text-red-200 hover:bg-red-500/20"
+                className="ml-auto flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-1.5 text-[11px] font-bold text-white/50 transition hover:border-rose-400/30 hover:text-rose-300"
               >
-                <FiX /> Tutup ruang
+                <FiX size={13} /> Tutup ruang
               </button>
             )}
           </div>
         </div>
 
         {/* ── Panel ── */}
-        <div className="flex min-h-[420px] min-w-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0a0e19]/95">
-          <div className="flex shrink-0 border-b border-white/10">
+        <div className="flex min-h-[440px] min-w-0 flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0b0f1a] lg:min-h-0">
+          <div className="flex shrink-0 border-b border-white/[0.08]">
             {(
               [
-                ["chat", "Chat", FiMessageCircle],
-                ["members", `Peserta (${members.length})`, FiUsers],
+                ["chat", "Obrolan", FiMessageCircle],
+                ["members", `Peserta`, FiUsers],
               ] as const
             ).map(([key, label, Icon]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
                 className={`flex flex-1 items-center justify-center gap-1.5 py-3 text-[11px] font-black uppercase tracking-wider transition ${
-                  tab === key ? "border-b-2 border-cyan-300 text-cyan-200" : "text-white/40 hover:text-white/70"
+                  tab === key
+                    ? "border-b-2 border-cyan-300 text-cyan-200"
+                    : "text-white/40 hover:text-white/70"
                 }`}
               >
                 <Icon size={13} /> {label}
+                {key === "members" && members.length > 0 && (
+                  <span className="rounded-md bg-white/10 px-1.5 text-[9px] text-white/60">{members.length}</span>
+                )}
               </button>
             ))}
           </div>
 
           {tab === "chat" ? (
             <>
-              <div ref={scrollRef} className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-3 py-3">
-                {!messages.length && <p className="py-8 text-center text-xs text-white/30">Belum ada obrolan. Sapa yang lain!</p>}
+              <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3.5 py-3.5">
+                {!messages.length && (
+                  <p className="py-10 text-center text-xs text-white/35">Belum ada obrolan. Sapa yang lain!</p>
+                )}
                 {messages.map((message) => (
                   <div key={message.id} className="min-w-0">
-                    <div className="flex min-w-0 items-baseline gap-1.5">
-                      <span className="max-w-[10rem] truncate text-[11px] font-black text-cyan-200">{message.name}</span>
-                      <span className="shrink-0 text-[9px] text-white/25">{relativeTime(message.createdAt)}</span>
+                    <div className="flex min-w-0 items-baseline gap-2">
+                      <span className="max-w-[10rem] truncate text-[11px] font-black text-cyan-300">{message.name}</span>
+                      <span className="shrink-0 text-[9px] font-medium text-white/25">{relativeTime(message.createdAt)}</span>
                     </div>
-                    <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-white/80">{message.body}</p>
+                    <p className="mt-0.5 whitespace-pre-wrap break-words text-[13px] leading-relaxed text-white/85">
+                      {message.body}
+                    </p>
                   </div>
                 ))}
               </div>
               {signedIn === false ? (
-                <p className="shrink-0 border-t border-white/10 px-3 py-3 text-center text-[11px] text-white/45">
-                  <Link href="/login" className="font-black text-cyan-200 hover:underline">
+                <p className="shrink-0 border-t border-white/[0.08] px-3.5 py-3.5 text-center text-[11px] text-white/50">
+                  <Link href="/login" className="font-black text-cyan-300 hover:underline">
                     Masuk
                   </Link>{" "}
                   untuk ikut ngobrol.
                 </p>
               ) : (
-                <form onSubmit={send} className="flex shrink-0 items-center gap-2 border-t border-white/10 px-3 py-2.5">
+                <form onSubmit={send} className="flex shrink-0 items-center gap-2 border-t border-white/[0.08] px-3 py-3">
                   <input
                     value={draft}
                     onChange={(event) => setDraft(event.target.value.slice(0, 300))}
                     disabled={busy || ended}
                     placeholder={ended ? "Ruang sudah ditutup" : "Tulis pesan..."}
-                    className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-[13px] outline-none placeholder:text-white/30 focus:border-cyan-300/40"
+                    className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.05] px-3.5 py-2.5 text-[13px] text-white outline-none placeholder:text-white/30 focus:border-cyan-300/40"
                   />
                   <button
                     disabled={!draft.trim() || busy || ended}
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-cyan-300 text-black disabled:opacity-35"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cyan-300 text-black transition disabled:opacity-35"
                     aria-label="Kirim"
                   >
-                    <FiSend size={14} />
+                    <FiSend size={15} />
                   </button>
                 </form>
               )}
             </>
           ) : (
-            <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3 py-3">
+            <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2.5 py-2.5">
               {members.map((member) => (
-                <div key={member.userId} className="flex min-w-0 items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-white/[0.04]">
-                  <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/5 text-[11px] font-black">
+                <div key={member.userId} className="flex min-w-0 items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-white/[0.04]">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/[0.06] text-[11px] font-black text-white/70">
                     {member.avatarUrl ? (
                       <img src={member.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
@@ -412,26 +443,26 @@ export default function NobarRoom({
                   </span>
                   <Link
                     href={`/u/${encodeURIComponent(member.name)}`}
-                    className="min-w-0 flex-1 truncate text-[13px] font-bold hover:text-cyan-200"
+                    className="min-w-0 flex-1 truncate text-[13px] font-bold text-white/85 hover:text-cyan-300"
                   >
                     {member.name}
                   </Link>
                   {member.isHost && (
-                    <span className="shrink-0 rounded-full bg-cyan-400/15 px-2 py-0.5 text-[9px] font-black uppercase text-cyan-200">
+                    <span className="shrink-0 rounded-md bg-cyan-400/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-cyan-200">
                       Host
                     </span>
                   )}
                 </div>
               ))}
-              {!members.length && <p className="py-8 text-center text-xs text-white/30">Belum ada peserta.</p>}
+              {!members.length && <p className="py-10 text-center text-xs text-white/35">Belum ada peserta.</p>}
             </div>
           )}
         </div>
       </div>
 
-      {error && <p className="mt-3 text-center text-xs text-red-200">{error}</p>}
-      <p className="mt-4 text-center text-[11px] text-white/30">
-        <Link href={`/anime/episode/${episodeSlug}`} className="hover:text-cyan-200">
+      {error && <p className="mt-3 text-center text-xs text-rose-300">{error}</p>}
+      <p className="mt-5 text-center text-[11px] text-white/35">
+        <Link href={`/anime/episode/${episodeSlug}`} className="font-bold hover:text-cyan-300">
           ← Kembali ke episode
         </Link>
       </p>

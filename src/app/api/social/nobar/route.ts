@@ -24,6 +24,22 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const slug = String(url.searchParams.get("slug") || "").trim().slice(0, 200);
+    const anime = String(url.searchParams.get("anime") || "").trim().slice(0, 200);
+
+    // Daftar ruang aktif sebuah anime (untuk card di halaman detail anime).
+    if (anime) {
+      await closeIdleRooms();
+      const rooms = await socialQuery<NobarRoomRow & { member_count: number }>(
+        `${ACTIVE_ROOM} where r.anime_slug=$1 and r.ended_at is null
+         order by r.created_at desc limit 12`,
+        [anime],
+      );
+      return socialJson(
+        { rooms: rooms.rows.map((row) => ({ room: toRoom(row), memberCount: row.member_count })) },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
     if (!slug) return socialJson({ error: "Episode tidak disebutkan." }, { status: 400 });
 
     // Tutup ruang nganggur episode ini sekalian (lazy, tanpa cron).
@@ -52,11 +68,13 @@ export async function POST(request: Request) {
     await ensureSocialProfile(userId);
     if (!socialLimit(request, userId, 10)) return socialJson({ error: "Terlalu banyak membuat ruang." }, { status: 429 });
 
-    const body = (await request.json()) as { episodeSlug?: string; episodeTitle?: string; playerLabel?: string; playerUrl?: string };
+    const body = (await request.json()) as { episodeSlug?: string; episodeTitle?: string; playerLabel?: string; playerUrl?: string; animeSlug?: string };
     const episodeSlug = String(body.episodeSlug || "").trim().slice(0, 200);
     if (!episodeSlug) return socialJson({ error: "Episode tidak disebutkan." }, { status: 400 });
     const episodeTitle = body.episodeTitle ? String(body.episodeTitle).trim().slice(0, 200) : null;
     const playerLabel = body.playerLabel ? String(body.playerLabel).trim().slice(0, 60) : null;
+    // animeSlug dipakai agar card nobar bisa muncul di halaman detail anime.
+    const animeSlug = body.animeSlug ? String(body.animeSlug).trim().slice(0, 200) : null;
     // URL iframe server yang dipilih host; dipakai semua penonton supaya
     // menonton aliran yang sama.
     const playerUrl = body.playerUrl && /^https?:\/\//i.test(body.playerUrl) ? String(body.playerUrl).trim().slice(0, 2048) : null;
@@ -74,9 +92,9 @@ export async function POST(request: Request) {
         [episodeSlug],
       );
       const inserted = await client.query<NobarRoomRow>(
-        `insert into nobar_rooms(episode_slug,episode_title,host_id,host_name,player_label,player_url)
-         values($1,$2,$3,$4,$5,$6) returning *`,
-        [episodeSlug, episodeTitle, userId, name, playerLabel, playerUrl],
+        `insert into nobar_rooms(episode_slug,episode_title,host_id,host_name,player_label,player_url,anime_slug)
+         values($1,$2,$3,$4,$5,$6,$7) returning *`,
+        [episodeSlug, episodeTitle, userId, name, playerLabel, playerUrl, animeSlug],
       );
       await client.query(
         `insert into nobar_members(room_id,user_id,name,avatar_url) values($1,$2,$3,$4)

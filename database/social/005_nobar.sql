@@ -12,6 +12,7 @@ create table if not exists nobar_rooms (
   id uuid primary key default gen_random_uuid(),
   episode_slug text not null,
   episode_title text,
+  anime_slug text,
   host_id uuid not null references social_profiles(user_id) on delete cascade,
   host_name text not null,
   player_label text,
@@ -31,6 +32,10 @@ create unique index if not exists nobar_one_active_room
 -- Pencarian ruang aktif sebuah episode (badge di halaman episode).
 create index if not exists nobar_rooms_active_episode
   on nobar_rooms(episode_slug, created_at desc) where ended_at is null;
+
+-- Pencarian ruang aktif sebuah anime (card di halaman detail anime).
+create index if not exists nobar_rooms_anime
+  on nobar_rooms(anime_slug, created_at desc) where ended_at is null;
 
 -- Auto-tutup ruang nganggur: cari ruang yang playback_updated_at-nya basi.
 create index if not exists nobar_rooms_stale

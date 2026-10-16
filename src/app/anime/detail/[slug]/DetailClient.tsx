@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState, useMemo } from "react";
+import NobarCard from "@/components/anime/NobarCard";
 
 type AnimeGenre = {
   name?: string;
@@ -288,6 +289,9 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
             </svg>
           </Link>
         </div>
+
+        {/* ── NOBAR AKTIF (join langsung dari sini) ── */}
+        <NobarCard animeSlug={slug} />
 
         {/* ── SYNOPSIS ── */}
         <div className="px-5 mb-6">

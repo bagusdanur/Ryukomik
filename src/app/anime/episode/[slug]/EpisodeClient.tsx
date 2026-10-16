@@ -125,6 +125,17 @@ export default function EpisodeClient({ data, slug }: EpisodeClientProps) {
           )}
         </div>
 
+        {/* ── NOBAR (tepat di bawah navigasi, biar kelihatan) ── */}
+        <div className="mb-5">
+          <NobarButton
+            slug={slug}
+            title={cleanTitle}
+            animeSlug={data.allEpisode}
+            playerLabel={activePlayers[activePlayer]?.p.name}
+            playerUrl={activePlayers[activePlayer]?.p.iframe}
+          />
+        </div>
+
         {/* ── DIVIDER ── */}
         <div className="h-px bg-white/[0.04] mb-5" />
 
@@ -201,16 +212,6 @@ export default function EpisodeClient({ data, slug }: EpisodeClientProps) {
             <span className="text-[9px] font-black uppercase tracking-[.18em] text-white/25">Thumbnail</span>
             <span className="text-[12px] font-black uppercase tracking-tight text-white leading-snug">{cleanTitle}</span>
           </div>
-        </div>
-
-        {/* ── NOBAR ── */}
-        <div className="mb-5">
-          <NobarButton
-            slug={slug}
-            title={cleanTitle}
-            playerLabel={activePlayers[activePlayer]?.p.name}
-            playerUrl={activePlayers[activePlayer]?.p.iframe}
-          />
         </div>
 
         {/* ── KOMENTAR ANIME (PostgreSQL VPS, bukan Supabase) ── */}
