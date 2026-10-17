@@ -13,10 +13,14 @@ export type AnimePlayerLike = {
   streamUrl?: string;
 };
 
-/** Server tanpa iklan (Ryu-lokal): filedon & mega di-resolve jadi <video>
- *  lokal; Blogger bersih dari sananya jadi iframe-nya dipakai langsung. */
+/** Server tanpa iklan (Ryu-lokal): filedon, mega, dan player desustream
+ *  (odcdn/odstream/ondesu2hd) di-resolve jadi <video> lokal; Blogger bersih
+ *  dari sananya jadi iframe-nya dipakai langsung. */
 export function isCleanPlayer(player: AnimePlayerLike) {
-  return /filedon\.co|mega\.nz|blogger\.com/i.test(player.iframe ?? "") || Boolean(player.streamUrl);
+  return (
+    /filedon\.co|mega\.nz|blogger\.com|desustream|odcloud/i.test(player.iframe ?? "") ||
+    Boolean(player.streamUrl)
+  );
 }
 
 /** Kualitas dari nama mentah, mis. "480p vidhide" -> "480p". */
