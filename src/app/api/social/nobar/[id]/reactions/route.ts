@@ -2,6 +2,7 @@ import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { NOBAR_EMOJIS } from "@/lib/social/nobar";
+import { publish } from "@/lib/social/nobarBus";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
 
 /**
@@ -40,6 +41,8 @@ export async function POST(request: Request, context: Ctx) {
        on conflict (room_id,user_id,emoji) do update set created_at=now()`,
       [id, userId, emoji],
     );
+    // Beri tahu klien lain supaya angka reaksi ikut segar seketika.
+    publish(id, { kind: "reaction" });
     return socialJson({ success: true }, { status: 201 });
   } catch (error) {
     return socialError(error);

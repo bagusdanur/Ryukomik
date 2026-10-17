@@ -8,6 +8,7 @@ import {
   toRoom,
   type NobarRoomRow,
 } from "@/lib/social/nobar";
+import { publish } from "@/lib/social/nobarBus";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
 
 /**
@@ -163,6 +164,23 @@ export async function PATCH(request: Request, context: Ctx) {
       [id, userId, playing, position, label, playerUrl],
     );
     if (!result.rowCount) return socialJson({ error: "Hanya host yang bisa mengatur putar." }, { status: 403 });
+
+    // Dorong state putar terbaru ke semua penonton SEKETIKA (play/pause/seek).
+    const fresh = await socialQuery<NobarRoomRow>("select * from nobar_rooms where id=$1", [id]);
+    if (fresh.rows[0]) {
+      const r = toRoom(fresh.rows[0]);
+      publish(id, {
+        kind: "playback",
+        playback: {
+          isPlaying: r.isPlaying,
+          positionSeconds: r.positionSeconds,
+          playerLabel: r.playerLabel,
+          playerUrl: r.playerUrl,
+          playbackUpdatedAt: r.playbackUpdatedAt,
+          serverNow: new Date().toISOString(),
+        },
+      });
+    }
     return socialJson({ success: true });
   } catch (error) {
     return socialError(error);

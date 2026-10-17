@@ -16,7 +16,7 @@ import AnimePlayer, { type AnimePlayerSyncState } from "@/components/anime/Anime
 import { supabase } from "@/lib/supabaseClient";
 import { socialFetch, socialRead } from "@/lib/social/client";
 import { relativeTime } from "@/lib/social/relativeTime";
-import { NOBAR_EMOJIS, NOBAR_POLL_MS } from "@/lib/social/nobarShared";
+import { NOBAR_EMOJIS } from "@/lib/social/nobarShared";
 import { playerDisplayName } from "@/lib/anime/playerName";
 import { thumbUrl } from "@/lib/anime/thumb";
 
@@ -48,8 +48,6 @@ type Poll = {
   viewerId: string | null;
   serverNow: string;
 };
-
-const POLL_MS = NOBAR_POLL_MS;
 
 export default function NobarRoom({
   roomId,
@@ -132,35 +130,111 @@ export default function NobarRoom({
     }
   }, [roomId, applyPoll]);
 
-  // Polling: 2,5s saat tab aktif; saat tab disembunyikan TETAP jalan tapi jauh
-  // lebih lambat (20s). Kalau berhenti total, heartbeat hilang dan ruang akan
-  // dianggap nganggur lalu ditutup otomatis padahal host masih ada (cuma pindah
-  // tab). Saat tab kembali aktif, poll SEKARANG supaya tidak menunggu interval.
+  // ── Realtime SSE ──
+  // Satu koneksi menggantung; server mendorong chat/putar/reaksi/peserta
+  // SEKETIKA. Ini menggantikan polling 2,5s (lebih cepat & lebih hemat).
+  // Kalau SSE gagal/terputus, otomatis jatuh ke polling lambat sebagai jaring
+  // pengaman supaya ruang tetap berfungsi.
+  const sseRef = useRef<EventSource | null>(null);
   useEffect(() => {
-    let timer: ReturnType<typeof setInterval> | null = null;
-    const start = (interval: number) => {
-      if (timer) clearInterval(timer);
+    let closed = false;
+    let fallback: ReturnType<typeof setInterval> | null = null;
+
+    const startFallback = () => {
+      if (fallback) return;
       void poll();
-      timer = setInterval(() => void poll(), interval);
+      fallback = setInterval(() => void poll(), 3000);
     };
-    const stop = () => {
-      if (timer) clearInterval(timer);
-      timer = null;
+    const stopFallback = () => {
+      if (fallback) clearInterval(fallback);
+      fallback = null;
     };
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") {
-        start(POLL_MS);
-      } else {
-        start(20_000);
+
+    const applyPlayback = (p: {
+      isPlaying: boolean;
+      positionSeconds: number;
+      playerLabel: string | null;
+      playerUrl: string | null;
+      playbackUpdatedAt: string;
+      serverNow: string;
+    }) => {
+      setRoom((current) => (current ? { ...current, ...p } : current));
+      // Elapsed dihitung dari DUA nilai jam SERVER (serverNow - playbackUpdatedAt),
+      // lalu dicatat pada jam KLIEN saat diterima — tidak pernah mencampur jam.
+      const serverMs = new Date(p.serverNow).getTime();
+      const updatedMs = new Date(p.playbackUpdatedAt).getTime();
+      if (Number.isFinite(serverMs) && Number.isFinite(updatedMs)) {
+        const elapsed = p.isPlaying ? Math.max(0, (serverMs - updatedMs) / 1000) : 0;
+        setSyncPoint({ basePosition: p.positionSeconds + elapsed, atClientMs: Date.now() });
       }
     };
-    onVisibility();
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      stop();
-      document.removeEventListener("visibilitychange", onVisibility);
+
+    void poll(); // muat awal (pesan lama, peserta, reaksi)
+
+    try {
+      const es = new EventSource(`/api/social/nobar/${roomId}/events`);
+      sseRef.current = es;
+
+      es.addEventListener("ready", () => {
+        stopFallback(); // SSE sehat: tak perlu polling cepat
+      });
+
+      es.addEventListener("chat", (event) => {
+        try {
+          const message = JSON.parse((event as MessageEvent).data) as Message;
+          setMessages((current) => {
+            if (current.some((m) => m.id === message.id)) return current;
+            const next = [...current, message];
+            const last = next.at(-1);
+            if (last) cursorRef.current = String(last.seq);
+            return next;
+          });
+        } catch {
+          /* abaikan payload rusak */
+        }
+      });
+
+      es.addEventListener("playback", (event) => {
+        try {
+          applyPlayback(JSON.parse((event as MessageEvent).data));
+        } catch {
+          /* abaikan */
+        }
+      });
+
+      // Reaksi & kehadiran: cukup segarkan ringan (frekuensinya rendah).
+      es.addEventListener("reaction", () => void poll());
+      es.addEventListener("presence", () => void poll());
+
+      es.onerror = () => {
+        // EventSource otomatis mencoba menyambung ulang; selama itu pakai
+        // polling lambat supaya ruang tetap hidup.
+        startFallback();
+      };
+    } catch {
+      startFallback();
+    }
+
+    // Saat tab kembali aktif: pastikan data segar & SSE masih hidup.
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void poll();
+        if (sseRef.current?.readyState === EventSource.CLOSED) {
+          startFallback();
+        }
+      }
     };
-  }, [poll]);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      closed = true;
+      void closed;
+      document.removeEventListener("visibilitychange", onVisibility);
+      stopFallback();
+      sseRef.current?.close();
+      sseRef.current = null;
+    };
+  }, [roomId, poll]);
 
   useEffect(() => {
     const el = scrollRef.current;
