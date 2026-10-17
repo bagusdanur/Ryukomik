@@ -28,6 +28,7 @@ type Profile = {
   role?: string | null;
   is_premium?: boolean | null;
   xp?: number | null;
+  total_reads?: number | null;
 };
 
 type CommentRow = {
@@ -79,6 +80,7 @@ type CommentBadgeProps = {
   isPremium?: boolean | null;
   titleRushRank?: number | null;
   xpRank?: number | null;
+  totalReads?: number | null;
 };
 
 type CommentItemProps = {
@@ -319,13 +321,14 @@ const AccentBar = memo(({ type }: { type: CommentType }) => (
 ));
 AccentBar.displayName = "AccentBar";
 
-const CommentBadge = memo(({ role, isPremium, titleRushRank, xpRank }: CommentBadgeProps) => {
+const CommentBadge = memo(({ role, isPremium, titleRushRank, xpRank, totalReads }: CommentBadgeProps) => {
   return (
     <UserBadges
       role={role}
       isPremium={isPremium}
       titleRushRank={titleRushRank}
       xpRank={xpRank}
+      totalReads={totalReads}
     />
   );
 });
@@ -411,6 +414,7 @@ const CommentItem = memo(({
                   isPremium={profile.is_premium}
                   titleRushRank={titleRushRank}
                   xpRank={xpRank}
+                  totalReads={profile.total_reads}
                 />
               </div>
               <div className="flex flex-col items-end gap-1 flex-shrink-0">

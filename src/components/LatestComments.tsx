@@ -37,6 +37,7 @@ const DEFAULT_PROFILE = Object.freeze({
   username: "",
   avatar_url: "",
   total_comments: 0,
+  total_reads: 0,
 });
 // Tag "comments" di-invalidasi setiap ada komentar baru, jadi TTL panjang aman
 // untuk periode tanpa perubahan dan mengurangi pembacaan PostgREST berulang.
@@ -51,6 +52,7 @@ type CommentProfile = {
   username?: string;
   avatar_url?: string;
   total_comments?: number;
+  total_reads?: number | null;
 };
 
 type LatestComment = {
@@ -182,7 +184,7 @@ const getLatestCommentsCached = unstable_cache(
   async () => {
     const { data, error } = await supabaseAdmin
       .from("comments")
-      .select("id, user_id, slug, content, created_at, is_spoiler, author_name, avatar_url, profiles(level, role, is_premium, xp, username, avatar_url)")
+      .select("id, user_id, slug, content, created_at, is_spoiler, author_name, avatar_url, profiles(level, role, is_premium, xp, username, avatar_url, total_reads)")
       .is("parent_id", null)
       .order("created_at", { ascending: false })
       .limit(10);
@@ -278,11 +280,13 @@ function RoleBadge({
   isPremium,
   titleRushRank,
   xpRank,
+  totalReads,
 }: {
   role?: string;
   isPremium?: boolean;
   titleRushRank?: number | null;
   xpRank?: number | null;
+  totalReads?: number | null;
 }) {
   return (
     <UserBadges
@@ -290,6 +294,7 @@ function RoleBadge({
       isPremium={isPremium}
       titleRushRank={titleRushRank}
       xpRank={xpRank}
+      totalReads={totalReads}
     />
   );
 }
@@ -383,6 +388,7 @@ function CommentCard({
                 isPremium={profile.is_premium}
                 titleRushRank={titleRushRank}
                 xpRank={xpRank}
+                totalReads={profile.total_reads}
               />
             </div>
             <LevelBadge level={profile.level} xp={profile.xp} />

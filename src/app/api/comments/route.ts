@@ -85,7 +85,8 @@ async function fetchComments(
           role,
           is_premium,
           username,
-          avatar_url
+          avatar_url,
+          total_reads
         )
       `)
     .limit(limit);

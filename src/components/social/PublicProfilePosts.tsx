@@ -16,6 +16,7 @@ type Author = {
   level?: number;
   role?: string | null;
   is_premium?: boolean | null;
+  total_reads?: number | null;
 };
 
 type Post = {
@@ -89,7 +90,7 @@ export default function PublicProfilePosts({ username }: { username: string }) {
                 <div className="min-w-0">
                   <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                     <Link href={`/u/${encodeURIComponent(displayName)}`} className="max-w-[10rem] truncate text-sm font-black hover:underline sm:max-w-[14rem]">{displayName}</Link>
-                    <UserBadges role={author.role} isPremium={author.is_premium} />
+                    <UserBadges role={author.role} isPremium={author.is_premium} totalReads={author.total_reads} />
                   </div>
                   <time className="text-[10px] text-white/40">
                     Level {author.level || 1} · {relativeTime(post.created_at)}

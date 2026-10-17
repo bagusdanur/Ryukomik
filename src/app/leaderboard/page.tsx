@@ -23,20 +23,17 @@ type LeaderboardUser = {
 type LeaderboardData = {
   xp: LeaderboardUser[];
   reads: LeaderboardUser[];
-  comments: LeaderboardUser[];
 };
 
-type Kategori = "xp" | "reads" | "comments";
+type Kategori = "xp" | "reads";
 
 const KATEGORI: { key: Kategori; label: string; satuan: string }[] = [
   { key: "xp", label: "XP", satuan: "XP" },
   { key: "reads", label: "Chapter", satuan: "chapter" },
-  { key: "comments", label: "Komentar", satuan: "komen" },
 ];
 
 function nilaiMetrik(user: LeaderboardUser, kategori: Kategori) {
   if (kategori === "reads") return Math.max(0, Number(user.total_reads) || 0);
-  if (kategori === "comments") return Math.max(0, Number(user.total_comments) || 0);
   return Math.max(0, Number(user.xp) || 0);
 }
 

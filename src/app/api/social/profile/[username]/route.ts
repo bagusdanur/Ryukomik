@@ -3,7 +3,7 @@ import { socialQuery } from "@/lib/social/db";
 import { socialError, socialJson } from "@/lib/social/http";
 import { getVerifiedUserId } from "@/lib/serverRoleCache";
 
-export async function GET(request:Request,context:{params:Promise<{username:string}>}){try{const {username}=await context.params;const result=await socialQuery(`select p.user_id as id,p.username,p.avatar_url,p.banner_url,p.bio,p.level,p.role,p.is_premium,p.created_at,
+export async function GET(request:Request,context:{params:Promise<{username:string}>}){try{const {username}=await context.params;const result=await socialQuery(`select p.user_id as id,p.username,p.avatar_url,p.banner_url,p.bio,p.level,p.role,p.is_premium,p.total_reads,p.total_comments,p.created_at,
     (select count(*)::int from social_follows f where f.following_id=p.user_id) followers,
     (select count(*)::int from social_follows f where f.follower_id=p.user_id) following,
     (select count(*)::int from social_collections c where c.user_id=p.user_id and c.visibility='public') collections

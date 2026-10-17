@@ -32,6 +32,8 @@ type SocialProfile = {
   level?: number;
   role?: string;
   is_premium?: boolean;
+  total_reads?: number | null;
+  total_comments?: number | null;
   created_at?: string;
   followers: number;
   following: number;
@@ -272,7 +274,7 @@ export default function XPublicProfileHeader({ username, activeTab = "posts", on
 
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <h1 className="break-words text-xl font-black leading-tight">{profile.username}</h1>
-          <UserBadges role={profile.role} isPremium={profile.is_premium} />
+          <UserBadges role={profile.role} isPremium={profile.is_premium} totalReads={profile.total_reads} />
         </div>
         <p className="break-all text-sm text-white/40">
           @{profile.username.toLowerCase().replace(/\s+/g, "_")}

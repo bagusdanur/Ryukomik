@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     else{viewerId=await requireUserId(request);await ensureSocialProfile(viewerId);}
     const asc=Boolean(parentId), direction=asc?">":"<", order=asc?"asc":"desc";
     const result=await socialQuery(`select p.id,p.author_id,p.parent_id,p.content,p.image_url,p.visibility,p.likes_count,p.replies_count,p.created_at,p.updated_at,p.edited_at,p.context_type,p.context_id,
-      json_build_object('username',sp.username,'avatar_url',sp.avatar_url,'level',sp.level,'role',sp.role,'is_premium',sp.is_premium) profiles,
+      json_build_object('username',sp.username,'avatar_url',sp.avatar_url,'level',sp.level,'role',sp.role,'is_premium',sp.is_premium,'total_reads',sp.total_reads) profiles,
       exists(select 1 from social_post_likes l where l.post_id=p.id and l.user_id=$1) viewer_liked,
       exists(select 1 from social_post_bookmarks k where k.post_id=p.id and k.user_id=$1) viewer_bookmarked,(p.author_id=$1) viewer_owns
       from social_posts p join social_profiles sp on sp.user_id=p.author_id

@@ -27,7 +27,7 @@ import { stickers } from "@/data/stickers";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
 
-type Author = { username?: string; avatar_url?: string | null; level?: number; role?: string | null; is_premium?: boolean | null };
+type Author = { username?: string; avatar_url?: string | null; level?: number; role?: string | null; is_premium?: boolean | null; total_reads?: number | null };
 type Post = {
   id: string;
   author_id: string;
@@ -508,7 +508,7 @@ function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post
                 <Link href={profileHref} className="block max-w-[10rem] truncate text-sm font-black hover:underline sm:max-w-[14rem]">
                   {author.username || "User"}
                 </Link>
-                <UserBadges role={author.role} isPremium={author.is_premium} />
+                <UserBadges role={author.role} isPremium={author.is_premium} totalReads={author.total_reads} />
               </div>
               <span className="text-[11px] text-white/35">
                 Lv.{author.level || 1} ·{" "}

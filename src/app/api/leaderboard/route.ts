@@ -16,12 +16,11 @@ interface LeaderboardProfile {
   rank?: number;
 }
 
-export type LeaderboardCategory = "xp" | "reads" | "comments";
+export type LeaderboardCategory = "xp" | "reads";
 
 const CATEGORY_FIELD: Record<LeaderboardCategory, keyof LeaderboardProfile> = {
   xp: "xp",
   reads: "total_reads",
-  comments: "total_comments",
 };
 
 // Satu query yang sama (hanya limit diperbesar), lalu ketiga peringkat diurutkan
@@ -72,7 +71,6 @@ const getLeaderboardCached = unstable_cache(
     return {
       xp: topBy("xp"),
       reads: topBy("reads"),
-      comments: topBy("comments"),
     };
   },
   ["leaderboard-v3"],

@@ -11,7 +11,7 @@ export async function GET(request:Request,context:{params:Promise<{username:stri
   const cursor=decodeSocialCursor(new URL(request.url).searchParams.get("cursor"));
   const profile=await socialQuery<{user_id:string}>("select user_id from social_profiles where lower(username)=lower($1)",[decodeURIComponent(username)]);
   if(!profile.rows[0])return socialJson({error:"Profil tidak ditemukan."},{status:404});
-  const result=await socialQuery(`select p.id,p.author_id,p.content,p.image_url,p.likes_count,p.replies_count,p.created_at,p.edited_at,json_build_object('username',s.username,'avatar_url',s.avatar_url,'level',s.level,'role',s.role,'is_premium',s.is_premium) profiles from social_posts p join social_profiles s on s.user_id=p.author_id where p.author_id=$1 and p.parent_id is null
+  const result=await socialQuery(`select p.id,p.author_id,p.content,p.image_url,p.likes_count,p.replies_count,p.created_at,p.edited_at,json_build_object('username',s.username,'avatar_url',s.avatar_url,'level',s.level,'role',s.role,'is_premium',s.is_premium,'total_reads',s.total_reads) profiles from social_posts p join social_profiles s on s.user_id=p.author_id where p.author_id=$1 and p.parent_id is null
     and (p.visibility='public' or ($2::uuid is not null and (p.author_id=$2::uuid or exists(select 1 from social_follows f where f.follower_id=$2::uuid and f.following_id=p.author_id))))
     and ($3::timestamptz is null or (p.created_at,p.id)<($3::timestamptz,$4::uuid)) order by p.created_at desc,p.id desc limit 21`,[profile.rows[0].user_id,viewerId,cursor?.createdAt||null,cursor?.id||null]);
   const items=result.rows.slice(0,20);

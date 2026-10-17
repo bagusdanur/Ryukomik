@@ -24,6 +24,7 @@ type Author = {
   level?: number;
   role?: string | null;
   is_premium?: boolean | null;
+  total_reads?: number | null;
 };
 
 type Comment = {
@@ -283,7 +284,7 @@ export default function AnimeComments({ slug, title }: { slug: string; title?: s
             <Link href={href} className="max-w-[10rem] truncate text-sm font-black hover:text-cyan-200 sm:max-w-[14rem]">
               {author.username || "User"}
             </Link>
-            <UserBadges role={author.role} isPremium={author.is_premium} />
+            <UserBadges role={author.role} isPremium={author.is_premium} totalReads={author.total_reads} />
             <span className="text-[10px] text-white/30">· {relativeTime(comment.created_at)}</span>
           </div>
           <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-white/80">{comment.content}</p>
