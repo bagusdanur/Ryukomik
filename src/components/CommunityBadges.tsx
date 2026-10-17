@@ -2,10 +2,10 @@
  * Badge komunitas bertingkat — murni CSS + SVG inline (tanpa emoji, tanpa file
  * gambar, nol tambahan bandwidth/egress).
  *
- * Konsep: "tier chip" — bingkai gradient vertikal (gelap di bawah -> warna
- * tingkatan di atas) membungkus inti gelap, jadi kesannya naik ke atas.
- * Sengaja berbeda dari badge VIP (pil bulat warna padat) supaya tidak terlihat
- * meniru desain lain.
+ * Gaya mengikuti contoh yang disukai owner: pil solid satu warna, teks kapital
+ * pendek, tanpa gradient dan tanpa glow. Warna sengaja bukan emas (emas milik
+ * VIP): VETERAN oranye, RAJIN abu-abu gelap — hierarki terlihat dari terang ke
+ * "muted".
  *
  * Angka aktivitasnya diambil dari `social_profiles` (PostgreSQL VPS) yang
  * disinkronkan dari Supabase oleh profileSync — badge ini tidak pernah menyentuh
@@ -22,21 +22,15 @@ export const BADGE_TIERS = [
     key: "veteran",
     label: "VETERAN",
     minReads: 1000,
-    edgeFrom: "#4a3306", // gelap di bawah
-    edgeTo: "#f5c542", // emas di atas
-    core: "#14100a",
-    text: "#f7d67a",
-    ring: "rgba(245, 197, 66, 0.35)",
+    bg: "#f97316", // oranye solid (bukan emas — emas khusus VIP)
+    text: "#ffffff",
   },
   {
     key: "rajin",
     label: "RAJIN",
     minReads: 300,
-    edgeFrom: "#241640",
-    edgeTo: "#a78bfa",
-    core: "#120e1e",
-    text: "#c9b6ff",
-    ring: "rgba(167, 139, 250, 0.35)",
+    bg: "#475569", // abu-abu gelap, sengaja lebih "muted"
+    text: "#ffffff",
   },
 ] as const;
 
@@ -81,23 +75,14 @@ export default function CommunityBadges({
   return (
     <span
       title={`${reads.toLocaleString("id-ID")} chapter dibaca`}
-      className={`inline-flex rounded-[7px] p-[1.5px] ${className}`}
+      className={`inline-flex items-center gap-[3px] rounded-full px-1.5 py-[2px] text-[9px] font-black uppercase leading-none tracking-wide ${className}`}
       style={{
-        // bingkai gradient vertikal: gelap di bawah, terang di atas
-        background: `linear-gradient(to top, ${tier.edgeFrom}, ${tier.edgeTo})`,
-        boxShadow: `0 1px 5px ${tier.ring}`,
+        background: tier.bg,
+        color: tier.text,
       }}
     >
-      <span
-        className="inline-flex items-center gap-[3px] rounded-[5.5px] px-[5px] py-[2.5px] text-[8px] font-black uppercase leading-none tracking-[0.08em]"
-        style={{
-          background: `linear-gradient(to bottom, rgba(255,255,255,0.07), rgba(255,255,255,0)), ${tier.core}`,
-          color: tier.text,
-        }}
-      >
-        <TierIcon tier={tier} />
-        {tier.label}
-      </span>
+      <TierIcon tier={tier} />
+      {tier.label}
     </span>
   );
 }
