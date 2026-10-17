@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { createSocialNotification } from "@/lib/social/notifications";
+import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 
 type CommentRow = {
   id: string;
@@ -31,7 +32,14 @@ function errorMessage(error: unknown): string {
 // Komentar baru langsung membatalkan cache manga/chapter terkait lewat
 // invalidateComments di POST — bukan revalidateTag global yang menghapus cache
 // semua manga sekaligus.
+// s-maxage edge/HTTP: tetap 30 menit supaya komentar baru cepat terlihat
+// antar-pengunjung (edge selalu punya salinan segar tiap 30 menit).
 const COMMENTS_REVALIDATE_SECONDS = 1800;
+// TTL memori origin: sengaja jauh lebih panjang. Aman karena di-invalidasi
+// per-(slug,chapter) tiap komentar baru masuk (POST) dan tiap moderasi menghapus
+// komentar (DELETE di bawah) — jadi query Supabase hanya terjadi kalau memang
+// ada perubahan, bukan tiap 30 menit untuk manga yang sepi.
+const COMMENTS_MEMORY_TTL_SECONDS = 6 * 60 * 60;
 
 // In-memory per-(type, slug, chapter) cache. Server ini single instance (pm2),
 // jadi Map cukup. unstable_cache tidak bisa dipakai karena tag-nya statis: satu
@@ -132,7 +140,7 @@ function getCachedComments(
   const key = commentsKey(type, slug, chapter, sort, limit);
   const now = Date.now();
   const cached = commentsCache.get(key);
-  if (cached && now - cached.at < COMMENTS_REVALIDATE_SECONDS * 1000) {
+  if (cached && now - cached.at < COMMENTS_MEMORY_TTL_SECONDS * 1000) {
     return Promise.resolve(cached.data);
   }
 
@@ -177,6 +185,43 @@ export async function GET(req: NextRequest) {
       { error: error instanceof Error ? error.message : "Terjadi kesalahan" },
       { status: 500 },
     );
+  }
+}
+
+// Moderasi: hapus komentar lewat server supaya cache per-slug + tag ikut
+// di-invalidasi. Hapus langsung dari browser (lama) tidak menyentuh cache ini,
+// sehingga dengan TTL memori 6 jam komentar hasil moderasi bisa basi lama.
+export async function DELETE(req: NextRequest) {
+  const guard = await verifyAdminRequest(req);
+  if ("error" in guard) {
+    return NextResponse.json({ error: guard.error }, { status: guard.status });
+  }
+  try {
+    const body = (await req.json().catch(() => null)) as { id?: string } | null;
+    const id = body?.id;
+    if (!id) return NextResponse.json({ error: "id wajib" }, { status: 400 });
+
+    const { data: row } = await supabaseAdmin
+      .from("comments")
+      .select("id, type, slug, chapter")
+      .eq("id", id)
+      .maybeSingle();
+    if (!row) {
+      return NextResponse.json({ error: "Komentar tidak ditemukan" }, { status: 404 });
+    }
+
+    const { error: delError } = await supabaseAdmin.from("comments").delete().eq("id", id);
+    if (delError) throw delError;
+
+    invalidateComments(
+      String(row.type || "komik"),
+      (row.slug as string | null) ?? null,
+      (row.chapter as string | null) ?? null,
+    );
+    revalidateTag("comments", { expire: 0 });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return adminErrorResponse(error, "Gagal menghapus komentar");
   }
 }
 

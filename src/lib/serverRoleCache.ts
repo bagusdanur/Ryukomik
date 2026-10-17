@@ -3,7 +3,9 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 
-export const ROLE_CACHE_SECONDS = 10 * 60;
+// Tag "profile-role" di-invalidasi admin saat role diubah (admin/users), jadi
+// TTL panjang aman: perubahan role tetap langsung, query profiles turun 6x.
+export const ROLE_CACHE_SECONDS = 60 * 60;
 
 type RoleRow = {
   role?: string | null;

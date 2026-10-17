@@ -36,7 +36,9 @@ export const getPublicProfileByUsernameCached = unstable_cache(
     return ((data || [])[0] as PublicProfileRow | undefined) || null;
   },
   ["public-profile-by-username-v1"],
-  { revalidate: 300, tags: ["public-profile"] },
+  // Tag di-invalidate saat admin mengubah profil/user; TTL 1 jam (dari 5 menit)
+  // memangkas query profiles dari halaman /u/ yang ramai.
+  { revalidate: 3600, tags: ["public-profile"] },
 );
 
 export const getXpLeadersCached = unstable_cache(
@@ -51,5 +53,5 @@ export const getXpLeadersCached = unstable_cache(
     return (data || []) as XpLeaderRow[];
   },
   ["xp-leaders-v1"],
-  { revalidate: 3600, tags: ["xp-leaders", "comment-badges"] },
+  { revalidate: 7200, tags: ["xp-leaders", "comment-badges"] },
 );

@@ -41,7 +41,7 @@ const DEFAULT_PROFILE = Object.freeze({
 });
 // Tag "comments" di-invalidasi setiap ada komentar baru, jadi TTL panjang aman
 // untuk periode tanpa perubahan dan mengurangi pembacaan PostgREST berulang.
-const LATEST_COMMENTS_TTL = 1800;
+const LATEST_COMMENTS_TTL = 21600;
 const COMMENT_SNIPPET_LIMIT = 220;
 
 type CommentProfile = {

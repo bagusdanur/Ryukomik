@@ -373,9 +373,22 @@ export default function AdminDashboard() {
     if (!confirm("Hapus komentar ini?")) return;
     setDeleteLoading(id);
     try {
-      const { error } = await supabase.from("comments").delete().eq("id", id);
-      if (error) {
-        alert("Gagal hapus: " + error.message);
+      // Hapus lewat API server (bukan langsung ke Supabase dari browser) supaya
+      // cache komentar per-slug di server ikut di-invalidasi — kalau tidak,
+      // komentar hasil moderasi bisa tampil basi sampai TTL cache habis.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch("/api/comments", {
+        method: "DELETE",
+        headers: {
+          "content-type": "application/json",
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ id }),
+      });
+      const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+      if (!res.ok) {
+        alert("Gagal hapus: " + (payload?.error || res.statusText));
         return;
       }
       await fetchComments();
