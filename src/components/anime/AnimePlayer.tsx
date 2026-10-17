@@ -70,6 +70,8 @@ export type AnimePlayerSyncState = {
 export type AnimePlayerSync = {
   role: "host" | "viewer";
   state?: AnimePlayerSyncState | null;
+  /** Mulai otomatis begitu stream siap (dipakai host setelah memilih server). */
+  autoPlay?: boolean;
   onHostState?: (state: { isPlaying: boolean; positionSeconds: number }) => void;
   onCapable?: (capable: boolean) => void;
 };
@@ -92,6 +94,10 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
   const [showControls, setShowControls] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  // Autoplay bersuara diblokir browser; kalau kita terpaksa mulai dalam keadaan
+  // mute (supaya video tetap jalan otomatis saat join), tampilkan tombol untuk
+  // menyalakan suara sekali ketuk.
+  const [needsUnmute, setNeedsUnmute] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
 
   // ── Resolve stream: hanya untuk server yang didukung resolver ──
@@ -184,6 +190,25 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
     syncRef.current?.onCapable?.(syncCapable);
   }, [syncCapable]);
 
+  // Host: begitu stream siap, langsung putar (tanpa perlu tekan play manual),
+  // lalu laporkan state "playing" ke ruang supaya penonton ikut jalan.
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (syncRole !== "host" || !syncCapable || !syncRef.current?.autoPlay) return;
+    if (autoStartedRef.current) return;
+    const v = videoRef.current;
+    if (!v) return;
+    autoStartedRef.current = true;
+    v.muted = true; // supaya autoplay diizinkan browser
+    setNeedsUnmute(true);
+    v.play()
+      .then(() => {
+        const current = syncRef.current;
+        if (current?.onHostState) current.onHostState({ isPlaying: true, positionSeconds: v.currentTime });
+      })
+      .catch(() => {});
+  }, [syncRole, syncCapable]);
+
   // Host: laporkan play/pause/seek SEKETIKA, lalu heartbeat posisi tiap 4 detik
   // selama diputar. Heartbeat inilah yang memberi penonton (termasuk yang baru
   // masuk) titik acuan segar — bukan cuma saat seek.
@@ -231,8 +256,18 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
 
       // Ikuti play/pause host.
       if (v.paused === st.isPlaying) {
-        if (st.isPlaying) v.play().catch(() => {});
-        else v.pause();
+        if (st.isPlaying) {
+          // Autoplay bersuara sering diblokir browser (tanpa interaksi user).
+          // Kalau ditolak, ulangi dalam keadaan MUTE supaya video tetap mulai
+          // otomatis saat join, lalu tawarkan tombol menyalakan suara.
+          v.play().catch(() => {
+            v.muted = true;
+            setNeedsUnmute(true);
+            v.play().catch(() => {});
+          });
+        } else {
+          v.pause();
+        }
       }
 
       const drift = goal - v.currentTime; // + = penonton tertinggal, - = kecepetan
@@ -268,6 +303,7 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
     const v = videoRef.current;
     if (!v) return;
     v.muted = !v.muted;
+    if (!v.muted) setNeedsUnmute(false);
   };
 
   const toggleFullscreen = async () => {
@@ -372,6 +408,23 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/20">
             <div className="w-12 h-12 border-4 border-cyan-300/20 border-t-cyan-300 rounded-full animate-spin" />
           </div>
+        )}
+
+        {/* Video mulai otomatis tapi dalam keadaan mute (autoplay bersuara
+            diblokir browser). Sekali ketuk untuk menyalakan suara. */}
+        {needsUnmute && !isBuffering && (
+          <button
+            onClick={() => {
+              const v = videoRef.current;
+              if (!v) return;
+              v.muted = false;
+              setNeedsUnmute(false);
+            }}
+            className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-black shadow-lg transition active:scale-95"
+          >
+            <FaVolumeMute size={14} />
+            <span className="text-[11px] font-black uppercase tracking-wider">Nyalakan suara</span>
+          </button>
         )}
 
         {/* Badge: stream bersih */}

@@ -75,6 +75,8 @@ export default function NobarRoom({
   // Titik acuan sinkron: posisi video (detik) pada saat data diterima, plus jam
   // KLIEN saat itu. AnimePlayer menambah (Date.now() - atClientMs) sendiri.
   const [syncPoint, setSyncPoint] = useState<{ basePosition: number; atClientMs: number } | null>(null);
+  // Menandai host baru memilih server: AnimePlayer akan langsung memutar.
+  const [hostAutoPlay, setHostAutoPlay] = useState(false);
 
   const cursorRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -190,8 +192,16 @@ export default function NobarRoom({
   );
 
   const sync = useMemo(
-    () => ({ role: (isHost ? "host" : "viewer") as "host" | "viewer", state: syncState, onHostState, onCapable: setSyncCapable }),
-    [isHost, syncState, onHostState],
+    () => ({
+      role: (isHost ? "host" : "viewer") as "host" | "viewer",
+      state: syncState,
+      // Host auto-mulai setelah memilih server (ala "go live"), supaya tidak
+      // perlu tekan play manual lagi.
+      autoPlay: isHost && hostAutoPlay,
+      onHostState,
+      onCapable: setSyncCapable,
+    }),
+    [isHost, syncState, onHostState, hostAutoPlay],
   );
 
   async function send(event: FormEvent) {
@@ -229,6 +239,8 @@ export default function NobarRoom({
   async function pickPlayer(player: Player) {
     // Nama server diseragamkan dengan halaman episode ("Ryu-lokal 480p").
     const label = playerDisplayName(player);
+    // Host memilih server -> langsung putar (tanpa tekan play manual).
+    setHostAutoPlay(true);
     await patchRoom({ playerUrl: player.iframe || player.streamUrl || "", playerLabel: label }).catch(() => {});
     await poll();
   }
