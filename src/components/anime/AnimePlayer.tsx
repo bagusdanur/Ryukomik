@@ -36,6 +36,8 @@ type ResolvedStream = {
   filename?: string;
   size?: number;
   mimeType?: string;
+  /** true bila stream berupa HLS (.m3u8) — diputar lewat hls.js, bukan <video src>. */
+  isHls?: boolean;
 };
 
 type ApiResponse<T> = {
@@ -103,6 +105,7 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
   // tidak berfungsi / berkedip).
   const userUnmutedRef = useRef(false);
   const barRef = useRef<HTMLDivElement>(null);
+  const hlsRef = useRef<{ destroy(): void } | null>(null);
 
   // ── Resolve stream: hanya untuk server yang didukung resolver ──
   useEffect(() => {
@@ -139,6 +142,46 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
       mounted = false;
     };
   }, [src]);
+
+  // ── HLS (vidhide): hls.js menempel ke <video> yang sama ──
+  // CDN vidhide mengirim CORS `Access-Control-Allow-Origin: *`, jadi stream
+  // diambil LANGSUNG dari browser tanpa lewat proxy VPS — hemat bandwidth.
+  useEffect(() => {
+    const v = videoRef.current;
+    const url = stream?.isHls ? stream.url : null;
+    if (!v || !url) return;
+
+    // Safari/iOS sudah bisa putar HLS native — tidak perlu hls.js.
+    if (v.canPlayType("application/vnd.apple.mpegurl")) {
+      v.src = url;
+      return () => {
+        v.removeAttribute("src");
+        v.load();
+      };
+    }
+
+    let disposed = false;
+    import("hls.js")
+      .then(({ default: Hls }) => {
+        if (disposed || !videoRef.current) return;
+        if (!Hls.isSupported()) { setFailed(true); return; }
+        const hls = new Hls({ enableWorker: true, maxBufferLength: 60 });
+        hlsRef.current = hls;
+        hls.on(Hls.Events.ERROR, (_ev: unknown, data: { fatal?: boolean; type?: string }) => {
+          if (!data?.fatal) return;
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+          else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+          else setFailed(true);
+        });
+        hls.loadSource(url);
+        hls.attachMedia(videoRef.current!);
+      })
+      .catch(() => { if (!disposed) setFailed(true); });
+    return () => {
+      disposed = true;
+      if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+    };
+  }, [stream?.isHls, stream?.url]);
 
   // ── Event video ──
   useEffect(() => {
@@ -183,7 +226,12 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
   }, []);
 
   // ── Sinkronisasi nobar (hanya untuk <video> milik kita) ──
-  const syncCapable = Boolean(sync && stream?.url_proxy && !failed);
+  // URL yang benar-benar diputar. HLS memakai URL ASLI (tanpa proxy): CDN-nya
+  // sudah mengirim CORS `*`, dan lewat proxy justru rusak karena playlist anak
+  // memuat URL relatif yang menunjuk ke host proxy kita. Selain itu pakai
+  // proxy lokal supaya bebas CORS/hotlink.
+  const streamUrl = stream ? (stream.isHls ? stream.url : stream.url_proxy) : null;
+  const syncCapable = Boolean(sync && streamUrl && !failed);
   const syncRole = sync?.role ?? null;
   // Callback & state disimpan di ref supaya effect tidak dipasang-ulang tiap
   // render (objek `sync` dibuat ulang oleh komponen induk).
@@ -289,9 +337,11 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
       if (v.paused) return;
 
       const drift = goal - v.currentTime;
-      // Melenceng jauh -> lompat sekali. Ambang 1 detik + jeda 3 detik supaya
-      // tidak melompat berulang-ulang.
-      if (Math.abs(drift) > 1 && Date.now() - lastSeek > 3000) {
+      // Melenceng jauh -> lompat sekali. Nobar tidak butuh presisi 0,1 dtk:
+      // ambang 5 dtk + jeda 10 dtk supaya jarang melompat dan tidak beruntun.
+      // Posisi target selalu ada di dalam buffer (seekable penuh), jadi seek
+      // ini sekejap dan tidak perlu mengulang pengambilan segmen.
+      if (Math.abs(drift) > 5 && Date.now() - lastSeek > 10000) {
         lastSeek = Date.now();
         v.currentTime = goal;
       }
@@ -366,7 +416,7 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
   }
 
   // ── Fallback iframe (server tak didukung / resolver gagal) ──
-  if (failed || !stream?.url_proxy) {
+  if (failed || !streamUrl) {
     // Saat masih loading, tampilkan spinner daripada iframe yang berkedip
     if (loading) {
       return (
@@ -412,7 +462,9 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
       <div className="absolute inset-0 w-full h-full">
         <video
           ref={videoRef}
-          src={stream.url_proxy}
+          // HLS di-handle hls.js (atau pemutar native Safari) lewat efek terpisah;
+          // menyetel src di sini hanya akan bentrok dengannya.
+          src={stream.isHls ? undefined : streamUrl}
           className="w-full h-full object-contain bg-black"
           playsInline
           preload="metadata"

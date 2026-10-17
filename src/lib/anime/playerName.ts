@@ -13,12 +13,13 @@ export type AnimePlayerLike = {
   streamUrl?: string;
 };
 
-/** Server tanpa iklan (Ryu-lokal): filedon, mega, dan player desustream
- *  (odcdn/odstream/ondesu2hd) di-resolve jadi <video> lokal; Blogger bersih
- *  dari sananya jadi iframe-nya dipakai langsung. */
+/** Server tanpa iklan (Ryu-lokal): filedon, mega, vidhide, dan player
+ *  desustream (odcdn/odstream/ondesu2hd) di-resolve jadi <video> lokal
+ *  (MP4 langsung, atau HLS via hls.js untuk vidhide); Blogger bersih dari
+ *  sananya jadi iframe-nya dipakai langsung. */
 export function isCleanPlayer(player: AnimePlayerLike) {
   return (
-    /filedon\.co|mega\.nz|blogger\.com|desustream|odcloud/i.test(player.iframe ?? "") ||
+    /filedon\.co|mega\.nz|blogger\.com|desustream|odcloud|vidhide/i.test(player.iframe ?? "") ||
     Boolean(player.streamUrl)
   );
 }
