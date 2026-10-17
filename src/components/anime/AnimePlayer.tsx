@@ -243,6 +243,13 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
   const syncRef = useRef(sync);
   syncRef.current = sync;
 
+  // Hangatkan modul hls.js sejak halaman episode dibuka. Kalau ditunggu sampai
+  // stream HLS tersedia, unduhan chunk ini ikut menambah jeda "video belum
+  // muncul" — padahal waktu unduhnya bisa dipindah ke saat halaman dibuka.
+  useEffect(() => {
+    import("hls.js").catch(() => {});
+  }, []);
+
   useEffect(() => {
     syncRef.current?.onCapable?.(syncCapable);
   }, [syncCapable]);
@@ -342,11 +349,18 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
       if (v.paused) return;
 
       const drift = goal - v.currentTime;
-      // Melenceng jauh -> lompat sekali. Nobar tidak butuh presisi 0,1 dtk:
-      // ambang 5 dtk + jeda 10 dtk supaya jarang melompat dan tidak beruntun.
-      // Posisi target selalu ada di dalam buffer (seekable penuh), jadi seek
-      // ini sekejap dan tidak perlu mengulang pengambilan segmen.
-      if (Math.abs(drift) > 5 && Date.now() - lastSeek > 10000) {
+      const besar = Math.abs(drift) > 12; // darurat: langsung kejar
+      const merapat = Math.abs(drift) > 2; // jeda yang terlihat oleh penonton
+
+      // Penonton tertinggal 3–4 dtk dari host itu TERLIHAT, jadi harus
+      // dikoreksi — asal jaraknya dekat. Ambang 2 dtk memang sengaja: drift
+      // sebesar itu muncul alami di HLS (posisi mulai jatuh di batas segmen).
+      // Karena jaraknya dekat, seek-nya instan dan tidak perlu memuat segmen
+      // baru — justru inilah yang membuatnya TIDAK nyendat (dulu nyendat
+      // karena drift menumpuk dulu baru melompat jauh).
+      // Jeda 6 dtk antar koreksi merapat, kecuali darurat (>12 dtk) yang
+      // langsung dikejar tanpa menunggu.
+      if (besar || (merapat && Date.now() - lastSeek > 6000)) {
         lastSeek = Date.now();
         v.currentTime = goal;
       }
