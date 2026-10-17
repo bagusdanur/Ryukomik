@@ -98,6 +98,10 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
   // mute (supaya video tetap jalan otomatis saat join), tampilkan tombol untuk
   // menyalakan suara sekali ketuk.
   const [needsUnmute, setNeedsUnmute] = useState(false);
+  // Sekali user memilih menyalakan suara, jangan pernah dibisukan lagi oleh
+  // koreksi otomatis (dulu .catch() men-set muted=true kembali → tombol seperti
+  // tidak berfungsi / berkedip).
+  const userUnmutedRef = useRef(false);
   const barRef = useRef<HTMLDivElement>(null);
 
   // ── Resolve stream: hanya untuk server yang didukung resolver ──
@@ -234,17 +238,19 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
     };
   }, [syncRole, syncCapable]);
 
-  // Penonton: ikuti host secara MENERUS (koreksi tiap 500ms), bukan sekali.
-  // Prinsip: jangan pernah biarkan penonton MENDAHULUI host. Selisih besar
-  // dilompat; selisih kecil dikejar lewat playbackRate (halus, ala Discord).
-  // Karena acuan syncState.basePosition sudah dihitung dari jam server dan
-  // atClientMs dari jam klien saat data diterima, target selalu sedikit di
-  // belakang host (sebesar latensi) — tidak mungkin lari ke depan.
+  // Penonton: jaga posisi tanpa membuat stutter.
+  //
+  // Sebelumnya kecepatan (playbackRate) diubah terus-menerus tiap 0,5 detik
+  // untuk mengejar host — itu justru membuat video tersendat dan suara goyang.
+  // Sekarang: kecepatan DIBIARKAN 1.0 (mulus), dan kalau posisi melenceng jauh
+  // cukup LONCAT sekali (seek). Karena video biasanya sudah ter-buffer, seek
+  // instan dan tak terasa — jauh lebih halus daripada mengubah kecepatan.
   useEffect(() => {
     if (syncRole !== "viewer" || !syncCapable) return;
     const v = videoRef.current;
     if (!v) return;
 
+    let lastSeek = 0;
     const correct = () => {
       const st = syncRef.current?.state;
       if (!st) return;
@@ -257,10 +263,14 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
       // Ikuti play/pause host.
       if (v.paused === st.isPlaying) {
         if (st.isPlaying) {
-          // Autoplay bersuara sering diblokir browser (tanpa interaksi user).
-          // Kalau ditolak, ulangi dalam keadaan MUTE supaya video tetap mulai
-          // otomatis saat join, lalu tawarkan tombol menyalakan suara.
           v.play().catch(() => {
+            // Kalau user sudah memilih menyalakan suara, JANGAN bisukan lagi —
+            // cukup coba ulang. Tampilkan tombol hanya bila memang masih bisu.
+            if (userUnmutedRef.current) {
+              v.play().catch(() => {});
+              if (v.muted) setNeedsUnmute(true);
+              return;
+            }
             v.muted = true;
             setNeedsUnmute(true);
             v.play().catch(() => {});
@@ -270,25 +280,25 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
         }
       }
 
-      const drift = goal - v.currentTime; // + = penonton tertinggal, - = kecepetan
-      if (Math.abs(drift) > 3) {
-        v.currentTime = goal; // jauh: lompat langsung
-        v.playbackRate = 1;
-        return;
+      // Kecepatan selalu normal — tidak ada penyendatan akibat rate berubah.
+      if (v.playbackRate !== 1) v.playbackRate = 1;
+
+      // Kalau video belum bisa diputar (mis. autoplay ditolak sebelum user
+      // menyalakan suara), JANGAN koreksi posisi: currentTime beku sementara
+      // acuan terus maju, sehingga akan melompat berulang tanpa guna.
+      if (v.paused) return;
+
+      const drift = goal - v.currentTime;
+      // Melenceng jauh -> lompat sekali. Ambang 1 detik + jeda 3 detik supaya
+      // tidak melompat berulang-ulang.
+      if (Math.abs(drift) > 1 && Date.now() - lastSeek > 3000) {
+        lastSeek = Date.now();
+        v.currentTime = goal;
       }
-      if (!st.isPlaying) {
-        // Saat host pause, jangan geser kecepatan; cukup pastikan posisi pas.
-        if (Math.abs(drift) > 0.5) v.currentTime = goal;
-        v.playbackRate = 1;
-        return;
-      }
-      // Koreksi halus proporsional, maksimum ±12%.
-      const rate = 1 + Math.max(-0.12, Math.min(0.12, drift * 0.12));
-      v.playbackRate = Math.abs(drift) < 0.2 ? 1 : rate;
     };
 
     correct();
-    const timer = setInterval(correct, 500);
+    const timer = setInterval(correct, 1000);
     return () => clearInterval(timer);
   }, [syncRole, syncCapable]);
 
@@ -303,7 +313,12 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
     const v = videoRef.current;
     if (!v) return;
     v.muted = !v.muted;
-    if (!v.muted) setNeedsUnmute(false);
+    if (!v.muted) {
+      userUnmutedRef.current = true;
+      setNeedsUnmute(false);
+    } else {
+      userUnmutedRef.current = false;
+    }
   };
 
   const toggleFullscreen = async () => {
@@ -411,18 +426,26 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
         )}
 
         {/* Video mulai otomatis tapi dalam keadaan mute (autoplay bersuara
-            diblokir browser). Sekali ketuk untuk menyalakan suara. */}
-        {needsUnmute && !isBuffering && (
+            diblokir browser). Ditaruh di TENGAH dengan z-30 supaya tidak
+            tertutup overlay kontrol (yang muncul saat mouse bergerak). */}
+        {needsUnmute && (
           <button
-            onClick={() => {
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
               const v = videoRef.current;
               if (!v) return;
+              userUnmutedRef.current = true;
               v.muted = false;
+              if (v.volume === 0) v.volume = 1;
+              // Panggil play() LANGSUNG di dalam gesture handler: kalau ditunda,
+              // izin gesture browser kedaluwarsa dan play bersuara ditolak.
+              v.play().catch(() => {});
               setNeedsUnmute(false);
             }}
-            className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-black shadow-lg transition active:scale-95"
+            className="absolute left-1/2 top-1/2 z-30 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full bg-cyan-400 px-4 py-2.5 text-black shadow-2xl ring-2 ring-black/20 transition hover:bg-cyan-300 active:scale-95"
           >
-            <FaVolumeMute size={14} />
+            <FaVolumeMute size={15} />
             <span className="text-[11px] font-black uppercase tracking-wider">Nyalakan suara</span>
           </button>
         )}

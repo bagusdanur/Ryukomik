@@ -16,7 +16,7 @@ import AnimePlayer, { type AnimePlayerSyncState } from "@/components/anime/Anime
 import { supabase } from "@/lib/supabaseClient";
 import { socialFetch, socialRead } from "@/lib/social/client";
 import { relativeTime } from "@/lib/social/relativeTime";
-import { NOBAR_EMOJIS } from "@/lib/social/nobarShared";
+import { NOBAR_EMOJIS, MAX_SYNC_STALE_S } from "@/lib/social/nobarShared";
 import { playerDisplayName } from "@/lib/anime/playerName";
 import { thumbUrl } from "@/lib/anime/thumb";
 
@@ -100,10 +100,15 @@ export default function NobarRoom({
     // Keduanya jam SERVER, jadi selisihnya konsisten. Lalu dicatat pada jam
     // KLIEN (receivedAtRef) supaya AnimePlayer bisa menambah waktu berjalan
     // sendiri tanpa membandingkan dua jam yang berbeda.
+    //
+    // GUARD: kalau playbackUpdatedAt sudah basi (>15 dtk) berarti host berhenti
+    // melapor — jangan ekstrapolasi, karena selisihnya bisa membengkak dan
+    // membuat penonton melompat berulang. Bekukan di posisi terakhir.
     const serverNowMs = new Date(data.serverNow).getTime();
     const updatedMs = new Date(data.room.playbackUpdatedAt).getTime();
     if (Number.isFinite(serverNowMs) && Number.isFinite(updatedMs)) {
-      const elapsed = data.room.isPlaying ? Math.max(0, (serverNowMs - updatedMs) / 1000) : 0;
+      const raw = (serverNowMs - updatedMs) / 1000;
+      const elapsed = data.room.isPlaying && raw <= MAX_SYNC_STALE_S ? Math.max(0, raw) : 0;
       setSyncPoint({ basePosition: data.room.positionSeconds + elapsed, atClientMs: Date.now() });
     }
 
@@ -161,10 +166,13 @@ export default function NobarRoom({
       setRoom((current) => (current ? { ...current, ...p } : current));
       // Elapsed dihitung dari DUA nilai jam SERVER (serverNow - playbackUpdatedAt),
       // lalu dicatat pada jam KLIEN saat diterima — tidak pernah mencampur jam.
+      // Guard kebasian sama seperti jalur poll: kalau host lama tak melapor,
+      // jangan ekstrapolasi supaya tidak melompat berulang.
       const serverMs = new Date(p.serverNow).getTime();
       const updatedMs = new Date(p.playbackUpdatedAt).getTime();
       if (Number.isFinite(serverMs) && Number.isFinite(updatedMs)) {
-        const elapsed = p.isPlaying ? Math.max(0, (serverMs - updatedMs) / 1000) : 0;
+        const raw = (serverMs - updatedMs) / 1000;
+        const elapsed = p.isPlaying && raw <= MAX_SYNC_STALE_S ? Math.max(0, raw) : 0;
         setSyncPoint({ basePosition: p.positionSeconds + elapsed, atClientMs: Date.now() });
       }
     };
