@@ -14,9 +14,31 @@ type LeaderboardUser = {
   role?: string | null;
   xp?: number | null;
   level?: number | null;
+  total_reads?: number | null;
+  total_comments?: number | null;
   title_rush_rank?: number | null;
-  xp_rank?: number | null;
+  rank?: number | null;
 };
+
+type LeaderboardData = {
+  xp: LeaderboardUser[];
+  reads: LeaderboardUser[];
+  comments: LeaderboardUser[];
+};
+
+type Kategori = "xp" | "reads" | "comments";
+
+const KATEGORI: { key: Kategori; label: string; satuan: string }[] = [
+  { key: "xp", label: "XP", satuan: "XP" },
+  { key: "reads", label: "Chapter", satuan: "chapter" },
+  { key: "comments", label: "Komentar", satuan: "komen" },
+];
+
+function nilaiMetrik(user: LeaderboardUser, kategori: Kategori) {
+  if (kategori === "reads") return Math.max(0, Number(user.total_reads) || 0);
+  if (kategori === "comments") return Math.max(0, Number(user.total_comments) || 0);
+  return Math.max(0, Number(user.xp) || 0);
+}
 
 type AvatarProps = {
   url?: string | null;
@@ -94,10 +116,12 @@ function PodiumCard({
   user,
   index,
   isSelf,
+  kategori,
 }: {
   user: LeaderboardUser;
   index: number;
   isSelf: boolean;
+  kategori: Kategori;
 }) {
   const name = user.username || `User_${user.id?.slice(0, 4)}`;
   const mc = MEDAL_COLORS[index];
@@ -128,7 +152,8 @@ function PodiumCard({
           role={user.role}
           isPremium={user.is_premium}
           titleRushRank={user.title_rush_rank}
-          xpRank={user.xp_rank || index + 1}
+          xpRank={kategori === "xp" ? user.rank || index + 1 : null}
+          totalReads={user.total_reads}
           className="text-[8px]"
         />
         {isSelf && <Badge>KAMU</Badge>}
@@ -140,10 +165,12 @@ function PodiumCard({
       {/* XP bar */}
       <div className="w-full"><XpBar xp={user.xp || 0} level={user.level || 1} /></div>
 
-      {/* XP number */}
+      {/* Metrik utama (menyesuaikan tab) */}
       <p className="text-[11px] font-black text-white leading-none">
-        {(user.xp || 0).toLocaleString()}
-        <span className="text-white/25 font-normal text-[9px] ml-0.5">XP</span>
+        {nilaiMetrik(user, kategori).toLocaleString("id-ID")}
+        <span className="text-white/25 font-normal text-[9px] ml-0.5">
+          {KATEGORI.find((k) => k.key === kategori)?.satuan}
+        </span>
       </p>
 
       {/* Reads */}
@@ -158,10 +185,12 @@ function RankRow({
   user,
   index,
   isSelf,
+  kategori,
 }: {
   user: LeaderboardUser;
   index: number;
   isSelf: boolean;
+  kategori: Kategori;
 }) {
   const name = user.username || `User_${user.id?.slice(0, 4)}`;
   return (
@@ -195,7 +224,8 @@ function RankRow({
             role={user.role}
             isPremium={user.is_premium}
             titleRushRank={user.title_rush_rank}
-            xpRank={user.xp_rank || index + 1}
+            xpRank={kategori === "xp" ? user.rank || index + 1 : null}
+            totalReads={user.total_reads}
             className="text-[8px]"
           />
         </div>
@@ -206,10 +236,14 @@ function RankRow({
         </div>
       </div>
 
-      {/* XP */}
+      {/* Metrik utama (menyesuaikan tab) */}
       <div className="text-right flex-shrink-0">
-        <p className="text-[13px] font-black text-white leading-none">{(user.xp || 0).toLocaleString()}</p>
-        <p className="text-[8px] text-white/20 font-bold uppercase tracking-widest mt-0.5">XP</p>
+        <p className="text-[13px] font-black text-white leading-none">
+          {nilaiMetrik(user, kategori).toLocaleString("id-ID")}
+        </p>
+        <p className="text-[8px] text-white/20 font-bold uppercase tracking-widest mt-0.5">
+          {KATEGORI.find((k) => k.key === kategori)?.satuan}
+        </p>
       </div>
     </div>
   );
@@ -217,7 +251,8 @@ function RankRow({
 
 /* ─── Page ─── */
 export default function LeaderboardPage() {
-  const [users, setUsers] = useState<LeaderboardUser[]>([]);
+  const [data, setData] = useState<LeaderboardData | null>(null);
+  const [kategori, setKategori] = useState<Kategori>("xp");
   const [loading, setLoading] = useState(true);
   const { user } = useSupabaseUser();
   const currentUserId = user?.id || null;
@@ -225,7 +260,10 @@ export default function LeaderboardPage() {
   useEffect(() => {
     fetch("/api/leaderboard")
       .then(r => r.json())
-      .then((d: LeaderboardUser[]) => { setUsers(Array.isArray(d) ? d : []); setLoading(false); });
+      .then((d: LeaderboardData) => {
+        setData(d && typeof d === "object" && Array.isArray(d.xp) ? d : null);
+        setLoading(false);
+      });
   }, []);
 
   if (loading)
@@ -238,6 +276,7 @@ export default function LeaderboardPage() {
       </div>
     );
 
+  const users = data?.[kategori] || [];
   const top3 = users.slice(0, 3);
   const rest = users.slice(3);
 
@@ -267,11 +306,31 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
+        {/* ── Pilihan kategori ── */}
+        <div className="mb-5 flex gap-1.5">
+          {KATEGORI.map((k) => {
+            const aktif = k.key === kategori;
+            return (
+              <button
+                key={k.key}
+                onClick={() => setKategori(k.key)}
+                className={`flex-1 rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-widest transition ${
+                  aktif
+                    ? "border-cyan-400/40 bg-cyan-400/12 text-cyan-200"
+                    : "border-white/[0.07] bg-white/[0.03] text-white/40 hover:text-white/70"
+                }`}
+              >
+                {k.label}
+              </button>
+            );
+          })}
+        </div>
+
         {/* ── Podium top 3 ── */}
         {top3.length > 0 && (
           <div className="flex gap-2 mb-5">
             {top3.map((u, i) => (
-              <PodiumCard key={u.id} user={u} index={i} isSelf={u.id === currentUserId} />
+              <PodiumCard key={u.id} user={u} index={i} isSelf={u.id === currentUserId} kategori={kategori} />
             ))}
           </div>
         )}
@@ -288,7 +347,7 @@ export default function LeaderboardPage() {
         {/* ── Rest ── */}
         <div className="flex flex-col gap-1.5">
           {rest.map((u, i) => (
-            <RankRow key={u.id} user={u} index={i + 3} isSelf={u.id === currentUserId} />
+            <RankRow key={u.id} user={u} index={i + 3} isSelf={u.id === currentUserId} kategori={kategori} />
           ))}
         </div>
 

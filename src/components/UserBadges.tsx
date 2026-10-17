@@ -2,18 +2,21 @@ import { FaUserShield, FaTools } from "react-icons/fa";
 import VipBadge from "@/components/VipBadge";
 import TitleRushWinnerBadge from "@/components/TitleRushWinnerBadge";
 import XpLeaderboardBadge from "@/components/XpLeaderboardBadge";
+import CommunityBadges from "@/components/CommunityBadges";
 
 export default function UserBadges({
   role,
   isPremium,
   titleRushRank,
   xpRank,
+  totalReads,
   className = "",
 }: {
   role?: string | null;
   isPremium?: boolean | null;
   titleRushRank?: number | null;
   xpRank?: number | null;
+  totalReads?: number | null;
   className?: string;
 }) {
   return (
@@ -35,6 +38,7 @@ export default function UserBadges({
         </span>
       )}
       {isPremium && <VipBadge className={className} />}
+      <CommunityBadges totalReads={totalReads} className={className} />
       <XpLeaderboardBadge rank={xpRank} className={className} />
       <TitleRushWinnerBadge rank={titleRushRank} className={className} />
     </>

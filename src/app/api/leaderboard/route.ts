@@ -10,17 +10,34 @@ interface LeaderboardProfile {
   level?: number;
   role?: string;
   is_premium?: boolean;
+  total_reads?: number;
+  total_comments?: number;
   title_rush_rank?: number | null;
-  xp_rank?: number | null;
+  rank?: number;
 }
+
+export type LeaderboardCategory = "xp" | "reads" | "comments";
+
+const CATEGORY_FIELD: Record<LeaderboardCategory, keyof LeaderboardProfile> = {
+  xp: "xp",
+  reads: "total_reads",
+  comments: "total_comments",
+};
+
+// Satu query yang sama (hanya limit diperbesar), lalu ketiga peringkat diurutkan
+// di memori — sengaja begitu supaya TIDAK menambah query Supabase. 30 baris
+// teratas XP dipakai untuk ketiga kategori; karena XP lahir dari membaca dan
+// berkomentar, top-10 pembaca/komentator praktis selalu ada di dalamnya.
+const POOL_SIZE = 30;
+const TOP_N = 10;
 
 const getLeaderboardCached = unstable_cache(
   async () => {
     const { data: profiles, error } = await supabaseAdmin
       .from("profiles")
-      .select("id, username, avatar_url, xp, level, role, is_premium")
+      .select("id, username, avatar_url, xp, level, role, is_premium, total_reads, total_comments")
       .order("xp", { ascending: false })
-      .limit(10);
+      .limit(POOL_SIZE);
 
     if (error) throw error;
 
@@ -39,13 +56,26 @@ const getLeaderboardCached = unstable_cache(
       titleRank[winner.user_id] = winner.rank;
     });
 
-    return profileRows.map((p, index) => ({
+    const withBadges = profileRows.map((p) => ({
       ...p,
-      xp_rank: index + 1,
       title_rush_rank: titleRank[p.id] || null,
     }));
+
+    const topBy = (category: LeaderboardCategory) => {
+      const field = CATEGORY_FIELD[category];
+      return [...withBadges]
+        .sort((a, b) => (Number(b[field]) || 0) - (Number(a[field]) || 0))
+        .slice(0, TOP_N)
+        .map((p, index) => ({ ...p, rank: index + 1 }));
+    };
+
+    return {
+      xp: topBy("xp"),
+      reads: topBy("reads"),
+      comments: topBy("comments"),
+    };
   },
-  ["leaderboard-v2"],
+  ["leaderboard-v3"],
   { revalidate: 3600, tags: ["leaderboard"] },
 );
 
@@ -56,7 +86,7 @@ export async function GET() {
     const res = NextResponse.json(result);
     res.headers.set(
       "Cache-Control",
-      "public, s-maxage=3600, stale-while-revalidate=3600"
+      "public, s-maxage=3600, stale-while-revalidate=3600",
     );
     return res;
   } catch (err) {
