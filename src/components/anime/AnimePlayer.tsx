@@ -38,6 +38,9 @@ type ResolvedStream = {
   mimeType?: string;
   /** true bila stream berupa HLS (.m3u8) — diputar lewat hls.js, bukan <video src>. */
   isHls?: boolean;
+  /** true bila harus diputar langsung dari URL asli, TANPA proxy VPS.
+   *  Dipakai player googlevideo yang menolak IP datacenter (403). */
+  direct?: boolean;
 };
 
 type ApiResponse<T> = {
@@ -226,11 +229,13 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
   }, []);
 
   // ── Sinkronisasi nobar (hanya untuk <video> milik kita) ──
-  // URL yang benar-benar diputar. HLS memakai URL ASLI (tanpa proxy): CDN-nya
-  // sudah mengirim CORS `*`, dan lewat proxy justru rusak karena playlist anak
-  // memuat URL relatif yang menunjuk ke host proxy kita. Selain itu pakai
-  // proxy lokal supaya bebas CORS/hotlink.
-  const streamUrl = stream ? (stream.isHls ? stream.url : stream.url_proxy) : null;
+  // URL yang benar-benar diputar.
+  // - HLS: URL ASLI (playlist anak memuat URL relatif yang menunjuk ke host
+  //   aslinya, sehingga lewat proxy malah rusak; CDN-nya juga kirim CORS `*`).
+  // - `direct` (googlevideo): proxy VPS ditolak 403 oleh IP datacenter, dan
+  //   <video src> tanpa crossOrigin tidak butuh CORS — jadi langsung saja.
+  // - Selain itu: proxy lokal supaya bebas CORS/hotlink.
+  const streamUrl = stream ? (stream.isHls || stream.direct ? stream.url : stream.url_proxy) : null;
   const syncCapable = Boolean(sync && streamUrl && !failed);
   const syncRole = sync?.role ?? null;
   // Callback & state disimpan di ref supaya effect tidak dipasang-ulang tiap
