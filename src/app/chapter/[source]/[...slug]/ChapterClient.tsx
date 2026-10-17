@@ -131,6 +131,7 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
       title: data.title,
       source,
       updatedAt: Date.now(),
+      thumbnail: data.thumbnail,
     };
     addHistory(entry);
   }, [data, slugStr, source, addHistory]);

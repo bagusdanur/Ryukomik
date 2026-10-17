@@ -7,6 +7,8 @@ interface HistoryState {
   addHistory: (item: ReadHistoryItem) => void;
   removeHistory: (comicSlug: string) => void;
   clearHistory: () => void;
+  /** Isi thumbnail untuk beberapa riwayat sekaligus (backfill, satu kali tulis). */
+  updateHistoryThumbs: (entries: { comicSlug: string; thumbnail: string }[]) => void;
 }
 
 const MAX_HISTORY = 200;
@@ -55,6 +57,19 @@ export const useHistoryStore = create<HistoryState>()(
           history: state.history.filter((h) => h.comicSlug !== comicSlug),
         })),
       clearHistory: () => set({ history: [] }),
+      updateHistoryThumbs: (entries) =>
+        set((state) => {
+          if (!entries.length) return state;
+          const map = new Map(entries.map((e) => [e.comicSlug, e.thumbnail]));
+          let changed = false;
+          const history = state.history.map((h) => {
+            const thumb = map.get(h.comicSlug);
+            if (!thumb || thumb === h.thumbnail) return h;
+            changed = true;
+            return { ...h, thumbnail: thumb };
+          });
+          return changed ? { history } : state;
+        }),
     }),
     {
       name: "rk_history_zustand", // Nama key baru agar tidak tabrakan

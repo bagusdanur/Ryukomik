@@ -25,4 +25,6 @@ export interface ReadHistoryItem {
   title?: string;
   source?: string;
   updatedAt: number;
+  /** Cover series (diambil dari endpoint detail backend saat membaca / backfill). */
+  thumbnail?: string;
 }

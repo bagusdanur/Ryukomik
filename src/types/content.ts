@@ -44,6 +44,8 @@ export interface ReaderChapter {
   mangaId?: string;
   currentChapter?: string;
   images: string[];
+  /** Cover series (untuk riwayat baca) — diambil dari endpoint detail. */
+  thumbnail?: string;
   prev?: string;
   next?: string;
   locked?: boolean;
