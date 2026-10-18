@@ -57,22 +57,10 @@ async function resolveLegacyKiryuuSlug(slugStr: string): Promise<string> {
 
 // React cache() memastikan generateMetadata + ChapterPage SHARE SATU fetch
 // per request — tidak double hit ke DB meskipun force-dynamic aktif
-// Cover series untuk riwayat baca (thumbnail kartu riwayat di halaman depan).
-// Endpoint detail sudah di-cache backend (±15 menit) + Next fetch cache 1 jam,
-// jadi tambahan beban minimal: maksimal 1 fetch per manga per jam.
-async function getSeriesThumbnail(source: string, mangaId: string): Promise<string | undefined> {
-  if (!source || !mangaId) return undefined;
-  try {
-    const res = await fetch(
-      `https://api.ryukomik.web.id/${source}/detail/${encodeURIComponent(mangaId)}`,
-      { next: { revalidate: 3600, tags: [`series-detail:${source}:${mangaId}`] } },
-    );
-    if (!res.ok) return undefined;
-    const json = (await res.json()) as { data?: { thumbnail?: string } };
-    return json.data?.thumbnail || undefined;
-  } catch {
-    return undefined;
-  }
+// [NONAKTIF — fitur riwayat "Lanjut Baca" dimatikan sementara] Ambil cover dari
+// endpoint detail backend (cached). Nyalakan lagi bersama HistoryStrip bila perlu.
+async function getSeriesThumbnail(_source: string, _mangaId: string): Promise<string | undefined> {
+  return undefined;
 }
 
 const getChapter = cache(async (source: string, slugStr: string): Promise<ReaderChapter | null> => {

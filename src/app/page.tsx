@@ -12,7 +12,6 @@ import TitleRushNotice from "@/components/TitleRushNotice";
 import { getTitleRushEventStatus } from "@/lib/titleRushEvent";
 import ProjectUpdateList from "@/components/ProjectUpdateList";
 import { getProjectUpdates } from "@/lib/projectUpdates";
-import HistoryStrip from "@/components/HistoryStrip";
 
 // Update Komiku harus tetap segar; backend memakai stale-while-refresh agar
 // revalidasi singkat tidak membuat homepage kosong saat sumber sedang lambat.
@@ -39,7 +38,6 @@ export default async function Home() {
         <RyukomikDiscordBanner />
         {titleRushStatus.enabled && <TitleRushNotice className="pb-3" />}
         <UpdateList list={list} />
-        <HistoryStrip />
         <ProjectUpdateList list={projectUpdates} />
         <PopularSection data={popular} />
         <LatestComments />
