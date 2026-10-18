@@ -321,15 +321,15 @@ export default function TerbaruPage({
         const age = Date.now() - parsed.timestamp;
 
         const cachedSource = normalizeStoredSource(parsed.source ?? null, source);
-        if (
-          age < LISTING_CACHE_TTL &&
-          parsed.orderby === orderby &&
-          parsed.tipe === tipe &&
-          parsed.genre === genre &&
-          parsed.genre2 === genre2 &&
-          parsed.status === status &&
-          parsed.data && Array.isArray(parsed.data)
-        ) {
+        const asString = (value: unknown, fallback: string) =>
+          typeof value === "string" ? value : fallback;
+        // Restore apa adanya selama cache masih segar — JANGAN dibandingkan
+        // dengan state saat ini. Dulu ada syarat `parsed.genre === genre` dsb.;
+        // di mount pertama semua state masih default (""), jadi syarat itu selalu
+        // gagal tiap kali kembali dari halaman komik: genre pilihan, daftar
+        // tersaring, dan posisi scroll ikut batal direstore, lalu cache ditimpa
+        // state default sehingga filter benar-benar hilang.
+        if (age < LISTING_CACHE_TTL && parsed.data && Array.isArray(parsed.data)) {
           const restoredData = normalizeListingItems(parsed.data, cachedSource);
           const restoredPage = Number(parsed.page) || 1;
           restoredSourceRef.current = cachedSource;
@@ -340,7 +340,13 @@ export default function TerbaruPage({
           setPage(restoredPage);
           pageRef.current = restoredPage;
           dataLengthRef.current = restoredData.length;
-
+          // Filter ikut dipulihkan dengan setter mentah (tanpa resetListing) supaya
+          // tidak memicu refetch — data hasil filter sudah tersimpan di cache.
+          setOrderby(asString(parsed.orderby, "modified"));
+          setTipe(asString(parsed.tipe, ""));
+          setGenre(asString(parsed.genre, ""));
+          setGenre2(asString(parsed.genre2, ""));
+          setStatus(asString(parsed.status, ""));
         }
       }
     } catch {}
