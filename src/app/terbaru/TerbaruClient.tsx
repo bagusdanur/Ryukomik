@@ -884,22 +884,27 @@ export default function TerbaruPage({
         setTipe={(nextTipe) => {
           resetListing();
           setTipe(nextTipe);
+          setShowFilter(false);
         }}
         setStatus={(nextStatus) => {
           resetListing();
           setStatus(nextStatus);
+          setShowFilter(false);
         }}
         setGenre={(nextGenre) => {
           resetListing();
           setGenre(nextGenre);
+          setShowFilter(false);
         }}
         setGenre2={(nextGenre2) => {
           resetListing();
           setGenre2(nextGenre2);
+          setShowFilter(false);
         }}
         setOrderby={(nextOrderby) => {
           resetListing();
           setOrderby(nextOrderby);
+          setShowFilter(false);
         }}
         setPage={setPage}
         setData={setData}
