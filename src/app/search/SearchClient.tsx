@@ -15,6 +15,7 @@ import {
   MANGA_SOURCES,
   ADULT_SOURCES as ADULT_SOURCE_CONFIGS,
   ADULT_SOURCE_IDS,
+  NOVEL_SOURCES,
   PROJECT_SOURCES,
 } from "@/config/sources";
 
@@ -22,6 +23,9 @@ const COMIC_SOURCES: SearchSource[] = [
   ...MANGA_SOURCES.map(s => ({ id: s.id as SearchSourceId, label: `Source ${s.label}` })),
   ...ADULT_SOURCE_CONFIGS.map(s => ({ id: s.id as SearchSourceId, label: `Source ${s.label}` })),
   ...PROJECT_SOURCES.map(s => ({ id: s.id as SearchSourceId, label: s.label })),
+  // Novel (meionovels) ikut dicari; labelnya tanpa embel-2 "Source" karena
+  // memang tipe kandungan berbeda. Endpoint search-nya /meionovels/search.
+  ...NOVEL_SOURCES.map(s => ({ id: s.id as SearchSourceId, label: s.label })),
 ];
 const PUBLIC_SOURCES = COMIC_SOURCES.filter(
   (source) => !ADULT_SOURCE_IDS.has(source.id),
@@ -363,7 +367,7 @@ export default function SearchClient({
         {combinedData.map((item, idx) => (
           <SeriesCard
             key={`${item.source}-${item.slug}-${idx}`}
-            href={`/komik/${item.source}/${item.slug}`}
+            href={item.source === "meionovels" ? `/novel/${item.slug}` : `/komik/${item.source}/${item.slug}`}
             title={item.title || "Tanpa judul"}
             image={item.image}
             source={item.source}
