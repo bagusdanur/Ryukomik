@@ -2,6 +2,8 @@
 
 
 import { useEffect, useState } from "react";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { scheduleBookmarkSync } from "@/utils/bookmarkSync";
 
 type BookmarkItem = {
   slug: string;
@@ -21,6 +23,14 @@ function readBookmarks(): BookmarkItem[] {
 
 export default function BookmarkPage() {
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+  const { user } = useSupabaseUser();
+
+  // Cron push notification membaca tabel bookmark_sync di Supabase; tanpa
+  // sinkronisasi, perubahan di halaman ini hanya hidup di localStorage dan
+  // notifikasi tidak pernah tahu bookmark-mu berubah. Hanya jalan saat login.
+  const syncToServer = () => {
+    if (user) scheduleBookmarkSync(user.id);
+  };
 
   // Load bookmarks safely
   useEffect(() => {
@@ -38,12 +48,14 @@ export default function BookmarkPage() {
     setBookmarks(updated);
     localStorage.setItem("bookmarks", JSON.stringify(updated));
     window.dispatchEvent(new Event("bookmark-updated"));
+    syncToServer();
   };
 
   const handleClear = () => {
     setBookmarks([]);
     localStorage.removeItem("bookmarks");
     window.dispatchEvent(new Event("bookmark-updated"));
+    syncToServer();
   };
 
   return (

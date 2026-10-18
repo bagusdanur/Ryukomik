@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { FaBell, FaBookmark, FaRegBookmark, FaTimes } from "react-icons/fa";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { getExistingSubscription, subscribePush } from "@/utils/pushSubscription";
-import { syncBookmarks } from "@/utils/bookmarkSync";
+import { scheduleBookmarkSync, syncBookmarks } from "@/utils/bookmarkSync";
 import LoginModal from "@/components/LoginModal";
 
 type BookmarkButtonProps = {
@@ -64,6 +64,16 @@ export default function BookmarkButton({
     checkSubscription();
   }, [user]);
 
+  // Sinkronkan bookmark ke tabel bookmark_sync (Supabase): cron push
+  // notification membaca tabel itu untuk mencari tahu siapa yang bookmark
+  // suatu komik. Tanpa langkah ini bookmark hanya hidup di localStorage,
+  // jadi notifikasi chapter baru tidak pernah terkirim. scheduleBookmarkSync
+  // sudah debounce 2 detik (burst jadi satu kali hapus+tulis ulang) dan
+  // hanya jalan saat user login.
+  const syncToServer = () => {
+    if (user) scheduleBookmarkSync(user.id);
+  };
+
   const toggleBookmark = async () => {
     let list = readBookmarks();
 
@@ -72,6 +82,7 @@ export default function BookmarkButton({
       localStorage.setItem("bookmarks", JSON.stringify(list));
       setSaved(false);
       window.dispatchEvent(new Event("bookmark-updated"));
+      syncToServer();
       return;
     }
 
@@ -84,6 +95,7 @@ export default function BookmarkButton({
     localStorage.setItem("bookmarks", JSON.stringify(list));
     setSaved(true);
     window.dispatchEvent(new Event("bookmark-updated"));
+    syncToServer();
 
     // Tampilkan promo notifikasi jika belum berlangganan push notification
     try {
