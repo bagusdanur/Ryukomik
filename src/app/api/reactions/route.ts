@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { requireUserId } from "@/lib/social/auth";
+import { resolveActorUserId } from "@/lib/requestAuthPolicy";
 
 interface ReactionPayload {
   comment_id?: string;
@@ -9,9 +11,21 @@ interface ReactionPayload {
 
 export async function POST(req: Request) {
   try {
-    const { comment_id, kind, user_id } = (await req.json()) as ReactionPayload;
+    const { comment_id, kind } = (await req.json()) as ReactionPayload;
     if (!comment_id || !kind)
       return NextResponse.json({ error: "Missing" }, { status: 400 });
+
+    // Reacting requires a real session; body user_id is untrusted.
+    let tokenUserId: string | null = null;
+    try {
+      tokenUserId = await requireUserId(req);
+    } catch {
+      tokenUserId = null;
+    }
+    const user_id = resolveActorUserId(tokenUserId);
+    if (!user_id) {
+      return NextResponse.json({ error: "Harus login dulu" }, { status: 401 });
+    }
 
     // upsert reaction (toggle): if exists remove, else insert
     // Cek apakah reaction exist

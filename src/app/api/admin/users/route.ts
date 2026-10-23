@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminErrorResponse, privateAdminJson, verifyAdminRequest } from "@/lib/adminApi";
+import { computePremiumUntil, normalizePremiumDays } from "@/lib/requestAuthPolicy";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { revalidateTag } from "next/cache";
 
@@ -51,10 +52,56 @@ export async function PATCH(request: Request) {
 
   try {
     const body = await request.json();
-    const { userId, role } = body as { userId?: string; role?: string | null };
+    const { userId, role, action, days } = body as {
+      userId?: string;
+      role?: string | null;
+      action?: "premium" | "premium-remove";
+      days?: number;
+    };
 
     if (!userId) {
       return NextResponse.json({ error: "userId wajib diisi." }, { status: 400 });
+    }
+
+    // Premium mutations live on the server so the browser never needs blanket
+    // UPDATE rights on `profiles` (that permissive policy was the breach).
+    if (action === "premium" || action === "premium-remove") {
+      if (action === "premium-remove") {
+        const { error } = await supabaseAdmin
+          .from("profiles")
+          .update({ is_premium: false, premium_until: null })
+          .eq("id", userId);
+        if (error) throw error;
+        revalidateTag("public-profile", { expire: 0 });
+        return privateAdminJson({ success: true, userId, isPremium: false });
+      }
+
+      const safeDays = normalizePremiumDays(days);
+      const { data: current, error: readError } = await supabaseAdmin
+        .from("profiles")
+        .select("premium_until")
+        .eq("id", userId)
+        .maybeSingle();
+      if (readError) throw readError;
+
+      const premiumUntil = computePremiumUntil(
+        (current as { premium_until?: string | null } | null)?.premium_until ?? null,
+        safeDays,
+      );
+
+      const { error } = await supabaseAdmin
+        .from("profiles")
+        .update({ is_premium: true, premium_until: premiumUntil })
+        .eq("id", userId);
+      if (error) throw error;
+
+      revalidateTag("public-profile", { expire: 0 });
+      return privateAdminJson({ success: true, userId, isPremium: true, days: safeDays, premiumUntil });
+    }
+
+    // An admin must not be able to demote themselves (lockout) .
+    if (admin.userId === userId) {
+      return NextResponse.json({ error: "Tidak bisa mengubah role akun sendiri." }, { status: 400 });
     }
 
     const normalizedRole = role === "member" ? null : role ?? null;

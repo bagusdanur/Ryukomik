@@ -11,6 +11,7 @@ import Button from "@/components/Button";
 import { stickers } from "@/data/stickers";
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { loadCachedProfile } from "@/utils/profileCache";
+import { supabase } from "@/lib/supabaseClient";
 
 // ============================================
 // CONSTANTS
@@ -708,9 +709,16 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
     };
 
     try {
+      // Server derives the author from this token; user_id in the body is now
+      // ignored so nobody can post as another user.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
       const res = await fetch("/api/comments", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
 

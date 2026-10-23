@@ -1085,33 +1085,19 @@ export default function AdminDashboard() {
   async function givePremium(userId: string, days = 30) {
     try {
       const safeDays = Math.max(1, Math.min(3650, Math.floor(Number(days) || 30)));
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("premium_until")
-        .eq("id", userId)
-        .single();
-
-      if (profileError) {
-        alert(`Error: ${profileError.message}`);
-        return;
-      }
-
-      const currentUntil = profile?.premium_until
-        ? new Date(profile.premium_until)
-        : null;
-      const baseDate =
-        currentUntil && currentUntil.getTime() > Date.now()
-          ? currentUntil
-          : new Date();
-      const premiumUntil = new Date(
-        baseDate.getTime() + safeDays * 24 * 60 * 60 * 1000,
-      ).toISOString();
-      const { error } = await supabase
-        .from("profiles")
-        .update({ is_premium: true, premium_until: premiumUntil })
-        .eq("id", userId);
-      if (error) {
-        alert(`Error: ${error.message}`);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ userId, action: "premium", days: safeDays }),
+      });
+      const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+      if (!res.ok) {
+        alert(`Error: ${payload?.error || res.statusText}`);
         return;
       }
       clearCachedProfile(userId);
@@ -1124,12 +1110,19 @@ export default function AdminDashboard() {
 
   async function removePremium(userId: string) {
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ is_premium: false, premium_until: null })
-        .eq("id", userId);
-      if (error) {
-        alert(`Error: ${error.message}`);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ userId, action: "premium-remove" }),
+      });
+      const payload = (await res.json().catch(() => null)) as { error?: string } | null;
+      if (!res.ok) {
+        alert(`Error: ${payload?.error || res.statusText}`);
         return;
       }
       clearCachedProfile(userId);
@@ -1187,10 +1180,18 @@ export default function AdminDashboard() {
   }, [getAdminToken]);
 
   async function generateCode() {
-    await supabase.rpc("generate_premium_code", {
-      p_duration_days: codeDays,
-      p_prefix: "RYUKO",
+    const token = await getAdminToken();
+    if (!token) return;
+    const res = await fetch("/api/admin/premium-codes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ days: codeDays, prefix: "RYUKO" }),
     });
+    if (!res.ok) {
+      const json = (await res.json().catch(() => null)) as { error?: string } | null;
+      alert(json?.error || "Gagal membuat kode premium.");
+      return;
+    }
     fetchPremiumCodes();
   }
 
@@ -1201,10 +1202,20 @@ export default function AdminDashboard() {
   };
 
   async function deleteCode(id: string) {
-    if (confirm("Hapus kode ini?")) {
-      await supabase.from("premium_codes").delete().eq("id", id);
-      fetchPremiumCodes();
+    if (!confirm("Hapus kode ini?")) return;
+    const token = await getAdminToken();
+    if (!token) return;
+    const res = await fetch("/api/admin/premium-codes", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      const json = (await res.json().catch(() => null)) as { error?: string } | null;
+      alert(json?.error || "Gagal menghapus kode premium.");
+      return;
     }
+    fetchPremiumCodes();
   }
 
   useEffect(() => {

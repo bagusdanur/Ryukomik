@@ -2,6 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { isAdminAllowed, parseAdminAllowlist } from "@/lib/requestAuthPolicy";
 
 // Tag "profile-role" di-invalidasi admin saat role diubah (admin/users), jadi
 // TTL panjang aman: perubahan role tetap langsung, query profiles turun 6x.
@@ -79,9 +80,12 @@ const getCachedRoleByUserId = unstable_cache(
 
 export async function getCachedRole(userId: string): Promise<CachedRole> {
   const role = await getCachedRoleByUserId(userId);
+  // Defence in depth: while profiles.role is writable by clients (permissive
+  // RLS), admin rights also require membership of ADMIN_USER_IDS.
+  const allowlist = parseAdminAllowlist(process.env.ADMIN_USER_IDS);
   return {
     role,
-    isAdmin: role === "admin",
+    isAdmin: isAdminAllowed(role, userId, allowlist),
     isStaff: role === "staff",
   };
 }

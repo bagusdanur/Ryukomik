@@ -72,44 +72,31 @@ export default function PremiumModal({ open, onClose }: PremiumModalProps) {
       return;
     }
 
-    const { data: codeData, error: codeErr } = await supabase
-      .from("premium_codes")
-      .select("id, duration_days")
-      .eq("code", redeemCode)
-      .eq("used", false)
-      .single<PremiumCode>();
-
-    if (codeErr || !codeData) {
-      setError("Kode tidak valid atau sudah dipakai");
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) {
+      setError("Silakan login terlebih dahulu");
       setLoading(false);
       return;
     }
 
-    const expire = new Date();
-    expire.setDate(expire.getDate() + codeData.duration_days);
+    // Claim + grant happen atomically on the server so the same code cannot be
+    // redeemed twice and the browser never touches premium_codes directly.
+    const res = await fetch("/api/premium/redeem", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ code: redeemCode }),
+    });
 
-    const { error: profileErr } = await supabase
-      .from("profiles")
-      .update({
-        is_premium: true,
-        premium_until: expire.toISOString(),
-      })
-      .eq("id", user.id);
-
-    if (profileErr) {
-      setError("Gagal mengaktifkan premium");
+    const json = (await res.json().catch(() => null)) as { error?: string } | null;
+    if (!res.ok) {
+      setError(json?.error || "Kode tidak valid atau sudah dipakai");
       setLoading(false);
       return;
     }
-
-    await supabase
-      .from("premium_codes")
-      .update({
-        used: true,
-        used_by: user.id,
-        used_at: new Date().toISOString(),
-      })
-      .eq("id", codeData.id);
 
     clearCachedProfile(user.id);
     window.dispatchEvent(new Event("rk-profile-updated"));

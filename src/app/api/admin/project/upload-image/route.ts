@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "node:crypto";
+import { verifyAdminRequest } from "@/lib/adminApi";
 
 // Paksa route ini selalu dynamic (tidak di-cache)
 export const dynamic = "force-dynamic";
@@ -20,9 +21,11 @@ const r2 = new S3Client({
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Admin-only: the previous check merely required a "Bearer " prefix, so any
+    // string (or no valid session at all) could upload arbitrary images.
+    const admin = await verifyAdminRequest(request);
+    if ("error" in admin) {
+      return NextResponse.json({ error: admin.error }, { status: admin.status });
     }
 
     // Validasi env vars R2 sebelum proses upload
@@ -40,6 +43,16 @@ export async function POST(request: Request) {
     const mangaSlug = formData.get("manga_slug") as string;
     const chapterNumber = formData.get("chapter_number") as string;
     const type = formData.get("type") as string; // 'cover' or 'chapter'
+
+    // Object keys must stay inside the intended prefix: form data is fully
+    // attacker-controlled, so strip separators and traversal segments.
+    const safeSegment = (value: string) =>
+      String(value || "")
+        .replace(/[\\/]+/g, "-")
+        .replace(/\.\.+/g, ".")
+        .replace(/[^\w.\- ]+/g, "")
+        .trim()
+        .slice(0, 80);
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -61,13 +74,13 @@ export async function POST(request: Request) {
 
     if (type === "cover") {
       // Ambil ekstensi asli dari nama file (bukan paksa .webp agar tidak mismatch)
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const ext = safeSegment(file.name.split(".").pop() || "jpg").toLowerCase() || "jpg";
       filename = `cover.${ext}`;
-      uploadPath = `covers/${mangaSlug}/${filename}`;
+      uploadPath = `covers/${safeSegment(mangaSlug)}/${filename}`;
     } else {
       // Path revisi unik memastikan browser/CDN tidak memakai gambar lama saat
       // sebuah halaman dikoreksi dan diunggah ulang dengan nama file yang sama.
-      uploadPath = `chapters/${mangaSlug}/${chapterNumber}/${randomUUID()}-${filename}`;
+      uploadPath = `chapters/${safeSegment(mangaSlug)}/${safeSegment(chapterNumber)}/${randomUUID()}-${safeSegment(filename) || "image"}`;
     }
 
     console.log(`[upload-image] Uploading ${type}: ${uploadPath} (${file.type}, ${buffer.length} bytes) → bucket: ${bucketName}`);

@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { createSocialNotification } from "@/lib/social/notifications";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
+import { requireUserId } from "@/lib/social/auth";
+import { resolveActorUserId } from "@/lib/requestAuthPolicy";
 
 type CommentRow = {
   id: string;
@@ -228,15 +230,25 @@ export async function DELETE(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as CreateCommentBody;
-    const { type, slug, chapter, content, parent_id, author_name, user_id, avatar_url,is_spoiler } = body;
-        // 🔥 WAJIB LOGIN DI SINI
+    const { type, slug, chapter, content, parent_id, author_name, avatar_url,is_spoiler } = body;
+
+    // The author is the verified token subject. A body-supplied user_id used to
+    // be trusted, which let anyone post as another user.
+    let tokenUserId: string | null = null;
+    try {
+      tokenUserId = await requireUserId(req);
+    } catch {
+      tokenUserId = null;
+    }
+    const user_id = resolveActorUserId(tokenUserId);
+
     if (!user_id) {
       return NextResponse.json(
         { error: "Harus login dulu" },
         { status: 401 }
       );
     }
-    // PERBAIKAN: Hapus pengecekan wajib user_id agar anonim bisa komen
+
     if (!type || !content) {
       return NextResponse.json({ error: "Konten atau Type kosong" }, { status: 400 });
     }
