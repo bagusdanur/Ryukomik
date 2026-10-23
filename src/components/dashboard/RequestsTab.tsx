@@ -48,6 +48,7 @@ type PremiumRequest = {
 type RequestsTabProps = {
   requests: PremiumRequest[];
   requestsLoading: boolean;
+  requestsError?: string | null;
   requestFilter: string;
   actionLoading?: string | null;
   fetchRequests: () => void;
@@ -57,6 +58,7 @@ type RequestsTabProps = {
   
   paymentTransactions?: PaymentTransaction[];
   paymentTransactionsLoading?: boolean;
+  paymentTransactionsError?: string | null;
   paymentTransactionsFilter?: string;
   setPaymentTransactionsFilter?: (filter: string) => void;
   fetchPaymentTransactions?: () => void;
@@ -65,6 +67,7 @@ type RequestsTabProps = {
 export default function RequestsTab({
   requests,
   requestsLoading,
+  requestsError = null,
   requestFilter,
   actionLoading,
   fetchRequests,
@@ -74,6 +77,7 @@ export default function RequestsTab({
 
   paymentTransactions = [],
   paymentTransactionsLoading = false,
+  paymentTransactionsError = null,
   paymentTransactionsFilter = "all",
   setPaymentTransactionsFilter,
   fetchPaymentTransactions,
@@ -160,6 +164,17 @@ export default function RequestsTab({
           {requestsLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
+            </div>
+          ) : requestsError ? (
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center">
+              <p className="text-[12px] font-semibold text-red-300">{requestsError}</p>
+              <button
+                type="button"
+                onClick={fetchRequests}
+                className="mt-3 rounded-lg bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-white/20"
+              >
+                Coba lagi
+              </button>
             </div>
           ) : requests.length === 0 ? (
             <div className="rk-card-soft rounded-2xl border-dashed py-12 text-center">
@@ -327,6 +342,17 @@ export default function RequestsTab({
           {paymentTransactionsLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#7c5cfc] border-t-transparent" />
+            </div>
+          ) : paymentTransactionsError ? (
+            <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-center">
+              <p className="text-[12px] font-semibold text-red-300">{paymentTransactionsError}</p>
+              <button
+                type="button"
+                onClick={() => fetchPaymentTransactions?.()}
+                className="mt-3 rounded-lg bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-white/20"
+              >
+                Coba lagi
+              </button>
             </div>
           ) : paymentTransactions.length === 0 ? (
             <div className="rk-card-soft rounded-2xl border-dashed py-12 text-center">

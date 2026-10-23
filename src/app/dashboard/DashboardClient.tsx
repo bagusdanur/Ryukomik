@@ -204,6 +204,7 @@ export default function AdminDashboard() {
   // premium requests
   const [requests, setRequests] = useState<PremiumRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsError, setRequestsError] = useState<string | null>(null);
   const [requestFilter, setRequestFilter] = useState("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [proofModal, setProofModal] = useState<string | null>(null);
@@ -212,6 +213,7 @@ export default function AdminDashboard() {
   // auto transactions
   const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>([]);
   const [paymentTransactionsLoading, setPaymentTransactionsLoading] = useState(false);
+  const [paymentTransactionsError, setPaymentTransactionsError] = useState<string | null>(null);
   const [paymentTransactionsFilter, setPaymentTransactionsFilter] = useState("all");
 
   const [sourceHealth, setSourceHealth] = useState<SourceHealth | null>(null);
@@ -916,6 +918,7 @@ export default function AdminDashboard() {
   // ── premium requests — JOIN dengan profiles untuk username & avatar ────
   const fetchRequests = useCallback(async () => {
     setRequestsLoading(true);
+    setRequestsError(null);
     try {
       const token = await getAdminToken();
       if (!token) return;
@@ -923,11 +926,25 @@ export default function AdminDashboard() {
       const params = new URLSearchParams({ filter: requestFilter });
       const res = await fetch(`/api/admin/premium-requests?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(15_000),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Gagal memuat request premium.");
 
       setRequests((json?.requests ?? []) as PremiumRequest[]);
+    } catch (error) {
+      // Never leave the spinner running: a hung request used to leave
+      // requestsLoading=true forever.
+      const timedOut =
+        error instanceof Error &&
+        (error.name === "TimeoutError" || error.name === "AbortError");
+      setRequestsError(
+        timedOut
+          ? "Server tidak merespons (timeout 15 detik). Coba lagi."
+          : error instanceof Error
+            ? error.message
+            : "Gagal memuat request premium.",
+      );
     } finally {
       setRequestsLoading(false);
     }
@@ -940,6 +957,7 @@ export default function AdminDashboard() {
   // ── payment transactions ────
   const fetchPaymentTransactions = useCallback(async () => {
     setPaymentTransactionsLoading(true);
+    setPaymentTransactionsError(null);
     try {
       const token = await getAdminToken();
       if (!token) return;
@@ -947,11 +965,23 @@ export default function AdminDashboard() {
       const params = new URLSearchParams({ filter: paymentTransactionsFilter });
       const res = await fetch(`/api/admin/payment-transactions?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(15_000),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Gagal memuat transaksi otomatis.");
 
       setPaymentTransactions((json?.transactions ?? []) as PaymentTransaction[]);
+    } catch (error) {
+      const timedOut =
+        error instanceof Error &&
+        (error.name === "TimeoutError" || error.name === "AbortError");
+      setPaymentTransactionsError(
+        timedOut
+          ? "Server tidak merespons (timeout 15 detik). Coba lagi."
+          : error instanceof Error
+            ? error.message
+            : "Gagal memuat transaksi otomatis.",
+      );
     } finally {
       setPaymentTransactionsLoading(false);
     }
@@ -1432,6 +1462,7 @@ export default function AdminDashboard() {
           <RequestsTab
             requests={requests}
             requestsLoading={requestsLoading}
+            requestsError={requestsError}
             requestFilter={requestFilter}
             actionLoading={actionLoading}
             fetchRequests={fetchRequests}
@@ -1440,6 +1471,7 @@ export default function AdminDashboard() {
             handleRequestAction={handleRequestAction}
             paymentTransactions={paymentTransactions}
             paymentTransactionsLoading={paymentTransactionsLoading}
+            paymentTransactionsError={paymentTransactionsError}
             paymentTransactionsFilter={paymentTransactionsFilter}
             setPaymentTransactionsFilter={setPaymentTransactionsFilter}
             fetchPaymentTransactions={fetchPaymentTransactions}
