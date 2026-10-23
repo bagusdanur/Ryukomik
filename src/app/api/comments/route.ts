@@ -235,11 +235,18 @@ export async function POST(req: NextRequest) {
     // The author is the verified token subject. A body-supplied user_id used to
     // be trusted, which let anyone post as another user.
     let tokenUserId: string | null = null;
+    let banned = false;
     try {
       tokenUserId = await requireUserId(req);
-    } catch {
+    } catch (error) {
+      banned = error instanceof Error && error.message === "BANNED";
       tokenUserId = null;
     }
+
+    if (banned) {
+      return NextResponse.json({ error: "Akun kamu diblokir." }, { status: 403 });
+    }
+
     const user_id = resolveActorUserId(tokenUserId);
 
     if (!user_id) {

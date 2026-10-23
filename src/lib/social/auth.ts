@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getVerifiedUserId } from "@/lib/serverRoleCache";
+import { getCachedRole, getVerifiedUserId } from "@/lib/serverRoleCache";
 
 export function bearerToken(request: Request) {
   return request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
@@ -9,11 +9,16 @@ export function bearerToken(request: Request) {
 export async function requireUserId(request: Request) {
   const token = bearerToken(request);
   if (!token) throw new Error("UNAUTHORIZED");
+  let userId: string;
   try {
-    return await getVerifiedUserId(token);
+    userId = await getVerifiedUserId(token);
   } catch {
     throw new Error("UNAUTHORIZED");
   }
+  // A banned account keeps a valid JWT until it expires, so block it here too.
+  const role = await getCachedRole(userId);
+  if (role.isBanned) throw new Error("BANNED");
+  return userId;
 }
 
 export function assertSameOrigin(request: Request) {

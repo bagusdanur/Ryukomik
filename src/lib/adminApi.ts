@@ -12,6 +12,10 @@ export async function verifyAdminRequest(request: Request) {
     return { error: "Sesi login tidak valid.", status: 401 } as const;
   }
 
+  if (authData.isBanned) {
+    return { error: "Akun diblokir.", status: 403 } as const;
+  }
+
   if (!authData.isAdmin) {
     return { error: "Akses admin diperlukan.", status: 403 } as const;
   }

@@ -3,6 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { isAdminAllowed, parseAdminAllowlist } from "@/lib/requestAuthPolicy";
+import { evaluateBan } from "@/lib/banPolicy";
 
 // Tag "profile-role" di-invalidasi admin saat role diubah (admin/users), jadi
 // TTL panjang aman: perubahan role tetap langsung, query profiles turun 6x.
@@ -10,12 +11,16 @@ export const ROLE_CACHE_SECONDS = 60 * 60;
 
 type RoleRow = {
   role?: string | null;
+  is_banned?: boolean | null;
+  banned_until?: string | null;
 };
 
 export type CachedRole = {
   role: string | null;
   isAdmin: boolean;
   isStaff: boolean;
+  isBanned: boolean;
+  bannedUntil: string | null;
 };
 
 export type AuthenticatedRole = CachedRole & {
@@ -61,17 +66,27 @@ export async function getVerifiedUserId(token: string): Promise<string> {
 }
 
 const getCachedRoleByUserId = unstable_cache(
-  async (userId: string): Promise<string | null> => {
+  async (userId: string): Promise<RoleRow> => {
     const { data, error } = await supabaseAdmin
       .from("profiles")
-      .select("role")
+      .select("role, is_banned, banned_until")
       .eq("id", userId)
       .maybeSingle();
 
-    if (error) throw error;
-    return ((data || null) as RoleRow | null)?.role || null;
+    if (error) {
+      // Ban columns not migrated yet: fall back to role-only so auth still works.
+      const fallback = await supabaseAdmin
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+      if (fallback.error) throw fallback.error;
+      return ((fallback.data || {}) as RoleRow) || {};
+    }
+
+    return ((data || {}) as RoleRow) || {};
   },
-  ["profile-role-v1"],
+  ["profile-role-v2"],
   {
     revalidate: ROLE_CACHE_SECONDS,
     tags: ["profile-role"],
@@ -79,14 +94,18 @@ const getCachedRoleByUserId = unstable_cache(
 );
 
 export async function getCachedRole(userId: string): Promise<CachedRole> {
-  const role = await getCachedRoleByUserId(userId);
+  const row = await getCachedRoleByUserId(userId);
+  const role = row.role || null;
   // Defence in depth: while profiles.role is writable by clients (permissive
   // RLS), admin rights also require membership of ADMIN_USER_IDS.
   const allowlist = parseAdminAllowlist(process.env.ADMIN_USER_IDS);
+  const ban = evaluateBan({ is_banned: row.is_banned, banned_until: row.banned_until });
   return {
     role,
     isAdmin: isAdminAllowed(role, userId, allowlist),
     isStaff: role === "staff",
+    isBanned: ban.banned,
+    bannedUntil: ban.expiresAt,
   };
 }
 

@@ -67,3 +67,50 @@ test('a self-promoted admin row is rejected unless the id is allowlisted', () =>
   assert.equal(p.parseAdminAllowlist(undefined), null);
   assert.equal(p.isAdminAllowed('admin', 'anyone', null), true);
 });
+
+test('ban evaluation: permanent, temporary, expired and clean states', () => {
+  const { evaluateBan } = loadTs('src/lib/banPolicy.ts');
+  const now = Date.parse('2026-10-23T00:00:00Z');
+
+  assert.deepEqual(evaluateBan(null, now), { banned: false, permanent: false, expiresAt: null });
+  assert.deepEqual(evaluateBan({ is_banned: false }, now), { banned: false, permanent: false, expiresAt: null });
+
+  // permanent = flagged with no expiry
+  assert.deepEqual(evaluateBan({ is_banned: true, banned_until: null }, now), {
+    banned: true, permanent: true, expiresAt: null,
+  });
+
+  // temporary, still active
+  const future = new Date(now + 3600000).toISOString();
+  assert.deepEqual(evaluateBan({ is_banned: true, banned_until: future }, now), {
+    banned: true, permanent: false, expiresAt: future,
+  });
+
+  // expired ban no longer applies
+  const past = new Date(now - 1000).toISOString();
+  assert.deepEqual(evaluateBan({ is_banned: true, banned_until: past }, now), {
+    banned: false, permanent: false, expiresAt: null,
+  });
+
+  // garbage expiry fails closed (treated as permanent), never as "allowed"
+  assert.equal(evaluateBan({ is_banned: true, banned_until: 'not-a-date' }, now).banned, true);
+});
+
+test('ban duration normalisation and self-ban guard', () => {
+  const { normalizeBanDays, banUntilFrom, canBanTarget } = loadTs('src/lib/banPolicy.ts');
+  const now = Date.parse('2026-10-23T00:00:00Z');
+
+  assert.equal(normalizeBanDays(7), 7);
+  assert.equal(normalizeBanDays('30'), 30);
+  assert.equal(normalizeBanDays(0), null);
+  assert.equal(normalizeBanDays(null), null);
+  assert.equal(normalizeBanDays('permanent'), null);
+  assert.equal(normalizeBanDays(-5), null);
+  assert.equal(normalizeBanDays(99999), 3650);
+
+  assert.equal(banUntilFrom(null, now), null);
+  assert.equal(banUntilFrom(7, now), new Date(now + 7 * 86400000).toISOString());
+
+  assert.equal(canBanTarget('admin-1', 'user-2'), true);
+  assert.equal(canBanTarget('admin-1', 'admin-1'), false);
+});
