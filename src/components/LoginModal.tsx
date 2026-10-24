@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { FcGoogle } from "react-icons/fc";
 import { FaDiscord, FaTwitter } from "react-icons/fa";
 import Button from "@/components/Button";
+import MarqueeCoverGrid from "@/components/MarqueeCoverGrid";
 
 type LoginModalProps = {
   close: () => void;
@@ -31,17 +32,24 @@ export default function LoginModal({ close }: LoginModalProps) {
 
   return (
     <>
-      {/* BACKDROP */}
+      {/* BACKDROP WITH MARQUEE */}
       <div
-        className="fixed inset-0 bg-black/70 z-40"
+        className="fixed inset-0 z-40 overflow-hidden bg-[#07090e]/85 backdrop-blur-sm"
         onClick={close}
-      />
+      >
+        <MarqueeCoverGrid
+          opacity={0.16}
+          tiltAngle={-8}
+          scale={1.12}
+          overlayGradient="radial-gradient(circle at center, rgba(7, 9, 14, 0.6) 20%, rgba(7, 9, 14, 0.92) 90%), linear-gradient(to bottom, rgba(7, 9, 14, 0.8) 0%, transparent 40%, rgba(7, 9, 14, 0.95) 100%)"
+        />
+      </div>
 
       {/* MODAL */}
       <div
         className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 
         rk-card text-white w-[92%] max-w-[380px]
-        rounded-3xl z-50"
+        rounded-3xl z-50 bg-[#12141f]/95 backdrop-blur-md border border-white/10 shadow-2xl shadow-black/80"
       >
         {/* HEADER */}
         <div className="px-5 pt-5 pb-3 border-b border-white/10">
