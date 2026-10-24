@@ -26,7 +26,6 @@ import SkPremiumModal from "@/components/SkPremiumModal";
 import Button from "@/components/Button";
 import { supabase } from "@/lib/supabaseClient";
 import { markPremiumRequestPending } from "@/utils/premiumStatusSync";
-import MarqueeCoverGrid from "@/components/MarqueeCoverGrid";
 
 const features = [
   {
@@ -578,17 +577,10 @@ export default function PremiumPayClient() {
 
   return (
     <>
-      <div className="rk-page px-4 pb-24 pt-20 text-white relative overflow-hidden">
-        {/* Seamless Full-Page Marquee Cover Background */}
-        <MarqueeCoverGrid
-          opacity={0.18}
-          tiltAngle={-8}
-          scale={1.12}
-          overlayGradient="linear-gradient(to bottom, rgba(10, 11, 18, 0.45) 0%, rgba(10, 11, 18, 0.75) 30%, rgba(10, 11, 18, 0.94) 65%, rgba(10, 11, 18, 0.99) 100%)"
-        />
+      <div className="rk-page px-4 pb-24 pt-20 text-white relative">
 
         {/* Heading */}
-        <div className="relative z-10 max-w-xl mx-auto text-center mb-8 pt-4">
+        <div className="max-w-xl mx-auto text-center mb-8 pt-4">
           <div className="rk-chip mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-widest">
             <RiVipCrownLine size={13} />
             RyuPayment
@@ -641,38 +633,38 @@ export default function PremiumPayClient() {
         {/* 2 Cards */}
         <div className="max-w-xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* ── BASIC CARD ── */}
-          <div className="rk-card-soft flex flex-col rounded-3xl p-5">
+          <div className="bg-[#12141e] border border-white/10 flex flex-col rounded-3xl p-5 shadow-xl shadow-black/40">
             <div className="mb-5">
-              <div className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1">
+              <div className="text-xs font-bold text-white/50 uppercase tracking-widest mb-1">
                 Basic
               </div>
               <div className="text-2xl font-black text-white">Gratis</div>
-              <div className="text-xs text-white/30 mt-1 font-medium">
+              <div className="text-xs text-white/40 mt-1 font-medium">
                 Tanpa biaya apapun
               </div>
             </div>
 
-            <div className="space-y-3 flex-1">
+            <div className="space-y-3.5 flex-1">
               {features.map((f, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <div className="mt-0.5 shrink-0">
                     {f.basic === null ? (
-                      <div className="w-4 h-4 rounded-full bg-white/5 flex items-center justify-center">
-                        <FiX size={10} className="text-white/20" />
+                      <div className="w-4 h-4 rounded-full bg-white/[0.08] flex items-center justify-center">
+                        <FiX size={10} className="text-white/30" />
                       </div>
                     ) : (
-                      <div className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center">
-                        <FiCheck size={10} className="text-white/50" />
+                      <div className="w-4 h-4 rounded-full bg-cyan-400/20 flex items-center justify-center">
+                        <FiCheck size={10} className="text-cyan-300" />
                       </div>
                     )}
                   </div>
                   <div>
                     <div
-                      className={`text-sm font-medium leading-tight ${f.basic === null ? "text-white/25 line-through" : "text-white/70"}`}
+                      className={`text-sm font-semibold leading-tight ${f.basic === null ? "text-white/40 line-through" : "text-white/90"}`}
                     >
                       {f.title}
                     </div>
-                    <div className="text-xs text-white/25 mt-0.5 font-normal leading-normal">
+                    <div className="text-xs text-white/40 mt-0.5 font-normal leading-normal">
                       {f.basic === null ? f.desc : f.basic}
                     </div>
                   </div>
@@ -689,7 +681,7 @@ export default function PremiumPayClient() {
           </div>
 
           {/* ── PREMIUM CARD ── */}
-          <div className="rk-card relative flex flex-col overflow-hidden rounded-3xl p-5">
+          <div className="bg-[#151827] border border-cyan-400/25 relative flex flex-col overflow-hidden rounded-3xl p-5 shadow-2xl shadow-cyan-950/30">
             <div className="absolute left-0 right-0 top-0 h-[2px] bg-[var(--accent)] rounded-t-2xl" />
 
             <div className="mb-5">
