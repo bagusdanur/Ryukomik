@@ -383,15 +383,13 @@ export default function PremiumPage() {
   return (
     <>
       <div className="rk-page px-4 pb-24 pt-20 text-white relative overflow-hidden">
-        {/* Infinite Multi-Column Marquee Grid Background (Mist Scans style) */}
-        <div className="absolute inset-0 max-h-[560px] overflow-hidden pointer-events-none">
-          <MarqueeCoverGrid
-            opacity={0.24}
-            tiltAngle={-9}
-            scale={1.15}
-            overlayGradient="radial-gradient(circle at center, rgba(10, 11, 18, 0.70) 20%, rgba(10, 11, 18, 0.98) 90%), linear-gradient(to bottom, rgba(10, 11, 18, 0.6) 0%, transparent 40%, rgba(10, 11, 18, 1) 100%)"
-          />
-        </div>
+        {/* Seamless Full-Page Marquee Cover Background */}
+        <MarqueeCoverGrid
+          opacity={0.18}
+          tiltAngle={-8}
+          scale={1.12}
+          overlayGradient="linear-gradient(to bottom, rgba(10, 11, 18, 0.45) 0%, rgba(10, 11, 18, 0.75) 30%, rgba(10, 11, 18, 0.94) 65%, rgba(10, 11, 18, 0.99) 100%)"
+        />
 
         {/* Heading */}
         <div className="relative z-10 max-w-xl mx-auto text-center mb-8">

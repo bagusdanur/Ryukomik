@@ -7,28 +7,18 @@ export const DEFAULT_MARQUEE_COVERS: string[][] = [
     "https://storage.ryukomik.my.id/covers/is-it-bad-that-the-main-character-s-a-roleplayer/cover.webp",
     "https://storage.ryukomik.my.id/covers/beast-saga/cover.webp",
     "https://storage.ryukomik.my.id/covers/let-s-do-it-after-work/cover.jpg",
-    "https://storage.ryukomik.my.id/covers/you-like-someone-with-that-face/cover.png",
   ],
   // Kolom 2
   [
     "https://storage.ryukomik.my.id/covers/get-out/cover.jpg",
     "https://storage.ryukomik.my.id/covers/affair-agency/cover.webp",
     "https://storage.ryukomik.my.id/covers/i-m-the-hero-but-the-main-heroines-are-trying-to-kill-me/cover.webp",
-    "https://storage.ryukomik.my.id/covers/revenge-of-the-villain-slayer/cover.png",
   ],
   // Kolom 3
   [
     "https://storage.ryukomik.my.id/covers/sicario/cover.png",
     "https://storage.ryukomik.my.id/covers/the-old-man-vows-revenge-against-his-demon-wife/cover.png",
     "https://storage.ryukomik.my.id/covers/rebirth-of-the-immortal-supreme-in-the-city/cover.png",
-    "https://storage.ryukomik.my.id/covers/hush-now-saintess/cover.png",
-  ],
-  // Kolom 4
-  [
-    "https://storage.ryukomik.my.id/covers/rebirth-monarch-of-the-dead/cover.webp",
-    "https://storage.ryukomik.my.id/covers/is-it-bad-that-the-main-character-s-a-roleplayer/cover.webp",
-    "https://storage.ryukomik.my.id/covers/affair-agency/cover.webp",
-    "https://storage.ryukomik.my.id/covers/beast-saga/cover.webp",
   ],
 ];
 
@@ -61,9 +51,9 @@ export const MarqueeCoverGrid = memo(function MarqueeCoverGrid({
     >
       {/* 1. Rotated Multi-Column Grid */}
       <div
-        className="absolute -inset-x-24 -inset-y-36 flex justify-center gap-3 sm:gap-4 md:gap-5"
+        className="absolute -inset-x-12 -inset-y-24 flex justify-center gap-3 sm:gap-4 md:gap-5"
         style={{
-          transform: `rotate(${tiltAngle}deg) scale(${scale})`,
+          transform: `rotate(${tiltAngle}deg) scale(${scale}) translateZ(0)`,
           transformOrigin: "center center",
           opacity,
         }}
@@ -81,7 +71,7 @@ export const MarqueeCoverGrid = memo(function MarqueeCoverGrid({
               {loopItems.map((imgSrc, itemIdx) => (
                 <div
                   key={itemIdx}
-                  className="aspect-[2/3] w-full overflow-hidden rounded-xl bg-slate-900/80 shadow-md shadow-black/60 border border-white/5"
+                  className="aspect-[2/3] w-full overflow-hidden rounded-xl bg-slate-900 shadow-md shadow-black/60 border border-white/5"
                 >
                   <img
                     src={imgSrc}
@@ -97,14 +87,13 @@ export const MarqueeCoverGrid = memo(function MarqueeCoverGrid({
         })}
       </div>
 
-      {/* 2. Dark Vignette & Fade Overlay */}
+      {/* 2. Seamless Full Fade Overlay */}
       <div
         className="absolute inset-0"
         style={{
           background:
             overlayGradient ||
-            `radial-gradient(circle at center, rgba(10, 11, 18, 0.65) 15%, rgba(10, 11, 18, 0.95) 88%),
-             linear-gradient(to bottom, rgba(10, 11, 18, 0.92) 0%, transparent 20%, transparent 80%, rgba(10, 11, 18, 0.98) 100%)`,
+            `linear-gradient(to bottom, rgba(10, 11, 18, 0.4) 0%, rgba(10, 11, 18, 0.75) 45%, rgba(10, 11, 18, 0.98) 85%, rgba(10, 11, 18, 1) 100%)`,
         }}
       />
     </div>
