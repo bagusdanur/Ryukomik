@@ -393,3 +393,44 @@ img {
 .animate-slideUp {
   animation: slideUp 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 }
+
+/* Multi-Column Infinite Marquee Grid (Mist Scans style) */
+@keyframes marqueeScrollUp {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+@keyframes marqueeScrollDown {
+  0% { transform: translateY(-50%); }
+  100% { transform: translateY(0); }
+}
+
+.animate-marquee-up {
+  animation: marqueeScrollUp 26s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-down {
+  animation: marqueeScrollDown 30s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-up-slow {
+  animation: marqueeScrollUp 36s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-down-slow {
+  animation: marqueeScrollDown 32s linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee-up,
+  .animate-marquee-down,
+  .animate-marquee-up-slow,
+  .animate-marquee-down-slow {
+    animation: none !important;
+  }
+}
+

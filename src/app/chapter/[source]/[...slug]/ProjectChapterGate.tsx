@@ -10,6 +10,7 @@ import { refreshProfile } from '@/utils/profileCache';
 import { gateRefreshPlan } from '@/utils/premiumGatePolicy';
 import { supabase } from '@/lib/supabaseClient';
 import type { ReaderChapter } from '@/types/content';
+import MarqueeCoverGrid from '@/components/MarqueeCoverGrid';
 import ChapterClient from './ChapterClient';
 
 type Props = { initialData: ReaderChapter; source: string; slugStr: string };
@@ -92,18 +93,21 @@ export default function ProjectChapterGate({ initialData, source, slugStr }: Pro
   if (!data.locked && !error) return <ChapterClient data={data} source={source} slugStr={slugStr} imageAccessToken={token} />;
   const seconds = Math.max(0, Math.ceil((lockUntil - now) / 1000));
   const days = Math.floor(seconds / 86400), hours = Math.floor(seconds % 86400 / 3600), minutes = Math.floor(seconds % 3600 / 60);
-  return <main className="flex min-h-screen items-center justify-center bg-[var(--background)] px-5 text-white">
-    <section className="rk-card w-full max-w-lg rounded-3xl p-6 text-center sm:p-8">
-      <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-400/10 text-amber-300"><FiLock size={28} /></span>
+  return <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[var(--background)] px-5 text-white">
+    {/* Infinite Multi-Column Marquee Background */}
+    <MarqueeCoverGrid opacity={0.32} tiltAngle={-11} scale={1.2} />
+
+    <section className="relative z-10 rk-card w-full max-w-lg rounded-3xl p-6 text-center sm:p-8 backdrop-blur-md bg-[#10121d]/90 border border-white/10 shadow-2xl shadow-black/80">
+      <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-400/10 text-amber-300 shadow-inner"><FiLock size={28} /></span>
       <h1 className="mt-5 text-xl font-black">{error ? 'Chapter belum dapat dibuka' : 'Chapter ini khusus premium'}</h1>
       <p className="mt-3 text-sm leading-6 text-white/55">Premium aktif dapat membaca selama masa lock. Setelah waktunya habis, chapter gratis untuk semua pengunjung.</p>
-      {lockUntil > 0 && <><div className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-3 font-mono text-lg"><FiClock />{days} hari {hours} jam {minutes} menit</div><p className="mt-3 text-xs text-white/50">Dibuka {new Date(lockUntil).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB</p></>}
+      {lockUntil > 0 && <><div className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-3 font-mono text-lg border border-white/5"><FiClock />{days} hari {hours} jam {minutes} menit</div><p className="mt-3 text-xs text-white/50">Dibuka {new Date(lockUntil).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB</p></>}
       {error && <p role="alert" className="mt-3 text-xs text-rose-300">{error}</p>}
       {seconds === 0 && !error && <p className="mt-3 text-xs text-white/50">Memeriksa akses terbaru...</p>}
       <div className="mt-6 flex flex-col gap-3">
-        {!user && <button type="button" onClick={() => setShowLogin(true)} className="rk-btn-primary rounded-2xl px-5 py-3 text-sm font-black">Login</button>}
-        <Link href="/premium" className="rounded-2xl bg-amber-400 px-5 py-3 text-sm font-black text-black">{user ? 'Aktifkan Premium' : 'Lihat Premium'}</Link>
-        <button type="button" onClick={() => void refresh()} className="text-xs text-white/60">Periksa akses lagi</button>
+        {!user && <button type="button" onClick={() => setShowLogin(true)} className="rk-btn-primary rounded-2xl px-5 py-3 text-sm font-black shadow-lg">Login</button>}
+        <Link href="/premium" className="rounded-2xl bg-amber-400 px-5 py-3 text-sm font-black text-black shadow-lg shadow-amber-400/20 hover:bg-amber-300 transition-colors">{user ? 'Aktifkan Premium' : 'Lihat Premium'}</Link>
+        <button type="button" onClick={() => void refresh()} className="text-xs text-white/60 hover:text-white transition-colors">Periksa akses lagi</button>
       </div>
     </section>
     {showLogin && !user && <LoginModal close={() => setShowLogin(false)} />}

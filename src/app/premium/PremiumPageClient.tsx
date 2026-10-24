@@ -25,6 +25,7 @@ import LoginModal from "@/components/LoginModal";
 import SkPremiumModal from "@/components/SkPremiumModal";
 import Button from "@/components/Button";
 import { markPremiumRequestPending } from "@/utils/premiumStatusSync";
+import MarqueeCoverGrid from "@/components/MarqueeCoverGrid";
 
 const features = [
   {
@@ -381,9 +382,19 @@ export default function PremiumPage() {
 
   return (
     <>
-      <div className="rk-page px-4 pb-24 pt-20 text-white">
+      <div className="rk-page px-4 pb-24 pt-20 text-white relative overflow-hidden">
+        {/* Infinite Multi-Column Marquee Grid Background (Mist Scans style) */}
+        <div className="absolute inset-0 max-h-[560px] overflow-hidden pointer-events-none">
+          <MarqueeCoverGrid
+            opacity={0.24}
+            tiltAngle={-9}
+            scale={1.15}
+            overlayGradient="radial-gradient(circle at center, rgba(10, 11, 18, 0.70) 20%, rgba(10, 11, 18, 0.98) 90%), linear-gradient(to bottom, rgba(10, 11, 18, 0.6) 0%, transparent 40%, rgba(10, 11, 18, 1) 100%)"
+          />
+        </div>
+
         {/* Heading */}
-        <div className="max-w-xl mx-auto text-center mb-8">
+        <div className="relative z-10 max-w-xl mx-auto text-center mb-8">
           <div className="rk-chip mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-widest">
             <RiVipCrownLine size={13} />
             Premium
