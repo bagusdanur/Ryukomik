@@ -1,6 +1,6 @@
 "use client";
 
-import { avatarBorderShadow, isImageBorder, resolveAvatarBorder } from "@/lib/avatarBorders";
+import { IMAGE_FRAME_SCALE, avatarBorderShadow, isImageBorder, resolveAvatarBorder } from "@/lib/avatarBorders";
 
 /**
  * Satu-satunya komponen avatar di situs.
@@ -71,14 +71,21 @@ export default function UserAvatar({
       </span>
 
       {frame && (
-        // 1:1 dengan kotak avatar — tanpa scale, tanpa offset.
+        // Frame digambar sedikit lebih besar dari kotak avatar (lihat
+        // IMAGE_FRAME_SCALE) dan tetap terpusat — tanpa offset per frame.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={frame.src}
           alt=""
           aria-hidden
           draggable={false}
-          className="pointer-events-none absolute inset-0 z-20 h-full w-full select-none object-contain"
+          className="pointer-events-none absolute z-20 select-none object-contain"
+          style={{
+            width: size * IMAGE_FRAME_SCALE,
+            height: size * IMAGE_FRAME_SCALE,
+            left: -(size * (IMAGE_FRAME_SCALE - 1)) / 2,
+            top: -(size * (IMAGE_FRAME_SCALE - 1)) / 2,
+          }}
         />
       )}
     </span>

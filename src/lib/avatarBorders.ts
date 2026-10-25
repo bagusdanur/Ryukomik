@@ -50,6 +50,13 @@ export type AvatarBorder = {
   inset?: number;
 };
 
+/**
+ * Perbesaran frame gambar relatif terhadap kotak avatar.
+ * 1 = 1:1 (pas kotak). 1.15 = sedikit lebih besar supaya detail frame kelihatan.
+ * Ubah satu angka ini untuk semua frame sekaligus.
+ */
+export const IMAGE_FRAME_SCALE = 1.15;
+
 export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
   default: { id: "default", label: "Default", type: "css", ring: "rgba(255,255,255,0.14)" },
   gold: {
