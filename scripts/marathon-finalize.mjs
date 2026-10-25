@@ -105,7 +105,7 @@ async function finalize(periodType, periodKey) {
       try {
         await pool.query(
           `insert into social_notifications (user_id, actor_name, type, slug, chapter, target_id)
-           values ($1, 'Speedrun', 'marathon_win', $2, $3, $4)`,
+           values ($1, 'Marathon', 'marathon_win', $2, $3, $4)`,
           [row.user_id, periodType, String(row.rank), periodKey],
         );
         notified += 1;

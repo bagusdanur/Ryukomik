@@ -24,9 +24,9 @@ export function getNotificationLabel(item: Pick<NotificationItem, "type" | "acto
       const periode = item.slug === "monthly" ? "bulanan" : "mingguan";
       const icon = item.slug === "monthly" ? "👑" : "🏆";
       if (Number.isFinite(rank) && rank > 0) {
-        return `${icon} Kamu juara ${rank} Speedrun Baca ${periode} — hadiah menunggu`;
+        return `${icon} Kamu juara ${rank} Marathon Reading ${periode} — hadiah menunggu`;
       }
-      return `${icon} Kamu menang Speedrun Baca ${periode}`;
+      return `${icon} Kamu menang Marathon Reading ${periode}`;
     }
     default:
       return `${actor} membalas komentar kamu`;

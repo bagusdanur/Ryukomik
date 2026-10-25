@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FaDiscord, FaPen, FaPalette } from "react-icons/fa";
-import SpeedrunBanner from "@/components/SpeedrunBanner";
+import MarathonBanner from "@/components/MarathonBanner";
 
 const STEPS = [
   { n: "01", text: 'Klik tombol "Buat Tiket Pendaftaran" di channel #staff-rekrutmen' },
@@ -78,8 +78,8 @@ export default function RyukomikStaffRecruitmentBanner({ className = "" }: { cla
           </div>
         </div>
 
-        {/* Speedrun */}
-        <SpeedrunBanner />
+        {/* Marathon Reading */}
+        <MarathonBanner />
       </div>
 
       {showSteps && (

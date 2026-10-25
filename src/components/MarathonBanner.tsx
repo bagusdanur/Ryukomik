@@ -6,7 +6,7 @@ import { FiClock } from "react-icons/fi";
 import { RiFlashlightFill } from "react-icons/ri";
 
 /**
- * Kartu event Speedrun untuk homepage (setengah lebar, sejajar kartu rekrutmen).
+ * Kartu event Marathon Reading untuk homepage (setengah lebar, sejajar kartu rekrutmen).
  * Hitung mundur ke Senin 00:00 WIB — akhir periode mingguan.
  */
 function nextWeekEnd(now = new Date()): number {
@@ -38,7 +38,7 @@ function useCountdown() {
 
 const PRIZES = ["30", "14", "7"];
 
-export default function SpeedrunBanner() {
+export default function MarathonBanner() {
   const countdown = useCountdown();
 
   return (
@@ -53,7 +53,7 @@ export default function SpeedrunBanner() {
           <RiFlashlightFill size={11} />
         </span>
         <span className="min-w-0 truncate text-[8px] font-black uppercase tracking-[0.1em] text-amber-300">
-          Speedrun
+          Marathon Reading
         </span>
         <span className="ml-auto shrink-0 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-1 py-px text-[7px] font-black uppercase tracking-wide text-emerald-300">
           Live

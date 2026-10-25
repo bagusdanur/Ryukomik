@@ -140,7 +140,7 @@ export async function POST(request: Request) {
     try {
       await createSocialNotification({
         userId: String(winner.user_id),
-        actorName: "Speedrun",
+        actorName: "Marathon",
         type: "premium_reward",
         slug: "/marathon",
         targetId: String(winner.id),

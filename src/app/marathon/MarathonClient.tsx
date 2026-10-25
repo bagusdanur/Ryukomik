@@ -8,6 +8,7 @@ import { FaCrown } from "react-icons/fa";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { supabase } from "@/lib/supabaseClient";
 import UserBadges from "@/components/UserBadges";
+import MarathonWinnerBadge from "@/components/MarathonWinnerBadge";
 
 type Period = "weekly" | "monthly";
 
@@ -111,23 +112,6 @@ function Avatar({
   );
 }
 
-/** Badge juara: emas untuk bulanan, cyan untuk mingguan. */
-function WinnerBadge({ rank, period }: { rank: number; period?: "weekly" | "monthly" | null }) {
-  const monthly = period === "monthly";
-  return (
-    <span
-      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[7.5px] font-black uppercase leading-none tracking-widest ${
-        monthly
-          ? "border-amber-400/40 bg-gradient-to-r from-amber-400/25 to-orange-500/15 text-amber-200"
-          : "border-cyan-400/35 bg-cyan-400/12 text-cyan-200"
-      }`}
-    >
-      <span aria-hidden>{monthly ? "👑" : "🏆"}</span>
-      Juara {rank} · {monthly ? "Bulanan" : "Mingguan"}
-    </span>
-  );
-}
-
 function SelfTag() {
   return (
     <span className="rounded-full border border-cyan-400/35 bg-cyan-400/15 px-1.5 py-0.5 text-[8px] font-black uppercase leading-none tracking-widest text-cyan-200">
@@ -184,7 +168,7 @@ function PodiumCard({ row, index }: { row: LeaderboardRow; index: number }) {
           totalReads={row.total_reads}
           className="text-[8px]"
         />
-        {row.winner_rank ? <WinnerBadge rank={row.winner_rank} period={row.winner_period} /> : null}
+        {row.winner_rank ? <MarathonWinnerBadge rank={row.winner_rank} period={row.winner_period} /> : null}
       </div>
 
       <div className="mt-0.5 flex items-baseline gap-0.5">
@@ -247,7 +231,7 @@ function RankRow({
             totalReads={row.total_reads}
             className="text-[8px]"
           />
-          {row.winner_rank ? <WinnerBadge rank={row.winner_rank} period={row.winner_period} /> : null}
+          {row.winner_rank ? <MarathonWinnerBadge rank={row.winner_rank} period={row.winner_period} /> : null}
         </div>
 
         <div className="mt-1 flex items-center gap-2">
@@ -382,7 +366,7 @@ export default function MarathonClient() {
         <span className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-amber-400/10 blur-3xl" />
         <div className="relative">
           <p className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[.16em] text-amber-300">
-            <RiFlashlightFill size={9} /> Speedrun Baca
+            <RiFlashlightFill size={9} /> Marathon Reading
           </p>
           <h1 className="mt-2 text-xl font-black text-white">{event?.title || "Marathon Baca"}</h1>
           <p className="mx-auto mt-1.5 max-w-md text-[12px] leading-relaxed text-white/50">
