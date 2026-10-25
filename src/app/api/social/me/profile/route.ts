@@ -2,7 +2,8 @@ import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
-import { AVATAR_BORDERS } from "@/lib/avatarBorders";
+import { AVATAR_BORDERS, isAdminOnlyBorder } from "@/lib/avatarBorders";
+import { getCachedRole } from "@/lib/serverRoleCache";
 
 function mediaUrl(value: unknown) {
   if (value === null || value === "") return null;
@@ -29,7 +30,13 @@ export async function GET(request: Request) {
       "select user_id as id,username,avatar_url,avatar_border,banner_url,bio,level from social_profiles where user_id=$1",
       [userId],
     );
-    return socialJson({ profile: result.rows[0] || null }, { headers: { "Cache-Control": "private, no-store" } });
+    // Dipakai UI untuk menyembunyikan border yang terkunci; penegakannya tetap
+    // di PATCH (sumber kebenaran = getCachedRole, bukan nilai kiriman klien).
+    const role = await getCachedRole(userId);
+    return socialJson(
+      { profile: result.rows[0] || null, is_admin: role.isAdmin },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (error) {
     return socialError(error);
   }
@@ -46,6 +53,10 @@ export async function PATCH(request: Request) {
     const bio = typeof body.bio === "string" ? body.bio.trim().slice(0, 280) || null : null;
     const banner = mediaUrl(body.banner_url);
     const border = avatarBorderId(body.avatar_border);
+
+    if (isAdminOnlyBorder(border) && !(await getCachedRole(userId)).isAdmin) {
+      return socialJson({ error: "Border ini khusus admin." }, { status: 403 });
+    }
 
     await socialQuery(
       "update social_profiles set bio=$2,banner_url=$3,avatar_border=$4,updated_at=now() where user_id=$1",

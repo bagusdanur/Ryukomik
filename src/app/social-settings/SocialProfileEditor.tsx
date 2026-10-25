@@ -1,7 +1,7 @@
 "use client";
 
 import UserAvatar from "@/components/UserAvatar";
-import { AVATAR_BORDERS, resolveAvatarBorder } from "@/lib/avatarBorders";
+import { AVATAR_BORDERS, isAdminOnlyBorder, resolveAvatarBorder } from "@/lib/avatarBorders";
 
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
@@ -17,12 +17,16 @@ type Profile = {
 
 export default function SocialProfileEditor() {
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    socialFetch<{ profile: Profile }>("/api/social/me/profile")
-      .then((result) => setProfile(result.profile))
+    socialFetch<{ profile: Profile; is_admin?: boolean }>("/api/social/me/profile")
+      .then((result) => {
+        setProfile(result.profile);
+        setIsAdmin(Boolean(result.is_admin));
+      })
       .catch((error) => setMessage(error.message));
   }, []);
 
@@ -36,6 +40,12 @@ export default function SocialProfileEditor() {
 
   const update = <K extends keyof Profile>(key: K, value: Profile[K]) =>
     setProfile((current) => (current ? { ...current, [key]: value } : current));
+
+  // Border yang terkunci hanya muncul untuk admin; server tetap menolak (403)
+  // kalau user biasa mengirim id-nya langsung.
+  const availableBorders = Object.values(AVATAR_BORDERS).filter(
+    (border) => isAdmin || !isAdminOnlyBorder(border.id),
+  );
 
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -93,7 +103,7 @@ export default function SocialProfileEditor() {
       <div className="rk-card-soft rounded-2xl p-4">
         <div className="mb-3 flex items-baseline justify-between">
           <p className="text-xs font-bold text-white/55">Border avatar</p>
-          <p className="text-[10px] text-white/30">{Object.keys(AVATAR_BORDERS).length} pilihan</p>
+          <p className="text-[10px] text-white/30">{availableBorders.length} pilihan</p>
         </div>
 
         {(["css", "image"] as const).map((kind) => (
@@ -102,7 +112,7 @@ export default function SocialProfileEditor() {
               {kind === "css" ? "Warna" : "Frame"}
             </p>
             <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
-              {Object.values(AVATAR_BORDERS)
+              {availableBorders
                 .filter((border) => (border.type ?? "css") === kind)
                 .map((border) => {
                   const active = (profile.avatar_border || "default") === border.id;

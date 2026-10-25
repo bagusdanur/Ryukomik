@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getUserAvatarBorders } from "@/lib/social/avatarBorders";
 
 interface LeaderboardProfile {
   id: string;
   username?: string;
   avatar_url?: string;
+  avatar_border?: string | null;
   xp?: number;
   level?: number;
   role?: string;
@@ -60,9 +62,17 @@ const getLeaderboardCached = unstable_cache(
       title_rush_rank: titleRank[p.id] || null,
     }));
 
+    // Border avatar hidup di Postgres lokal (social_profiles), bukan Supabase:
+    // satu query untuk seluruh pool — tidak menambah egress Supabase.
+    const borders = await getUserAvatarBorders(ids).catch(() => new Map<string, string>());
+    const withBorders = withBadges.map((p) => ({
+      ...p,
+      avatar_border: borders.get(p.id) ?? null,
+    }));
+
     const topBy = (category: LeaderboardCategory) => {
       const field = CATEGORY_FIELD[category];
-      return [...withBadges]
+      return [...withBorders]
         .sort((a, b) => (Number(b[field]) || 0) - (Number(a[field]) || 0))
         .slice(0, TOP_N)
         .map((p, index) => ({ ...p, rank: index + 1 }));
@@ -73,7 +83,7 @@ const getLeaderboardCached = unstable_cache(
       reads: topBy("reads"),
     };
   },
-  ["leaderboard-v3"],
+  ["leaderboard-v4"],
   { revalidate: 3600, tags: ["leaderboard"] },
 );
 

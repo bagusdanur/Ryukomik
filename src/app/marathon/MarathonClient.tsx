@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { FiClock, FiRefreshCw, FiTarget, FiTrendingUp, FiUser, FiZap } from "react-icons/fi";
 import { RiFlashlightFill, RiTrophyFill } from "react-icons/ri";
@@ -17,6 +17,7 @@ type LeaderboardRow = {
   user_id: string;
   username: string;
   avatar_url: string | null;
+  avatar_border?: string | null;
   level: number | null;
   is_premium: boolean | null;
   role: string | null;
@@ -77,8 +78,33 @@ function countdown(target: Date, now: number) {
   return `${minutes}m`;
 }
 
-function Avatar({ url, name, size, ring }: { url?: string | null; name: string; size: number; ring: string }) {
-  return <UserAvatar src={url} name={name} size={size} ring={ring} />;
+function Avatar({ url, name, size, ring, border }: { url?: string | null; name: string; size: number; ring: string; border?: string | null }) {
+  return <UserAvatar src={url} name={name} size={size} border={border} ring={ring} />;
+}
+
+/** Profil publik; username sintetis ("user-xxxx") tidak punya halaman. */
+function profileHref(username?: string | null): string | null {
+  if (!username || username.startsWith("user-")) return null;
+  return `/u/${encodeURIComponent(username)}`;
+}
+
+/** Bungkus avatar/nama jadi tautan profil, seragam dengan leaderboard global. */
+function AvatarLink({
+  username,
+  className = "",
+  children,
+}: {
+  username?: string | null;
+  className?: string;
+  children: ReactNode;
+}) {
+  const href = profileHref(username);
+  if (!href) return <span className={className || undefined}>{children}</span>;
+  return (
+    <Link href={href} className={`block shrink-0 ${className}`} aria-label={`Buka profil ${username}`}>
+      {children}
+    </Link>
+  );
 }
 
 function SelfTag() {
@@ -119,16 +145,21 @@ function PodiumCard({ row, index }: { row: LeaderboardRow; index: number }) {
         {index + 1}
       </span>
 
-      <Avatar
-        url={row.avatar_url}
-        name={row.username}
-        size={index === 0 ? 52 : 44}
-        ring={medal.ring}
-      />
+      <AvatarLink username={row.username}>
+        <Avatar
+          url={row.avatar_url}
+          name={row.username}
+          size={index === 0 ? 52 : 44}
+          ring={medal.ring}
+          border={row.avatar_border}
+        />
+      </AvatarLink>
 
-      <p className="w-full truncate text-center text-[11px] font-bold leading-tight text-white">
-        {row.username}
-      </p>
+      <AvatarLink username={row.username} className="w-full">
+        <p className="w-full truncate text-center text-[11px] font-bold leading-tight text-white transition-colors hover:text-cyan-200">
+          {row.username}
+        </p>
+      </AvatarLink>
 
       <div className="flex flex-wrap items-center justify-center gap-1">
         <UserBadges
@@ -183,16 +214,20 @@ function RankRow({
         {row.rank}
       </span>
 
-      <Avatar url={row.avatar_url} name={row.username} size={38} ring={ringColor} />
+      <AvatarLink username={row.username}>
+        <Avatar url={row.avatar_url} name={row.username} size={38} ring={ringColor} border={row.avatar_border} />
+      </AvatarLink>
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1">
-          <span
-            className="max-w-[120px] truncate text-[12px] font-bold"
-            style={{ color: isSelf ? "#67e8f9" : "#fff" }}
-          >
-            {row.username}
-          </span>
+          <AvatarLink username={row.username}>
+            <span
+              className="block max-w-[120px] truncate text-[12px] font-bold transition-colors hover:text-cyan-200"
+              style={{ color: isSelf ? "#67e8f9" : "#fff" }}
+            >
+              {row.username}
+            </span>
+          </AvatarLink>
           {isSelf && <SelfTag />}
           <UserBadges
             role={row.role}

@@ -11,6 +11,7 @@ type LeaderboardUser = {
   id: string;
   username?: string | null;
   avatar_url?: string | null;
+  avatar_border?: string | null;
   is_premium?: boolean | null;
   role?: string | null;
   xp?: number | null;
@@ -43,6 +44,7 @@ type AvatarProps = {
   name?: string;
   size: number;
   borderColor?: string;
+  border?: string | null;
 };
 
 function xpForLevel(level: number): number {
@@ -70,9 +72,15 @@ const MEDAL_BG = [
 ];
 const MEDAL_BORDER = ["#FFD70035", "#C0C0C025", "#CD7F3225"];
 
-function Avatar({ url, name, size, borderColor }: AvatarProps) {
+function Avatar({ url, name, size, borderColor, border }: AvatarProps) {
   return (
-    <UserAvatar src={url} name={name} size={size} ring={borderColor || "rgba(255,255,255,0.07)"} />
+    <UserAvatar
+      src={url}
+      name={name}
+      size={size}
+      border={border}
+      ring={borderColor || "rgba(255,255,255,0.07)"}
+    />
   );
 }
 
@@ -122,7 +130,7 @@ function PodiumCard({
       }}>
       <span className="text-2xl leading-none">{MEDALS[index]}</span>
       <Link href={getProfileHref(user.username)} className="rounded-full">
-        <Avatar url={user.avatar_url} name={name} size={44}
+        <Avatar url={user.avatar_url} name={name} size={44} border={user.avatar_border}
           borderColor={isSelf ? "rgba(139,92,246,0.5)" : mc + "55"} />
       </Link>
 
@@ -194,7 +202,7 @@ function RankRow({
       </span>
 
       <Link href={getProfileHref(user.username)} className="rounded-full">
-        <Avatar url={user.avatar_url} name={name} size={36}
+        <Avatar url={user.avatar_url} name={name} size={36} border={user.avatar_border}
           borderColor={isSelf ? "rgba(139,92,246,0.4)" : undefined} />
       </Link>
 

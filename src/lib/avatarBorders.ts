@@ -120,6 +120,32 @@ export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
 
 };
 
+/**
+ * Frame shop (aset yang diimpor dari Ryzukomik) dikunci sementara: hanya admin
+ * yang boleh memakainya. Belum ada pencatatan kepemilikan item, jadi membuka
+ * frame ini untuk semua user = barang jualan dibagikan gratis.
+ * Untuk membuka untuk semua, cukup kosongkan daftar ini.
+ */
+export const ADMIN_ONLY_BORDERS = new Set<AvatarBorderId>([
+  "shop-105",
+  "shop-107",
+  "shop-108",
+  "shop-109",
+  "shop-110",
+  "shop-111",
+  "shop-112",
+  "shop-113",
+  "shop-114",
+  "shop-115",
+  "shop-116",
+  "shop-117",
+  "shop-118",
+]);
+
+export function isAdminOnlyBorder(id?: string | null): boolean {
+  return Boolean(id) && ADMIN_ONLY_BORDERS.has(id as AvatarBorderId);
+}
+
 export function resolveAvatarBorder(id?: string | null): AvatarBorder {
   if (!id) return AVATAR_BORDERS.default;
   return AVATAR_BORDERS[id as AvatarBorderId] ?? AVATAR_BORDERS.default;

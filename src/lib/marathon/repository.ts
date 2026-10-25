@@ -150,7 +150,7 @@ export async function getLeaderboard(
   const { rows } = await socialQuery<LeaderboardRow>(
     `select s.user_id,
             coalesce(p.username, 'user-' || left(s.user_id::text, 8)) as username,
-            p.avatar_url, p.level, p.is_premium, p.role, p.total_reads,
+            p.avatar_url, p.avatar_border, p.level, p.is_premium, p.role, p.total_reads,
             s.chapters,
             row_number() over (order by s.chapters desc, s.updated_at asc)::int as rank,
             s.updated_at,
