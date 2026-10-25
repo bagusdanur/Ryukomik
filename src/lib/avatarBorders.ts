@@ -48,7 +48,15 @@ export type AvatarBorder = {
   src?: string;
   /** Seberapa jauh frame keluar dari avatar, dalam px (hanya tipe image). */
   inset?: number;
+  /** Pengali ukuran frame terhadap kotak avatar (hanya tipe image).
+   *  Default IMAGE_FRAME_SCALE; dipakai per-frame kalau ada yang perlu beda. */
+  scale?: number;
 };
+
+/** Frame gambar digambar lebih besar dari kotak avatar supaya ornamennya
+ *  tidak terlihat mepet (perilaku lama 1:1 membuat sayap/aura terasa kecil). */
+export const IMAGE_FRAME_SCALE = 1.35;
+
 
 export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
   default: { id: "default", label: "Default", type: "css", ring: "rgba(255,255,255,0.14)" },
