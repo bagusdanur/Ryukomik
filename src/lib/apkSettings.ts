@@ -1,5 +1,6 @@
 import { revalidateTag, unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getLocalSetting, invalidateLocalSetting } from "@/lib/localSettings";
 
 export const APK_SETTING_KEY = "apk_download";
 export const APK_SETTINGS_CACHE_TAG = "apk-settings";
@@ -52,21 +53,21 @@ export function normalizeApkSettings(value?: Partial<ApkSettings> | null): ApkSe
   };
 }
 
-async function readApkSettings(): Promise<ApkSettings> {
+const APK_LOCAL_KEY = `app_settings:${APK_SETTING_KEY}`;
+
+async function loadApkRow(): Promise<ApkSettingRow | null> {
   const { data, error } = await supabaseAdmin
     .from("app_settings")
     .select("key, value, updated_at")
     .eq("key", APK_SETTING_KEY)
     .maybeSingle();
 
-  if (error) {
-    return {
-      ...fallbackApkSettings,
-      configured: false,
-    };
-  }
+  if (error) return null;
+  return (data as ApkSettingRow | null) ?? null;
+}
 
-  const row = data as ApkSettingRow | null;
+async function readApkSettings(): Promise<ApkSettings> {
+  const row = await getLocalSetting<ApkSettingRow | null>(APK_LOCAL_KEY, loadApkRow);
   return normalizeApkSettings({
     ...row?.value,
     updated_at: row?.updated_at || null,
@@ -105,6 +106,7 @@ export async function setApkSettings(settings: ApkSettings): Promise<ApkSettings
     .single();
 
   if (error) throw error;
+  invalidateLocalSetting(APK_LOCAL_KEY);
   revalidateTag(APK_SETTINGS_CACHE_TAG, { expire: 0 });
 
   const row = data as ApkSettingRow;

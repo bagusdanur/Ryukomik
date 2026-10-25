@@ -1,5 +1,6 @@
 import { unstable_cache, revalidateTag } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getLocalSetting, invalidateLocalSetting } from "@/lib/localSettings";
 
 export const ADS_SETTING_KEY = "ads_config";
 export const ADS_CACHE_TAG = "ads-config";
@@ -295,18 +296,29 @@ export function validateAdsConfig(input: {
 
 // ── Pembacaan (cached) ────────────────────────────────────────────────────
 
-async function readAdsConfig(): Promise<AdsConfig> {
+type AdsSettingRow = { value?: Partial<AdsConfig> | null; updated_at?: string | null };
+
+// Kunci cache lokal untuk app_settings (config jarang berubah; lihat
+// src/lib/localSettings.ts). Nama kunci dipakai juga saat invalidasi.
+const ADS_LOCAL_KEY = `app_settings:${ADS_SETTING_KEY}`;
+
+async function loadAdsRow(): Promise<AdsSettingRow | null> {
   const { data, error } = await supabaseAdmin
     .from("app_settings")
     .select("key, value, updated_at")
     .eq("key", ADS_SETTING_KEY)
     .maybeSingle();
 
-  if (error || !data) {
-    return { ...fallbackAdsConfig, configured: Boolean(data) };
+  if (error || !data) return null;
+  return data as AdsSettingRow;
+}
+
+async function readAdsConfig(): Promise<AdsConfig> {
+  const row = await getLocalSetting<AdsSettingRow | null>(ADS_LOCAL_KEY, loadAdsRow);
+  if (!row) {
+    return { ...fallbackAdsConfig, configured: false };
   }
 
-  const row = data as { value?: Partial<AdsConfig> | null; updated_at?: string | null };
   return normalizeAdsConfig({
     ...row.value,
     updatedAt: row.updated_at || null,
@@ -373,6 +385,7 @@ export async function setAdsConfig(next: AdsConfig, adminUserId: string): Promis
 
   if (error) throw error;
 
+  invalidateLocalSetting(ADS_LOCAL_KEY);
   invalidateAdsCache();
 
   const row = data as { value?: Partial<AdsConfig> | null; updated_at?: string | null };
@@ -416,6 +429,7 @@ export async function rollbackAdsConfig(adminUserId: string): Promise<AdsConfig>
 
   if (error) throw error;
 
+  invalidateLocalSetting(ADS_LOCAL_KEY);
   invalidateAdsCache();
 
   const row = data as { value?: Partial<AdsConfig> | null; updated_at?: string | null };
