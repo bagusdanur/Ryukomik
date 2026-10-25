@@ -17,6 +17,7 @@ type LinkNotification = Pick<NotificationItem, "type" | "slug" | "target_id" | "
 
 export function getNotificationLink(notification: LinkNotification) {
   if (notification.type === "title_rush_weekly") return "/game";
+  if (notification.type === "marathon_win") return "/marathon";
   if (notification.type === "announcement") {
     return notification.slug?.startsWith("/") && !notification.slug.startsWith("//")
       ? notification.slug

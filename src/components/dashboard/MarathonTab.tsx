@@ -17,6 +17,8 @@ type MarathonEvent = {
   premium_days_1: number;
   premium_days_2: number;
   premium_days_3: number;
+  weekly_days: number[] | null;
+  monthly_days: number[] | null;
   daily_chapter_cap: number;
 };
 
@@ -71,6 +73,8 @@ export default function MarathonTab({ getAdminToken }: Props) {
     premium_days_1: 30,
     premium_days_2: 14,
     premium_days_3: 7,
+    weekly_days: [30, 14, 7],
+    monthly_days: [60, 30, 14],
     daily_chapter_cap: 300,
   });
 
@@ -102,6 +106,14 @@ export default function MarathonTab({ getAdminToken }: Props) {
           premium_days_1: ev.premium_days_1,
           premium_days_2: ev.premium_days_2,
           premium_days_3: ev.premium_days_3,
+          weekly_days:
+            ev.weekly_days && ev.weekly_days.length
+              ? [...ev.weekly_days, 0, 0, 0].slice(0, 3)
+              : [ev.premium_days_1, ev.premium_days_2, ev.premium_days_3],
+          monthly_days:
+            ev.monthly_days && ev.monthly_days.length
+              ? [...ev.monthly_days, 0, 0, 0].slice(0, 3)
+              : [60, 30, 14],
           daily_chapter_cap: ev.daily_chapter_cap,
         });
       }
@@ -139,6 +151,8 @@ export default function MarathonTab({ getAdminToken }: Props) {
           premium_days_1: form.premium_days_1,
           premium_days_2: form.premium_days_2,
           premium_days_3: form.premium_days_3,
+          weekly_days: form.weekly_days,
+          monthly_days: form.monthly_days,
           daily_chapter_cap: form.daily_chapter_cap,
         }),
         signal: AbortSignal.timeout(15_000),
@@ -301,24 +315,38 @@ export default function MarathonTab({ getAdminToken }: Props) {
               </label>
             </div>
 
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {([1, 2, 3] as const).map((rank) => (
-                <div key={rank} className="rounded-xl border border-white/[.06] bg-black/20 p-2">
-                  <p className="mb-1 text-[10px] font-bold text-amber-300">Juara {rank}</p>
-                  <input
-                    value={form[`prize_${rank}` as "prize_1"]}
-                    onChange={(e) => setForm((f) => ({ ...f, [`prize_${rank}`]: e.target.value }))}
-                    placeholder="Label hadiah"
-                    className="mb-1.5 w-full rounded-lg border border-white/[.08] bg-black/30 px-2 py-1.5 text-[11px] text-white outline-none"
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    value={form[`premium_days_${rank}` as "premium_days_1"]}
-                    onChange={(e) => setForm((f) => ({ ...f, [`premium_days_${rank}`]: Number(e.target.value) }))}
-                    className="w-full rounded-lg border border-white/[.08] bg-black/30 px-2 py-1.5 text-[11px] text-white outline-none"
-                    placeholder="Hari premium"
-                  />
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {([
+                { key: "weekly_days" as const, label: "Hadiah mingguan", tone: "text-cyan-300" },
+                { key: "monthly_days" as const, label: "Hadiah bulanan", tone: "text-violet-300" },
+              ]).map((group) => (
+                <div key={group.key} className="rounded-xl border border-white/[.06] bg-black/20 p-2">
+                  <p className={`mb-1.5 text-[10px] font-bold uppercase tracking-widest ${group.tone}`}>
+                    {group.label} <span className="text-white/25">(hari premium)</span>
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[0, 1, 2].map((index) => (
+                      <label key={index} className="block">
+                        <span className="mb-0.5 block text-[9px] font-bold text-white/35">
+                          Juara {index + 1}
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={form[group.key][index] ?? 0}
+                          onChange={(e) => {
+                            const value = Math.max(0, Math.floor(Number(e.target.value) || 0));
+                            setForm((f) => {
+                              const next = [...f[group.key]];
+                              next[index] = value;
+                              return { ...f, [group.key]: next };
+                            });
+                          }}
+                          className="w-full rounded-lg border border-white/[.08] bg-black/30 px-2 py-1.5 text-[11px] text-white outline-none focus:border-[#7c5cfc]/50"
+                        />
+                      </label>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

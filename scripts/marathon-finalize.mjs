@@ -54,11 +54,21 @@ const pool = new Pool({ connectionString, application_name: "marathon-finalize" 
 
 async function finalize(periodType, periodKey) {
   const { rows: events } = await pool.query(
-    "select id, slug from marathon_events where is_active",
+    `select id, slug, weekly_days, monthly_days,
+            premium_days_1, premium_days_2, premium_days_3
+       from marathon_events where is_active`,
   );
 
   let total = 0;
+  let notified = 0;
+
   for (const event of events) {
+    const configured = periodType === "monthly" ? event.monthly_days : event.weekly_days;
+    const fallback = [event.premium_days_1, event.premium_days_2, event.premium_days_3];
+    const days = (Array.isArray(configured) && configured.length ? configured : fallback)
+      .slice(0, 3)
+      .map((value) => Number(value) || 0);
+
     const { rows } = await pool.query(
       `with ranked as (
          select s.event_id, s.period_type, s.period_key,
@@ -73,26 +83,40 @@ async function finalize(periodType, periodKey) {
        insert into marathon_winners
          (event_id, period_type, period_key, rank, user_id, username, chapters, prize_label, premium_days)
        select event_id, period_type, period_key, rnk, user_id, username, chapters,
-              case rnk when 1 then (select prize_1 from marathon_events where id = $1)
-                       when 2 then (select prize_2 from marathon_events where id = $1)
-                       else (select prize_3 from marathon_events where id = $1) end,
-              case rnk when 1 then (select premium_days_1 from marathon_events where id = $1)
-                       when 2 then (select premium_days_2 from marathon_events where id = $1)
-                       else (select premium_days_3 from marathon_events where id = $1) end
+              'Premium ' || case rnk when 1 then $4::int when 2 then $5::int else $6::int end
+                || ' hari + Badge Juara ' || rnk,
+              case rnk when 1 then $4::int when 2 then $5::int else $6::int end
          from ranked
         where rnk <= 3
        on conflict (event_id, period_type, period_key, rank) do nothing
-       returning rank, username, chapters`,
-      [event.id, periodType, periodKey],
+       returning id, rank, user_id, username, chapters, premium_days`,
+      [event.id, periodType, periodKey, days[0] ?? 0, days[1] ?? 0, days[2] ?? 0],
     );
+
     total += rows.length;
+
     for (const row of rows) {
       console.log(
         `[marathon-finalize] +${row.rank} ${row.username} (${row.chapters} ch) ${periodType} ${periodKey}`,
       );
+
+      // Kabari pemenang: tampil di panel notifikasi dan mengarah ke /marathon.
+      try {
+        await pool.query(
+          `insert into social_notifications (user_id, actor_name, type, slug, chapter, target_id)
+           values ($1, 'Speedrun', 'marathon_win', $2, $3, $4)`,
+          [row.user_id, periodType, String(row.rank), periodKey],
+        );
+        notified += 1;
+      } catch (error) {
+        console.error("[marathon-finalize] gagal kirim notifikasi:", error.message);
+      }
     }
   }
-  console.log(`[marathon-finalize] ${periodType} ${periodKey}: ${total} winner baru`);
+
+  console.log(
+    `[marathon-finalize] ${periodType} ${periodKey}: ${total} winner baru, ${notified} notifikasi`,
+  );
   return total;
 }
 

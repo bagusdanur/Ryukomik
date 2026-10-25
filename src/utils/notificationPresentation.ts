@@ -1,6 +1,6 @@
 import type { NotificationItem } from "@/types/content";
 
-export function getNotificationLabel(item: Pick<NotificationItem, "type" | "actor_name" | "notification_title" | "notification_message">) {
+export function getNotificationLabel(item: Pick<NotificationItem, "type" | "actor_name" | "notification_title" | "notification_message" | "chapter" | "slug">) {
   const actor = item.actor_name || "Seseorang";
   switch (item.type) {
     case "announcement":
@@ -19,6 +19,14 @@ export function getNotificationLabel(item: Pick<NotificationItem, "type" | "acto
       return "Premium akunmu sudah aktif";
     case "premium_reward":
       return `${actor} mengirim hadiah premium`;
+    case "marathon_win": {
+      const rank = Number(item.chapter);
+      const periode = item.slug === "monthly" ? "bulanan" : "mingguan";
+      if (Number.isFinite(rank) && rank > 0) {
+        return `Kamu juara ${rank} Speedrun Baca ${periode} — hadiah menunggu`;
+      }
+      return `Kamu menang Speedrun Baca ${periode}`;
+    }
     default:
       return `${actor} membalas komentar kamu`;
   }

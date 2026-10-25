@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { adminErrorResponse, privateAdminJson, verifyAdminRequest } from "@/lib/adminApi";
 import { recordAdminAction } from "@/lib/adminAudit";
 import { grantPremiumDays } from "@/lib/adminPremium";
+import { createSocialNotification } from "@/lib/social/notifications";
 import {
   finalizeCompletedPeriods,
   getActiveEvent,
@@ -50,6 +51,17 @@ export async function PATCH(request: Request) {
     if (typeof body.is_active === "boolean") patch.is_active = body.is_active;
     for (const key of ["prize_1", "prize_2", "prize_3"] as const) {
       if (typeof body[key] === "string") patch[key] = (body[key] as string).trim().slice(0, 160);
+    }
+    // Hadiah per periode: array 3 angka (juara 1..3) dalam hari premium.
+    for (const key of ["weekly_days", "monthly_days"] as const) {
+      const value = body[key];
+      if (!Array.isArray(value)) continue;
+      const days = value.slice(0, 3).map((entry) => {
+        const n = Math.floor(Number(entry));
+        return Number.isFinite(n) && n >= 0 ? Math.min(n, 3650) : 0;
+      });
+      while (days.length < 3) days.push(0);
+      patch[key] = days;
     }
     for (const key of ["premium_days_1", "premium_days_2", "premium_days_3", "daily_chapter_cap"] as const) {
       if (body[key] !== undefined) {
@@ -123,6 +135,19 @@ export async function POST(request: Request) {
 
     const premiumUntil = await grantPremiumDays(String(winner.user_id), Number(winner.premium_days) || 0);
     const updated = await setWinnerStatus(body.winnerId, "granted", admin.userId);
+
+    // Kabari pemenangnya (in-app + push lewat panel notifikasi yang sudah ada).
+    try {
+      await createSocialNotification({
+        userId: String(winner.user_id),
+        actorName: "Speedrun",
+        type: "premium_reward",
+        slug: "/marathon",
+        targetId: String(winner.id),
+      });
+    } catch (notifyError) {
+      console.error("[marathon] notify winner failed:", notifyError instanceof Error ? notifyError.message : notifyError);
+    }
 
     await recordAdminAction({
       actorId: admin.userId,

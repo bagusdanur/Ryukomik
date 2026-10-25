@@ -21,6 +21,7 @@ type LeaderboardRow = {
   total_reads: number | null;
   chapters: number;
   rank: number;
+  winner_rank?: number | null;
 };
 
 type EventInfo = {
@@ -31,6 +32,7 @@ type EventInfo = {
   prize1: string | null;
   prize2: string | null;
   prize3: string | null;
+  prizes?: { rank: number; medal: string; days: number; label: string }[];
 };
 
 type Standing = {
@@ -164,6 +166,11 @@ function PodiumCard({ row, index }: { row: LeaderboardRow; index: number }) {
           totalReads={row.total_reads}
           className="text-[8px]"
         />
+        {row.winner_rank ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/35 bg-amber-400/15 px-1.5 py-0.5 text-[8px] font-black uppercase leading-none tracking-widest text-amber-200">
+              🏆 Juara {row.winner_rank}
+            </span>
+          ) : null}
       </div>
 
       <div className="mt-0.5 flex items-baseline gap-0.5">
@@ -226,6 +233,11 @@ function RankRow({
             totalReads={row.total_reads}
             className="text-[8px]"
           />
+          {row.winner_rank ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/35 bg-amber-400/15 px-1.5 py-0.5 text-[8px] font-black uppercase leading-none tracking-widest text-amber-200">
+              🏆 Juara {row.winner_rank}
+            </span>
+          ) : null}
         </div>
 
         <div className="mt-1 flex items-center gap-2">
@@ -347,7 +359,11 @@ export default function MarathonClient() {
       ? Math.max(0, standing.third_chapters - standing.chapters + 1)
       : null;
 
-  const prizes = [event?.prize1, event?.prize2, event?.prize3];
+  const prizes =
+    event?.prizes && event.prizes.length
+      ? event.prizes
+      : [1, 2, 3].map((rank) => ({ rank, medal: MEDALS[rank - 1], days: 0, label: "Menyusul" }));
+  const prizeTitle = period === "monthly" ? "Hadiah bulanan" : "Hadiah mingguan";
 
   return (
     <div className="space-y-4">
@@ -369,18 +385,18 @@ export default function MarathonClient() {
             Sisa <span className="text-cyan-300">{countdown(endsAt, now)}</span>
           </div>
 
-          <div className="mt-3 grid grid-cols-3 gap-1.5">
-            {prizes.map((prize, index) => (
-              <div
-                key={index}
-                className="rounded-xl border border-white/[0.07] bg-black/20 px-1.5 py-1.5"
-                style={{ borderColor: `${MEDAL_STYLE[index].ring}33` }}
+          <p className="mt-3 text-[8.5px] font-black uppercase tracking-[0.14em] text-white/30">
+            {prizeTitle}
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1.5">
+            {prizes.map((prize) => (
+              <span
+                key={prize.rank}
+                className="inline-flex items-center gap-1 rounded-full border border-white/[0.09] bg-black/25 px-2 py-0.5 text-[10px] font-bold text-white/70"
               >
-                <p className="text-[11px] leading-none">{MEDALS[index]}</p>
-                <p className="mt-1 line-clamp-2 text-[9px] font-semibold leading-tight text-white/60">
-                  {prize || "Menyusul"}
-                </p>
-              </div>
+                <span aria-hidden>{prize.medal}</span>
+                {prize.days > 0 ? `${prize.days} hari` : "—"}
+              </span>
             ))}
           </div>
         </div>

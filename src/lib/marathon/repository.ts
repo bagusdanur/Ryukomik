@@ -24,6 +24,8 @@ export type MarathonEvent = MarathonEventWindow & {
   premium_days_1: number;
   premium_days_2: number;
   premium_days_3: number;
+  weekly_days: number[] | null;
+  monthly_days: number[] | null;
   daily_chapter_cap: number;
 };
 
@@ -38,6 +40,8 @@ export type LeaderboardRow = {
   chapters: number;
   rank: number;
   updated_at: string;
+  /** Peringkat juara pada periode mana pun (badge), null kalau belum pernah menang. */
+  winner_rank: number | null;
 };
 
 export type Standing = {
@@ -147,9 +151,19 @@ export async function getLeaderboard(
             p.avatar_url, p.level, p.is_premium, p.role, p.total_reads,
             s.chapters,
             row_number() over (order by s.chapters desc, s.updated_at asc)::int as rank,
-            s.updated_at
+            s.updated_at,
+            wb.rank as winner_rank
        from marathon_scores s
        left join social_profiles p on p.user_id = s.user_id
+       left join lateral (
+         select w.rank
+           from marathon_winners w
+          where w.event_id = s.event_id
+            and w.user_id = s.user_id
+            and w.status <> 'void'
+          order by w.created_at desc
+          limit 1
+       ) wb on true
       where s.event_id = $1 and s.period_type = $2 and s.period_key = $3
       order by s.chapters desc, s.updated_at asc
       limit $4`,

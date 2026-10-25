@@ -12,7 +12,8 @@ export type SocialNotificationType =
   | "social_collection"
   | "reply"
   | "premium_activated"
-  | "premium_reward";
+  | "premium_reward"
+  | "marathon_win";
 
 type CreateSocialNotificationInput = {
   userId: string;

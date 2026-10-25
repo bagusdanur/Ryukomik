@@ -86,6 +86,7 @@ export interface NotificationItem {
   actor_name?: string;
   type?: string;
   slug?: string;
+  chapter?: string | null;
   target_id?: string | null;
   notification_title?: string | null;
   notification_message?: string | null;
