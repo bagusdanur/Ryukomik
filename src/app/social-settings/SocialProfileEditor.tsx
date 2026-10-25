@@ -1,5 +1,7 @@
 "use client";
 
+import UserAvatar from "@/components/UserAvatar";
+
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { socialFetch } from "@/lib/social/client";
@@ -8,6 +10,7 @@ type Profile = {
   username: string;
   bio?: string | null;
   avatar_url?: string | null;
+  avatar_border?: string | null;
   banner_url?: string | null;
 };
 
@@ -59,12 +62,16 @@ export default function SocialProfileEditor() {
           )}
         </div>
         <div className="px-4 pb-4">
-          <div className="-mt-10 grid h-20 w-20 place-items-center overflow-hidden rounded-full border-4 border-[var(--surface-0)] bg-[var(--surface-2)] text-2xl font-black">
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="Preview avatar" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-            ) : (
-              profile.username?.[0]?.toUpperCase()
-            )}
+          <div className="-mt-10">
+            <UserAvatar
+              src={profile.avatar_url}
+              name={profile.username}
+              size={80}
+              showRing={false}
+              border={profile.avatar_border}
+              className="border-4 border-[var(--surface-0)] text-2xl"
+              alt="Preview avatar"
+            />
           </div>
           <h2 className="mt-2 text-lg font-black">{profile.username}</h2>
         </div>

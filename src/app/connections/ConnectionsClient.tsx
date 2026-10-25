@@ -1,12 +1,15 @@
 "use client";
 
+import UserAvatar from "@/components/UserAvatar";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { socialFetch } from "@/lib/social/client";
 
-type Person = { id: string; username: string; avatar_url?: string | null; bio?: string | null; level?: number; created_at: string };
+type Person = { id: string; username: string; avatar_url?: string | null;
+  avatar_border?: string | null; bio?: string | null; level?: number; created_at: string };
 
 export default function ConnectionsClient() {
   const searchParams = useSearchParams();
@@ -64,7 +67,7 @@ export default function ConnectionsClient() {
       const isSelf = person.id === viewerId;
       const following = Boolean(followingMap[person.id]);
       return <article key={person.id} className="rk-card-soft flex gap-3 rounded-2xl p-3">
-        <Link href={`/u/${encodeURIComponent(person.username)}`} className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-white/5 font-black">{person.avatar_url ? <img src={person.avatar_url} alt="" className="h-full w-full object-cover"/> : person.username[0]?.toUpperCase()}</Link>
+        <Link href={`/u/${encodeURIComponent(person.username)}`} className="shrink-0"><UserAvatar src={person.avatar_url} name={person.username} size={48} border={person.avatar_border} /></Link>
         <div className="min-w-0 flex-1">
           <Link href={`/u/${encodeURIComponent(person.username)}`} className="block truncate font-black hover:text-cyan-200">{person.username}</Link>
           <p className="line-clamp-2 text-xs text-white/45">{person.bio || `Pembaca level ${person.level || 1}`}</p>

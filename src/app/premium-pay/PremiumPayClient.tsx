@@ -1,5 +1,7 @@
 "use client";
 
+import UserAvatar from "@/components/UserAvatar";
+
 import { useState, useEffect, useMemo, useRef } from "react";
 import type { ChangeEvent } from "react";
 import {
@@ -601,17 +603,7 @@ export default function PremiumPayClient() {
                   : "bg-white/[0.04] border-white/10 text-white/40"
               }`}
             >
-              {profile.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt={profile.username || "Avatar"}
-                  className="w-6 h-6 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-6 h-6 rounded-full bg-[var(--accent)]/30 flex items-center justify-center text-[10px] font-bold text-[var(--accent)]">
-                  {profile.username?.slice(0, 2)?.toUpperCase() || "??"}
-                </div>
-              )}
+              <UserAvatar src={profile.avatar_url} name={profile.username} size={24} border={profile.avatar_border} />
               <span>{profile.username}</span>
               {isActivePremium ? (
                 <>
@@ -1222,17 +1214,7 @@ export default function PremiumPayClient() {
                         <div className="animate-fadeIn space-y-4">
                           {profile && (
                             <div className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.06] rounded-2xl p-3">
-                              {profile.avatar_url ? (
-                                <img
-                                  src={profile.avatar_url}
-                                  alt="Profile"
-                                  className="w-8 h-8 rounded-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-[var(--accent)]/20 flex items-center justify-center text-xs font-bold text-[var(--accent)]">
-                                  {profile.username?.slice(0, 2)?.toUpperCase() || "??"}
-                                </div>
-                              )}
+                              <UserAvatar src={profile.avatar_url} name={profile.username} size={32} border={profile.avatar_border} />
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs font-bold text-white truncate">
                                   {profile.username}

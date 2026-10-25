@@ -1,5 +1,7 @@
 "use client";
 
+import UserAvatar from "@/components/UserAvatar";
+
 import dynamicImport from "next/dynamic";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -10,7 +12,8 @@ import { socialFetch } from "@/lib/social/client";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 
 type FilesTab = "timeline" | "favorite" | "history" | "collections";
-type MiniProfile = { id: string; username: string; avatar_url?: string | null; level?: number };
+type MiniProfile = { id: string; username: string; avatar_url?: string | null;
+  avatar_border?: string | null; level?: number };
 
 const TabLoading = () => (
   <div className="rk-card-soft rounded-2xl py-10 text-center text-sm text-white/50">
@@ -82,8 +85,8 @@ export default function FilesClient() {
           <div className="flex shrink-0 gap-2">
             <Link href="/connections" aria-label="Koneksi sosial" title="Koneksi sosial" className="grid h-10 w-10 place-items-center rounded-full border border-white/10 text-white/55 transition hover:bg-white/5 hover:text-white"><FiUsers /></Link>
             <CommunityNotifications />
-            <Link href={profile?.username ? `/u/${encodeURIComponent(profile.username)}` : "/social-settings"} aria-label="Buka profil sosial" title="Profil sosial" className="grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-white/15 bg-white/5 text-sm font-black text-white/70 transition hover:border-white/30">
-              {profile?.avatar_url ? <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : (profile?.username || "U")[0]?.toUpperCase()}
+            <Link href={profile?.username ? `/u/${encodeURIComponent(profile.username)}` : "/social-settings"} aria-label="Buka profil sosial" title="Profil sosial" className="shrink-0">
+              <UserAvatar src={profile?.avatar_url} name={profile?.username} size={40} border={profile?.avatar_border} />
             </Link>
           </div>
         </div>

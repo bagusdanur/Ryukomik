@@ -1,5 +1,7 @@
 "use client";
 
+import UserAvatar from "@/components/UserAvatar";
+
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
@@ -14,6 +16,7 @@ type LeaderboardRow = {
   user_id: string;
   username: string;
   avatar_url?: string | null;
+  avatar_border?: string | null;
   role?: string | null;
   is_premium?: boolean;
   score: number;
@@ -67,24 +70,7 @@ function formatWeekRange(weekStart: string) {
 }
 
 function Avatar({ row }: { row: LeaderboardRow }) {
-  return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/[.06]">
-      {row.avatar_url ? (
-        <img
-          src={row.avatar_url}
-          alt=""
-          className="h-full w-full object-cover"
-          onError={(event) => {
-            event.currentTarget.style.display = "none";
-          }}
-        />
-      ) : (
-        <span className="text-sm font-black uppercase text-white/45">
-          {row.username.charAt(0)}
-        </span>
-      )}
-    </div>
-  );
+  return <UserAvatar src={row.avatar_url} name={row.username} size={36} shape="rounded" border={row.avatar_border} />;
 }
 
 function RankRow({

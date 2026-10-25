@@ -291,25 +291,18 @@ const CommentContent = memo(({ text, isSpoiler, openSpoiler, onOpenSpoiler }: Co
 });
 CommentContent.displayName = "CommentContent";
 
-const CommentAvatar = memo(({ avatar_url, author_name, type = "normal" }: CommentAvatarProps) => {
-  const isNormal = type === "normal";
-
-  return (
-    <div
-      className={`h-10 w-10 shrink-0 overflow-hidden rounded-xl border flex items-center justify-center ${
-        isNormal ? "border-white/[0.08] bg-neutral-800" : "border-white/20 bg-black/40"
-      }`}
-    >
-      {avatar_url ? (
-        <img src={avatar_url} className="w-full h-full object-cover" alt="av" loading="lazy" />
-      ) : (
-        <span className="text-xs font-bold text-gray-500">
-          {author_name?.charAt(0)}
-        </span>
-      )}
-    </div>
-  );
-});
+const CommentAvatar = memo(
+  ({ avatar_url, avatar_border, author_name, type = "normal" }: CommentAvatarProps) => (
+    <UserAvatar
+      src={avatar_url}
+      name={author_name}
+      size={40}
+      shape="rounded"
+      border={avatar_border}
+      ring={type === "normal" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.2)"}
+    />
+  ),
+);
 CommentAvatar.displayName = "CommentAvatar";
 
 /** Accent bar kiri — netral, biar gak rebutan warna sama GIF background */
@@ -390,10 +383,10 @@ const CommentItem = memo(({
         <div className="relative z-[1] flex gap-3">
           {profileHref ? (
             <ProfilePopover profile={profile} href={profileHref}>
-              <CommentAvatar avatar_url={avatarUrl} author_name={displayName} type={type} />
+              <CommentAvatar avatar_url={avatarUrl} avatar_border={profile?.avatar_border} author_name={displayName} type={type} />
             </ProfilePopover>
           ) : (
-            <CommentAvatar avatar_url={avatarUrl} author_name={displayName} type={type} />
+            <CommentAvatar avatar_url={avatarUrl} avatar_border={profile?.avatar_border} author_name={displayName} type={type} />
           )}
 
           <div className="flex-1 min-w-0">

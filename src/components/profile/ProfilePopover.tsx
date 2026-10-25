@@ -1,5 +1,7 @@
 "use client";
 
+import UserAvatar from "@/components/UserAvatar";
+
 import Link from "next/link";
 import VipBadge from "@/components/VipBadge";
 
@@ -11,23 +13,8 @@ function AdminBadge() {
   );
 }
 
-function Avatar({ profile, name }) {
-  return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/5">
-      {profile.avatar_url ? (
-        <img
-          src={profile.avatar_url}
-          alt={name}
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
-      ) : (
-        <span className="text-sm font-black text-white/45">
-          {name.charAt(0).toUpperCase()}
-        </span>
-      )}
-    </div>
-  );
+function Avatar({ profile, name }: { profile: { avatar_url?: string | null; avatar_border?: string | null }; name: string }) {
+  return <UserAvatar src={profile.avatar_url} name={name} size={36} shape="rounded" border={profile.avatar_border} />;
 }
 
 export default function ProfilePopover({ children, profile, href, align = "left" }) {
