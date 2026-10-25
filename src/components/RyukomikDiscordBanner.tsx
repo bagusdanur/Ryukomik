@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FaBolt, FaDiscord, FaPen, FaPalette, FaUsers } from "react-icons/fa";
+import { FaDiscord, FaPen, FaPalette } from "react-icons/fa";
 import SpeedrunBanner from "@/components/SpeedrunBanner";
 
 const STEPS = [
@@ -15,47 +15,71 @@ const STEPS = [
 ];
 
 const POSITIONS = [
-  { icon: FaPen, role: "Translator (TL)" },
-  { icon: FaPalette, role: "Typesetter (TS)" },
+  { icon: FaPen, label: "TL" },
+  { icon: FaPalette, label: "TS" },
 ];
 
 const DISCORD_INVITE = "https://discord.gg/Sf8pPRq4aj";
 
-export default function RyukomikStaffRecruitmentBanner({
-  className = "",
-}) {
+export default function RyukomikStaffRecruitmentBanner({ className = "" }: { className?: string }) {
   const [showSteps, setShowSteps] = useState(false);
 
   return (
     <div className={`px-3 pb-1 pt-2 sm:px-6 ${className}`}>
-      <div className="grid grid-cols-2 gap-2 sm:gap-3">
-      <div className="relative overflow-hidden rounded-2xl border border-[var(--accent)]/25 bg-[var(--surface-1)] transition-colors hover:border-[var(--accent)]/45">
-        <div className="rk-card group relative flex h-full w-full flex-wrap items-center gap-2 overflow-hidden px-2 py-2.5 sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:py-3">
-          <FaDiscord className="pointer-events-none absolute -right-3 -top-4 h-24 w-24 text-[var(--accent)] opacity-[0.08]" />
-          <div className="relative hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/25 bg-[var(--accent)]/10 text-[var(--accent-2)] sm:flex">
-            <FaDiscord className="h-4 w-4" />
+      <div className="grid grid-cols-2 items-stretch gap-2 sm:gap-3">
+        {/* Rekrutmen */}
+        <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--accent)]/25 bg-[var(--surface-1)] p-2.5 transition-colors hover:border-[var(--accent)]/45">
+          <FaDiscord className="pointer-events-none absolute -right-4 -top-5 h-20 w-20 text-[var(--accent)] opacity-[0.07]" />
+
+          <div className="relative flex items-center gap-1.5">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-[var(--accent)]/25 bg-[var(--accent)]/12 text-[var(--accent-2)]">
+              <FaDiscord size={11} />
+            </span>
+            <span className="min-w-0 truncate text-[8px] font-black uppercase tracking-[0.1em] text-[var(--accent-2)]">
+              Rekrutmen
+            </span>
+            <span className="ml-auto shrink-0 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-1 py-px text-[7px] font-black uppercase tracking-wide text-emerald-300">
+              Dibayar
+            </span>
           </div>
-          <div className="relative min-w-0 basis-full sm:flex-1 sm:basis-auto">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-[0.04em] text-[var(--accent-2)] sm:text-[9px] sm:tracking-[0.12em]"><FaBolt className="text-[8px]" /> Urgent recruitment</span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-[var(--accent)]/25 bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-black text-[var(--accent-2)]"><FaUsers className="text-[8px]" /> Semua posisi dibayar</span>
-            </div>
-            <p className="mt-0.5 text-[11px] font-extrabold leading-snug text-white sm:text-[13px]"><span className="hidden sm:inline">Ryukomik butuh </span>Translator & Typesetter</p>
-            <div className="mt-1 flex flex-wrap items-center gap-1">
-              {POSITIONS.map((position) => {
-                const Icon = position.icon;
-                return <span key={position.role} className="hidden items-center gap-1 rounded-full bg-white/[0.045] px-1.5 py-0.5 text-[8.5px] font-semibold text-white/65 sm:inline-flex"><Icon className="text-[9px] text-[var(--accent-2)]" />{position.role}</span>;
-              })}
-              <button type="button" onClick={() => setShowSteps(true)} className="px-1 text-[9px] font-bold text-[var(--accent-2)] hover:underline">Lihat alur</button>
-            </div>
+
+          <p className="relative mt-1.5 text-[11px] font-extrabold leading-tight text-white">
+            Translator &amp; Typesetter
+          </p>
+
+          <div className="relative mt-1.5 flex flex-wrap items-center gap-1">
+            {POSITIONS.map(({ icon: Icon, label }) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-1 rounded-full bg-white/[0.05] px-1.5 py-0.5 text-[8px] font-bold text-white/60"
+              >
+                <Icon size={7} className="text-[var(--accent-2)]" />
+                {label}
+              </span>
+            ))}
           </div>
-          <div className="relative shrink-0">
-            <a href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer" className="rk-btn-primary whitespace-nowrap rounded-xl px-2.5 py-2 text-center text-[10px] font-bold text-white transition-transform active:scale-95 sm:px-3 sm:text-[11px]">Gabung</a>
+
+          <div className="relative mt-auto flex items-center gap-1.5 pt-2">
+            <a
+              href={DISCORD_INVITE}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 rounded-lg bg-[var(--accent)] px-2 py-1.5 text-center text-[9.5px] font-black text-white transition-transform active:scale-95"
+            >
+              Gabung
+            </a>
+            <button
+              type="button"
+              onClick={() => setShowSteps(true)}
+              className="shrink-0 rounded-lg border border-white/10 px-2 py-1.5 text-[9px] font-bold text-white/55 transition-colors hover:text-white/85"
+            >
+              Alur
+            </button>
           </div>
         </div>
-      </div>
 
-        <SpeedrunBanner compact />
+        {/* Speedrun */}
+        <SpeedrunBanner />
       </div>
 
       {showSteps && (
@@ -82,9 +106,7 @@ export default function RyukomikStaffRecruitmentBanner({
             <h2 className="mb-1 text-[18px] font-extrabold text-white">
               7 Langkah Menuju Tim Ryukomik
             </h2>
-            <p className="mb-4 text-[11px] font-bold text-[var(--accent-2)]">
-              Semua posisi dibayar.
-            </p>
+            <p className="mb-4 text-[11px] font-bold text-[var(--accent-2)]">Semua posisi dibayar.</p>
 
             <div className="flex flex-col gap-3.5">
               {STEPS.map((step, index) => (
@@ -103,9 +125,7 @@ export default function RyukomikStaffRecruitmentBanner({
                   >
                     {step.n}
                   </div>
-                  <p className="pt-0.5 text-[13px] leading-snug text-white/80">
-                    {step.text}
-                  </p>
+                  <p className="pt-0.5 text-[13px] leading-snug text-white/80">{step.text}</p>
                 </div>
               ))}
             </div>
