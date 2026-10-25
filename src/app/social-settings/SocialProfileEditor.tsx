@@ -55,26 +55,33 @@ export default function SocialProfileEditor() {
   }
 
   return (
-    <form onSubmit={save} className="space-y-5">
+    <form onSubmit={save} className="space-y-5 pb-24">
       <div className="rk-card overflow-hidden rounded-2xl">
-        <div className="relative h-36 bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent)_35%,var(--surface-2)),color-mix(in_srgb,var(--accent-2)_18%,var(--surface-0)))]">
+        <div className="relative h-24 bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent)_35%,var(--surface-2)),color-mix(in_srgb,var(--accent-2)_18%,var(--surface-0)))]">
           {profile.banner_url && (
-            <img src={profile.banner_url} alt="Preview banner" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={profile.banner_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
           )}
+          <div className="absolute inset-0 bg-black/25" />
         </div>
-        <div className="px-4 pb-4">
-          <div className="-mt-10">
-            <UserAvatar
-              src={profile.avatar_url}
-              name={profile.username}
-              size={80}
-              showRing={false}
-              border={profile.avatar_border}
-              className="border-4 border-[var(--surface-0)] text-2xl"
-              alt="Preview avatar"
-            />
-          </div>
-          <h2 className="mt-2 text-lg font-black">{profile.username}</h2>
+
+        {/* Ruang khusus avatar: tinggi tetap supaya frame besar (sampai ~2x)
+            tetap muat dan tidak menimpa judul di atasnya. */}
+        <div className="-mt-10 flex h-40 items-center justify-center">
+          <UserAvatar
+            src={profile.avatar_url}
+            name={profile.username}
+            size={72}
+            border={profile.avatar_border}
+            alt="Pratinjau avatar"
+          />
+        </div>
+
+        <div className="-mt-6 px-4 pb-4 text-center">
+          <h2 className="text-lg font-black">{profile.username}</h2>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30">
+            Pratinjau border
+          </p>
         </div>
       </div>
 
@@ -84,13 +91,17 @@ export default function SocialProfileEditor() {
       </div>
 
       <div className="rk-card-soft rounded-2xl p-4">
-        <p className="mb-3 text-xs font-bold text-white/55">Border avatar</p>
+        <div className="mb-3 flex items-baseline justify-between">
+          <p className="text-xs font-bold text-white/55">Border avatar</p>
+          <p className="text-[10px] text-white/30">{Object.keys(AVATAR_BORDERS).length} pilihan</p>
+        </div>
+
         {(["css", "image"] as const).map((kind) => (
-          <div key={kind} className="mb-3 last:mb-0">
-            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30">
+          <div key={kind} className="mb-4 last:mb-0">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/30">
               {kind === "css" ? "Warna" : "Frame"}
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
               {Object.values(AVATAR_BORDERS)
                 .filter((border) => (border.type ?? "css") === kind)
                 .map((border) => {
@@ -99,23 +110,32 @@ export default function SocialProfileEditor() {
                     <button
                       key={border.id}
                       type="button"
+                      title={border.label}
                       onClick={() => update("avatar_border", border.id === "default" ? null : border.id)}
-                      className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
+                      className={`flex flex-col items-center gap-1 rounded-xl border p-1.5 transition ${
                         active
-                          ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-100"
-                          : "border-white/10 text-white/55 hover:border-white/25 hover:text-white/80"
+                          ? "border-cyan-300/60 bg-cyan-300/10"
+                          : "border-white/[0.08] bg-white/[0.02] hover:border-white/25"
                       }`}
                     >
-                      {border.type === "image" && border.src ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={border.src} alt="" className="h-4 w-4" />
-                      ) : (
-                        <span
-                          className="h-3.5 w-3.5 rounded-full"
-                          style={{ boxShadow: `0 0 0 2px ${resolveAvatarBorder(border.id).ring}` }}
-                        />
-                      )}
-                      {border.label}
+                      <span className="grid h-9 w-9 place-items-center">
+                        {border.type === "image" && border.src ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={border.src} alt="" className="h-9 w-9 object-contain" loading="lazy" />
+                        ) : (
+                          <span
+                            className="h-6 w-6 rounded-full bg-[var(--surface-0)]"
+                            style={{ boxShadow: `0 0 0 3px ${resolveAvatarBorder(border.id).ring}` }}
+                          />
+                        )}
+                      </span>
+                      <span
+                        className={`w-full truncate text-center text-[9px] font-bold ${
+                          active ? "text-cyan-200" : "text-white/45"
+                        }`}
+                      >
+                        {border.label}
+                      </span>
                     </button>
                   );
                 })}
