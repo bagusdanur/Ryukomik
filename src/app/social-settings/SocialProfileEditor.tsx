@@ -85,34 +85,44 @@ export default function SocialProfileEditor() {
 
       <div className="rk-card-soft rounded-2xl p-4">
         <p className="mb-3 text-xs font-bold text-white/55">Border avatar</p>
-        <div className="flex flex-wrap gap-2">
-          {Object.values(AVATAR_BORDERS).map((border) => {
-            const active = (profile.avatar_border || "default") === border.id;
-            return (
-              <button
-                key={border.id}
-                type="button"
-                onClick={() => update("avatar_border", border.id === "default" ? null : border.id)}
-                className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
-                  active
-                    ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-100"
-                    : "border-white/10 text-white/55 hover:border-white/25 hover:text-white/80"
-                }`}
-              >
-                {border.type === "image" && border.src ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={border.src} alt="" className="h-4 w-4" />
-                ) : (
-                  <span
-                    className="h-3.5 w-3.5 rounded-full"
-                    style={{ boxShadow: `0 0 0 2px ${resolveAvatarBorder(border.id).ring}` }}
-                  />
-                )}
-                {border.label}
-              </button>
-            );
-          })}
-        </div>
+        {(["css", "image"] as const).map((kind) => (
+          <div key={kind} className="mb-3 last:mb-0">
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-white/30">
+              {kind === "css" ? "Warna" : "Frame"}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {Object.values(AVATAR_BORDERS)
+                .filter((border) => (border.type ?? "css") === kind)
+                .map((border) => {
+                  const active = (profile.avatar_border || "default") === border.id;
+                  return (
+                    <button
+                      key={border.id}
+                      type="button"
+                      onClick={() => update("avatar_border", border.id === "default" ? null : border.id)}
+                      className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
+                        active
+                          ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-100"
+                          : "border-white/10 text-white/55 hover:border-white/25 hover:text-white/80"
+                      }`}
+                    >
+                      {border.type === "image" && border.src ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={border.src} alt="" className="h-4 w-4" />
+                      ) : (
+                        <span
+                          className="h-3.5 w-3.5 rounded-full"
+                          style={{ boxShadow: `0 0 0 2px ${resolveAvatarBorder(border.id).ring}` }}
+                        />
+                      )}
+                      {border.label}
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+        ))}
+
         <p className="mt-2 text-[10px] text-white/30">Border tampil di komentar, leaderboard, dan profil.</p>
       </div>
 

@@ -42,13 +42,28 @@ export default function UserAvatar({
   const borderDef = resolveAvatarBorder(border);
   const frame = isImageBorder(borderDef) ? borderDef : null;
   const shadow = showRing && !frame ? avatarBorderShadow(border, ring) : undefined;
-  const inset = frame ? Math.abs(frame.inset ?? 6) : 0;
-  const frameSize = size + inset * 2;
+  // Frame bisa diperbesar (scale) dan boleh berada di atas atau di belakang avatar.
+  const frameSize = frame ? Math.round(size * (frame.scale ?? 1.5)) : 0;
+  const inset = frame ? Math.round((frameSize - size) / 2) : 0;
+  const under = frame?.layer === "under";
+
+  const frameNode = frame ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={frame.src}
+      alt=""
+      aria-hidden
+      draggable={false}
+      className={`pointer-events-none absolute select-none ${under ? "z-0" : "z-20"}`}
+      style={{ width: frameSize, height: frameSize, left: -inset, top: -inset }}
+    />
+  ) : null;
 
   return (
     <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
+      {under && frameNode}
       <span
-        className={`relative inline-flex h-full w-full items-center justify-center overflow-hidden bg-white/[0.06] ${
+        className={`relative z-10 inline-flex h-full w-full items-center justify-center overflow-hidden bg-white/[0.06] ${
           shape === "rounded" ? "rounded-xl" : "rounded-full"
         } ${className}`}
         style={{ boxShadow: shadow }}
@@ -76,17 +91,7 @@ export default function UserAvatar({
         )}
       </span>
 
-      {frame && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={frame.src}
-          alt=""
-          aria-hidden
-          draggable={false}
-          className="pointer-events-none absolute select-none"
-          style={{ width: frameSize, height: frameSize, left: -inset, top: -inset }}
-        />
-      )}
+      {!under && frameNode}
     </span>
   );
 }

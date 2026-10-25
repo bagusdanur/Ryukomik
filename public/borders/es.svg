@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" fill="none">
+  <defs><linearGradient id="g" x1="18" y1="20" x2="104" y2="104" gradientUnits="userSpaceOnUse"><stop stop-color="#e0f2fe"/><stop offset="0.5" stop-color="#38bdf8"/><stop offset="1" stop-color="#0369a1"/></linearGradient></defs>
+  <path d="M60 0 L66 14 L60 24 L54 14 Z" fill="url(#g)" transform="rotate(0 60 60)" opacity="0.9"/>
+  <path d="M60 0 L66 14 L60 24 L54 14 Z" fill="url(#g)" transform="rotate(45 60 60)" opacity="0.9"/>
+  <path d="M60 0 L66 14 L60 24 L54 14 Z" fill="url(#g)" transform="rotate(90 60 60)" opacity="0.9"/>
+  <path d="M60 0 L66 14 L60 24 L54 14 Z" fill="url(#g)" transform="rotate(135 60 60)" opacity="0.9"/>
+  <path d="M60 0 L66 14 L60 24 L54 14 Z" fill="url(#g)" transform="rotate(180 60 60)" opacity="0.9"/>
+  <path d="M60 0 L66 14 L60 24 L54 14 Z" fill="url(#g)" transform="rotate(225 60 60)" opacity="0.9"/>
+  <path d="M60 0 L66 14 L60 24 L54 14 Z" fill="url(#g)" transform="rotate(270 60 60)" opacity="0.9"/>
+  <path d="M60 0 L66 14 L60 24 L54 14 Z" fill="url(#g)" transform="rotate(315 60 60)" opacity="0.9"/>
+  <circle cx="60" cy="60" r="53" stroke="url(#g)" stroke-width="5"/>
+  <circle cx="60" cy="60" r="47" stroke="#e0f2fe" stroke-opacity="0.5" stroke-width="1.2"/>
+</svg>

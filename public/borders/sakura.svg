@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" fill="none">
+  <defs><linearGradient id="g" x1="30" y1="18" x2="90" y2="102" gradientUnits="userSpaceOnUse"><stop stop-color="#fbcfe8"/><stop offset="0.55" stop-color="#f472b6"/><stop offset="1" stop-color="#db2777"/></linearGradient></defs>
+  <ellipse cx="60" cy="7" rx="8.0" ry="13.0" fill="url(#g)" transform="rotate(0.0 60 60)" opacity="0.95"/>
+  <ellipse cx="60" cy="7" rx="8.0" ry="13.0" fill="url(#g)" transform="rotate(60.0 60 60)" opacity="0.95"/>
+  <ellipse cx="60" cy="7" rx="8.0" ry="13.0" fill="url(#g)" transform="rotate(120.0 60 60)" opacity="0.95"/>
+  <ellipse cx="60" cy="7" rx="8.0" ry="13.0" fill="url(#g)" transform="rotate(180.0 60 60)" opacity="0.95"/>
+  <ellipse cx="60" cy="7" rx="8.0" ry="13.0" fill="url(#g)" transform="rotate(240.0 60 60)" opacity="0.95"/>
+  <ellipse cx="60" cy="7" rx="8.0" ry="13.0" fill="url(#g)" transform="rotate(300.0 60 60)" opacity="0.95"/>  <circle cx="60" cy="60" r="52" stroke="url(#g)" stroke-width="5"/>
+  <circle cx="60" cy="60" r="46" stroke="#fbcfe8" stroke-opacity="0.45" stroke-width="1.5"/>
+</svg>
