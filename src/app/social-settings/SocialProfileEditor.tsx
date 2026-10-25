@@ -1,6 +1,7 @@
 "use client";
 
 import UserAvatar from "@/components/UserAvatar";
+import { AVATAR_BORDERS, resolveAvatarBorder } from "@/lib/avatarBorders";
 
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
@@ -43,7 +44,7 @@ export default function SocialProfileEditor() {
     try {
       await socialFetch("/api/social/me/profile", {
         method: "PATCH",
-        body: JSON.stringify({ bio: profile?.bio, banner_url: profile?.banner_url }),
+        body: JSON.stringify({ bio: profile?.bio, banner_url: profile?.banner_url, avatar_border: profile?.avatar_border ?? null }),
       });
       setMessage("Profil sosial berhasil disimpan.");
     } catch (error) {
@@ -80,6 +81,34 @@ export default function SocialProfileEditor() {
       <div className="rk-card-soft rounded-2xl border border-cyan-300/10 p-4 text-sm leading-relaxed text-white/60">
         Nama, avatar, role, dan level mengikuti akun utama dan tersinkron otomatis. Ubah data tersebut melalui{" "}
         <Link href="/setting" className="font-bold text-cyan-200 hover:text-cyan-100">pengaturan akun</Link>.
+      </div>
+
+      <div className="rk-card-soft rounded-2xl p-4">
+        <p className="mb-3 text-xs font-bold text-white/55">Border avatar</p>
+        <div className="flex flex-wrap gap-2">
+          {Object.values(AVATAR_BORDERS).map((border) => {
+            const active = (profile.avatar_border || "default") === border.id;
+            return (
+              <button
+                key={border.id}
+                type="button"
+                onClick={() => update("avatar_border", border.id === "default" ? null : border.id)}
+                className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${
+                  active
+                    ? "border-cyan-300/50 bg-cyan-300/10 text-cyan-100"
+                    : "border-white/10 text-white/55 hover:border-white/25 hover:text-white/80"
+                }`}
+              >
+                <span
+                  className="h-3.5 w-3.5 rounded-full"
+                  style={{ boxShadow: `0 0 0 2px ${resolveAvatarBorder(border.id).ring}` }}
+                />
+                {border.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-[10px] text-white/30">Border tampil di komentar, leaderboard, dan profil.</p>
       </div>
 
       <label className="block">
