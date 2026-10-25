@@ -1,6 +1,6 @@
 "use client";
 
-import { IMAGE_FRAME_SCALE, avatarBorderShadow, isImageBorder, resolveAvatarBorder } from "@/lib/avatarBorders";
+import { avatarBorderShadow, isImageBorder, resolveAvatarBorder } from "@/lib/avatarBorders";
 
 /**
  * Satu-satunya komponen avatar di situs.
@@ -39,20 +39,6 @@ export default function UserAvatar({
   const frame = isImageBorder(borderDef) ? borderDef : null;
   const shadow = showRing && !frame ? avatarBorderShadow(border, ring) : undefined;
 
-  // Frame diposisikan dari TITIK LUBANGNYA (holeX/holeY, hasil ukur), bukan
-  // dari tengah kanvas — lubang banyak frame tidak di tengah, jadi kalau
-  // dipusatkan avatar-nya terlihat meleset. Dengan cara ini avatar selalu
-  // duduk pas di lubang, berapa pun skala frame-nya.
-  const frameSize = size * IMAGE_FRAME_SCALE;
-  const holeX = frame?.holeX ?? 0.5;
-  const holeY = frame?.holeY ?? 0.5;
-  const frameStyle = {
-    width: frameSize,
-    height: frameSize,
-    left: size / 2 - holeX * frameSize,
-    top: size / 2 - holeY * frameSize,
-  } as const;
-
   return (
     <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
       <span
@@ -85,16 +71,14 @@ export default function UserAvatar({
       </span>
 
       {frame && (
-        // Frame digambar sedikit lebih besar dari kotak avatar (lihat
-        // IMAGE_FRAME_SCALE) dan tetap terpusat — tanpa offset per frame.
+        // 1:1 dengan kotak avatar — tanpa scale, tanpa offset.
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={frame.src}
           alt=""
           aria-hidden
           draggable={false}
-          className="pointer-events-none absolute z-20 select-none object-contain"
-          style={frameStyle}
+          className="pointer-events-none absolute inset-0 z-20 h-full w-full select-none object-contain"
         />
       )}
     </span>
