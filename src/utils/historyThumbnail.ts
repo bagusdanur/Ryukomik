@@ -16,6 +16,21 @@ export type HistoryThumbItem = {
   thumbnail?: string | null;
 };
 
+export type SeriesMeta = { thumbnail: string | null; latestChapter: number | null };
+
+/** "Chapter 389" / "Ch. 12.5" / 389 → 389 / 12.5 / 389. */
+export function chapterNumberFrom(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const match = String(value ?? "").match(/(\d+(?:\.\d+)?)/);
+  return match ? Number(match[1]) : null;
+}
+
+/** Selisih chapter: berapa chapter di belakang chapter terbaru. */
+export function chaptersBehind(read: number | null, latest: number | null): number | null {
+  if (read === null || latest === null) return null;
+  return Math.max(0, Math.round((latest - read) * 10) / 10);
+}
+
 /** Ambil segmen pertama yang aman dari slug project (buang "." dan ".."). */
 export function normalizeProjectSlug(raw: string): string {
   const segments = String(raw || "")
@@ -53,30 +68,45 @@ export function itemsMissingThumbnails<T extends HistoryThumbItem>(items: T[], l
   return out;
 }
 
-const memo = new Map<string, Promise<string | null>>();
+const memo = new Map<string, Promise<SeriesMeta>>();
 
-/** Ambil thumbnail series lewat endpoint cache. Tidak pernah melempar error. */
-export function fetchSeriesThumbnail(source: string, slug: string): Promise<string | null> {
+/** Thumbnail + chapter terbaru lewat endpoint cache. Tidak pernah melempar error. */
+export function fetchSeriesMeta(source: string, slug: string): Promise<SeriesMeta> {
   const key = `${source}|${slug}`;
   const cached = memo.get(key);
   if (cached) return cached;
 
-  const request = (async () => {
+  const request = (async (): Promise<SeriesMeta> => {
     try {
       const res = await fetch(
         `/api/series-thumb?source=${encodeURIComponent(source)}&slug=${encodeURIComponent(slug)}`,
         { signal: AbortSignal.timeout(8_000) },
       );
-      if (!res.ok) return null;
-      const json = (await res.json()) as { thumbnail?: string | null };
-      return typeof json.thumbnail === "string" && json.thumbnail ? json.thumbnail : null;
+      if (!res.ok) return { thumbnail: null, latestChapter: null };
+      const json = (await res.json()) as {
+        thumbnail?: string | null;
+        latestChapter?: number | null;
+      };
+      return {
+        thumbnail: typeof json.thumbnail === "string" && json.thumbnail ? json.thumbnail : null,
+        latestChapter:
+          typeof json.latestChapter === "number" && Number.isFinite(json.latestChapter)
+            ? json.latestChapter
+            : null,
+      };
     } catch {
-      return null;
+      return { thumbnail: null, latestChapter: null };
     }
   })();
 
   memo.set(key, request);
   return request;
+}
+
+/** Thumbnail saja (dipakai halaman chapter saat menyimpan riwayat). */
+export async function fetchSeriesThumbnail(source: string, slug: string): Promise<string | null> {
+  const meta = await fetchSeriesMeta(source, slug);
+  return meta.thumbnail;
 }
 
 /** Isi thumbnail untuk entry lama. Berurutan dan dibatasi agar tetap ringan. */

@@ -2,38 +2,34 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import SeriesCard from "@/components/SeriesCard";
 import { useHistoryStore } from "@/store/historyStore";
-import { backfillHistoryThumbnails } from "@/utils/historyThumbnail";
+import {
+  backfillHistoryThumbnails,
+  chapterNumberFrom,
+  chaptersBehind,
+  fetchSeriesMeta,
+} from "@/utils/historyThumbnail";
 
 /**
- * "Lanjut Baca" — dari riwayat baca lokal (zustand persist), tanpa request
- * tambahan selain backfill cover yang di-cache.
+ * "Lanjut Baca" — dari riwayat baca lokal, memakai komponen kartu yang sama
+ * dengan section lain supaya ukuran & tipografinya identik.
+ * Chapter terbaru diambil dari /api/series-thumb (cache 1 jam, memo per sesi).
  */
+
+const META_LIMIT = 6;
+
 function relativeTime(ts: number, now: number): string {
   const diff = Math.max(0, now - ts);
   const minutes = Math.floor(diff / 60_000);
   if (minutes < 1) return "baru saja";
-  if (minutes < 60) return `${minutes}m lalu`;
+  if (minutes < 60) return `${minutes} menit lalu`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}j lalu`;
+  if (hours < 24) return `${hours} jam lalu`;
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}h lalu`;
+  if (days < 30) return `${days} hari lalu`;
   const months = Math.floor(days / 30);
-  return months < 12 ? `${months}bl lalu` : `${Math.floor(months / 12)}th lalu`;
-}
-
-function chapterLabel(chapter?: string, slug?: string): string {
-  const raw = (chapter || "").trim();
-  if (raw) return /^ch/i.test(raw) ? raw : `Ch. ${raw}`;
-  const match = (slug || "").match(/(?:chapter|ch)[- _]?(\d+(?:\.\d+)?)/i);
-  return match ? `Ch. ${match[1]}` : "Lanjut";
-}
-
-/** Warna placeholder stabil per judul, supaya tidak terlihat acak. */
-function placeholderTone(title: string): string {
-  let hash = 0;
-  for (let i = 0; i < title.length; i += 1) hash = (hash * 31 + title.charCodeAt(i)) % 360;
-  return `linear-gradient(150deg, hsl(${hash} 45% 22%), hsl(${(hash + 40) % 360} 35% 12%))`;
+  return months < 12 ? `${months} bulan lalu` : `${Math.floor(months / 12)} tahun lalu`;
 }
 
 export default function ContinueReading() {
@@ -41,6 +37,7 @@ export default function ContinueReading() {
   const updateThumbs = useHistoryStore((state) => state.updateHistoryThumbs);
   const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState(0);
+  const [latest, setLatest] = useState<Record<string, number | null>>({});
 
   useEffect(() => {
     setMounted(true);
@@ -59,17 +56,42 @@ export default function ContinueReading() {
     };
   }, [mounted, history, updateThumbs]);
 
+  // Chapter terbaru untuk kartu yang tampil (maks 6, paralel, sudah di-cache).
+  useEffect(() => {
+    if (!mounted || !history.length) return;
+    let cancelled = false;
+
+    const targets = history.slice(0, META_LIMIT);
+    void Promise.all(
+      targets.map(async (item) => {
+        const slug = String(item.comicSlug || "").trim();
+        if (!slug) return null;
+        const source = item.source || "komiku";
+        const meta = await fetchSeriesMeta(source, slug);
+        return { key: `${source}|${slug}`, latestChapter: meta.latestChapter };
+      }),
+    ).then((rows) => {
+      if (cancelled) return;
+      const next: Record<string, number | null> = {};
+      for (const row of rows) {
+        if (row) next[row.key] = row.latestChapter;
+      }
+      setLatest((prev) => ({ ...prev, ...next }));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, history]);
+
   if (!mounted || !history.length) return null;
 
-  const items = history
-    .filter((item) => item.title && (item.lastChapterSlug || item.comicSlug))
-    .slice(0, 10);
-
+  const items = history.filter((item) => item.title).slice(0, 10);
   if (!items.length) return null;
 
   return (
-    <section className="mt-5 px-3 sm:px-6">
-      <div className="mb-3 flex items-center justify-between">
+    <section className="mt-7 px-3 sm:px-6">
+      <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-200/60">Kamu</p>
           <h3 className="rk-section-title text-xl font-black">Lanjut Baca</h3>
@@ -82,57 +104,47 @@ export default function ContinueReading() {
         </Link>
       </div>
 
-      <div className="no-scrollbar -mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
-        {items.map((item) => {
-          const href = item.lastChapterSlug
-            ? `/chapter/${item.source || "komiku"}/${item.lastChapterSlug}`
-            : `/komik/${item.source || "komiku"}/${item.comicSlug}`;
-          const label = chapterLabel(item.lastChapter, item.lastChapterSlug);
-          const title = item.title || "";
+      <div className="no-scrollbar overflow-x-auto pb-3">
+        <div className="grid auto-cols-[118px] grid-flow-col gap-3 sm:auto-cols-[138px] md:auto-cols-[150px]">
+          {items.map((item) => {
+            const source = item.source || "komiku";
+            const slug = String(item.comicSlug || "").trim();
+            const href = item.lastChapterSlug
+              ? `/chapter/${source}/${item.lastChapterSlug}`
+              : `/komik/${source}/${slug}`;
 
-          return (
-            <Link
-              key={`${item.comicSlug}-${item.lastChapterSlug}`}
-              href={href}
-              className="group w-[106px] shrink-0 snap-start sm:w-[118px]"
-            >
-              <div className="relative aspect-[3/4] overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.04]">
-                {item.thumbnail ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.thumbnail}
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover object-[center_18%] transition-transform duration-300 group-hover:scale-[1.04]"
-                    onError={(event) => {
-                      event.currentTarget.style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <div
-                    className="flex h-full w-full items-center justify-center"
-                    style={{ background: placeholderTone(title) }}
-                  >
-                    <span className="text-2xl font-black text-white/25">
-                      {title.charAt(0).toUpperCase()}
+            const readChapter =
+              chapterNumberFrom(item.lastChapter) ?? chapterNumberFrom(item.lastChapterSlug);
+            const latestChapter = latest[`${source}|${slug}`] ?? null;
+            const behind = chaptersBehind(readChapter, latestChapter);
+
+            return (
+              <SeriesCard
+                key={`${slug}-${item.lastChapterSlug}`}
+                href={href}
+                title={item.title}
+                image={item.thumbnail || undefined}
+                source={source}
+                eyebrow={readChapter !== null ? `Dibaca Ch. ${readChapter}` : undefined}
+                sideEyebrow={
+                  behind === null
+                    ? undefined
+                    : behind === 0
+                      ? "Terbaru"
+                      : `−${behind} ch`
+                }
+                meta={now ? relativeTime(item.updatedAt, now) : undefined}
+                corner={
+                  latestChapter !== null ? (
+                    <span className="rk-cover-badge absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold text-[var(--accent-2)]">
+                      Ch. {latestChapter}
                     </span>
-                  </div>
-                )}
-
-                <span className="absolute inset-x-1 bottom-1 rounded-md bg-black/72 px-1.5 py-0.5 text-center text-[8.5px] font-black leading-none text-cyan-200 backdrop-blur-sm">
-                  {label}
-                </span>
-              </div>
-
-              <p className="mt-1.5 line-clamp-2 text-[10.5px] font-bold leading-tight text-white/85 transition-colors group-hover:text-cyan-100">
-                {title}
-              </p>
-              <p className="mt-0.5 text-[8.5px] font-semibold text-white/30">
-                {now ? relativeTime(item.updatedAt, now) : ""}
-              </p>
-            </Link>
-          );
-        })}
+                  ) : null
+                }
+              />
+            );
+          })}
+        </div>
       </div>
     </section>
   );

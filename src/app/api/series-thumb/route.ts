@@ -4,26 +4,52 @@ import { getSourceConfig } from "@/config/sources";
 import { projectCoverCandidates } from "@/utils/historyThumbnail";
 
 /**
- * Thumbnail series untuk kartu riwayat baca di halaman depan.
+ * Thumbnail + chapter terbaru untuk kartu riwayat baca di halaman depan.
  * Mengambil dari endpoint detail backend (sudah di-cache backend ±15 menit),
  * lalu di-cache di sini 1 jam — nol Supabase, beban scraper maksimal
  * 1 fetch per sumber+slug per jam.
  */
-const fetchSeriesThumbnail = unstable_cache(
-  async (source: string, slug: string): Promise<string | null> => {
+type SeriesMeta = { thumbnail: string | null; latestChapter: number | null };
+
+function parseChapterNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const match = String(value ?? "").match(/(\d+(?:\.\d+)?)/);
+  return match ? Number(match[1]) : null;
+}
+
+const fetchSeriesMeta = unstable_cache(
+  async (source: string, slug: string): Promise<SeriesMeta> => {
     try {
       const res = await fetch(
         `https://api.ryukomik.web.id/${source}/detail/${encodeURIComponent(slug)}`,
         { next: { revalidate: 3600 } },
       );
-      if (!res.ok) return null;
-      const json = (await res.json()) as { data?: { thumbnail?: string } };
-      return json.data?.thumbnail || null;
+      if (!res.ok) return { thumbnail: null, latestChapter: null };
+
+      const json = (await res.json()) as {
+        data?: {
+          thumbnail?: string;
+          total_chapter?: number | string;
+          chapters?: { title?: string; chapter?: number | string }[];
+        };
+      };
+      const data = json.data;
+      if (!data) return { thumbnail: null, latestChapter: null };
+
+      const chapters = Array.isArray(data.chapters) ? data.chapters : [];
+      const last = chapters[chapters.length - 1];
+      const latestChapter =
+        parseChapterNumber(last?.title) ??
+        parseChapterNumber(last?.chapter) ??
+        parseChapterNumber(data.total_chapter) ??
+        (chapters.length || null);
+
+      return { thumbnail: data.thumbnail || null, latestChapter };
     } catch {
-      return null;
+      return { thumbnail: null, latestChapter: null };
     }
   },
-  ["series-thumbnail-v1"],
+  ["series-meta-v2"],
   { revalidate: 3600 },
 );
 
@@ -58,15 +84,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "invalid" }, { status: 400 });
     }
 
-    const thumbnail =
+    const meta: SeriesMeta =
       config.group === "project"
-        ? await fetchProjectCover(slug)
-        : await fetchSeriesThumbnail(source, slug);
-    const response = NextResponse.json({ thumbnail });
-    response.headers.set(
-      "Cache-Control",
-      "public, s-maxage=3600, stale-while-revalidate=3600",
-    );
+        ? { thumbnail: await fetchProjectCover(slug), latestChapter: null }
+        : await fetchSeriesMeta(source, slug);
+
+    const response = NextResponse.json(meta);
+    response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=3600");
     return response;
   } catch (error) {
     return NextResponse.json(

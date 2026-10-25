@@ -55,3 +55,19 @@ test('itemsMissingThumbnails skips covered entries, dedupes and caps', () => {
   assert.equal(m.itemsMissingThumbnails(items, 10).length, 3);
   assert.equal(m.itemsMissingThumbnails([], 5).length, 0);
 });
+
+test('chapterNumberFrom parses labels and plain numbers', () => {
+  assert.equal(m.chapterNumberFrom('Chapter 389'), 389);
+  assert.equal(m.chapterNumberFrom('Ch. 12.5'), 12.5);
+  assert.equal(m.chapterNumberFrom(42), 42);
+  assert.equal(m.chapterNumberFrom(''), null);
+  assert.equal(m.chapterNumberFrom(null), null);
+});
+
+test('chaptersBehind never goes negative and needs both sides', () => {
+  assert.equal(m.chaptersBehind(120, 131), 11);
+  assert.equal(m.chaptersBehind(131, 131), 0);
+  assert.equal(m.chaptersBehind(140, 131), 0);
+  assert.equal(m.chaptersBehind(null, 131), null);
+  assert.equal(m.chaptersBehind(120, null), null);
+});
