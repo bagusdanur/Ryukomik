@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FiClock, FiPlay } from "react-icons/fi";
 import { useHistoryStore } from "@/store/historyStore";
+import { backfillHistoryThumbnails } from "@/utils/historyThumbnail";
 
 /**
  * "Lanjut Baca" — diambil dari riwayat baca lokal (zustand persist).
@@ -31,6 +32,7 @@ function chapterLabel(chapter?: string, slug?: string): string {
 
 export default function ContinueReading() {
   const history = useHistoryStore((state) => state.history);
+  const updateThumbs = useHistoryStore((state) => state.updateHistoryThumbs);
   const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState(0);
 
@@ -38,6 +40,18 @@ export default function ContinueReading() {
     setMounted(true);
     setNow(Date.now());
   }, []);
+
+  // Riwayat lama belum punya cover — isi sekali per sesi (maks 8, hasil di-cache).
+  useEffect(() => {
+    if (!mounted || !history.length) return;
+    let cancelled = false;
+    void backfillHistoryThumbnails(history, 8).then((found) => {
+      if (!cancelled && found.length) updateThumbs(found);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, history, updateThumbs]);
 
   if (!mounted || !history.length) return null;
 

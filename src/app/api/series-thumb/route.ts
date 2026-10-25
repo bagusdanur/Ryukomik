@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { getSourceConfig } from "@/config/sources";
+import { projectCoverCandidates } from "@/utils/historyThumbnail";
 
 /**
  * Thumbnail series untuk kartu riwayat baca di halaman depan.
@@ -26,18 +27,41 @@ const fetchSeriesThumbnail = unstable_cache(
   { revalidate: 3600 },
 );
 
+/**
+ * Project tidak punya endpoint detail; covernya ada di storage sendiri.
+ * Cek berurutan (png → webp → jpg) lalu simpan hasilnya 1 jam.
+ */
+const fetchProjectCover = unstable_cache(
+  async (slug: string): Promise<string | null> => {
+    for (const candidate of projectCoverCandidates(slug)) {
+      try {
+        const res = await fetch(candidate, { method: "HEAD", next: { revalidate: 3600 } });
+        if (res.ok) return candidate;
+      } catch {
+        // coba ekstensi berikutnya
+      }
+    }
+    return null;
+  },
+  ["project-cover-v1"],
+  { revalidate: 3600 },
+);
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const source = url.searchParams.get("source") || "";
     const slug = (url.searchParams.get("slug") || "").slice(0, 300);
     const config = getSourceConfig(source);
-    // Sumber wajib terdaftar (anti abuse/SSRF); project tidak punya endpoint detail.
-    if (!config || config.group === "project" || !slug) {
+    // Sumber wajib terdaftar (anti abuse/SSRF).
+    if (!config || !slug) {
       return NextResponse.json({ error: "invalid" }, { status: 400 });
     }
 
-    const thumbnail = await fetchSeriesThumbnail(source, slug);
+    const thumbnail =
+      config.group === "project"
+        ? await fetchProjectCover(slug)
+        : await fetchSeriesThumbnail(source, slug);
     const response = NextResponse.json({ thumbnail });
     response.headers.set(
       "Cache-Control",

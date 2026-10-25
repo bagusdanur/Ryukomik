@@ -9,6 +9,7 @@ import type { ReadHistoryItem } from "@/types/user";
 import { useReaderStore } from "@/store/readerStore";
 import { useAutoScroll } from "@/components/reader/hooks/useAutoScroll";
 import { useHistoryStore } from "@/store/historyStore";
+import { fetchSeriesThumbnail } from "@/utils/historyThumbnail";
 import { useScrollBehavior } from "@/components/reader/hooks/useScrollBehavior";
 import { useTapScroll } from "@/components/reader/hooks/useTapScroll";
 import { useXpRead, useXpQueueFlush } from "@/hooks/useXpRead";
@@ -52,6 +53,7 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
 
   const settings = useReaderStore();
   const addHistory = useHistoryStore((state) => state.addHistory);
+  const updateHistoryThumbs = useHistoryStore((state) => state.updateHistoryThumbs);
   const autoScroll = useAutoScroll(settings.scrollSpeed);
 
   useEffect(() => {
@@ -134,7 +136,15 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
       thumbnail: data.thumbnail,
     };
     addHistory(entry);
-  }, [data, slugStr, source, addHistory]);
+
+    // Thumbnail tidak selalu ikut di data chapter — ambil sekali lalu simpan,
+    // supaya riwayat & "Lanjut Baca" punya gambar tanpa request berulang.
+    if (!entry.thumbnail && entry.comicSlug) {
+      void fetchSeriesThumbnail(entry.source || "komiku", entry.comicSlug).then((thumbnail) => {
+        if (thumbnail) updateHistoryThumbs([{ comicSlug: entry.comicSlug, thumbnail }]);
+      });
+    }
+  }, [data, slugStr, source, addHistory, updateHistoryThumbs]);
 
   // Page title
   useEffect(() => {
