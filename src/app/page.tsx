@@ -7,6 +7,7 @@ import { getBannerKomiku } from "@/lib/banner";
 import { Suspense } from "react";
 import RecruitBanner from "@/components/RecruitBanner";
 import RyukomikDiscordBanner from "@/components/RyukomikDiscordBanner";
+import SpeedrunBanner from "@/components/SpeedrunBanner";
 import LatestComments from "@/components/LatestComments";
 import TitleRushNotice from "@/components/TitleRushNotice";
 import { getTitleRushEventStatus } from "@/lib/titleRushEvent";
@@ -34,6 +35,7 @@ export default async function Home() {
         <Suspense fallback={<div className="mx-3 mt-16 h-56 rounded-2xl rk-card" />}>
           <Banner data={banner} />
         </Suspense>
+        <SpeedrunBanner />
         <RecruitBanner />
         <RyukomikDiscordBanner />
         {titleRushStatus.enabled && <TitleRushNotice className="pb-3" />}
