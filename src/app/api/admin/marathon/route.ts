@@ -93,7 +93,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = (await request.json()) as { action?: string; winnerId?: string };
+    const body = (await request.json()) as {
+      action?: string;
+      winnerId?: string;
+      periodType?: string;
+      periodKey?: string;
+    };
 
     if (body.action === "finalize") {
       const result = await finalizeCompletedPeriods();
@@ -103,6 +108,51 @@ export async function POST(request: Request) {
         detail: `finalize weekly=${result.weekly.winners.length} monthly=${result.monthly.winners.length}`,
       });
       return privateAdminJson({ success: true, ...result });
+    }
+
+    // Grant semua pemenang yang masih pending (maks 3 per periode).
+    if (body.action === "grant_all") {
+      const wantedPeriod = body.periodType === "monthly" || body.periodType === "weekly" ? body.periodType : null;
+      const all = await listWinners(200);
+      const pending = all.filter(
+        (w) =>
+          w.status === "pending" &&
+          (!wantedPeriod || w.period_type === wantedPeriod) &&
+          (!body.periodKey || w.period_key === body.periodKey),
+      );
+
+      let granted = 0;
+      let failed = 0;
+
+      for (const w of pending) {
+        try {
+          await grantPremiumDays(String(w.user_id), Number(w.premium_days) || 0);
+          await setWinnerStatus(String(w.id), "granted", admin.userId);
+          try {
+            await createSocialNotification({
+              userId: String(w.user_id),
+              actorName: "Marathon",
+              type: "premium_reward",
+              slug: "/marathon",
+              targetId: String(w.id),
+            });
+          } catch (notifyError) {
+            console.error("[marathon] notify bulk failed:", notifyError instanceof Error ? notifyError.message : notifyError);
+          }
+          granted += 1;
+        } catch (grantError) {
+          failed += 1;
+          console.error("[marathon] grant_all item failed:", grantError instanceof Error ? grantError.message : grantError);
+        }
+      }
+
+      await recordAdminAction({
+        actorId: admin.userId,
+        action: "marathon_grant",
+        detail: `grant_all ${granted}/${pending.length}${wantedPeriod ? ` (${wantedPeriod})` : ""}${failed ? ` gagal ${failed}` : ""}`,
+      });
+
+      return privateAdminJson({ success: true, granted, failed, total: pending.length });
     }
 
     if (!body.winnerId) {

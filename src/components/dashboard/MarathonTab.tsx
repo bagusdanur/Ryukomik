@@ -61,6 +61,7 @@ export default function MarathonTab({ getAdminToken }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const pendingWinners = winners.filter((w) => w.status === "pending").length;
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -186,6 +187,35 @@ export default function MarathonTab({ getAdminToken }: Props) {
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Gagal memproses.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function grantAll() {
+    const pending = winners.filter((w) => w.status === "pending");
+    if (!pending.length) return;
+    if (!confirm(`Berikan hadiah premium ke ${pending.length} pemenang sekaligus?`)) return;
+
+    setBusy("grant-all");
+    setNotice(null);
+    setError(null);
+    try {
+      const token = await getAdminToken();
+      const res = await fetch("/api/admin/marathon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "grant_all" }),
+        signal: AbortSignal.timeout(60_000),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Gagal memberikan hadiah.");
+      setNotice(
+        `Selesai: ${json.granted} hadiah diberikan${json.failed ? `, ${json.failed} gagal` : ""}.`,
+      );
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Gagal memberikan hadiah.");
     } finally {
       setBusy(null);
     }
@@ -380,9 +410,21 @@ export default function MarathonTab({ getAdminToken }: Props) {
 
           {/* Winners */}
           <div className="rounded-2xl border border-white/[.07] bg-[#13131a] p-3">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-white/30">
-              Pemenang ({winners.length})
-            </p>
+            <div className="mb-2 flex items-center gap-2">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-white/30">
+                Pemenang ({winners.length})
+              </p>
+              {pendingWinners > 0 && (
+                <button
+                  onClick={() => void grantAll()}
+                  disabled={busy === "grant-all"}
+                  className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/15 px-2.5 py-1.5 text-[10px] font-bold text-emerald-300 transition-colors hover:bg-emerald-500/25 disabled:opacity-50"
+                >
+                  <FiCheck size={11} />
+                  {busy === "grant-all" ? "Memproses..." : `Grant semua (${pendingWinners})`}
+                </button>
+              )}
+            </div>
             {winners.length === 0 ? (
               <p className="py-3 text-[11px] text-white/30">
                 Belum ada pemenang. Cron berjalan 00:10 WIB setiap hari untuk periode yang selesai.
