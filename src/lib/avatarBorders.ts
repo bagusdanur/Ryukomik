@@ -48,13 +48,6 @@ export type AvatarBorder = {
   src?: string;
   /** Seberapa jauh frame keluar dari avatar, dalam px (hanya tipe image). */
   inset?: number;
-  /** Perbesaran frame relatif terhadap avatar (hanya tipe image). */
-  scale?: number;
-  /** "over" = frame menutupi avatar (butuh lubang transparan); "under" = di belakang avatar. */
-  layer?: "over" | "under";
-  /** Geser halus frame, sebagai pecahan dari ukuran frame (mis. -0.01 = -1%). */
-  offsetX?: number;
-  offsetY?: number;
 };
 
 export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
@@ -95,27 +88,27 @@ export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
     glow: "0 0 12px rgba(244,114,182,0.5)",
   },
   // Frame gambar (SVG orisinal Ryukomik, bukan aset pihak ketiga).
-  contoh: { id: "contoh", label: "Contoh", type: "image", ring: "#fbbf24", src: "/borders/contoh.svg", scale: 1.15 },
-  sakura: { id: "sakura", label: "Sakura", type: "image", ring: "#f472b6", src: "/borders/sakura.svg", scale: 1.15 },
-  api: { id: "api", label: "Api", type: "image", ring: "#f97316", src: "/borders/api.svg", scale: 1.15 },
-  es: { id: "es", label: "Es", type: "image", ring: "#38bdf8", src: "/borders/es.svg", scale: 1.15 },
-  galaksi: { id: "galaksi", label: "Galaksi", type: "image", ring: "#8b5cf6", src: "/borders/galaksi.svg", scale: 1.15 },
-  emas: { id: "emas", label: "Emas", type: "image", ring: "#fbbf24", src: "/borders/emas.svg", scale: 1.15 },
+  contoh: { id: "contoh", label: "Contoh", type: "image", ring: "#fbbf24", src: "/borders/contoh.svg" },
+  sakura: { id: "sakura", label: "Sakura", type: "image", ring: "#f472b6", src: "/borders/sakura.svg" },
+  api: { id: "api", label: "Api", type: "image", ring: "#f97316", src: "/borders/api.svg" },
+  es: { id: "es", label: "Es", type: "image", ring: "#38bdf8", src: "/borders/es.svg" },
+  galaksi: { id: "galaksi", label: "Galaksi", type: "image", ring: "#8b5cf6", src: "/borders/galaksi.svg" },
+  emas: { id: "emas", label: "Emas", type: "image", ring: "#fbbf24", src: "/borders/emas.svg" },
 
   // Frame dari shop Ryzukomik (aset milik sendiri, sudah dioptimasi ke WebP).
-  "shop-105": { id: "shop-105", label: "Blue Effect", type: "image", ring: "#8b5cf6", src: "/borders/shop-105.webp", scale: 1.64, layer: "over", offsetX: -0.0104, offsetY: 0.0104 },
-  "shop-107": { id: "shop-107", label: "Teme Purple", type: "image", ring: "#8b5cf6", src: "/borders/shop-107.webp", scale: 1.68, layer: "over", offsetX: 0.0, offsetY: 0.0 },
-  "shop-108": { id: "shop-108", label: "Black Flower", type: "image", ring: "#f59e0b", src: "/borders/shop-108.webp", scale: 1.62, layer: "over", offsetX: -0.1458, offsetY: 0.2604 },
-  "shop-109": { id: "shop-109", label: "Silver Moon", type: "image", ring: "#38bdf8", src: "/borders/shop-109.webp", scale: 1.6, layer: "under", offsetX: 0, offsetY: 0 },
-  "shop-110": { id: "shop-110", label: "Red Wings", type: "image", ring: "#8b5cf6", src: "/borders/shop-110.webp", scale: 1.49, layer: "over", offsetX: 0.0035, offsetY: 0.0833 },
-  "shop-111": { id: "shop-111", label: "Shark", type: "image", ring: "#f59e0b", src: "/borders/shop-111.webp", scale: 1.6, layer: "under", offsetX: 0, offsetY: 0 },
-  "shop-112": { id: "shop-112", label: "Black Eye", type: "image", ring: "#8b5cf6", src: "/borders/shop-112.webp", scale: 2.4, layer: "over", offsetX: -0.0243, offsetY: -0.0 },
-  "shop-113": { id: "shop-113", label: "Black Wings", type: "image", ring: "#a855f7", src: "/borders/shop-113.webp", scale: 1.89, layer: "over", offsetX: -0.0, offsetY: 0.2188 },
-  "shop-114": { id: "shop-114", label: "White Wing", type: "image", ring: "#a855f7", src: "/borders/shop-114.webp", scale: 1.89, layer: "over", offsetX: -0.0, offsetY: 0.2188 },
-  "shop-115": { id: "shop-115", label: "White Flowers", type: "image", ring: "#f59e0b", src: "/borders/shop-115.webp", scale: 1.62, layer: "over", offsetX: -0.1458, offsetY: 0.2569 },
-  "shop-116": { id: "shop-116", label: "Teme Red", type: "image", ring: "#38bdf8", src: "/borders/shop-116.webp", scale: 1.65, layer: "over", offsetX: -0.0972, offsetY: -0.1181 },
-  "shop-117": { id: "shop-117", label: "White Skull", type: "image", ring: "#a855f7", src: "/borders/shop-117.webp", scale: 1.7, layer: "over", offsetX: 0.0625, offsetY: -0.0938 },
-  "shop-118": { id: "shop-118", label: "Noir Splatter Aura", type: "image", ring: "#f59e0b", src: "/borders/shop-118.webp", scale: 2.07, layer: "over", offsetX: 0.0104, offsetY: 0.0278 },
+  "shop-105": { id: "shop-105", label: "Blue Effect", type: "image", ring: "#8b5cf6", src: "/borders/shop-105.webp" },
+  "shop-107": { id: "shop-107", label: "Teme Purple", type: "image", ring: "#8b5cf6", src: "/borders/shop-107.webp" },
+  "shop-108": { id: "shop-108", label: "Black Flower", type: "image", ring: "#f59e0b", src: "/borders/shop-108.webp" },
+  "shop-109": { id: "shop-109", label: "Silver Moon", type: "image", ring: "#38bdf8", src: "/borders/shop-109.webp" },
+  "shop-110": { id: "shop-110", label: "Red Wings", type: "image", ring: "#8b5cf6", src: "/borders/shop-110.webp" },
+  "shop-111": { id: "shop-111", label: "Shark", type: "image", ring: "#f59e0b", src: "/borders/shop-111.webp" },
+  "shop-112": { id: "shop-112", label: "Black Eye", type: "image", ring: "#8b5cf6", src: "/borders/shop-112.webp" },
+  "shop-113": { id: "shop-113", label: "Black Wings", type: "image", ring: "#a855f7", src: "/borders/shop-113.webp" },
+  "shop-114": { id: "shop-114", label: "White Wing", type: "image", ring: "#a855f7", src: "/borders/shop-114.webp" },
+  "shop-115": { id: "shop-115", label: "White Flowers", type: "image", ring: "#f59e0b", src: "/borders/shop-115.webp" },
+  "shop-116": { id: "shop-116", label: "Teme Red", type: "image", ring: "#38bdf8", src: "/borders/shop-116.webp" },
+  "shop-117": { id: "shop-117", label: "White Skull", type: "image", ring: "#a855f7", src: "/borders/shop-117.webp" },
+  "shop-118": { id: "shop-118", label: "Noir Splatter Aura", type: "image", ring: "#f59e0b", src: "/borders/shop-118.webp" },
 
 };
 

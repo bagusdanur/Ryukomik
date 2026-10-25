@@ -3,12 +3,12 @@
 import { avatarBorderShadow, isImageBorder, resolveAvatarBorder } from "@/lib/avatarBorders";
 
 /**
- * Satu-satunya komponen avatar di situs. Border diambil dari registry
- * (avatarBorders) sehingga sistem "Avatar Border" cukup mengisi id-nya di
- * profil — semua permukaan otomatis ikut.
+ * Satu-satunya komponen avatar di situs.
  *
- * Mendukung dua tipe border: ring CSS dan frame gambar (PNG/SVG) yang
- * ditumpuk di atas avatar.
+ * Border CSS  : ring + glow dari CSS.
+ * Border frame: gambar transparan dipasang 1:1 di atas avatar (kotak yang sama),
+ *               tanpa diperbesar/digeser — foto profil tinggal mengisi kotaknya
+ *               dan terlihat lewat lubang frame.
  */
 export default function UserAvatar({
   src,
@@ -25,16 +25,12 @@ export default function UserAvatar({
   src?: string | null;
   name?: string | null;
   size?: number;
-  /** id border dari registry (mis. "gold", "contoh"). */
   border?: string | null;
-  /** Override warna ring (hanya berlaku saat belum pilih border). */
   ring?: string;
   className?: string;
   eager?: boolean;
   alt?: string;
-  /** Bentuk wadah: bulat penuh (default) atau sudut membulat seperti kartu. */
   shape?: "circle" | "rounded";
-  /** Matikan ring bawaan kalau wadahnya sudah punya border sendiri. */
   showRing?: boolean;
 }) {
   const label = (name || "?").trim();
@@ -42,35 +38,11 @@ export default function UserAvatar({
   const borderDef = resolveAvatarBorder(border);
   const frame = isImageBorder(borderDef) ? borderDef : null;
   const shadow = showRing && !frame ? avatarBorderShadow(border, ring) : undefined;
-  // Frame bisa diperbesar (scale) dan boleh berada di atas atau di belakang avatar.
-  const frameSize = frame ? Math.round(size * (frame.scale ?? 1.5)) : 0;
-  const inset = frame ? Math.round((frameSize - size) / 2) : 0;
-  const under = frame?.layer === "under";
-  const shiftX = frame ? (frame.offsetX ?? 0) * frameSize : 0;
-  const shiftY = frame ? (frame.offsetY ?? 0) * frameSize : 0;
-
-  const frameNode = frame ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={frame.src}
-      alt=""
-      aria-hidden
-      draggable={false}
-      className={`pointer-events-none absolute select-none ${under ? "z-0" : "z-20"}`}
-      style={{
-        width: frameSize,
-        height: frameSize,
-        left: -inset + shiftX,
-        top: -inset + shiftY,
-      }}
-    />
-  ) : null;
 
   return (
     <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
-      {under && frameNode}
       <span
-        className={`relative z-10 inline-flex h-full w-full items-center justify-center overflow-hidden bg-white/[0.06] ${
+        className={`relative inline-flex h-full w-full items-center justify-center overflow-hidden bg-white/[0.06] ${
           shape === "rounded" ? "rounded-xl" : "rounded-full"
         } ${className}`}
         style={{ boxShadow: shadow }}
@@ -98,7 +70,17 @@ export default function UserAvatar({
         )}
       </span>
 
-      {!under && frameNode}
+      {frame && (
+        // 1:1 dengan kotak avatar — tanpa scale, tanpa offset.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={frame.src}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="pointer-events-none absolute inset-0 z-20 h-full w-full select-none object-contain"
+        />
+      )}
     </span>
   );
 }

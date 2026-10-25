@@ -71,7 +71,7 @@ export default function SocialProfileEditor() {
           <UserAvatar
             src={profile.avatar_url}
             name={profile.username}
-            size={64}
+            size={88}
             border={profile.avatar_border}
             alt="Pratinjau avatar"
           />
