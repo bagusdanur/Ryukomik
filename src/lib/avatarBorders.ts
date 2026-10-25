@@ -54,9 +54,22 @@ export function resolveAvatarBorder(id?: string | null): AvatarBorder {
   return AVATAR_BORDERS[id as AvatarBorderId] ?? AVATAR_BORDERS.default;
 }
 
-/** Nilai box-shadow lengkap untuk ring + glow. */
+/**
+ * Nilai box-shadow lengkap untuk ring + glow.
+ *
+ * Border yang dipilih user SELALU menang; `overrideRing` hanya dipakai kalau
+ * user belum memilih border (dulu override ini yang menutupi border di
+ * komentar sehingga pilihan user tidak terlihat).
+ */
 export function avatarBorderShadow(id?: string | null, overrideRing?: string): string {
   const border = resolveAvatarBorder(id);
-  const ring = overrideRing || border.ring;
-  return `0 0 0 2px ${ring}${border.glow && !overrideRing ? `, ${border.glow}` : ""}`;
+  const hasCustomBorder = Boolean(id) && border.id !== "default";
+
+  if (hasCustomBorder) {
+    return border.glow
+      ? `0 0 0 2px ${border.ring}, ${border.glow}`
+      : `0 0 0 2px ${border.ring}`;
+  }
+
+  return `0 0 0 2px ${overrideRing || border.ring}`;
 }

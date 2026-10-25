@@ -269,7 +269,7 @@ function CommentAvatar({
       src={avatarUrl}
       name={authorName}
       size={40}
-      shape="rounded"
+      shape="circle"
       border={avatarBorder}
       ring={type === "normal" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.2)"}
     />

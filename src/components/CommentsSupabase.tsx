@@ -297,7 +297,7 @@ const CommentAvatar = memo(
       src={avatar_url}
       name={author_name}
       size={40}
-      shape="rounded"
+      shape="circle"
       border={avatar_border}
       ring={type === "normal" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.2)"}
     />
