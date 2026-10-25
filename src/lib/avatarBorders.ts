@@ -55,7 +55,7 @@ export type AvatarBorder = {
 
 /** Frame gambar digambar lebih besar dari kotak avatar supaya ornamennya
  *  tidak terlihat mepet (perilaku lama 1:1 membuat sayap/aura terasa kecil). */
-export const IMAGE_FRAME_SCALE = 1.25;
+export const IMAGE_FRAME_SCALE = 1.2;
 
 
 export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
