@@ -45,3 +45,6 @@ Thumbs.db
 *.bak-*
 .backup-*/
 .backup-tukar-source/
+
+# cache hasil resize cover (dibuat runtime)
+data/cover-cache/

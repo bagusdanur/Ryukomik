@@ -1,3 +1,4 @@
+import { optimizedCoverUrl } from "@/lib/coverImage";
 import { unstable_cache } from "next/cache";
 import { projectApiFetch } from "@/lib/projectApiServer";
 
@@ -21,7 +22,7 @@ const getCachedBannerKomiku = unstable_cache(
     // Get latest chapter for each spotlight manga — RPC DISTINCT ON per manga_slug
     return mangaList.map((item) => ({
       title: item.title,
-      image: item.cover_url || "",
+      image: optimizedCoverUrl(item.cover_url, 900),
       genre: Array.isArray(item.genres) ? item.genres.join(", ") : "",
       type: item.type || "",
       status: item.status || "",

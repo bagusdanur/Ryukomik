@@ -25,7 +25,7 @@ export default function SwiperCarousel({ data }: { data: BannerItem[] }) {
       className="h-[300px] overflow-hidden rounded-2xl border border-white/[0.08] sm:h-[380px] md:h-[460px]"
     >
       {data.map((item, index) => {
-        const img = item.image.split("?")[0];
+        const img = item.image;
 
         return (
           <SwiperSlide key={`${item.slug}-${index}`}>
@@ -35,6 +35,8 @@ export default function SwiperCarousel({ data }: { data: BannerItem[] }) {
                 alt={item.title || "Spotlight"}
                 referrerPolicy="no-referrer"
                 priority={index === 0}
+                loading={index === 0 ? "eager" : "lazy"}
+                unoptimized
                 sizes="(max-width: 768px) 100vw, 1180px"
                 className="absolute inset-0 h-full w-full"
                 fill

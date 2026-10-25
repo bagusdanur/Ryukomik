@@ -1,3 +1,4 @@
+import { optimizedCoverUrl } from "@/lib/coverImage";
 import { fetchContentJson } from "@/lib/contentApi";
 import type { UpdateItem } from "@/types/content";
 
@@ -42,7 +43,7 @@ export async function getProjectUpdates(): Promise<UpdateItem[]> {
             const source = item as UpdateItem & { cover_url?: string; type?: string; latest_chapter?: number | string; latest_chapter_uploaded_at?: string };
             return {
               ...item,
-              image: item.image || source.cover_url,
+              image: optimizedCoverUrl(item.image || source.cover_url, 320),
               type_genre: item.type_genre || source.type,
               chapter_terbaru: item.chapter_terbaru || (source.latest_chapter != null ? `Chapter ${source.latest_chapter}` : ""),
               info: item.info || formatRelativeDate(source.latest_chapter_uploaded_at),
