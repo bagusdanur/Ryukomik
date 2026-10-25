@@ -383,6 +383,23 @@ export default function DashboardHomeTab({
           </button>
 
           <button
+            onClick={() => setPage("marathon")}
+            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-amber-400/30 hover:bg-amber-400/[.05] transition-all text-left"
+          >
+            <div className="w-9 h-9 rounded-xl bg-amber-400/10 flex items-center justify-center">
+              <FiAward size={16} className="text-amber-300" />
+            </div>
+            <div>
+              <p className="text-[12px] font-semibold text-white/70">
+                Marathon Reading
+              </p>
+              <p className="text-[10px] text-white/30">
+                Hadiah &amp; pemenang
+              </p>
+            </div>
+          </button>
+
+          <button
             onClick={() => setPage("comments")}
             className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-cyan-500/30 hover:bg-cyan-500/[.04] transition-all text-left"
           >
