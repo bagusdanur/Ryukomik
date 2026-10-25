@@ -2,20 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  FiClock,
-  FiRefreshCw,
-  FiTarget,
-  FiTrendingUp,
-  FiUser,
-  FiZap,
-} from "react-icons/fi";
+import { FiClock, FiRefreshCw, FiTarget, FiTrendingUp, FiUser, FiZap } from "react-icons/fi";
 import { RiFlashlightFill, RiTrophyFill } from "react-icons/ri";
 import { FaCrown } from "react-icons/fa";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { supabase } from "@/lib/supabaseClient";
 import UserBadges from "@/components/UserBadges";
-import RankTierBadge, { tierForLevel } from "@/components/RankTierBadge";
 
 type Period = "weekly" | "monthly";
 
@@ -55,14 +47,6 @@ const MEDAL_STYLE = [
   { ring: "#cbd5e1", card: "rgba(203,213,225,0.04)", border: "rgba(203,213,225,0.22)" },
   { ring: "#f0883e", card: "rgba(240,136,62,0.04)", border: "rgba(240,136,62,0.22)" },
 ];
-
-const TIER_RING: Record<string, string> = {
-  Legend: "#e879f9",
-  Elite: "#a78bfa",
-  Veteran: "#38bdf8",
-  Pro: "#34d399",
-  Reader: "#94a3b8",
-};
 
 /** Akhir periode dalam WIB (UTC+7, tanpa DST). */
 function periodEnd(period: Period, now: Date = new Date()): Date {
@@ -135,8 +119,6 @@ function SelfTag() {
 /* ─── Podium juara 1-3 ─── */
 function PodiumCard({ row, index }: { row: LeaderboardRow; index: number }) {
   const medal = MEDAL_STYLE[index] ?? MEDAL_STYLE[2];
-  const tier = tierForLevel(row.level);
-  const tierColor = TIER_RING[tier?.label ?? ""] ?? medal.ring;
 
   return (
     <div
@@ -168,7 +150,7 @@ function PodiumCard({ row, index }: { row: LeaderboardRow; index: number }) {
         url={row.avatar_url}
         name={row.username}
         size={index === 0 ? 52 : 44}
-        ring={tierColor}
+        ring={medal.ring}
       />
 
       <p className="w-full truncate text-center text-[11px] font-bold leading-tight text-white">
@@ -182,7 +164,6 @@ function PodiumCard({ row, index }: { row: LeaderboardRow; index: number }) {
           totalReads={row.total_reads}
           className="text-[8px]"
         />
-        <RankTierBadge level={row.level} />
       </div>
 
       <div className="mt-0.5 flex items-baseline gap-0.5">
@@ -192,9 +173,7 @@ function PodiumCard({ row, index }: { row: LeaderboardRow; index: number }) {
         <span className="text-[9px] font-bold text-white/35">ch</span>
       </div>
 
-      <span className="text-[9px] font-bold" style={{ color: tierColor }}>
-        Lv.{row.level || 1}
-      </span>
+      <span className="text-[9px] font-bold text-white/40">Lv.{row.level || 1}</span>
     </div>
   );
 }
@@ -209,8 +188,7 @@ function RankRow({
   maxChapters: number;
   isSelf: boolean;
 }) {
-  const tier = tierForLevel(row.level);
-  const tierColor = TIER_RING[tier?.label ?? ""] ?? "rgba(255,255,255,0.16)";
+  const ringColor = isSelf ? "#22d3ee" : "rgba(255,255,255,0.14)";
   const relative = maxChapters > 0 ? Math.max(3, Math.round((row.chapters / maxChapters) * 100)) : 0;
 
   return (
@@ -231,7 +209,7 @@ function RankRow({
         {row.rank}
       </span>
 
-      <Avatar url={row.avatar_url} name={row.username} size={38} ring={tierColor} />
+      <Avatar url={row.avatar_url} name={row.username} size={38} ring={ringColor} />
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1">
@@ -248,7 +226,6 @@ function RankRow({
             totalReads={row.total_reads}
             className="text-[8px]"
           />
-          <RankTierBadge level={row.level} />
         </div>
 
         <div className="mt-1 flex items-center gap-2">
@@ -257,7 +234,7 @@ function RankRow({
               className="h-full rounded-full"
               style={{
                 width: `${relative}%`,
-                background: `linear-gradient(90deg, ${tierColor}, ${tierColor}66)`,
+                background: "linear-gradient(90deg, #22d3ee, #8b5cf6)",
               }}
             />
           </div>
