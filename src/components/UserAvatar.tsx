@@ -39,6 +39,18 @@ export default function UserAvatar({
   const frame = isImageBorder(borderDef) ? borderDef : null;
   const shadow = showRing && !frame ? avatarBorderShadow(border, ring) : undefined;
 
+  // Frame diperbesar dari TITIK LUBANGNYA (bukan dari tengah kanvas), jadi
+  // avatar selalu duduk tepat di lubang berapa pun besar frame-nya.
+  const frameSize = size * IMAGE_FRAME_SCALE;
+  const holeX = frame?.holeX ?? 0.5;
+  const holeY = frame?.holeY ?? 0.5;
+  const frameStyle = {
+    width: frameSize,
+    height: frameSize,
+    left: size / 2 - holeX * frameSize,
+    top: size / 2 - holeY * frameSize,
+  } as const;
+
   return (
     <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
       <span
@@ -80,12 +92,7 @@ export default function UserAvatar({
           aria-hidden
           draggable={false}
           className="pointer-events-none absolute z-20 select-none object-contain"
-          style={{
-            width: size * IMAGE_FRAME_SCALE,
-            height: size * IMAGE_FRAME_SCALE,
-            left: -(size * (IMAGE_FRAME_SCALE - 1)) / 2,
-            top: -(size * (IMAGE_FRAME_SCALE - 1)) / 2,
-          }}
+          style={frameStyle}
         />
       )}
     </span>
