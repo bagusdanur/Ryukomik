@@ -99,10 +99,15 @@ export default function SocialProfileEditor() {
                     : "border-white/10 text-white/55 hover:border-white/25 hover:text-white/80"
                 }`}
               >
-                <span
-                  className="h-3.5 w-3.5 rounded-full"
-                  style={{ boxShadow: `0 0 0 2px ${resolveAvatarBorder(border.id).ring}` }}
-                />
+                {border.type === "image" && border.src ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={border.src} alt="" className="h-4 w-4" />
+                ) : (
+                  <span
+                    className="h-3.5 w-3.5 rounded-full"
+                    style={{ boxShadow: `0 0 0 2px ${resolveAvatarBorder(border.id).ring}` }}
+                  />
+                )}
                 {border.label}
               </button>
             );

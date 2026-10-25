@@ -1,11 +1,14 @@
 "use client";
 
-import { avatarBorderShadow, resolveAvatarBorder } from "@/lib/avatarBorders";
+import { avatarBorderShadow, isImageBorder, resolveAvatarBorder } from "@/lib/avatarBorders";
 
 /**
  * Satu-satunya komponen avatar di situs. Border diambil dari registry
- * (avatarBorders) sehingga sistem "Avatar Border" nanti cukup mengisi id-nya
- * di profil — semua permukaan otomatis ikut.
+ * (avatarBorders) sehingga sistem "Avatar Border" cukup mengisi id-nya di
+ * profil — semua permukaan otomatis ikut.
+ *
+ * Mendukung dua tipe border: ring CSS dan frame gambar (PNG/SVG) yang
+ * ditumpuk di atas avatar.
  */
 export default function UserAvatar({
   src,
@@ -22,9 +25,9 @@ export default function UserAvatar({
   src?: string | null;
   name?: string | null;
   size?: number;
-  /** id border dari registry (mis. "gold", "event"). */
+  /** id border dari registry (mis. "gold", "contoh"). */
   border?: string | null;
-  /** Override warna ring (dipakai untuk medali podium). */
+  /** Override warna ring (hanya berlaku saat belum pilih border). */
   ring?: string;
   className?: string;
   eager?: boolean;
@@ -36,36 +39,53 @@ export default function UserAvatar({
 }) {
   const label = (name || "?").trim();
   const initial = label.charAt(0).toUpperCase() || "?";
-  const shadow = showRing ? avatarBorderShadow(border, ring) : undefined;
   const borderDef = resolveAvatarBorder(border);
+  const frame = isImageBorder(borderDef) ? borderDef : null;
+  const shadow = showRing && !frame ? avatarBorderShadow(border, ring) : undefined;
+  const inset = frame ? Math.abs(frame.inset ?? 6) : 0;
+  const frameSize = size + inset * 2;
 
   return (
-    <span
-      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden bg-white/[0.06] ${
-        shape === "rounded" ? "rounded-xl" : "rounded-full"
-      } ${className}`}
-      style={{ width: size, height: size, boxShadow: shadow }}
-      title={borderDef.id === "default" ? undefined : `Border ${borderDef.label}`}
-    >
-      {src ? (
+    <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
+      <span
+        className={`relative inline-flex h-full w-full items-center justify-center overflow-hidden bg-white/[0.06] ${
+          shape === "rounded" ? "rounded-xl" : "rounded-full"
+        } ${className}`}
+        style={{ boxShadow: shadow }}
+        title={borderDef.id === "default" ? undefined : `Border ${borderDef.label}`}
+      >
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={src}
+            alt={alt ?? ""}
+            loading={eager ? "eager" : "lazy"}
+            decoding="async"
+            className="h-full w-full object-cover"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          <span
+            className="font-black uppercase leading-none text-white/40"
+            style={{ fontSize: Math.max(10, size * 0.36) }}
+          >
+            {initial}
+          </span>
+        )}
+      </span>
+
+      {frame && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={src}
-          alt={alt ?? ""}
-          loading={eager ? "eager" : "lazy"}
-          decoding="async"
-          className="h-full w-full object-cover"
-          onError={(event) => {
-            event.currentTarget.style.display = "none";
-          }}
+          src={frame.src}
+          alt=""
+          aria-hidden
+          draggable={false}
+          className="pointer-events-none absolute select-none"
+          style={{ width: frameSize, height: frameSize, left: -inset, top: -inset }}
         />
-      ) : (
-        <span
-          className="font-black uppercase leading-none text-white/40"
-          style={{ fontSize: Math.max(10, size * 0.36) }}
-        >
-          {initial}
-        </span>
       )}
     </span>
   );
