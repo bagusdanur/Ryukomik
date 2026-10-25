@@ -39,16 +39,14 @@ export default function UserAvatar({
   const frame = isImageBorder(borderDef) ? borderDef : null;
   const shadow = showRing && !frame ? avatarBorderShadow(border, ring) : undefined;
 
-  // Frame diperbesar dari TITIK LUBANGNYA (bukan dari tengah kanvas), jadi
-  // avatar selalu duduk tepat di lubang berapa pun besar frame-nya.
+  // Frame diperbesar dari TENGAH kotak avatar — simetris ke segala arah,
+  // tidak pernah bergeser. Artwork-nya sendiri yang asimetris.
   const frameSize = size * IMAGE_FRAME_SCALE;
-  const holeX = frame?.holeX ?? 0.5;
-  const holeY = frame?.holeY ?? 0.5;
   const frameStyle = {
     width: frameSize,
     height: frameSize,
-    left: size / 2 - holeX * frameSize,
-    top: size / 2 - holeY * frameSize,
+    left: -(frameSize - size) / 2,
+    top: -(frameSize - size) / 2,
   } as const;
 
   return (
