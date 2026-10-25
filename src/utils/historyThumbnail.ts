@@ -68,6 +68,47 @@ export function itemsMissingThumbnails<T extends HistoryThumbItem>(items: T[], l
   return out;
 }
 
+
+export type ContinueInput = HistoryThumbItem & {
+  title?: string | null;
+  lastChapter?: string | null;
+  lastChapterSlug?: string | null;
+  updatedAt?: number | null;
+};
+
+/** "class-no-jimo" → "Class No Jimo" (judul cadangan kalau entry tanpa judul). */
+export function prettifySlug(slug: string): string {
+  return String(slug || "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+/**
+ * Siapkan isi "Lanjut Baca": buang entry tanpa identitas, urutkan dari yang
+ * paling baru (bukan mengandalkan urutan array), beri judul cadangan, lalu
+ * potong sesuai limit. Entry tanpa judul TIDAK dibuang — dulu itu sebabnya
+ * bacaan baru tidak muncul di daftar.
+ */
+export function buildContinueItems<T extends ContinueInput>(
+  items: T[],
+  limit = 10,
+): (T & { displayTitle: string })[] {
+  return items
+    .filter((item) => String(item.comicSlug || "").trim() || String(item.lastChapterSlug || "").trim())
+    .slice()
+    .sort((a, b) => (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0))
+    .slice(0, limit)
+    .map((item) => ({
+      ...item,
+      displayTitle:
+        String(item.title || "").trim() ||
+        prettifySlug(String(item.comicSlug || "")) ||
+        "Lanjutan",
+    }));
+}
+
 const memo = new Map<string, Promise<SeriesMeta>>();
 
 /** Thumbnail + chapter terbaru lewat endpoint cache. Tidak pernah melempar error. */

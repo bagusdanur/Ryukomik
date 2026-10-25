@@ -6,6 +6,7 @@ import SeriesCard from "@/components/SeriesCard";
 import { useHistoryStore } from "@/store/historyStore";
 import {
   backfillHistoryThumbnails,
+  buildContinueItems,
   chapterNumberFrom,
   chaptersBehind,
   fetchSeriesMeta,
@@ -61,7 +62,7 @@ export default function ContinueReading() {
     if (!mounted || !history.length) return;
     let cancelled = false;
 
-    const targets = history.slice(0, META_LIMIT);
+    const targets = buildContinueItems(history, META_LIMIT);
     void Promise.all(
       targets.map(async (item) => {
         const slug = String(item.comicSlug || "").trim();
@@ -86,7 +87,7 @@ export default function ContinueReading() {
 
   if (!mounted || !history.length) return null;
 
-  const items = history.filter((item) => item.title).slice(0, 10);
+  const items = buildContinueItems(history, 10);
   if (!items.length) return null;
 
   return (
@@ -110,7 +111,9 @@ export default function ContinueReading() {
             const source = item.source || "komiku";
             const slug = String(item.comicSlug || "").trim();
             const href = item.lastChapterSlug
-              ? `/chapter/${source}/${item.lastChapterSlug}`
+              ? source === "meionovels"
+                ? `/novel/chapter/${item.lastChapterSlug}`
+                : `/chapter/${source}/${item.lastChapterSlug}`
               : `/komik/${source}/${slug}`;
 
             const readChapter =
@@ -122,7 +125,7 @@ export default function ContinueReading() {
               <SeriesCard
                 key={`${slug}-${item.lastChapterSlug}`}
                 href={href}
-                title={item.title}
+                title={item.displayTitle}
                 image={item.thumbnail || undefined}
                 source={source}
                 eyebrow={readChapter !== null ? `Dibaca Ch. ${readChapter}` : undefined}

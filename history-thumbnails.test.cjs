@@ -71,3 +71,31 @@ test('chaptersBehind never goes negative and needs both sides', () => {
   assert.equal(m.chaptersBehind(null, 131), null);
   assert.equal(m.chaptersBehind(120, null), null);
 });
+
+test('buildContinueItems keeps entries without a title and sorts newest first', () => {
+  const items = [
+    { comicSlug: 'lama', source: 'komiku', title: 'Lama', updatedAt: 100 },
+    { comicSlug: 'baru', source: 'novel', title: '', updatedAt: 300 },
+    { comicSlug: 'tengah', source: 'komiku', title: 'Tengah', updatedAt: 200 },
+  ];
+  const built = m.buildContinueItems(items, 10);
+  assert.deepEqual(built.map((i) => i.comicSlug), ['baru', 'tengah', 'lama']);
+  assert.equal(built[0].displayTitle, 'Baru');
+});
+
+test('buildContinueItems falls back to the slug when title is missing', () => {
+  const built = m.buildContinueItems([{ comicSlug: 'class-no-jimo', source: 'komiku', updatedAt: 1 }], 10);
+  assert.equal(built[0].displayTitle, 'Class No Jimo');
+  assert.deepEqual(m.buildContinueItems([{ comicSlug: '', updatedAt: 1 }], 10), []);
+});
+
+test('buildContinueItems respects the limit after sorting', () => {
+  const items = Array.from({ length: 15 }, (_, i) => ({
+    comicSlug: `s${i}`,
+    title: `S${i}`,
+    updatedAt: i,
+  }));
+  const built = m.buildContinueItems(items, 10);
+  assert.equal(built.length, 10);
+  assert.equal(built[0].comicSlug, 's14');
+});
