@@ -46,6 +46,8 @@ export default function UserAvatar({
   const frameSize = frame ? Math.round(size * (frame.scale ?? 1.5)) : 0;
   const inset = frame ? Math.round((frameSize - size) / 2) : 0;
   const under = frame?.layer === "under";
+  const shiftX = frame ? (frame.offsetX ?? 0) * frameSize : 0;
+  const shiftY = frame ? (frame.offsetY ?? 0) * frameSize : 0;
 
   const frameNode = frame ? (
     // eslint-disable-next-line @next/next/no-img-element
@@ -55,7 +57,12 @@ export default function UserAvatar({
       aria-hidden
       draggable={false}
       className={`pointer-events-none absolute select-none ${under ? "z-0" : "z-20"}`}
-      style={{ width: frameSize, height: frameSize, left: -inset, top: -inset }}
+      style={{
+        width: frameSize,
+        height: frameSize,
+        left: -inset + shiftX,
+        top: -inset + shiftY,
+      }}
     />
   ) : null;
 

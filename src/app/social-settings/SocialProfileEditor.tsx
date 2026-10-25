@@ -67,11 +67,11 @@ export default function SocialProfileEditor() {
 
         {/* Ruang khusus avatar: tinggi tetap supaya frame besar (sampai ~2x)
             tetap muat dan tidak menimpa judul di atasnya. */}
-        <div className="-mt-10 flex h-40 items-center justify-center">
+        <div className="-mt-10 flex h-52 items-center justify-center">
           <UserAvatar
             src={profile.avatar_url}
             name={profile.username}
-            size={72}
+            size={64}
             border={profile.avatar_border}
             alt="Pratinjau avatar"
           />

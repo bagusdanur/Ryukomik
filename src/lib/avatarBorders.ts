@@ -52,6 +52,9 @@ export type AvatarBorder = {
   scale?: number;
   /** "over" = frame menutupi avatar (butuh lubang transparan); "under" = di belakang avatar. */
   layer?: "over" | "under";
+  /** Geser halus frame, sebagai pecahan dari ukuran frame (mis. -0.01 = -1%). */
+  offsetX?: number;
+  offsetY?: number;
 };
 
 export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
@@ -100,19 +103,20 @@ export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
   emas: { id: "emas", label: "Emas", type: "image", ring: "#fbbf24", src: "/borders/emas.svg", inset: 8 },
 
   // Frame dari shop Ryzukomik (aset milik sendiri, sudah dioptimasi ke WebP).
-  "shop-105": { id: "shop-105", label: "Blue Effect", type: "image", ring: "#8b5cf6", src: "/borders/shop-105.webp", scale: 1.71, layer: "over" },
-  "shop-107": { id: "shop-107", label: "Teme Purple", type: "image", ring: "#8b5cf6", src: "/borders/shop-107.webp", scale: 2.15, layer: "over" },
-  "shop-108": { id: "shop-108", label: "Black Flower", type: "image", ring: "#f59e0b", src: "/borders/shop-108.webp", scale: 2.0, layer: "over" },
-  "shop-109": { id: "shop-109", label: "Silver Moon", type: "image", ring: "#38bdf8", src: "/borders/shop-109.webp", scale: 1.5, layer: "under" },
-  "shop-110": { id: "shop-110", label: "Red Wings", type: "image", ring: "#8b5cf6", src: "/borders/shop-110.webp", scale: 1.66, layer: "over" },
-  "shop-111": { id: "shop-111", label: "Shark", type: "image", ring: "#f59e0b", src: "/borders/shop-111.webp", scale: 1.5, layer: "under" },
-  "shop-112": { id: "shop-112", label: "Black Eye", type: "image", ring: "#8b5cf6", src: "/borders/shop-112.webp", scale: 2.2, layer: "over" },
-  "shop-113": { id: "shop-113", label: "Black Wings", type: "image", ring: "#a855f7", src: "/borders/shop-113.webp", scale: 1.5, layer: "under" },
-  "shop-114": { id: "shop-114", label: "White Wing", type: "image", ring: "#a855f7", src: "/borders/shop-114.webp", scale: 1.5, layer: "under" },
-  "shop-115": { id: "shop-115", label: "White Flowers", type: "image", ring: "#f59e0b", src: "/borders/shop-115.webp", scale: 2.0, layer: "over" },
-  "shop-116": { id: "shop-116", label: "Teme Red", type: "image", ring: "#38bdf8", src: "/borders/shop-116.webp", scale: 2.12, layer: "over" },
-  "shop-117": { id: "shop-117", label: "White Skull", type: "image", ring: "#a855f7", src: "/borders/shop-117.webp", scale: 1.92, layer: "over" },
-  "shop-118": { id: "shop-118", label: "Noir Splatter Aura", type: "image", ring: "#f59e0b", src: "/borders/shop-118.webp", scale: 2.09, layer: "over" },
+  "shop-105": { id: "shop-105", label: "Blue Effect", type: "image", ring: "#8b5cf6", src: "/borders/shop-105.webp", scale: 1.71, layer: "over", offsetX: 0.0056, offsetY: -0.0115 },
+  "shop-107": { id: "shop-107", label: "Teme Purple", type: "image", ring: "#8b5cf6", src: "/borders/shop-107.webp", scale: 2.15, layer: "over", offsetX: -0.0045, offsetY: 0.0021 },
+  "shop-108": { id: "shop-108", label: "Black Flower", type: "image", ring: "#f59e0b", src: "/borders/shop-108.webp", scale: 2.0, layer: "over", offsetX: 0.0101, offsetY: -0.0104 },
+  "shop-109": { id: "shop-109", label: "Silver Moon", type: "image", ring: "#38bdf8", src: "/borders/shop-109.webp", scale: 1.6, layer: "under", offsetX: -0.0017, offsetY: -0.0017 },
+  "shop-110": { id: "shop-110", label: "Red Wings", type: "image", ring: "#8b5cf6", src: "/borders/shop-110.webp", scale: 1.66, layer: "over", offsetX: -0.0017, offsetY: -0.0278 },
+  "shop-111": { id: "shop-111", label: "Shark", type: "image", ring: "#f59e0b", src: "/borders/shop-111.webp", scale: 1.6, layer: "under", offsetX: 0.0, offsetY: 0.0 },
+  "shop-112": { id: "shop-112", label: "Black Eye", type: "image", ring: "#8b5cf6", src: "/borders/shop-112.webp", scale: 2.4, layer: "over", offsetX: -0.0017, offsetY: 0.0024 },
+  "shop-113": { id: "shop-113", label: "Black Wings", type: "image", ring: "#a855f7", src: "/borders/shop-113.webp", scale: 3.0, layer: "over", offsetX: -0.0014, offsetY: -0.0017 },
+  "shop-114": { id: "shop-114", label: "White Wing", type: "image", ring: "#a855f7", src: "/borders/shop-114.webp", scale: 3.0, layer: "over", offsetX: -0.0014, offsetY: -0.0017 },
+  "shop-115": { id: "shop-115", label: "White Flowers", type: "image", ring: "#f59e0b", src: "/borders/shop-115.webp", scale: 2.0, layer: "over", offsetX: 0.0101, offsetY: -0.0104 },
+  "shop-116": { id: "shop-116", label: "Teme Red", type: "image", ring: "#38bdf8", src: "/borders/shop-116.webp", scale: 2.12, layer: "over", offsetX: -0.0045, offsetY: 0.0021 },
+  "shop-117": { id: "shop-117", label: "White Skull", type: "image", ring: "#a855f7", src: "/borders/shop-117.webp", scale: 1.92, layer: "over", offsetX: -0.0132, offsetY: 0.026 },
+  "shop-118": { id: "shop-118", label: "Noir Splatter Aura", type: "image", ring: "#f59e0b", src: "/borders/shop-118.webp", scale: 2.09, layer: "over", offsetX: 0.0042, offsetY: -0.0049 },
+
 };
 
 export function resolveAvatarBorder(id?: string | null): AvatarBorder {
