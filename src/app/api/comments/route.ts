@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getUserAvatarBorders } from "@/lib/social/avatarBorders";
 import { createSocialNotification } from "@/lib/social/notifications";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 import { requireUserId } from "@/lib/social/auth";
@@ -114,7 +115,11 @@ async function fetchComments(
   const { data, error } = await query;
   if (error) throw error;
 
-  return ((data || []) as CommentRow[]).map((item) => ({
+  const rows = (data || []) as CommentRow[];
+  // Satu query lokal untuk seluruh halaman, bukan per komentar.
+  const borders = await getUserAvatarBorders(rows.map((item) => (item.user_id ? String(item.user_id) : null)));
+
+  return rows.map((item) => ({
     id: item.id,
     content: item.content,
     parent_id: item.parent_id,
@@ -123,11 +128,14 @@ async function fetchComments(
     avatar_url: item.avatar_url,
     is_spoiler: item.is_spoiler,
     created_at: item.created_at,
-    profiles: item.profiles || {
+    avatar_border: borders.get(String(item.user_id)) ?? null,
+    profiles: {
       level: 1,
       xp: 0,
       username: item.author_name,
       avatar_url: item.avatar_url,
+      ...(item.profiles && typeof item.profiles === "object" ? (item.profiles as Record<string, unknown>) : {}),
+      avatar_border: borders.get(String(item.user_id)) ?? null,
     },
   }));
 }

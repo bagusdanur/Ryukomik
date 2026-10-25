@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getUserAvatarBorders } from "@/lib/social/avatarBorders";
 import { getXpLeadersCached, type XpLeaderRow } from "@/lib/profileServerCache";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
@@ -196,8 +197,13 @@ const getLatestCommentsCached = unstable_cache(
       console.error("[LatestComments] Fetch error:", error.message);
       return [];
     }
-    return ((data || []) as LatestComment[]).map((comment) => ({
+    const rows = (data || []) as LatestComment[];
+    // Border avatar dari database lokal — satu query per halaman.
+    const borders = await getUserAvatarBorders(rows.map((comment) => comment.user_id));
+
+    return rows.map((comment) => ({
       ...comment,
+      avatar_border: borders.get(String(comment.user_id)) ?? null,
       content: compactContent(comment.content),
     }));
   },
@@ -353,7 +359,7 @@ function CommentCard({
             <CommentAvatar
               avatarUrl={avatarUrl}
               authorName={authorName}
-              avatarBorder={profile.avatar_border}
+              avatarBorder={comment.avatar_border ?? profile.avatar_border}
               type={type}
             />
           </ProfilePopover>
@@ -361,7 +367,7 @@ function CommentCard({
           <CommentAvatar
             avatarUrl={avatarUrl}
             authorName={authorName}
-            avatarBorder={profile.avatar_border}
+            avatarBorder={comment.avatar_border ?? profile.avatar_border}
             type={type}
           />
         )}
