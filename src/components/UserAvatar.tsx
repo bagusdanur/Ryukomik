@@ -16,6 +16,8 @@ export default function UserAvatar({
   className = "",
   eager = false,
   alt,
+  shape = "circle",
+  showRing = true,
 }: {
   src?: string | null;
   name?: string | null;
@@ -27,15 +29,21 @@ export default function UserAvatar({
   className?: string;
   eager?: boolean;
   alt?: string;
+  /** Bentuk wadah: bulat penuh (default) atau sudut membulat seperti kartu. */
+  shape?: "circle" | "rounded";
+  /** Matikan ring bawaan kalau wadahnya sudah punya border sendiri. */
+  showRing?: boolean;
 }) {
   const label = (name || "?").trim();
   const initial = label.charAt(0).toUpperCase() || "?";
-  const shadow = avatarBorderShadow(border, ring);
+  const shadow = showRing ? avatarBorderShadow(border, ring) : undefined;
   const borderDef = resolveAvatarBorder(border);
 
   return (
     <span
-      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/[0.06] ${className}`}
+      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden bg-white/[0.06] ${
+        shape === "rounded" ? "rounded-xl" : "rounded-full"
+      } ${className}`}
       style={{ width: size, height: size, boxShadow: shadow }}
       title={borderDef.id === "default" ? undefined : `Border ${borderDef.label}`}
     >

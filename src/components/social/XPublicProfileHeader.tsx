@@ -22,11 +22,13 @@ import { supabase } from "@/lib/supabaseClient";
 import { socialFetch } from "@/lib/social/client";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
+import UserAvatar from "@/components/UserAvatar";
 
 type SocialProfile = {
   id: string;
   username: string;
   avatar_url?: string | null;
+  avatar_border?: string | null;
   banner_url?: string | null;
   bio?: string | null;
   level?: number;
@@ -177,17 +179,16 @@ export default function XPublicProfileHeader({ username, activeTab = "posts", on
 
       <div className="relative px-4 pb-4">
         <div className="flex min-h-14 items-start justify-between gap-3">
-          <div className="-mt-12 grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-full border-4 border-[var(--surface-0)] bg-[var(--surface-2)] text-3xl font-black sm:-mt-16 sm:h-32 sm:w-32">
-            {profile.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={profile.username}
-                className="h-full w-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              fallbackAvatar(profile.username)
-            )}
+          <div className="-mt-12 shrink-0">
+            <UserAvatar
+              src={profile.avatar_url}
+              name={profile.username}
+              size={96}
+              shape="circle"
+              showRing={false}
+              border={profile.avatar_border}
+              className="border-4 border-[var(--surface-0)] text-3xl"
+            />
           </div>
 
           <div className="relative flex min-w-0 items-center gap-2 pt-3">

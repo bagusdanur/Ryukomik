@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { getXpLeadersCached, type XpLeaderRow } from "@/lib/profileServerCache";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
+import UserAvatar from "@/components/UserAvatar";
 import ProfilePopover from "@/components/profile/ProfilePopover";
 import {
   FiClock,
@@ -36,6 +37,7 @@ const DEFAULT_PROFILE = Object.freeze({
   xp: 0,
   username: "",
   avatar_url: "",
+  avatar_border: null,
   total_comments: 0,
   total_reads: 0,
 });
@@ -51,6 +53,7 @@ type CommentProfile = {
   xp?: number;
   username?: string;
   avatar_url?: string;
+  avatar_border?: string | null;
   total_comments?: number;
   total_reads?: number | null;
 };
@@ -64,6 +67,7 @@ type LatestComment = {
   is_spoiler?: boolean;
   author_name?: string | null;
   avatar_url?: string | null;
+  avatar_border?: string | null;
   profiles?: CommentProfile | null;
 };
 
@@ -246,31 +250,23 @@ function AccentBar({ type }: { type: CommentType }) {
 function CommentAvatar({
   avatarUrl,
   authorName,
+  avatarBorder,
   type,
 }: {
   avatarUrl?: string | null;
   authorName?: string | null;
+  avatarBorder?: string | null;
   type: CommentType;
 }) {
   return (
-    <div
-      className={`w-10 h-10 rounded-xl border flex-shrink-0 overflow-hidden flex items-center justify-center text-[14px] font-semibold ${
-        type === "normal"
-          ? "border-white/[0.08] bg-white/[0.05] text-gray-500"
-          : "border-white/20 bg-black/40 text-white/70"
-      }`}
-    >
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          className="w-full h-full object-cover"
-          alt=""
-          loading="lazy"
-        />
-      ) : (
-        authorName?.charAt(0).toUpperCase()
-      )}
-    </div>
+    <UserAvatar
+      src={avatarUrl}
+      name={authorName}
+      size={40}
+      shape="rounded"
+      border={avatarBorder}
+      ring={type === "normal" ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.2)"}
+    />
   );
 }
 
@@ -357,6 +353,7 @@ function CommentCard({
             <CommentAvatar
               avatarUrl={avatarUrl}
               authorName={authorName}
+              avatarBorder={profile.avatar_border}
               type={type}
             />
           </ProfilePopover>
@@ -364,6 +361,7 @@ function CommentCard({
           <CommentAvatar
             avatarUrl={avatarUrl}
             authorName={authorName}
+            avatarBorder={profile.avatar_border}
             type={type}
           />
         )}

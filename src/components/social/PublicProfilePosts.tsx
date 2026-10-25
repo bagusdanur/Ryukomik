@@ -9,10 +9,12 @@ import { relativeTime } from "@/lib/social/relativeTime";
 import ComicLinkCard from "@/components/social/ComicLinkCard";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
+import UserAvatar from "@/components/UserAvatar";
 
 type Author = {
   username?: string;
   avatar_url?: string | null;
+  avatar_border?: string | null;
   level?: number;
   role?: string | null;
   is_premium?: boolean | null;
@@ -80,12 +82,8 @@ export default function PublicProfilePosts({ username }: { username: string }) {
             <ExclusiveCommentWallpaper type={visualType(author)} />
             <div className="relative z-[1] p-4">
               <div className="flex items-center gap-3">
-                <Link href={`/u/${encodeURIComponent(displayName)}`} className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/5 font-black">
-                  {author.avatar_url ? (
-                    <img src={author.avatar_url} alt={displayName} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                  ) : (
-                    displayName[0]?.toUpperCase()
-                  )}
+                <Link href={`/u/${encodeURIComponent(displayName)}`} className="shrink-0">
+                  <UserAvatar src={author.avatar_url} name={displayName} size={40} border={author.avatar_border} />
                 </Link>
                 <div className="min-w-0">
                   <div className="flex min-w-0 flex-wrap items-center gap-1.5">

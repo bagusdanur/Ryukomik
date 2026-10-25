@@ -26,8 +26,9 @@ import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { stickers } from "@/data/stickers";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
+import UserAvatar from "@/components/UserAvatar";
 
-type Author = { username?: string; avatar_url?: string | null; level?: number; role?: string | null; is_premium?: boolean | null; total_reads?: number | null };
+type Author = { username?: string; avatar_url?: string | null; avatar_border?: string | null; level?: number; role?: string | null; is_premium?: boolean | null; total_reads?: number | null };
 type Post = {
   id: string;
   author_id: string;
@@ -486,20 +487,8 @@ function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post
     <article className="relative overflow-hidden border-b border-white/[0.08] bg-[var(--surface-0)] transition last:border-b-0 hover:bg-white/[0.02]">
       <ExclusiveCommentWallpaper type={authorVisualType(author)} />
       <div className="relative z-[1] flex gap-3 p-4">
-        <Link
-          href={profileHref}
-          className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/5 font-black"
-        >
-          {author.avatar_url ? (
-            <img
-              src={author.avatar_url}
-              alt=""
-              className="h-full w-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            (author.username || "U")[0]?.toUpperCase()
-          )}
+        <Link href={profileHref} className="shrink-0">
+          <UserAvatar src={author.avatar_url} name={author.username} size={44} border={author.avatar_border} />
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">

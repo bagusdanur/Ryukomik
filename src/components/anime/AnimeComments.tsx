@@ -17,10 +17,12 @@ import { supabase } from "@/lib/supabaseClient";
 import { socialFetch, socialRead } from "@/lib/social/client";
 import { relativeTime } from "@/lib/social/relativeTime";
 import UserBadges from "@/components/UserBadges";
+import UserAvatar from "@/components/UserAvatar";
 
 type Author = {
   username?: string;
   avatar_url?: string | null;
+  avatar_border?: string | null;
   level?: number;
   role?: string | null;
   is_premium?: boolean | null;
@@ -269,15 +271,8 @@ export default function AnimeComments({ slug, title }: { slug: string; title?: s
           highlight === comment.id ? "-mx-2 rounded-xl bg-cyan-300/[0.07] px-2 ring-1 ring-cyan-300/25" : ""
         }`}
       >
-        <Link
-          href={href}
-          className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/5 text-xs font-black"
-        >
-          {author.avatar_url ? (
-            <img src={author.avatar_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-          ) : (
-            (author.username || "U")[0]?.toUpperCase()
-          )}
+        <Link href={href} className="shrink-0">
+          <UserAvatar src={author.avatar_url} name={author.username} size={36} border={author.avatar_border} />
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
