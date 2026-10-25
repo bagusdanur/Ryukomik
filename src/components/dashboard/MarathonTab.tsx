@@ -74,7 +74,7 @@ export default function MarathonTab({ getAdminToken }: Props) {
     premium_days_1: 30,
     premium_days_2: 14,
     premium_days_3: 7,
-    weekly_days: [7, 3, 1],
+    weekly_days: [7, 5, 3],
     monthly_days: [30, 14, 7],
     daily_chapter_cap: 300,
   });
@@ -110,7 +110,7 @@ export default function MarathonTab({ getAdminToken }: Props) {
           weekly_days:
             ev.weekly_days && ev.weekly_days.length
               ? [...ev.weekly_days, 0, 0, 0].slice(0, 3)
-              : [7, 3, 1],
+              : [7, 5, 3],
           monthly_days:
             ev.monthly_days && ev.monthly_days.length
               ? [...ev.monthly_days, 0, 0, 0].slice(0, 3)
