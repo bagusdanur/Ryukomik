@@ -47,8 +47,48 @@ const PRIZES = [
   { medal: "🥉", label: "7 hari" },
 ];
 
-export default function SpeedrunBanner() {
+export default function SpeedrunBanner({ compact = false }: { compact?: boolean }) {
   const countdown = useCountdown();
+
+  if (compact) {
+    return (
+      <Link
+        href="/marathon"
+        className="group relative flex h-full min-w-0 flex-col justify-between overflow-hidden rounded-2xl border border-amber-400/25 bg-[var(--surface-1)] px-2.5 py-2.5 transition-colors hover:border-amber-400/45"
+      >
+        <span className="pointer-events-none absolute -right-6 -top-8 h-20 w-20 rounded-full bg-amber-400/15 blur-2xl" />
+        <span className="pointer-events-none absolute -left-6 -bottom-8 h-16 w-16 rounded-full bg-rose-500/10 blur-2xl" />
+
+        <div className="relative">
+          <div className="flex items-center justify-between gap-1">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-300 to-orange-500 text-amber-950 shadow-[0_2px_10px_rgba(251,191,36,0.35)]">
+              <RiFlashlightFill size={14} />
+            </span>
+            <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-1 py-px text-[7px] font-black uppercase tracking-wider text-emerald-300">
+              Live
+            </span>
+          </div>
+
+          <p className="mt-1.5 text-[10px] font-black uppercase leading-none tracking-[0.06em] text-amber-300">
+            Speedrun
+          </p>
+          <p className="mt-1 text-[10px] font-extrabold leading-tight text-white">
+            Juara 1-3 dapat Premium
+          </p>
+        </div>
+
+        <div className="relative mt-2 flex items-center justify-between gap-1">
+          <span className="inline-flex items-center gap-0.5 text-[8px] font-bold text-white/35">
+            <FiClock size={8} />
+            {countdown ?? "—"}
+          </span>
+          <span className="text-[9px] font-black text-amber-300 transition-transform group-hover:translate-x-0.5">
+            Ikuti →
+          </span>
+        </div>
+      </Link>
+    );
+  }
 
   return (
     <Link

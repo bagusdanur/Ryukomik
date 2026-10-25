@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { FaBolt, FaDiscord, FaPen, FaPalette, FaUsers } from "react-icons/fa";
+import SpeedrunBanner from "@/components/SpeedrunBanner";
 
 const STEPS = [
   { n: "01", text: 'Klik tombol "Buat Tiket Pendaftaran" di channel #staff-rekrutmen' },
@@ -27,7 +28,7 @@ export default function RyukomikStaffRecruitmentBanner({
 
   return (
     <div className={`px-3 pb-1 pt-2 sm:px-6 ${className}`}>
-      <div className="grid grid-cols-1 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
       <div className="relative overflow-hidden rounded-2xl border border-[var(--accent)]/25 bg-[var(--surface-1)] transition-colors hover:border-[var(--accent)]/45">
         <div className="rk-card group relative flex h-full w-full flex-wrap items-center gap-2 overflow-hidden px-2 py-2.5 sm:flex-nowrap sm:gap-2.5 sm:px-4 sm:py-3">
           <FaDiscord className="pointer-events-none absolute -right-3 -top-4 h-24 w-24 text-[var(--accent)] opacity-[0.08]" />
@@ -54,6 +55,7 @@ export default function RyukomikStaffRecruitmentBanner({
         </div>
       </div>
 
+        <SpeedrunBanner compact />
       </div>
 
       {showSteps && (

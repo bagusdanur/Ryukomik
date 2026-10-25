@@ -33,6 +33,8 @@ export type LeaderboardRow = {
   avatar_url: string | null;
   level: number | null;
   is_premium: boolean | null;
+  role: string | null;
+  total_reads: number | null;
   chapters: number;
   rank: number;
   updated_at: string;
@@ -142,7 +144,7 @@ export async function getLeaderboard(
   const { rows } = await socialQuery<LeaderboardRow>(
     `select s.user_id,
             coalesce(p.username, 'user-' || left(s.user_id::text, 8)) as username,
-            p.avatar_url, p.level, p.is_premium,
+            p.avatar_url, p.level, p.is_premium, p.role, p.total_reads,
             s.chapters,
             row_number() over (order by s.chapters desc, s.updated_at asc)::int as rank,
             s.updated_at
