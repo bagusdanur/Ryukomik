@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import UserBadges from "@/components/UserBadges";
+import UserAvatar from "@/components/UserAvatar";
 import { RiTrophyFill } from "react-icons/ri";
 import { HiSparkles } from "react-icons/hi2";
 
@@ -71,17 +72,7 @@ const MEDAL_BORDER = ["#FFD70035", "#C0C0C025", "#CD7F3225"];
 
 function Avatar({ url, name, size, borderColor }: AvatarProps) {
   return (
-    <div className="rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
-      style={{
-        width: size, height: size,
-        background: "var(--surface-1)",
-        border: `2px solid ${borderColor || "rgba(255,255,255,0.07)"}`,
-      }}>
-      {url
-        ? <img src={url} className="w-full h-full object-cover" alt="" onError={(e) => { e.currentTarget.style.display = "none"; }} />
-        : <span className="text-white/40 uppercase font-black" style={{ fontSize: size * 0.35 }}>{name?.charAt(0)}</span>
-      }
-    </div>
+    <UserAvatar src={url} name={name} size={size} ring={borderColor || "rgba(255,255,255,0.07)"} />
   );
 }
 

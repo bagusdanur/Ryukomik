@@ -8,6 +8,7 @@ import { FaCrown } from "react-icons/fa";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { supabase } from "@/lib/supabaseClient";
 import UserBadges from "@/components/UserBadges";
+import UserAvatar from "@/components/UserAvatar";
 import MarathonWinnerBadge from "@/components/MarathonWinnerBadge";
 
 type Period = "weekly" | "monthly";
@@ -76,40 +77,8 @@ function countdown(target: Date, now: number) {
   return `${minutes}m`;
 }
 
-function Avatar({
-  url,
-  name,
-  size,
-  ring,
-}: {
-  url?: string | null;
-  name: string;
-  size: number;
-  ring: string;
-}) {
-  return (
-    <span
-      className="flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/[0.06]"
-      style={{ width: size, height: size, boxShadow: `0 0 0 2px ${ring}` }}
-    >
-      {url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={url}
-          alt=""
-          loading="lazy"
-          className="h-full w-full object-cover"
-          onError={(event) => {
-            event.currentTarget.style.display = "none";
-          }}
-        />
-      ) : (
-        <span className="font-black uppercase text-white/40" style={{ fontSize: size * 0.34 }}>
-          {name.slice(0, 2)}
-        </span>
-      )}
-    </span>
-  );
+function Avatar({ url, name, size, ring }: { url?: string | null; name: string; size: number; ring: string }) {
+  return <UserAvatar src={url} name={name} size={size} ring={ring} />;
 }
 
 function SelfTag() {

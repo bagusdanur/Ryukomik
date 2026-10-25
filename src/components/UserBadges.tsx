@@ -1,15 +1,17 @@
-import { FaUserShield, FaTools } from "react-icons/fa";
-import VipBadge from "@/components/VipBadge";
-import TitleRushWinnerBadge from "@/components/TitleRushWinnerBadge";
-import XpLeaderboardBadge from "@/components/XpLeaderboardBadge";
-import CommunityBadges from "@/components/CommunityBadges";
+import BadgeList from "@/components/BadgeList";
 
+/**
+ * Backward-compatible wrapper. Semua pemakai lama otomatis ikut registry badge
+ * (badgeRules), jadi badge baru muncul di semua permukaan tanpa mengedit sini.
+ */
 export default function UserBadges({
   role,
   isPremium,
   titleRushRank,
   xpRank,
   totalReads,
+  marathon,
+  max,
   className = "",
 }: {
   role?: string | null;
@@ -17,30 +19,15 @@ export default function UserBadges({
   titleRushRank?: number | null;
   xpRank?: number | null;
   totalReads?: number | null;
+  marathon?: { rank: number; period: "weekly" | "monthly" } | null;
+  max?: number;
   className?: string;
 }) {
   return (
-    <>
-      {role === "admin" && (
-        <span
-          className={`inline-flex items-center gap-1 rounded-full bg-[var(--accent-3)] px-2 py-0.5 text-[9px] font-black uppercase leading-none tracking-widest text-white shadow-[0_1px_4px_rgba(244,63,94,0.5)] ${className}`}
-        >
-          <FaUserShield size={8} className="shrink-0" />
-          ADMIN
-        </span>
-      )}
-      {role === "staff" && (
-        <span
-          className={`inline-flex items-center gap-1 rounded-full bg-emerald-400 px-2 py-0.5 text-[9px] font-black uppercase leading-none tracking-widest text-emerald-950 shadow-[0_1px_4px_rgba(52,211,153,0.5)] ${className}`}
-        >
-          <FaTools size={8} className="shrink-0" />
-          STAFF
-        </span>
-      )}
-      {isPremium && <VipBadge className={className} />}
-      <CommunityBadges totalReads={totalReads} className={className} />
-      <XpLeaderboardBadge rank={xpRank} className={className} />
-      <TitleRushWinnerBadge rank={titleRushRank} className={className} />
-    </>
+    <BadgeList
+      ctx={{ role, isPremium, titleRushRank, xpRank, totalReads, marathon }}
+      max={max}
+      className={className}
+    />
   );
 }

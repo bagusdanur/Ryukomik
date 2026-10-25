@@ -1,4 +1,6 @@
 "use client";
+
+import UserAvatar from "@/components/UserAvatar";
 import { useEffect, useState, useRef, useCallback, useMemo, memo } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
@@ -25,6 +27,7 @@ type CommentSort = (typeof SORT_OPTIONS)[number]["key"];
 type Profile = {
   username?: string | null;
   avatar_url?: string | null;
+  avatar_border?: string | null;
   level?: number | null;
   role?: string | null;
   is_premium?: boolean | null;
@@ -39,6 +42,7 @@ type CommentRow = {
   is_spoiler?: boolean | null;
   author_name?: string | null;
   avatar_url?: string | null;
+  avatar_border?: string | null;
   user_id?: string | null;
   parent_id?: string | null;
   profiles?: Profile | null;
@@ -72,6 +76,7 @@ type CommentType = "admin" | "staff" | "premium" | "normal";
 
 type CommentAvatarProps = {
   avatar_url?: string | null;
+  avatar_border?: string | null;
   author_name?: string | null;
   type?: CommentType;
 };
@@ -144,18 +149,13 @@ const UserInfo = memo(({ user, profile }: UserInfoProps) => {
 
   return (
   <div className="flex items-center gap-3 mb-4">
-    {avatarUrl ? (
-      <img
-        src={avatarUrl}
-        className="w-9 h-9 rounded-full ring-2 ring-cyan-300/20"
-        alt="me"
-        loading="lazy"
-      />
-    ) : (
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-xs font-black text-white/50 ring-2 ring-cyan-300/20">
-        {displayName.charAt(0).toUpperCase()}
-      </div>
-    )}
+    <UserAvatar
+      src={avatarUrl}
+      name={displayName}
+      size={36}
+      border={profile?.avatar_border}
+      ring="rgba(34,211,238,0.2)"
+    />
     <span className="min-w-0 max-w-[10rem] truncate text-sm font-bold text-gray-200">
       {displayName}
     </span>
