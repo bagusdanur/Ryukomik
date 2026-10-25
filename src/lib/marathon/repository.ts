@@ -42,6 +42,8 @@ export type LeaderboardRow = {
   updated_at: string;
   /** Peringkat juara pada periode mana pun (badge), null kalau belum pernah menang. */
   winner_rank: number | null;
+  /** Periode kemenangan badge (mingguan vs bulanan dibedakan). */
+  winner_period: "weekly" | "monthly" | null;
 };
 
 export type Standing = {
@@ -152,16 +154,19 @@ export async function getLeaderboard(
             s.chapters,
             row_number() over (order by s.chapters desc, s.updated_at asc)::int as rank,
             s.updated_at,
-            wb.rank as winner_rank
+            wb.rank as winner_rank,
+            wb.period_type as winner_period
        from marathon_scores s
        left join social_profiles p on p.user_id = s.user_id
        left join lateral (
-         select w.rank
+         select w.rank, w.period_type
            from marathon_winners w
           where w.event_id = s.event_id
             and w.user_id = s.user_id
             and w.status <> 'void'
-          order by w.created_at desc
+          order by case w.period_type when 'monthly' then 0 else 1 end,
+                   w.rank asc,
+                   w.created_at desc
           limit 1
        ) wb on true
       where s.event_id = $1 and s.period_type = $2 and s.period_key = $3

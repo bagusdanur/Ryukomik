@@ -22,10 +22,11 @@ export function getNotificationLabel(item: Pick<NotificationItem, "type" | "acto
     case "marathon_win": {
       const rank = Number(item.chapter);
       const periode = item.slug === "monthly" ? "bulanan" : "mingguan";
+      const icon = item.slug === "monthly" ? "👑" : "🏆";
       if (Number.isFinite(rank) && rank > 0) {
-        return `Kamu juara ${rank} Speedrun Baca ${periode} — hadiah menunggu`;
+        return `${icon} Kamu juara ${rank} Speedrun Baca ${periode} — hadiah menunggu`;
       }
-      return `Kamu menang Speedrun Baca ${periode}`;
+      return `${icon} Kamu menang Speedrun Baca ${periode}`;
     }
     default:
       return `${actor} membalas komentar kamu`;

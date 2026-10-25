@@ -84,7 +84,8 @@ async function finalize(periodType, periodKey) {
          (event_id, period_type, period_key, rank, user_id, username, chapters, prize_label, premium_days)
        select event_id, period_type, period_key, rnk, user_id, username, chapters,
               'Premium ' || case rnk when 1 then $4::int when 2 then $5::int else $6::int end
-                || ' hari + Badge Juara ' || rnk,
+                || ' hari + Badge Juara ' || rnk || ' '
+                || case when $2 = 'monthly' then 'Bulanan' else 'Mingguan' end,
               case rnk when 1 then $4::int when 2 then $5::int else $6::int end
          from ranked
         where rnk <= 3

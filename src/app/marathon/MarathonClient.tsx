@@ -22,6 +22,7 @@ type LeaderboardRow = {
   chapters: number;
   rank: number;
   winner_rank?: number | null;
+  winner_period?: "weekly" | "monthly" | null;
 };
 
 type EventInfo = {
@@ -110,6 +111,23 @@ function Avatar({
   );
 }
 
+/** Badge juara: emas untuk bulanan, cyan untuk mingguan. */
+function WinnerBadge({ rank, period }: { rank: number; period?: "weekly" | "monthly" | null }) {
+  const monthly = period === "monthly";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[7.5px] font-black uppercase leading-none tracking-widest ${
+        monthly
+          ? "border-amber-400/40 bg-gradient-to-r from-amber-400/25 to-orange-500/15 text-amber-200"
+          : "border-cyan-400/35 bg-cyan-400/12 text-cyan-200"
+      }`}
+    >
+      <span aria-hidden>{monthly ? "👑" : "🏆"}</span>
+      Juara {rank} · {monthly ? "Bulanan" : "Mingguan"}
+    </span>
+  );
+}
+
 function SelfTag() {
   return (
     <span className="rounded-full border border-cyan-400/35 bg-cyan-400/15 px-1.5 py-0.5 text-[8px] font-black uppercase leading-none tracking-widest text-cyan-200">
@@ -166,11 +184,7 @@ function PodiumCard({ row, index }: { row: LeaderboardRow; index: number }) {
           totalReads={row.total_reads}
           className="text-[8px]"
         />
-        {row.winner_rank ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/35 bg-amber-400/15 px-1.5 py-0.5 text-[8px] font-black uppercase leading-none tracking-widest text-amber-200">
-              🏆 Juara {row.winner_rank}
-            </span>
-          ) : null}
+        {row.winner_rank ? <WinnerBadge rank={row.winner_rank} period={row.winner_period} /> : null}
       </div>
 
       <div className="mt-0.5 flex items-baseline gap-0.5">
@@ -233,11 +247,7 @@ function RankRow({
             totalReads={row.total_reads}
             className="text-[8px]"
           />
-          {row.winner_rank ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/35 bg-amber-400/15 px-1.5 py-0.5 text-[8px] font-black uppercase leading-none tracking-widest text-amber-200">
-              🏆 Juara {row.winner_rank}
-            </span>
-          ) : null}
+          {row.winner_rank ? <WinnerBadge rank={row.winner_rank} period={row.winner_period} /> : null}
         </div>
 
         <div className="mt-1 flex items-center gap-2">
