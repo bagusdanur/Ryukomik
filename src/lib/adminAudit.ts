@@ -9,7 +9,9 @@ export type AdminAuditAction =
   | "ban"
   | "unban"
   | "code_generate"
-  | "code_delete";
+  | "code_delete"
+  | "marathon_grant"
+  | "marathon_config";
 
 /**
  * Append-only admin audit trail.

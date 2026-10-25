@@ -16,12 +16,14 @@ import {
   FiShield,
   FiHome,
   FiMessageCircle,
+  FiAward,
 } from "react-icons/fi";
 import DashboardHomeTab from "@/components/dashboard/DashboardHomeTab";
 import SourceHealthTab from "@/components/dashboard/SourceHealthTab";
 import UsersTab from "@/components/dashboard/UsersTab";
 import PremiumCodesTab from "@/components/dashboard/PremiumCodesTab";
 import RequestsTab from "@/components/dashboard/RequestsTab";
+import MarathonTab from "@/components/dashboard/MarathonTab";
 import CommentsModerationTab from "@/components/dashboard/CommentsModerationTab";
 import EventRewardsTab, {
   type TitleRushWinner,
@@ -53,6 +55,7 @@ type DashboardPage =
   | "codes"
   | "project"
   | "announcements"
+  | "marathon"
   | "project-db";
 
 type AdminUser = User & {
@@ -166,7 +169,7 @@ export default function AdminDashboard() {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [page, setPage] = useState<DashboardPage>(() => {
     const urlPage = searchParams.get("page");
-    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "announcements", "project-db"];
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "announcements", "marathon", "project-db"];
     return validPages.includes(urlPage as DashboardPage) ? (urlPage as DashboardPage) : "dashboard";
   });
   const [premiumCodes, setPremiumCodes] = useState<PremiumCode[]>([]);
@@ -321,7 +324,7 @@ export default function AdminDashboard() {
 
   // Sync page state with URL on back/forward navigation
   useEffect(() => {
-    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "project-db"];
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "marathon", "project-db"];
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const urlPage = params.get("page");
@@ -336,7 +339,7 @@ export default function AdminDashboard() {
   // and navigation performed by Next.js rather than the browser history.
   useEffect(() => {
     const urlPage = searchParams.get("page");
-    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "project-db"];
+    const validPages: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "marathon", "project-db"];
     const resolved = validPages.includes(urlPage as DashboardPage) ? (urlPage as DashboardPage) : "dashboard";
     setPage((current) => current === resolved ? current : resolved);
   }, [searchParams]);
@@ -1340,6 +1343,11 @@ export default function AdminDashboard() {
       icon: <FiBookOpen size={18} />,
       label: "Project",
     },
+    {
+      id: "marathon",
+      icon: <FiAward size={18} />,
+      label: "Marathon",
+    },
   ];
 
   // ── render ─────────────────────────────────────────────────────────────
@@ -1539,6 +1547,7 @@ export default function AdminDashboard() {
             deleteComment={deleteComment}
           />
         )}
+        {page === "marathon" && <MarathonTab getAdminToken={getAdminToken} />}
       </main>
 
       {/* ── BOTTOM NAV ── */}

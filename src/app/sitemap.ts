@@ -90,6 +90,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: buildCanonicalUrl("/"), changeFrequency: "daily", priority: 1 },
     { url: buildCanonicalUrl("/list-komik"), changeFrequency: "daily", priority: 0.8 },
     { url: buildCanonicalUrl("/terbaru"), changeFrequency: "daily", priority: 0.8 },
+    { url: buildCanonicalUrl("/marathon"), changeFrequency: "daily", priority: 0.7 },
+    { url: buildCanonicalUrl("/leaderboard"), changeFrequency: "daily", priority: 0.6 },
     ...sourceRoutes.flat(),
   ];
 }

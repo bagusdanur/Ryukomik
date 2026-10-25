@@ -303,6 +303,23 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
+        {/* ── Promo event Marathon ── */}
+        <Link
+          href="/marathon"
+          className="mb-4 flex items-center gap-3 rounded-2xl border border-amber-400/25 bg-amber-400/[0.06] px-3.5 py-3 transition hover:border-amber-400/40 hover:bg-amber-400/10"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/15 text-amber-300">
+            🏃
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[12px] font-black text-white">Marathon Baca</span>
+            <span className="block truncate text-[10px] text-white/45">
+              Leaderboard mingguan & bulanan — juara 1-3 dapat premium
+            </span>
+          </span>
+          <span className="shrink-0 text-[10px] font-bold text-amber-300">Ikuti →</span>
+        </Link>
+
         {/* ── Pilihan kategori ── */}
         <div className="mb-5 flex gap-1.5">
           {KATEGORI.map((k) => {

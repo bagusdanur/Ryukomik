@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/social/auth";
+import { recordMarathonReads } from "@/lib/marathon/repository";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 export const runtime = "nodejs";
 
@@ -12,7 +13,16 @@ export async function POST(request:Request){
     const {data,error}=await supabaseAdmin.rpc("record_user_reads_batch",{p_user_id:userId,p_chapter_slugs:chapterSlugs,p_xp_amount:5});
     if(error)throw error;
     const result=Array.isArray(data)?data[0]:data;
-    return NextResponse.json({success:true,recorded_count:result?.recorded_count||0,xp_added:result?.xp_added||0});
+    const recorded=Number(result?.recorded_count)||0;
+
+    // Event Marathon Baca (database lokal). Sengaja tidak di-await dan semua
+    // error ditelan: tracking XP tidak boleh gagal karena DB event bermasalah.
+    if(recorded>0){
+      void recordMarathonReads(userId,chapterSlugs).catch((e)=>
+        console.error("[marathon] record failed:",e instanceof Error?e.message:e));
+    }
+
+    return NextResponse.json({success:true,recorded_count:recorded,xp_added:result?.xp_added||0});
   }catch(error){
     const unauthorized=error instanceof Error&&error.message==="UNAUTHORIZED";
     if(!unauthorized)console.error("[XP Read Batch] Error:",error);
