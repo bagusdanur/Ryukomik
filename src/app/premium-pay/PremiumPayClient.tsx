@@ -98,8 +98,8 @@ const manualPlans: PremiumPlan[] = [
     id: "1m",
     name: "1 Bulan",
     durationDays: 30,
-    amount: 10000,
-    qrisSrc: "/qris10k.jpeg",
+    amount: 15000,
+    qrisSrc: "/qris15k.jpeg",
     badge: "Harga Normal",
     badgeClass: "bg-white/[0.06] text-white/40 border border-white/[0.08]",
     note: "Coba Premium",
@@ -108,23 +108,23 @@ const manualPlans: PremiumPlan[] = [
     id: "3m",
     name: "3 Bulan",
     durationDays: 90,
-    amount: 25000,
-    qrisSrc: "/qris25.jpeg",
-    badge: "Hemat 17%",
+    amount: 35000,
+    qrisSrc: "/qris35k.jpeg",
+    badge: "Hemat 22%",
     badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
     note: "Lebih praktis",
-    subtext: "≈ Rp 8.333/bulan",
+    subtext: "≈ Rp 11.667/bulan",
   },
   {
     id: "6m",
     name: "6 Bulan",
     durationDays: 180,
-    amount: 45000,
-    qrisSrc: "/qris45k.jpeg",
-    badge: "Hemat 25%",
+    amount: 65000,
+    qrisSrc: "/qris65k.jpeg",
+    badge: "Hemat 28%",
     badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
     note: "Aktif lebih lama",
-    subtext: "≈ Rp 7.500/bulan",
+    subtext: "≈ Rp 10.833/bulan",
   },
 ];
 
@@ -133,7 +133,7 @@ const autoPlans: PremiumPlan[] = [
     id: "1m",
     name: "1 Bulan",
     durationDays: 30,
-    amount: 12000,
+    amount: 20000,
     badge: "Harga Normal",
     badgeClass: "bg-white/[0.06] text-white/40 border border-white/[0.08]",
     note: "Coba Premium",
@@ -142,21 +142,21 @@ const autoPlans: PremiumPlan[] = [
     id: "3m",
     name: "3 Bulan",
     durationDays: 90,
-    amount: 30000,
-    badge: "Hemat 17%",
+    amount: 45000,
+    badge: "Hemat 25%",
     badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
     note: "Lebih praktis",
-    subtext: "≈ Rp 10.000/bulan",
+    subtext: "≈ Rp 15.000/bulan",
   },
   {
     id: "6m",
     name: "6 Bulan",
     durationDays: 180,
-    amount: 50000,
-    badge: "Hemat 30%",
+    amount: 80000,
+    badge: "Hemat 33%",
     badgeClass: "bg-cyan-400/12 text-cyan-200 border border-cyan-400/20",
     note: "Aktif lebih lama",
-    subtext: "≈ Rp 8.333/bulan",
+    subtext: "≈ Rp 13.333/bulan",
   },
 ];
 
@@ -255,7 +255,15 @@ export default function PremiumPayClient({ autoEnabled = true }: { autoEnabled?:
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [isSkAgreed, setIsSkAgreed] = useState(false);
+  // Gambar QRIS per nominal bisa belum tersedia saat harga berubah; kalau gagal
+  // dimuat, tampilkan nominal + arahan ke admin alih-alih gambar rusak.
+  const [qrisFailed, setQrisFailed] = useState(false);
   const [showSkModal, setShowSkModal] = useState(false);
+
+  // QRIS berbeda per nominal: reset status gagal saat paket/mode berganti.
+  useEffect(() => {
+    setQrisFailed(false);
+  }, [selectedPlanId, paymentMode]);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
@@ -1194,11 +1202,24 @@ export default function PremiumPayClient({ autoEnabled = true }: { autoEnabled?:
                               className="rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/60 cursor-pointer active:scale-[0.98] transition-all"
                               aria-label="Perbesar QRIS"
                             >
-                              <img
-                                src={selectedPlan.qrisSrc}
-                                alt="QRIS QR Code"
-                                className="w-40 h-40 object-contain mx-auto"
-                              />
+                              {qrisFailed ? (
+                                <div className="flex h-40 w-40 flex-col items-center justify-center gap-1 rounded-xl bg-gray-100 px-2 text-center">
+                                  <p className="text-[11px] font-black text-gray-800">
+                                    QRIS {formatRupiah(selectedPlan.amount)}
+                                  </p>
+                                  <p className="text-[9px] leading-snug text-gray-500">
+                                    Gambar QRIS nominal ini belum tersedia. Hubungi admin untuk
+                                    mendapatkan QRIS-nya.
+                                  </p>
+                                </div>
+                              ) : (
+                                <img
+                                  src={selectedPlan.qrisSrc}
+                                  alt="QRIS QR Code"
+                                  className="w-40 h-40 object-contain mx-auto"
+                                  onError={() => setQrisFailed(true)}
+                                />
+                              )}
                             </button>
                             <div className="mt-2.5 text-center">
                               <p className="text-xs font-black text-gray-800">
@@ -1527,7 +1548,8 @@ export default function PremiumPayClient({ autoEnabled = true }: { autoEnabled?:
             <img
               src={paymentMode === "manual" ? selectedPlan.qrisSrc : qrCodeUrl}
               alt="QRIS Fullscreen"
-              className="max-h-[60vh] w-full object-contain"
+              onError={() => setQrisFailed(true)}
+              className={`max-h-[60vh] w-full object-contain ${qrisFailed ? "hidden" : ""}`}
             />
             {paymentMode === "auto" && (
               <button
