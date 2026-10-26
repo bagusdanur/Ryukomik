@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { S3Client, ListObjectsV2Command } from "@aws-sdk/client-s3";
 
@@ -23,8 +24,9 @@ function loadEnv(path) {
   return out;
 }
 
-const localEnv = loadEnv(resolve("ryukomik/.env.local"));
-const projectEnv = loadEnv(resolve("ryukomik-project-db/.env"));
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const localEnv = loadEnv(resolve(projectRoot, ".env.local"));
+const projectEnv = loadEnv(resolve(projectRoot, "..", "ryukomik-project-db", ".env"));
 const pick = (key, ...sources) => process.env[key] || sources.map((s) => s[key]).find(Boolean) || "";
 
 const databaseUrl = pick("PROJECT_DATABASE_URL", projectEnv);
@@ -119,8 +121,9 @@ console.log("\n== 15 orphan terbesar");
   .slice(0, 15)
   .forEach((obj) => console.log(`  ${bytes(obj.size).padStart(10)}  ${obj.key}`));
 
-mkdirSync("data", { recursive: true });
-const reportPath = `data/audit-r2-orphans-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+const reportDir = resolve(projectRoot, "data");
+mkdirSync(reportDir, { recursive: true });
+const reportPath = resolve(reportDir, `audit-r2-orphans-${new Date().toISOString().replace(/[:.]/g, "-")}.json`);
 writeFileSync(
   reportPath,
   JSON.stringify(
