@@ -233,13 +233,21 @@ function StepIndicator({ step, mode }: { step: number; mode: "auto" | "manual" }
   );
 }
 
-export default function PremiumPayClient() {
+export default function PremiumPayClient({ autoEnabled = true }: { autoEnabled?: boolean }) {
   const { user } = useSupabaseUser();
   const [showModal, setShowModal] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
 
   const [paymentMode, setPaymentMode] = useState<"auto" | "manual">("manual");
   const premiumPlans = paymentMode === "auto" ? autoPlans : manualPlans;
+
+  // Gateway otomatis ditutup: jangan pernah biarkan mode "auto" aktif.
+  useEffect(() => {
+    if (!autoEnabled && paymentMode === "auto") {
+      setPaymentMode("manual");
+      setSelectedPlanId(manualPlans[0].id);
+    }
+  }, [autoEnabled, paymentMode]);
 
   const [selectedPlanId, setSelectedPlanId] = useState(manualPlans[0].id);
   const [selectedMethodId, setSelectedMethodId] = useState(paymentMethods[0].id);
@@ -686,7 +694,8 @@ export default function PremiumPayClient() {
               <div className="text-2xl font-black text-white mb-3">Premium Akses</div>
 
               {/* Tab Selector */}
-              <div className="grid grid-cols-2 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06] mb-3">
+              <div className={`${autoEnabled ? "grid grid-cols-2" : "grid grid-cols-1"} p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06] mb-3`}>
+                {autoEnabled && (
                 <button
                   type="button"
                   onClick={() => {
@@ -702,6 +711,7 @@ export default function PremiumPayClient() {
                   <FiZap size={13} />
                   <span>Otomatis</span>
                 </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -728,6 +738,13 @@ export default function PremiumPayClient() {
                   "Konfirmasi manual oleh Admin (1-24 Jam)"
                 )}
               </div>
+
+              {!autoEnabled && (
+                <p className="mt-1 text-[11px] leading-relaxed text-amber-300/70">
+                  Pembayaran otomatis sementara dinonaktifkan. Jalur manual tetap berlaku — admin
+                  memverifikasi dalam 1×24 jam, dan kode premium tetap bisa ditukar.
+                </p>
+              )}
             </div>
 
             <div className="space-y-3 flex-1">
