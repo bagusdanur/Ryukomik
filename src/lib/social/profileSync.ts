@@ -32,9 +32,13 @@ export async function ensureSocialProfile(userId: string) {
 export async function upsertSocialProfile(profile: SourceProfile) {
   const username = profile.username || `user-${profile.id.slice(0, 8)}`;
   await socialQuery(
+    // Irisan 1: username & avatar_url sudah DIMILIKI database lokal (diubah
+    // lewat /api/me/profile), jadi repair tidak boleh menimpanya lagi. Kolom
+    // yang masih bersumber Supabase (level/premium/dsb.) tetap disegarkan
+    // sampai irisan 2 memindahkan penulisannya.
     `insert into social_profiles (user_id, username, avatar_url, banner_url, bio, level, role, is_premium, total_reads, total_comments, source_updated_at)
      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-     on conflict (user_id) do update set username=excluded.username, avatar_url=excluded.avatar_url,
+     on conflict (user_id) do update set
        level=excluded.level, role=excluded.role, is_premium=excluded.is_premium,
        total_reads=excluded.total_reads, total_comments=excluded.total_comments,
        source_updated_at=now(), updated_at=now()`,

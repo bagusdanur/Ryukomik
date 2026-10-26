@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminErrorResponse, privateAdminJson, verifyAdminRequest } from "@/lib/adminApi";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getSocialProfiles } from "@/lib/social/profileLookup";
 
 export async function GET(request: Request) {
   const admin = await verifyAdminRequest(request);
@@ -28,14 +29,14 @@ export async function GET(request: Request) {
     let mergedTransactions = [];
     if (transactions && transactions.length > 0) {
       const userIds = Array.from(new Set(transactions.map((t: any) => t.user_id)));
-      const { data: profiles, error: profilesError } = await supabaseAdmin
-        .from("profiles")
-        .select("id, username, avatar_url")
-        .in("id", userIds);
-      
-      if (profilesError) throw profilesError;
-
-      const profileMap = new Map(profiles?.map((p: any) => [p.id, p]));
+      // Profil dari database lokal (nol egress Supabase).
+      const localProfiles = await getSocialProfiles(userIds as string[]);
+      const profileMap = new Map(
+        [...localProfiles.entries()].map(([id, person]) => [
+          id,
+          { id, username: person.username, avatar_url: person.avatar_url },
+        ]),
+      );
       mergedTransactions = transactions.map((t: any) => ({
         ...t,
         profiles: profileMap.get(t.user_id) || null

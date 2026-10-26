@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { getUserAvatarBorders } from "@/lib/social/avatarBorders";
+import { socialQuery } from "@/lib/social/db";
 
 interface LeaderboardProfile {
   id: string;
@@ -34,15 +34,18 @@ const TOP_N = 10;
 
 const getLeaderboardCached = unstable_cache(
   async () => {
-    const { data: profiles, error } = await supabaseAdmin
-      .from("profiles")
-      .select("id, username, avatar_url, xp, level, role, is_premium, total_reads, total_comments")
-      .order("xp", { ascending: false })
-      .limit(POOL_SIZE);
+    // Sumber lokal: nama/level/premium/border konsisten dengan tulisan lokal
+    // (irisan 1) dan tidak menambah egress Supabase.
+    const { rows: localRows } = await socialQuery<LeaderboardProfile & { avatar_border: string | null }>(
+      `select user_id as id, username, avatar_url, xp, level, role, is_premium,
+              total_reads, total_comments, avatar_border
+         from social_profiles
+        order by xp desc
+        limit $1`,
+      [POOL_SIZE],
+    );
 
-    if (error) throw error;
-
-    const profileRows = (profiles || []) as LeaderboardProfile[];
+    const profileRows = localRows as LeaderboardProfile[];
     const ids = profileRows.map((p) => p.id);
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data: titleWinners } = await supabaseAdmin
@@ -62,12 +65,10 @@ const getLeaderboardCached = unstable_cache(
       title_rush_rank: titleRank[p.id] || null,
     }));
 
-    // Border avatar hidup di Postgres lokal (social_profiles), bukan Supabase:
-    // satu query untuk seluruh pool — tidak menambah egress Supabase.
-    const borders = await getUserAvatarBorders(ids).catch(() => new Map<string, string>());
+    // Border avatar sudah ikut di query lokal di atas.
     const withBorders = withBadges.map((p) => ({
       ...p,
-      avatar_border: borders.get(p.id) ?? null,
+      avatar_border: (p as { avatar_border?: string | null }).avatar_border ?? null,
     }));
 
     const topBy = (category: LeaderboardCategory) => {

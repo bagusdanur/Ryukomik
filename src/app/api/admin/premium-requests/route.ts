@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { adminErrorResponse, privateAdminJson, verifyAdminRequest } from "@/lib/adminApi";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
+import { mirrorProfileFields } from "@/lib/social/profileMirror";
 import { createSocialNotification } from "@/lib/social/notifications";
 import { sendPremiumActivatedPush } from "@/lib/premiumPush";
 
@@ -74,6 +75,11 @@ export async function POST(request: Request) {
       throw new Error("Hasil aktivasi premium tidak valid.");
     }
     await bumpProfileSignal(result.user_id);
+    await mirrorProfileFields(
+      result.user_id,
+      { is_premium: true, premium_until: result.premium_until },
+      "premium-requests/approve",
+    );
 
     const notification = createSocialNotification({
       userId: result.user_id,

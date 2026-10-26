@@ -3,6 +3,7 @@ import { requireUserId } from "@/lib/social/auth";
 import { computePremiumUntil } from "@/lib/requestAuthPolicy";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
+import { mirrorProfileFields } from "@/lib/social/profileMirror";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
       throw grantError;
     }
     await bumpProfileSignal(userId);
+    await mirrorProfileFields(userId, { is_premium: true, premium_until: premiumUntil }, "premium/redeem");
 
     return NextResponse.json({
       success: true,

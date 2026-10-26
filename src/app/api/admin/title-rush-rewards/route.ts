@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyAdminRequest } from "@/lib/adminApi";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
+import { mirrorProfileFields } from "@/lib/social/profileMirror";
 import { createSocialNotification } from "@/lib/social/notifications";
 
 type WinnerRow = {
@@ -242,6 +243,11 @@ export async function POST(request: Request) {
 
       if (error) throw error;
       await bumpProfileSignal(winner.user_id);
+      await mirrorProfileFields(
+        winner.user_id,
+        { is_premium: true, premium_until: nextUntil.toISOString() },
+        "title-rush-rewards",
+      );
 
       await supabaseAdmin
         .from("title_rush_winners")

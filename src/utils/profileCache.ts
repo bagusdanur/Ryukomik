@@ -19,8 +19,8 @@ export interface CachedProfile {
   show_public_join_date?: boolean | null;
 }
 
-const PROFILE_SELECT =
-  "id, username, avatar_url, level, xp, role, is_premium, premium_until, created_at, total_comments, total_reads, show_public_reads, show_public_comments, show_public_join_date";
+// Profil sendiri sekarang dibaca dari API kita (Postgres lokal), bukan tabel
+// profiles Supabase — lihat src/app/api/me/profile/route.ts.
 
 // Profile rows change rarely (username/avatar/premium), yet this is read by
 // Navbar + every ad component on nearly every navigation. Serve cached data for
@@ -149,21 +149,29 @@ export function clearCachedProfile(userId?: string | null) {
 }
 
 function fetchProfile(userId: string): Promise<CachedProfile | null> {
-  return Promise.resolve(
-    supabase
-      .from("profiles")
-      .select(PROFILE_SELECT)
-      .eq("id", userId)
-      .maybeSingle(),
-  ).then(({ data }) => {
-    const profile = (data || null) as CachedProfile | null;
+  return (async () => {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return null;
+
+    const response = await fetch("/api/me/profile", {
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    // Sesi kedaluwarsa bukan error fatal: biarkan UI memakai metadata sesi.
+    if (response.status === 401) return null;
+    if (!response.ok) throw new Error("Gagal memuat profil");
+
+    const payload = (await response.json()) as { profile?: CachedProfile | null };
+    const profile = payload.profile ?? null;
+
     const entry = { at: Date.now(), data: profile };
     profileCache.set(userId, entry);
     writeStored(userId, entry);
     profileRequests.delete(userId);
     publishProfile(userId, profile);
     return profile;
-  }).catch((error) => {
+  })().catch((error) => {
     profileRequests.delete(userId);
     throw error;
   });

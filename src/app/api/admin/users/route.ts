@@ -5,6 +5,8 @@ import { banUntilFrom, canBanTarget, normalizeBanDays } from "@/lib/banPolicy";
 import { recordAdminAction } from "@/lib/adminAudit";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
+import { mirrorProfileFields } from "@/lib/social/profileMirror";
+import { socialQuery } from "@/lib/social/db";
 import { revalidateTag } from "next/cache";
 
 const PER_PAGE = 20;
@@ -22,36 +24,38 @@ export async function GET(request: Request) {
     const filter = url.searchParams.get("filter") || "all";
     const search = url.searchParams.get("search")?.trim() || "";
 
-    const BASE_COLUMNS =
-      "id, username, avatar_url, is_premium, level, xp, role, created_at, premium_until";
-    const BAN_COLUMNS = "is_banned, banned_until, ban_reason";
+    // Sumber lokal (social_profiles): daftar admin tidak lagi membaca tabel
+    // profiles Supabase. Kolom ban sudah tersedia di lokal (irisan 0).
+    const conditions: string[] = [];
+    const params: unknown[] = [];
 
-    const buildQuery = (columns: string, allowBanFilter: boolean) => {
-      let query = supabaseAdmin
-        .from("profiles")
-        .select(columns, { count: "exact" })
-        .order("created_at", { ascending: false });
-
-      if (filter === "premium") query = query.eq("is_premium", true);
-      if (filter === "reguler") query = query.eq("is_premium", false);
-      if (filter === "staff") query = query.eq("role", "staff");
-      if (filter === "admin") query = query.eq("role", "admin");
-      if (filter === "banned" && allowBanFilter) query = query.eq("is_banned", true);
-      if (search) query = query.ilike("username", `%${search}%`);
-
-      return query.range((page - 1) * PER_PAGE, page * PER_PAGE - 1);
-    };
-
-    let result = await buildQuery(`${BASE_COLUMNS}, ${BAN_COLUMNS}`, true);
-    if (result.error) {
-      // Ban columns not migrated yet — keep the dashboard working.
-      result = await buildQuery(BASE_COLUMNS, false);
+    if (filter === "premium") conditions.push("is_premium = true");
+    if (filter === "reguler") conditions.push("is_premium = false");
+    if (filter === "staff") conditions.push("role = 'staff'");
+    if (filter === "admin") conditions.push("role = 'admin'");
+    if (filter === "banned") conditions.push("is_banned = true");
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`username ilike $${params.length}`);
     }
 
-    const { data, count, error } = result;
+    const where = conditions.length ? `where ${conditions.join(" and ")}` : "";
+    params.push(PER_PAGE, (page - 1) * PER_PAGE);
 
-    if (error) throw error;
-    return privateAdminJson({ users: data || [], total: count || 0 });
+    const { rows } = await socialQuery<Record<string, unknown> & { total: string }>(
+      `select user_id as id, username, avatar_url, is_premium, level, xp, role,
+              created_at, premium_until, is_banned, banned_until, ban_reason,
+              count(*) over() as total
+         from social_profiles
+         ${where}
+        order by created_at desc
+        limit $${params.length - 1} offset $${params.length}`,
+      params,
+    );
+
+    const total = Number(rows[0]?.total || 0);
+    const users = rows.map(({ total: _ignored, ...rest }) => ({ ...rest, id: rest.id }));
+    return privateAdminJson({ users, total });
   } catch (error) {
     return adminErrorResponse(error, "Gagal memuat user.");
   }
@@ -96,6 +100,13 @@ export async function PATCH(request: Request) {
           .eq("id", userId);
         if (error) throw error;
         await bumpProfileSignal(userId);
+        await mirrorProfileFields(userId, {
+          is_banned: false,
+          banned_until: null,
+          ban_reason: null,
+          banned_at: null,
+          banned_by: null,
+        }, "admin/users");
 
         // Lift the Supabase Auth ban so the account can sign in again.
         try {
@@ -125,6 +136,13 @@ export async function PATCH(request: Request) {
         .eq("id", userId);
       if (error) throw error;
       await bumpProfileSignal(userId);
+      await mirrorProfileFields(userId, {
+        is_banned: true,
+        banned_until: bannedUntil,
+        ban_reason: reasonText,
+        banned_at: new Date().toISOString(),
+        banned_by: admin.userId,
+      }, "admin/users");
 
       // Block sign-in and token refresh at the auth layer as well.
       try {
@@ -162,6 +180,7 @@ export async function PATCH(request: Request) {
           .eq("id", userId);
         if (error) throw error;
         await bumpProfileSignal(userId);
+        await mirrorProfileFields(userId, { is_premium: false, premium_until: null }, "admin/users");
         revalidateTag("public-profile", { expire: 0 });
         await recordAdminAction({ actorId: admin.userId, action: "premium_remove", targetId: userId });
         return privateAdminJson({ success: true, userId, isPremium: false });
@@ -186,6 +205,7 @@ export async function PATCH(request: Request) {
         .eq("id", userId);
       if (error) throw error;
       await bumpProfileSignal(userId);
+      await mirrorProfileFields(userId, { is_premium: true, premium_until: premiumUntil }, "admin/users");
 
       revalidateTag("public-profile", { expire: 0 });
       await recordAdminAction({
@@ -217,6 +237,7 @@ export async function PATCH(request: Request) {
 
     if (error) throw error;
     await bumpProfileSignal(userId);
+    await mirrorProfileFields(userId, { role: normalizedRole }, "admin/users");
 
     revalidateTag("profile-role", { expire: 0 });
     revalidateTag("public-profile", { expire: 0 });

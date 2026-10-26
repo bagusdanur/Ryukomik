@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
+import { mirrorProfileFields } from "@/lib/social/profileMirror";
 import { createSocialNotification } from "@/lib/social/notifications";
 import { sendPremiumActivatedPush } from "@/lib/premiumPush";
 
@@ -108,6 +109,11 @@ export async function POST(request: Request) {
     // without a reload.
     if (!profileError) {
       await bumpProfileSignal(tx.user_id);
+      await mirrorProfileFields(
+        tx.user_id,
+        { is_premium: true, premium_until: newPremiumUntil.toISOString() },
+        "payment/webhook",
+      );
       await Promise.allSettled([
         createSocialNotification({
           userId: tx.user_id,

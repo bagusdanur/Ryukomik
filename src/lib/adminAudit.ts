@@ -1,6 +1,7 @@
 import "server-only";
 
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { socialQuery } from "@/lib/social/db";
 
 export type AdminAuditAction =
   | "role_change"
@@ -31,12 +32,11 @@ export async function recordAdminAction(input: {
   try {
     let actorName = input.actorName?.trim() || "";
     if (!actorName) {
-      const { data } = await supabaseAdmin
-        .from("profiles")
-        .select("username")
-        .eq("id", input.actorId)
-        .maybeSingle();
-      actorName = (data as { username?: string | null } | null)?.username || "admin";
+      const { rows } = await socialQuery<{ username: string }>(
+        "select username from social_profiles where user_id = $1",
+        [input.actorId],
+      );
+      actorName = rows[0]?.username || "admin";
     }
 
     await supabaseAdmin.from("activity_events").insert({

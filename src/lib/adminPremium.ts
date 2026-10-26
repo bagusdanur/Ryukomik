@@ -3,6 +3,7 @@ import "server-only";
 import { computePremiumUntil } from "@/lib/requestAuthPolicy";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
+import { mirrorProfileFields } from "@/lib/social/profileMirror";
 
 /**
  * Tambah masa premium user. Dipakai hadiah event (Marathon) supaya logika
@@ -31,5 +32,6 @@ export async function grantPremiumDays(userId: string, days: number): Promise<st
   if (error) throw error;
 
   await bumpProfileSignal(userId);
+  await mirrorProfileFields(userId, { is_premium: true, premium_until: premiumUntil }, "adminPremium");
   return premiumUntil;
 }

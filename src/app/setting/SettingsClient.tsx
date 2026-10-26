@@ -310,38 +310,20 @@ export default function SettingsClient() {
     setSavingProfile(true);
 
     try {
-      const { data: duplicateProfiles, error: duplicateError } = await supabase
-        .from("profiles")
-        .select("id")
-        .ilike("username", username)
-        .neq("id", user.id)
-        .limit(1);
-
-      if (duplicateError) throw duplicateError;
-
-      if (duplicateProfiles?.length) {
-        showToast("error", "Username sudah dipakai");
-        return;
-      }
-
       const avatarUrl = await uploadProfileImage();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("Sesi login tidak valid");
 
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ username, avatar_url: avatarUrl || null })
-        .eq("id", user.id);
-
-      if (profileError) throw profileError;
-
-      const { error: authError } = await supabase.auth.updateUser({
-        data: {
-          name: username,
-          full_name: username,
-          avatar_url: avatarUrl || null,
-        },
+      // Ditulis ke Postgres lokal (bukan tabel profiles Supabase); API juga
+      // memperbarui metadata Auth.
+      const response = await fetch("/api/me/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ username, avatar_url: avatarUrl || null }),
       });
-
-      if (authError) throw authError;
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Gagal menyimpan profil");
 
       setStats((current) => ({
         ...current,
@@ -374,12 +356,19 @@ export default function SettingsClient() {
     setSavingPrivacyField(field);
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ [field]: next })
-        .eq("id", user.id);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("Sesi login tidak valid");
 
-      if (error) throw error;
+      const response = await fetch("/api/me/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ [field]: next }),
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(payload.error || "Gagal menyimpan");
+      }
       clearCachedProfile(user.id);
       showToast("success", "Privacy profil diperbarui");
     } catch (error) {
