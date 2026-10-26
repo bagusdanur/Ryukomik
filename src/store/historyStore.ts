@@ -11,7 +11,7 @@ interface HistoryState {
   updateHistoryThumbs: (entries: { comicSlug: string; thumbnail: string }[]) => void;
 }
 
-const MAX_HISTORY = 200;
+const MAX_HISTORY = 500;
 
 // 🔥 MIGRATION SCRIPT UNTUK PENGGUNA LAMA
 if (typeof window !== "undefined") {

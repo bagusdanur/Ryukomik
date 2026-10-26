@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 
 type BackupPayload = unknown[];
-const BACKUP_ITEM_LIMIT = 300;
+const BACKUP_ITEM_LIMIT = 500;
 
 function readArrayFromStorage(key: string): BackupPayload {
   try {
