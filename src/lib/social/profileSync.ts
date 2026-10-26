@@ -48,13 +48,16 @@ export async function ensureSocialProfile(userId: string) {
 
 export async function upsertSocialProfile(profile: SourceProfile) {
   const username = profile.username || `user-${profile.id.slice(0, 8)}`;
+  // JANGAN mengambil role/level/premium dari Supabase. Baris `profiles` di
+  // Supabase pernah bisa diubah pemiliknya sendiri; menyalin `role` dari sana
+  // berarti user bisa mendaftar sebagai admin (insiden "Aku siapa!?").
+  // Otoritas sekarang lokal: user baru selalu 'user', level dari XP lokal.
   await socialQuery(
     `insert into social_profiles (user_id, username, avatar_url, banner_url, bio, level, role, is_premium, total_reads, total_comments, source_updated_at)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+     values ($1,$2,$3,$4,$5,1,'user',false,$6,$7,$8)
      on conflict (user_id) do nothing`,
     [profile.id, username, profile.avatar_url, profile.banner_url,
-      profile.bio, profile.level || 1, profile.role, Boolean(profile.is_premium),
-      profile.total_reads || 0, profile.total_comments || 0, new Date().toISOString()],
+      profile.bio, profile.total_reads || 0, profile.total_comments || 0, new Date().toISOString()],
   );
   await Promise.all([
     socialQuery("update social_activity_events set actor_name=$2 where actor_id=$1 and actor_name is distinct from $2", [profile.id, username]),
