@@ -534,14 +534,14 @@ const CommentItem = memo(({
             </div>
 
             <div className="mt-3 flex items-center gap-4">
-              {!isReply && (
-                <button
-                  onClick={handleReplyToggle}
-                  className="text-[10px] font-black text-[var(--accent-2)] hover:text-white uppercase tracking-tighter transition-colors duration-200"
-                >
-                  Balas
-                </button>
-              )}
+              {/* Balasan juga bisa dibalas: server menempelkannya ke komentar
+                  utama + mention @nama, jadi thread tetap 2 tingkat. */}
+              <button
+                onClick={handleReplyToggle}
+                className="text-[10px] font-black text-[var(--accent-2)] hover:text-white uppercase tracking-tighter transition-colors duration-200"
+              >
+                Balas
+              </button>
               {hasReplies && (
                 <button
                   onClick={() => setShowReplies(!showReplies)}
