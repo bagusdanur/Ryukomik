@@ -47,8 +47,12 @@ export async function deleteR2File(key: string): Promise<void> {
   }
 }
 
-/** Kuota gratis R2: 10 GB-month penyimpanan. */
-export const R2_FREE_LIMIT_BYTES = 10 * 1024 ** 3;
+/**
+ * Kuota gratis R2: 10 GB-month penyimpanan.
+ * Cloudflare menghitung GB desimal (1 GB = 10^9 byte), bukan GiB — supaya angka
+ * di dashboard kita sama dengan dashboard Cloudflare.
+ */
+export const R2_FREE_LIMIT_BYTES = 10 * 1000 ** 3;
 
 export type R2Usage = {
   bucket: string;

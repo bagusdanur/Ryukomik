@@ -13,11 +13,12 @@ type Usage = {
   scannedAt: string;
 };
 
+/** Desimal (1 KB = 1000 B) supaya sebanding dengan dashboard Cloudflare. */
 function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 MB";
   const units = ["B", "KB", "MB", "GB", "TB"];
-  const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
-  const value = bytes / 1024 ** index;
+  const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1000)));
+  const value = bytes / 1000 ** index;
   return `${value.toFixed(value >= 100 || index <= 1 ? 0 : 1)} ${units[index]}`;
 }
 
