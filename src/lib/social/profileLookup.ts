@@ -15,6 +15,7 @@ export type SocialProfileLite = {
   username: string;
   avatar_url: string | null;
   level: number;
+  xp: number;
   role: string | null;
   is_premium: boolean;
   total_reads: number;
@@ -29,7 +30,7 @@ export async function getSocialProfiles(
 
   try {
     const { rows } = await socialQuery<SocialProfileLite>(
-      `select user_id, username, avatar_url, level, role, is_premium,
+      `select user_id, username, avatar_url, level, coalesce(xp, 0) as xp, role, is_premium,
               coalesce(total_reads, 0) as total_reads, avatar_border
          from social_profiles
         where user_id = any($1::uuid[])`,

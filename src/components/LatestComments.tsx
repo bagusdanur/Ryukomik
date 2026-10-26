@@ -210,6 +210,7 @@ const getLatestCommentsCached = unstable_cache(
         profiles: person
           ? {
               level: person.level,
+              xp: person.xp,
               role: person.role ?? undefined,
               is_premium: person.is_premium,
               username: person.username,

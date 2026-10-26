@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { getSocialProfiles } from "@/lib/social/profileLookup";
+import { addXp } from "@/lib/social/xp";
 import { createSocialNotification } from "@/lib/social/notifications";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 import { requireUserId } from "@/lib/social/auth";
@@ -127,6 +128,7 @@ async function fetchComments(
       avatar_border: person?.avatar_border ?? null,
       profiles: {
         level: person?.level ?? 1,
+        xp: person?.xp ?? 0,
         username,
         avatar_url: avatar,
         role: person?.role ?? null,
@@ -292,12 +294,10 @@ export async function POST(req: NextRequest) {
    if (user_id) {
   const xpGain = parent_id ? 5 : 10; // 20 XP untuk komen utama
   
-  const { error: rpcError } = await supabaseAdmin.rpc("increment_xp", {
-    user_id: user_id,   // Harus sesuai dengan parameter di SQL
-    xp_amount: xpGain   // Harus sesuai dengan parameter di SQL
-  });
-
-  if (rpcError) console.error("Gagal tambah XP:", rpcError.message);
+  // XP ditulis ke database lokal (irisan 3), bukan RPC Supabase.
+  await addXp(user_id, xpGain).catch((error) =>
+    console.error("Gagal tambah XP:", error instanceof Error ? error.message : error),
+  );
 }
 
     // Invalidate hanya cache manga/chapter ini, lalu refresh daftar global

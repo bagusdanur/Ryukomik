@@ -29,10 +29,10 @@ export async function GET(request: Request) {
     { rows: [premiumUsersRow] },
     { count: commentsToday },
     { count: totalComments },
-    { count: readsToday },
-    { data: totalReads },
+    { rows: [readsTodayRow] },
+    { rows: totalReadsRows },
     { count: pendingRequests },
-    { data: readRows },
+    { rows: readRows },
   ] = await Promise.all([
     // Jumlah user & user premium dari database lokal (profil = sumber lokal).
     socialQuery<{ total: string }>("select count(*)::int as total from social_profiles"),
@@ -43,25 +43,30 @@ export async function GET(request: Request) {
       .select("id", { count: "exact", head: true })
       .gte("created_at", todayISO),
     supabaseAdmin.from("comments").select("id", { count: "exact", head: true }),
-    supabaseAdmin
-      .from("user_reads")
-      .select("id", { count: "exact", head: true })
-      .gte("created_at", todayISO),
-    supabaseAdmin.rpc("get_total_read_count"),
+    // Riwayat baca pindah ke lokal (irisan 3).
+    socialQuery<{ total: string }>(
+      "select count(*)::int as total from user_reads where created_at >= $1",
+      [todayISO],
+    ),
+    socialQuery<{ total: string }>("select coalesce(sum(total_reads),0)::bigint as total from social_profiles"),
     supabaseAdmin
       .from("premium_requests")
       .select("id", { count: "exact", head: true })
       .eq("status", "pending"),
-    supabaseAdmin
-      .from("user_reads")
-      .select("user_id, chapter_slug")
-      .gte("created_at", todayISO)
-      .order("created_at", { ascending: false })
-      .limit(40),
+    socialQuery<{ user_id: string; chapter_slug: string }>(
+      `select user_id, chapter_slug from user_reads
+        where created_at >= $1
+        order by created_at desc
+        limit 40`,
+      [todayISO],
+    ),
   ]);
 
   const totalUsers = Number(totalUsersRow?.total || 0);
   const premiumUsers = Number(premiumUsersRow?.total || 0);
+
+  const readsToday = Number(readsTodayRow?.total || 0);
+  const totalReads = Number(totalReadsRows?.[0]?.total || 0);
 
   const reads = (readRows || []) as ReadActivityRow[];
   const userIds = Array.from(new Set(reads.map((read) => read.user_id).filter(Boolean))) as string[];
