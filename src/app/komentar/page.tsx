@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getSocialProfiles } from "@/lib/social/profileLookup";
 
 const COMMENTS_TTL = 300;
 const COMMENT_SNIPPET_LIMIT = 220;
@@ -17,6 +18,7 @@ type CommentProfile =
 
 type CommentRow = {
   id: string;
+  user_id?: string | null;
   slug?: string | null;
   author_name?: string | null;
   avatar_url?: string | null;
@@ -53,16 +55,27 @@ const getLatestPublicComments = unstable_cache(
   async () => {
     const { data, error } = await supabaseAdmin
       .from("comments")
-      .select("id, slug, author_name, avatar_url, created_at, content, profiles(username, avatar_url)")
+      .select("id, slug, author_name, avatar_url, created_at, content, user_id")
       .is("parent_id", null)
       .order("created_at", { ascending: false })
       .limit(20);
 
     if (error) throw error;
-    return ((data || []) as CommentRow[]).map((comment) => ({
-      ...comment,
-      content: compactContent(comment.content),
-    }));
+    const rows = (data || []) as CommentRow[];
+    // Nama/avatar penulis dari database lokal (satu query batch), bukan join
+    // ke profiles Supabase.
+    const people = await getSocialProfiles(rows.map((comment) => comment.user_id));
+
+    return rows.map((comment) => {
+      const person = comment.user_id ? people.get(String(comment.user_id)) : undefined;
+      return {
+        ...comment,
+        profiles: person
+          ? { username: person.username, avatar_url: person.avatar_url }
+          : { username: comment.author_name, avatar_url: comment.avatar_url },
+        content: compactContent(comment.content),
+      };
+    });
   },
   ["public-komentar-v2"],
   { revalidate: COMMENTS_TTL, tags: ["comments"] },

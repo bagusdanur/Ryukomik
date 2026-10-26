@@ -5,6 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import { getProfile, loadCachedProfile, refreshProfile, subscribeProfile } from "@/utils/profileCache";
 import type { CachedProfile } from "@/utils/profileCache";
 import { startProfileVisibilityRefresh } from "@/utils/profileVisibilityRefresh";
+import { startProfileSignalWatcher } from "@/utils/profileSignalWatcher";
 
 export function useUserProfile(user: User | null) {
   const [profile, setProfile] = useState<CachedProfile | null>(() => getProfile(user?.id));
@@ -22,6 +23,8 @@ export function useUserProfile(user: User | null) {
     void fetchProfile();
 
     const stopVisibilityRefresh = startProfileVisibilityRefresh(user.id);
+    // Sinyal lokal: admin kasih premium/role → profil user langsung refresh.
+    const stopSignalWatcher = startProfileSignalWatcher(user.id);
 
     const handleProfileUpdated = () => {
       void refreshProfile(user.id);
@@ -33,6 +36,7 @@ export function useUserProfile(user: User | null) {
       cancelled = true;
       unsubscribe();
       stopVisibilityRefresh();
+      stopSignalWatcher();
       window.removeEventListener("rk-profile-updated", handleProfileUpdated);
     };
   }, [user?.id]);

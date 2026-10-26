@@ -4,6 +4,7 @@ import { computePremiumUntil, normalizePremiumDays } from "@/lib/requestAuthPoli
 import { banUntilFrom, canBanTarget, normalizeBanDays } from "@/lib/banPolicy";
 import { recordAdminAction } from "@/lib/adminAudit";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { bumpProfileSignal } from "@/lib/social/profileSignals";
 import { revalidateTag } from "next/cache";
 
 const PER_PAGE = 20;
@@ -94,6 +95,7 @@ export async function PATCH(request: Request) {
           })
           .eq("id", userId);
         if (error) throw error;
+        await bumpProfileSignal(userId);
 
         // Lift the Supabase Auth ban so the account can sign in again.
         try {
@@ -122,6 +124,7 @@ export async function PATCH(request: Request) {
         })
         .eq("id", userId);
       if (error) throw error;
+      await bumpProfileSignal(userId);
 
       // Block sign-in and token refresh at the auth layer as well.
       try {
@@ -158,6 +161,7 @@ export async function PATCH(request: Request) {
           .update({ is_premium: false, premium_until: null })
           .eq("id", userId);
         if (error) throw error;
+        await bumpProfileSignal(userId);
         revalidateTag("public-profile", { expire: 0 });
         await recordAdminAction({ actorId: admin.userId, action: "premium_remove", targetId: userId });
         return privateAdminJson({ success: true, userId, isPremium: false });
@@ -181,6 +185,7 @@ export async function PATCH(request: Request) {
         .update({ is_premium: true, premium_until: premiumUntil })
         .eq("id", userId);
       if (error) throw error;
+      await bumpProfileSignal(userId);
 
       revalidateTag("public-profile", { expire: 0 });
       await recordAdminAction({
@@ -211,6 +216,7 @@ export async function PATCH(request: Request) {
       .eq("id", userId);
 
     if (error) throw error;
+    await bumpProfileSignal(userId);
 
     revalidateTag("profile-role", { expire: 0 });
     revalidateTag("public-profile", { expire: 0 });

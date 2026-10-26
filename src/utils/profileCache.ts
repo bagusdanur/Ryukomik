@@ -29,8 +29,10 @@ const PROFILE_SELECT =
 // (clearCachedProfile / "rk-profile-updated") still forces a fresh read right
 // after a user edits their profile or activates premium, so nothing important
 // stays stale.
-const PROFILE_TTL = 15 * 60 * 1000;
-const PROFILE_STALE_TTL = 60 * 60 * 1000;
+// 60 menit: perubahan premium/role tidak lagi bergantung pada TTL karena
+// ada sinyal lokal (profileSignalWatcher) yang menyegarkan profil seketika.
+const PROFILE_TTL = 60 * 60 * 1000;
+const PROFILE_STALE_TTL = 120 * 60 * 1000;
 const STORAGE_PREFIX = "rk-profile:";
 const STORAGE_MAX = 8;
 

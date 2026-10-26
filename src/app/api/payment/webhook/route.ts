@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { bumpProfileSignal } from "@/lib/social/profileSignals";
 import { createSocialNotification } from "@/lib/social/notifications";
 import { sendPremiumActivatedPush } from "@/lib/premiumPush";
 
@@ -106,6 +107,7 @@ export async function POST(request: Request) {
     // premium cache, notify the user, and push so an already-open tab unlocks
     // without a reload.
     if (!profileError) {
+      await bumpProfileSignal(tx.user_id);
       await Promise.allSettled([
         createSocialNotification({
           userId: tx.user_id,

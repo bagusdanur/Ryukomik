@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { getUserAvatarBorders } from "@/lib/social/avatarBorders";
+import { getSocialProfiles } from "@/lib/social/profileLookup";
 import { getXpLeadersCached, type XpLeaderRow } from "@/lib/profileServerCache";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
@@ -189,7 +189,7 @@ const getLatestCommentsCached = unstable_cache(
   async () => {
     const { data, error } = await supabaseAdmin
       .from("comments")
-      .select("id, user_id, slug, content, created_at, is_spoiler, author_name, avatar_url, profiles(level, role, is_premium, xp, username, avatar_url, total_reads)")
+      .select("id, user_id, slug, content, created_at, is_spoiler, author_name, avatar_url")
       .is("parent_id", null)
       .order("created_at", { ascending: false })
       .limit(10);
@@ -198,14 +198,29 @@ const getLatestCommentsCached = unstable_cache(
       return [];
     }
     const rows = (data || []) as LatestComment[];
-    // Border avatar dari database lokal — satu query per halaman.
-    const borders = await getUserAvatarBorders(rows.map((comment) => comment.user_id));
+    // Identitas + border avatar dari PostgreSQL lokal: satu query per halaman,
+    // menggantikan join profiles di Supabase (payload lebih kecil, nol egress).
+    const people = await getSocialProfiles(rows.map((comment) => comment.user_id));
 
-    return rows.map((comment) => ({
-      ...comment,
-      avatar_border: borders.get(String(comment.user_id)) ?? null,
-      content: compactContent(comment.content),
-    }));
+    return rows.map((comment) => {
+      const person = comment.user_id ? people.get(String(comment.user_id)) : undefined;
+      return {
+        ...comment,
+        avatar_border: person?.avatar_border ?? null,
+        profiles: person
+          ? {
+              level: person.level,
+              role: person.role ?? undefined,
+              is_premium: person.is_premium,
+              username: person.username,
+              avatar_url: person.avatar_url ?? undefined,
+              total_reads: person.total_reads,
+              avatar_border: person.avatar_border,
+            }
+          : null,
+        content: compactContent(comment.content),
+      };
+    });
   },
   ["latest-comments"],
   { revalidate: LATEST_COMMENTS_TTL, tags: ["comments"] }
@@ -308,12 +323,16 @@ function LevelBadge({ level = 1, xp = 0 }: { level?: number; xp?: number }) {
       <span className="text-[10px] font-bold text-[var(--accent-2)] leading-none">
         Lvl {level}
       </span>
-      <div className="w-8 h-[3px] rounded-full bg-white/[0.07] overflow-hidden">
-        <div
-          className="h-full rounded-full bg-[var(--accent)]"
-          style={{ width: `${xp % 100}%` }}
-        />
-      </div>
+      {/* Bar XP hanya dirender kalau nilainya diketahui; data XP tinggal di
+          Supabase dan sengaja tidak dibaca demi egress. */}
+      {typeof xp === "number" && (
+        <div className="w-8 h-[3px] rounded-full bg-white/[0.07] overflow-hidden">
+          <div
+            className="h-full rounded-full bg-[var(--accent)]"
+            style={{ width: `${xp % 100}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 }

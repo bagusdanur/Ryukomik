@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/social/auth";
 import { computePremiumUntil } from "@/lib/requestAuthPolicy";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { bumpProfileSignal } from "@/lib/social/profileSignals";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,7 @@ export async function POST(request: Request) {
         .eq("id", row.id);
       throw grantError;
     }
+    await bumpProfileSignal(userId);
 
     return NextResponse.json({
       success: true,

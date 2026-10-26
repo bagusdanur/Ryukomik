@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
-import { getUserAvatarBorders } from "@/lib/social/avatarBorders";
+import { getSocialProfiles } from "@/lib/social/profileLookup";
 import { createSocialNotification } from "@/lib/social/notifications";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 import { requireUserId } from "@/lib/social/auth";
@@ -89,16 +89,7 @@ async function fetchComments(
         user_id,
         avatar_url,
         is_spoiler,
-        created_at,
-        profiles (
-          xp,
-          level,
-          role,
-          is_premium,
-          username,
-          avatar_url,
-          total_reads
-        )
+        created_at
       `)
     .limit(limit);
 
@@ -116,28 +107,35 @@ async function fetchComments(
   if (error) throw error;
 
   const rows = (data || []) as CommentRow[];
-  // Satu query lokal untuk seluruh halaman, bukan per komentar.
-  const borders = await getUserAvatarBorders(rows.map((item) => (item.user_id ? String(item.user_id) : null)));
+  // Data penulis diambil dari PostgreSQL lokal (satu query batch), bukan join
+  // ke tabel profiles Supabase — payload komentar lebih kecil, nol egress.
+  const people = await getSocialProfiles(rows.map((item) => (item.user_id ? String(item.user_id) : null)));
 
-  return rows.map((item) => ({
-    id: item.id,
-    content: item.content,
-    parent_id: item.parent_id,
-    author_name: item.author_name,
-    user_id: item.user_id,
-    avatar_url: item.avatar_url,
-    is_spoiler: item.is_spoiler,
-    created_at: item.created_at,
-    avatar_border: borders.get(String(item.user_id)) ?? null,
-    profiles: {
-      level: 1,
-      xp: 0,
-      username: item.author_name,
+  return rows.map((item) => {
+    const person = item.user_id ? people.get(String(item.user_id)) : undefined;
+    const username = person?.username || item.author_name;
+    const avatar = person?.avatar_url || item.avatar_url;
+    return {
+      id: item.id,
+      content: item.content,
+      parent_id: item.parent_id,
+      author_name: item.author_name,
+      user_id: item.user_id,
       avatar_url: item.avatar_url,
-      ...(item.profiles && typeof item.profiles === "object" ? (item.profiles as Record<string, unknown>) : {}),
-      avatar_border: borders.get(String(item.user_id)) ?? null,
-    },
-  }));
+      is_spoiler: item.is_spoiler,
+      created_at: item.created_at,
+      avatar_border: person?.avatar_border ?? null,
+      profiles: {
+        level: person?.level ?? 1,
+        username,
+        avatar_url: avatar,
+        role: person?.role ?? null,
+        is_premium: person?.is_premium ?? false,
+        total_reads: person?.total_reads ?? 0,
+        avatar_border: person?.avatar_border ?? null,
+      },
+    };
+  });
 }
 
 function getCachedComments(
@@ -268,11 +266,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Konten atau Type kosong" }, { status: 400 });
     }
 
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("username, avatar_url")
-      .eq("id", user_id)
-      .maybeSingle();
+    // Identitas penulis dari database lokal (nol query Supabase tambahan).
+    const people = await getSocialProfiles([user_id]);
+    const profile = people.get(user_id);
 
     const { data: comment, error: errInsert } = await supabaseAdmin
       .from("comments")
