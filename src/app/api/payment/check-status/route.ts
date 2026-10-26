@@ -1,50 +1,14 @@
 import { NextResponse } from "next/server";
 import { paymentsEnabled, PAYMENTS_DISABLED_MESSAGE } from "@/lib/payments";
-import { supabaseAdmin } from "@/lib/supabaseServer";
-import { getVerifiedUserId } from "@/lib/serverRoleCache";
 
-export async function GET(request: Request) {
-  // Provider lama (Pakasir) sudah ditutup; jalur pembayaran dimatikan lebih dulu.
-  if (!paymentsEnabled()) {
-    return NextResponse.json({ error: PAYMENTS_DISABLED_MESSAGE }, { status: 503 });
-  }
-
-  try {
-    const { searchParams } = new URL(request.url);
-    const order_id = searchParams.get("order_id");
-
-    if (!order_id) {
-      return NextResponse.json({ error: "Missing order_id" }, { status: 400 });
-    }
-
-    const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-    if (!token) {
-      return NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
-    }
-
-    let userId: string;
-    try {
-      userId = await getVerifiedUserId(token);
-    } catch {
-      return NextResponse.json({ error: "Sesi login tidak valid." }, { status: 401 });
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from("payment_transactions")
-      .select("status, completed_at")
-      .eq("order_id", order_id)
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (error || !data) {
-      return NextResponse.json({ error: "Transaksi tidak ditemukan" }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true, status: data.status, completed_at: data.completed_at });
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 },
-    );
-  }
+/**
+ * Cek status transaksi — DINONAKTIFKAN bersama provider lamanya.
+ * Saat provider baru dipasang, endpoint ini kembali membaca payment_transactions
+ * dengan filter user yang login.
+ */
+export async function GET() {
+  return NextResponse.json(
+    { error: paymentsEnabled() ? "Provider pembayaran belum dikonfigurasi." : PAYMENTS_DISABLED_MESSAGE },
+    { status: 503 },
+  );
 }

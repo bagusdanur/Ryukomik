@@ -1,6 +1,6 @@
 # Catatan Audit Egress Supabase (17 Okt 2026)
 
-Status: **berjalan, belum selesai**. Instrumen pengukur terpasang sementara di
+Status: **SELESAI 26 Okt 2026** — audit dimatikan (`EGRESS_AUDIT=0`), log baseline diarsipkan di `data/archive/egress-2026-10-26/`. Ringkasan hasil migrasi ada di `docs/profiles-local-migration.md`. Instrumen pengukur terpasang sementara di
 frontend `ryukomik` supaya penghematan menyasar pihak yang benar-benar
 terbesar — bukan tebakan dari baca kode.
 
