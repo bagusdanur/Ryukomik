@@ -9,6 +9,24 @@ import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { supabase } from "@/lib/supabaseClient";
 
 const BADGE_POLL_MS = 90_000;
+const TIMELINE_SEEN_KEY = "rk-timeline-seen-at";
+
+function readTimelineSeen(): number | null {
+  try {
+    const value = Number(window.localStorage.getItem(TIMELINE_SEEN_KEY) || 0);
+    return Number.isFinite(value) && value > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeTimelineSeen(ts = Date.now()) {
+  try {
+    window.localStorage.setItem(TIMELINE_SEEN_KEY, String(ts));
+  } catch {
+    // localStorage bisa diblokir; badge tetap jalan tanpa penanda
+  }
+}
 
 /**
  * Angka kecil di tombol Komunitas = jumlah notifikasi belum dibaca.
@@ -18,9 +36,10 @@ const BADGE_POLL_MS = 90_000;
  * Refetch saat pindah halaman, saat tab kembali aktif, dan setelah notifikasi
  * ditandai dibaca (event "rk-notifications-read").
  */
-function useUnreadCount() {
+function useUnreadCount(path: string) {
   const { user } = useSupabaseUser();
   const [count, setCount] = useState(0);
+  const onTimeline = path.startsWith("/files");
 
   const refresh = useCallback(async () => {
     if (!user?.id) {
@@ -28,20 +47,27 @@ function useUnreadCount() {
       return;
     }
     try {
+      // Saat user sedang membuka timeline, anggap semua postingan sudah terlihat.
+      if (onTimeline) writeTimelineSeen();
+      const seen = readTimelineSeen();
+      if (!seen) writeTimelineSeen();
+      const since = new Date(readTimelineSeen() ?? Date.now()).toISOString();
+
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (!token) return;
-      const res = await fetch("/api/social/notifications/unread", {
-        cache: "no-store",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `/api/social/notifications/unread?since=${encodeURIComponent(since)}`,
+        { cache: "no-store", headers: { Authorization: `Bearer ${token}` } },
+      );
       if (!res.ok) return;
-      const payload = (await res.json()) as { count?: number };
-      setCount(Math.max(0, Number(payload.count) || 0));
+      const payload = (await res.json()) as { count?: number; newPosts?: number };
+      const total = (Number(payload.count) || 0) + (Number(payload.newPosts) || 0);
+      setCount(Math.max(0, total));
     } catch {
       // badge bersifat pelengkap — jangan ganggu navigasi
     }
-  }, [user?.id]);
+  }, [user?.id, onTimeline]);
 
   useEffect(() => {
     if (!user?.id) {
@@ -72,7 +98,7 @@ function useUnreadCount() {
 
 export default function BottomNav() {
   const path = usePathname();
-  const unread = useUnreadCount();
+  const unread = useUnreadCount(path);
 
   if (
     path.startsWith("/chapter") ||
@@ -113,7 +139,7 @@ export default function BottomNav() {
               }`}
               aria-label={
                 showBadge
-                  ? `${item.label} (${unread} notifikasi baru)`
+                  ? `${item.label} (${unread} aktivitas baru)`
                   : item.label
               }
             >
