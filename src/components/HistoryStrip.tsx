@@ -102,7 +102,14 @@ export default function HistoryStrip() {
             <SeriesCard
               key={`${item.source || "komiku"}-${item.comicSlug}`}
               href={chapterHref(item)}
-              title={item.title}
+              title={
+                String(item.title || "").trim() &&
+                !/^(chapter|ch\.?)\s*[\d.]/i.test(String(item.title || "").trim())
+                  ? item.title
+                  : (item.comicSlug || "")
+                      .replace(/-/g, " ")
+                      .replace(/\b\w/g, (c) => c.toUpperCase())
+              }
               image={item.thumbnail}
               eyebrow={item.lastChapter || "Lanjut baca"}
               meta={relativeTime(new Date(item.updatedAt).toISOString())}

@@ -100,13 +100,19 @@ export function buildContinueItems<T extends ContinueInput>(
     .slice()
     .sort((a, b) => (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0))
     .slice(0, limit)
-    .map((item) => ({
-      ...item,
-      displayTitle:
-        String(item.title || "").trim() ||
-        prettifySlug(String(item.comicSlug || "")) ||
-        "Lanjutan",
-    }));
+    .map((item) => {
+      // Riwayat lama (source project) bisa menyimpan judul berupa "Chapter 4".
+      // Judul berbau chapter diperlakukan kosong -> pakai judul dari slug seri.
+      const rawTitle = String(item.title || "").trim();
+      const chapterLike = /^(chapter|ch\.?)\s*[\d.]/i.test(rawTitle);
+      return {
+        ...item,
+        displayTitle:
+          (!chapterLike && rawTitle) ||
+          prettifySlug(String(item.comicSlug || "")) ||
+          "Lanjutan",
+      };
+    });
 }
 
 const memo = new Map<string, Promise<SeriesMeta>>();
