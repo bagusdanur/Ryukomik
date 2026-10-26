@@ -1006,6 +1006,32 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     }
   };
 
+  /**
+   * Upload cadangan lewat server kalau browser tidak bisa PUT langsung ke R2
+   * (mis. bucket baru belum punya CORS policy). Server menulis ke bucket aktif.
+   */
+  const serverFallbackUpload = async (
+    token: string,
+    file: File,
+    slug: string,
+    type: "cover" | "chapter",
+    chapterNumber?: string,
+  ): Promise<string> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("manga_slug", slug);
+    fd.append("type", type);
+    if (chapterNumber) fd.append("chapter_number", chapterNumber);
+    const res = await fetch("/api/admin/project/upload-image", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+    return String(json.url);
+  };
+
   const uploadCover = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     const file = e.target.files[0];
@@ -1035,19 +1061,26 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
         return;
       }
 
-      // 2. Upload file langsung ke R2 dari browser (bypass Next.js â€” tidak ada 413)
-      const uploadRes = await fetch(presignData.presignedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!uploadRes.ok) {
-        alert(`Gagal upload cover ke storage: HTTP ${uploadRes.status}`);
-        return;
+      // 2. Upload file langsung ke R2 dari browser (bypass Next.js — tidak ada 413).
+      // Kalau bucket belum punya CORS, PUT diblokir browser → fallback ke server.
+      let publicUrl = presignData.publicUrl as string;
+      let directOk = false;
+      try {
+        const uploadRes = await fetch(presignData.presignedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+        directOk = uploadRes.ok;
+      } catch {
+        directOk = false;
+      }
+      if (!directOk) {
+        publicUrl = await serverFallbackUpload(token, file, mangaForm.slug || "new-manga", "cover");
       }
 
       // 3. Set URL publik ke form
-      setMangaForm({ ...mangaForm, cover_url: presignData.publicUrl });
+      setMangaForm({ ...mangaForm, cover_url: publicUrl });
     } catch (err: any) {
       alert(`Gagal upload cover: ${err.message || "Network error"}`);
     } finally {
@@ -1328,21 +1361,40 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             continue;
           }
 
-          // 2. Upload langsung ke R2 dari browser (tidak melalui Next.js â€” tidak ada 413)
-          const uploadRes = await fetch(presignData.presignedUrl, {
-            method: "PUT",
-            headers: { "Content-Type": file.type },
-            body: file,
-          });
-
-          if (!uploadRes.ok) {
-            failedFiles.push(file.name);
-            lastError = `Upload ke storage gagal: HTTP ${uploadRes.status}`;
-            console.error(`[upload] R2 PUT gagal: ${file.name} â€” ${uploadRes.status}`);
-          } else {
-            // 3. Simpan URL publik
-            urls.push(presignData.publicUrl);
+                    // 2. Upload langsung ke R2 dari browser; kalau bucket belum punya
+          // CORS, browser memblokir PUT → fallback menulis lewat server.
+          let chapterUrl = presignData.publicUrl as string;
+          let directOk = false;
+          try {
+            const uploadRes = await fetch(presignData.presignedUrl, {
+              method: "PUT",
+              headers: { "Content-Type": file.type },
+              body: file,
+            });
+            directOk = uploadRes.ok;
+          } catch {
+            directOk = false;
           }
+
+          if (!directOk) {
+            try {
+              chapterUrl = await serverFallbackUpload(
+                token,
+                file,
+                activeManga.slug,
+                "chapter",
+                String(chapterForm.chapter_number),
+              );
+              console.warn(`[upload] ${file.name}: PUT langsung gagal, tersimpan lewat server`);
+            } catch (fallbackErr: any) {
+              failedFiles.push(file.name);
+              lastError = fallbackErr?.message || "Upload fallback gagal";
+              console.error(`[upload] fallback gagal: ${file.name}`, fallbackErr);
+              setUploadProgress(Math.round(((i + 1) / files.length) * 100));
+              continue;
+            }
+          }
+          urls.push(chapterUrl);
         } catch (fetchErr: any) {
           failedFiles.push(file.name);
           lastError = fetchErr.message || "Network error";
