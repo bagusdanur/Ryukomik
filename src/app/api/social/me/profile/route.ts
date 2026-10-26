@@ -50,19 +50,34 @@ export async function PATCH(request: Request) {
     if (!socialLimit(request, userId, 10)) return socialJson({ error: "Terlalu banyak perubahan." }, { status: 429 });
 
     const body = (await request.json()) as Record<string, unknown>;
-    const bio = typeof body.bio === "string" ? body.bio.trim().slice(0, 280) || null : null;
-    const banner = mediaUrl(body.banner_url);
-    const border = avatarBorderId(body.avatar_border);
+    // Patch parsial: hanya field yang DIKIRIM yang diubah. Sebelumnya field
+    // yang tidak ada di body dianggap null sehingga update border saja gagal
+    // dengan "Banner wajib berupa URL HTTPS publik".
+    const updates: Record<string, unknown> = {};
+    if ("bio" in body) {
+      updates.bio = typeof body.bio === "string" ? body.bio.trim().slice(0, 280) || null : null;
+    }
+    if ("banner_url" in body) {
+      updates.banner_url = mediaUrl(body.banner_url);
+    }
+    if ("avatar_border" in body) {
+      updates.avatar_border = avatarBorderId(body.avatar_border);
+    }
 
-    if (isAdminOnlyBorder(border) && !(await getCachedRole(userId)).isAdmin) {
+    if (!Object.keys(updates).length) {
+      return socialJson({ error: "Tidak ada perubahan." }, { status: 400 });
+    }
+
+    if (isAdminOnlyBorder(updates.avatar_border as string | null) && !(await getCachedRole(userId)).isAdmin) {
       return socialJson({ error: "Border ini khusus admin." }, { status: 403 });
     }
 
+    const assignments = Object.keys(updates).map((key, index) => `${key} = $${index + 2}`);
     await socialQuery(
-      "update social_profiles set bio=$2,banner_url=$3,avatar_border=$4,updated_at=now() where user_id=$1",
-      [userId, bio, banner, border],
+      `update social_profiles set ${assignments.join(", ")}, updated_at = now() where user_id = $1`,
+      [userId, ...Object.values(updates)],
     );
-    return socialJson({ success: true, avatar_border: border });
+    return socialJson({ success: true, ...updates });
   } catch (error) {
     if (error instanceof Error && error.message === "INVALID_MEDIA") {
       return socialJson({ error: "Banner wajib berupa URL HTTPS publik." }, { status: 400 });
