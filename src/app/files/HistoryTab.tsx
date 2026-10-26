@@ -106,9 +106,12 @@ const cleanTitle = useCallback((title?: string) => {
     ...item,
     source: item.source || "komiku",
 
+    // Data lama bisa menyimpan "Chapter 4" sebagai judul (bug riwayat project);
+    // perlakukan judul berbau chapter sebagai kosong -> pakai judul dari slug.
     title: cleanTitle(
-  item.title || formatTitleFromSlug(item.comicSlug)
-),
+      (item.title && !/^(chapter|ch\.?)\s*[\d.]/i.test(item.title.trim()) ? item.title : "") ||
+        formatTitleFromSlug(item.comicSlug)
+    ),
 
     updatedAt: Number(item.updatedAt || (item as any).date) || Date.now(),
 

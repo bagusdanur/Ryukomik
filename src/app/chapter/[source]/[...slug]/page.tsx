@@ -63,6 +63,22 @@ async function getSeriesThumbnail(_source: string, _mangaId: string): Promise<st
   return undefined;
 }
 
+/** Judul seri project (bukan judul chapter). Dicache 1 jam; API internal. */
+const getProjectTitle = cache(async (slug: string): Promise<string | null> => {
+  try {
+    const json = await projectApiFetch<{ data?: { title?: string } }>(
+      `/projects/${encodeURIComponent(slug)}`,
+      { next: { revalidate: 3600 } } as RequestInit,
+    );
+    return json.data?.title?.trim() || null;
+  } catch {
+    return null;
+  }
+});
+
+const prettySlug = (slug: string) =>
+  slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
 const getChapter = cache(async (source: string, slugStr: string): Promise<ReaderChapter | null> => {
   if (source === "project") {
     try {
@@ -81,9 +97,12 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
       const data = json.data;
       // Server-render as an anonymous visitor; the client gate verifies the session.
       const access = evaluateChapterAccess(data, null);
+      // Riwayat menyimpan `title`; untuk project itu harus JUDUL SERI, bukan
+      // judul chapter ("Chapter 4"). Judul chapter tetap ada di currentChapter.
+      const seriesTitle = (await getProjectTitle(mangaSlug)) || prettySlug(mangaSlug);
       
       return {
-        title: data.title || `Chapter ${data.chapter_number}`,
+        title: seriesTitle,
         mangaId: mangaSlug,
         currentChapter: `Chapter ${data.chapter_number}`,
         prev: data.prev, next: data.next,

@@ -2,6 +2,17 @@
 
 import { useHistoryStore } from "@/store/historyStore";
 
+/** Judul seri dari slug, untuk data lama yang terlanjur menyimpan "Chapter N". */
+function prettifySlug(slug?: string | null) {
+  return (slug || "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function displayTitle(item: { title?: string | null; comicSlug?: string | null }) {
+  const title = (item.title || "").trim();
+  const chapterLike = !title || /^(chapter|ch\.?)\s*[\d.]/i.test(title);
+  return chapterLike ? prettifySlug(item.comicSlug) : title;
+}
+
 export default function HistoryPage() {
   const history = useHistoryStore((state) => state.history);
   const clearHistory = useHistoryStore((state) => state.clearHistory);
@@ -35,7 +46,7 @@ export default function HistoryPage() {
           >
             {/* Title + chapter */}
             <span className="text-sm md:text-base font-medium">
-              {item.title} {item.lastChapter ?? (item as any).chapter}
+              {displayTitle(item)} {item.lastChapter ?? (item as any).chapter}
             </span>
 
             {/* Date */}
