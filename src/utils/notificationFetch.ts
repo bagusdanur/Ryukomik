@@ -132,6 +132,10 @@ export async function markNotificationsRead(userId: string, ids?: string[]) {
       method: "PATCH",
       body: JSON.stringify(ids?.length ? { ids: ids.slice(0, 50) } : { all: true }),
     });
+    // Badge di bottom nav ikut hilang tanpa menunggu polling berikutnya.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("rk-notifications-read"));
+    }
   } catch (error) {
     publish(userId, previous);
     throw error;
