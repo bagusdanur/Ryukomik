@@ -24,6 +24,7 @@ import {
 } from "react-icons/fi";
 import { MANGA_SOURCES } from "@/config/sources";
 import ChapterLockControls, { ChapterLockBadge } from './ChapterLockControls';
+import ProjectStorageCard from "./ProjectStorageCard";
 
 function parseSourceInput(
   raw: string,
@@ -2554,6 +2555,8 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           </div>
         </div>
       </div>
+
+      <ProjectStorageCard getAdminToken={getAdminToken} />
 
       {activityOpen && (
         <div className="rounded-2xl border border-white/[.07] bg-[#13131a] p-4">
