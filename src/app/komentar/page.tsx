@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { socialQuery } from "@/lib/social/db";
 import { getSocialProfiles } from "@/lib/social/profileLookup";
 
 const COMMENTS_TTL = 300;
@@ -53,15 +53,15 @@ function getChapter(slug?: string | null) {
 
 const getLatestPublicComments = unstable_cache(
   async () => {
-    const { data, error } = await supabaseAdmin
-      .from("comments")
-      .select("id, slug, author_name, avatar_url, created_at, content, user_id")
-      .is("parent_id", null)
-      .order("created_at", { ascending: false })
-      .limit(20);
-
-    if (error) throw error;
-    const rows = (data || []) as CommentRow[];
+    // Komentar dibaca dari Postgres lokal (migrasi komentar).
+    const { rows: localRows } = await socialQuery<CommentRow>(
+      `select id, slug, author_name, avatar_url, created_at, content, user_id
+         from comments
+        where parent_id is null and deleted_at is null
+        order by created_at desc
+        limit 20`,
+    );
+    const rows = localRows;
     // Nama/avatar penulis dari database lokal (satu query batch), bukan join
     // ke profiles Supabase.
     const people = await getSocialProfiles(rows.map((comment) => comment.user_id));

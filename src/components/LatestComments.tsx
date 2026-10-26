@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
+import { socialQuery } from "@/lib/social/db";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { getSocialProfiles } from "@/lib/social/profileLookup";
 import { getXpLeadersCached, type XpLeaderRow } from "@/lib/profileServerCache";
@@ -187,17 +188,14 @@ function compactContent(content?: string | null) {
 
 const getLatestCommentsCached = unstable_cache(
   async () => {
-    const { data, error } = await supabaseAdmin
-      .from("comments")
-      .select("id, user_id, slug, content, created_at, is_spoiler, author_name, avatar_url")
-      .is("parent_id", null)
-      .order("created_at", { ascending: false })
-      .limit(10);
-    if (error) {
-      console.error("[LatestComments] Fetch error:", error.message);
-      return [];
-    }
-    const rows = (data || []) as LatestComment[];
+    // Komentar dibaca dari Postgres lokal (migrasi komentar).
+    const { rows } = await socialQuery<LatestComment>(
+      `select id, user_id, slug, content, created_at, is_spoiler, author_name, avatar_url
+         from comments
+        where parent_id is null and deleted_at is null
+        order by created_at desc
+        limit 10`,
+    );
     // Identitas + border avatar dari PostgreSQL lokal: satu query per halaman,
     // menggantikan join profiles di Supabase (payload lebih kecil, nol egress).
     const people = await getSocialProfiles(rows.map((comment) => comment.user_id));

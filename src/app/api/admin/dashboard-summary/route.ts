@@ -27,8 +27,8 @@ export async function GET(request: Request) {
   const [
     { rows: [totalUsersRow] },
     { rows: [premiumUsersRow] },
-    { count: commentsToday },
-    { count: totalComments },
+    { rows: [commentsTodayRow] },
+    { rows: [totalCommentsRow] },
     { rows: [readsTodayRow] },
     { rows: totalReadsRows },
     { count: pendingRequests },
@@ -38,11 +38,11 @@ export async function GET(request: Request) {
     socialQuery<{ total: string }>("select count(*)::int as total from social_profiles"),
     socialQuery<{ total: string }>("select count(*)::int as total from social_profiles where is_premium"),
 
-    supabaseAdmin
-      .from("comments")
-      .select("id", { count: "exact", head: true })
-      .gte("created_at", todayISO),
-    supabaseAdmin.from("comments").select("id", { count: "exact", head: true }),
+    socialQuery<{ total: string }>(
+      "select count(*)::int as total from comments where created_at >= $1",
+      [todayISO],
+    ),
+    socialQuery<{ total: string }>("select count(*)::int as total from comments"),
     // Riwayat baca pindah ke lokal (irisan 3).
     socialQuery<{ total: string }>(
       "select count(*)::int as total from user_reads where created_at >= $1",
@@ -91,8 +91,8 @@ export async function GET(request: Request) {
     stats: {
       totalUsers: totalUsers ?? 0,
       premiumUsers: premiumUsers ?? 0,
-      commentsToday: commentsToday ?? 0,
-      totalComments: totalComments ?? 0,
+      commentsToday: Number(commentsTodayRow?.total || 0),
+      totalComments: Number(totalCommentsRow?.total || 0),
       readsToday: readsToday ?? 0,
       totalReads: Number(totalReads || 0),
     },

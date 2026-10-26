@@ -47,6 +47,9 @@ type CommentRow = {
   parent_id?: string | null;
   profiles?: Profile | null;
   replies?: CommentRow[];
+  edited_at?: string | null;
+  deleted_at?: string | null;
+  edit_count?: number | null;
 };
 
 type CommentsSupabaseProps = {
@@ -100,6 +103,8 @@ type CommentItemProps = {
   titleRushRank?: number | null;
   xpRank?: number | null;
   isReply?: boolean;
+  isAdmin?: boolean;
+  onChanged?: () => void;
 };
 
 const IMAGE_REGEX = /\.(jpg|jpeg|png|webp|gif)$/i;
@@ -345,9 +350,15 @@ const CommentItem = memo(({
   titleRushRank,
   xpRank,
   isReply = false,
+  isAdmin = false,
+  onChanged,
 }: CommentItemProps) => {
   const [showReplies, setShowReplies] = useState(false);
   const [openSpoiler, setOpenSpoiler] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState(data.content || "");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const profile = data.profiles || { level: 1, role: "user", is_premium: false, xp: 0 };
   const displayName = profile.username || data.author_name;
@@ -372,6 +383,64 @@ const CommentItem = memo(({
   const handleSubmitReply = useCallback(() => {
     submitReply(data.id);
   }, [submitReply, data.id]);
+
+  const isDeleted = Boolean(data.deleted_at) || data.content === "[dihapus]";
+  const isOwner = Boolean(user?.id && data.user_id && user.id === data.user_id);
+  const ageMs = data.created_at ? Date.now() - Date.parse(data.created_at) : Number.POSITIVE_INFINITY;
+  const withinEditWindow = ageMs <= 15 * 60 * 1000 && (data.edit_count ?? 0) < 3;
+  const canEdit = !isDeleted && (isAdmin || (isOwner && withinEditWindow));
+  const canDelete = !isDeleted && (isAdmin || isOwner);
+
+  const authHeaders = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    } as Record<string, string>;
+  };
+
+  const saveEdit = async () => {
+    if (savingEdit) return;
+    const text = editText.trim();
+    if (!text) return alert("Komentar tidak boleh kosong.");
+    setSavingEdit(true);
+    try {
+      const res = await fetch("/api/comments", {
+        method: "PATCH",
+        headers: await authHeaders(),
+        body: JSON.stringify({ id: data.id, content: text }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+      setEditing(false);
+      onChanged?.();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Gagal menyimpan perubahan.");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const deleteComment = async () => {
+    if (deleting) return;
+    if (!confirm("Hapus komentar ini?")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/comments", {
+        method: "DELETE",
+        headers: await authHeaders(),
+        body: JSON.stringify({ id: data.id }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`);
+      onChanged?.();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Gagal menghapus komentar.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const cardBorderClass = type !== "normal" ? "border-white/15" : "";
 
@@ -421,15 +490,47 @@ const CommentItem = memo(({
 
             <span className="text-[9px] text-gray-500 italic font-medium">
               {formatTime(data.created_at)}
+              {data.edited_at ? " · diedit" : ""}
             </span>
 
             <div className="text-[14px] text-gray-300 leading-relaxed font-medium py-1">
-              <CommentContent
-                text={data.content}
-                isSpoiler={data.is_spoiler}
-                openSpoiler={openSpoiler}
-                onOpenSpoiler={() => setOpenSpoiler(true)}
-              />
+              {editing ? (
+                <div>
+                  <textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    className="rk-input w-full rounded-2xl p-3 text-xs"
+                    rows={3}
+                  />
+                  <div className="mt-2 flex justify-end gap-2">
+                    <button
+                      onClick={() => {
+                        setEditing(false);
+                        setEditText(data.content || "");
+                      }}
+                      className="text-[10px] font-bold uppercase text-gray-500 hover:text-gray-300"
+                    >
+                      Batal
+                    </button>
+                    <Button
+                      onClick={saveEdit}
+                      disabled={savingEdit}
+                      className="rounded-xl px-4 py-1.5 text-[10px] font-black uppercase"
+                    >
+                      {savingEdit ? "Menyimpan..." : "Simpan"}
+                    </Button>
+                  </div>
+                </div>
+              ) : isDeleted ? (
+                <p className="italic text-gray-500">Komentar telah dihapus.</p>
+              ) : (
+                <CommentContent
+                  text={data.content}
+                  isSpoiler={data.is_spoiler}
+                  openSpoiler={openSpoiler}
+                  onOpenSpoiler={() => setOpenSpoiler(true)}
+                />
+              )}
             </div>
 
             <div className="mt-3 flex items-center gap-4">
@@ -447,6 +548,23 @@ const CommentItem = memo(({
                   className="text-[10px] font-black text-gray-500 hover:text-white uppercase tracking-tighter transition-colors duration-200"
                 >
                   {showReplies ? "Tutup" : `${data.replies?.length ?? 0} Balasan`}
+                </button>
+              )}
+              {canEdit && !editing && (
+                <button
+                  onClick={() => setEditing(true)}
+                  className="text-[10px] font-black uppercase tracking-tighter text-gray-500 transition-colors duration-200 hover:text-white"
+                >
+                  Edit
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  onClick={deleteComment}
+                  disabled={deleting}
+                  className="text-[10px] font-black uppercase tracking-tighter text-rose-400/80 transition-colors duration-200 hover:text-rose-300 disabled:opacity-50"
+                >
+                  {deleting ? "..." : "Hapus"}
                 </button>
               )}
             </div>
@@ -494,6 +612,8 @@ const CommentItem = memo(({
               replyContent={replyContent}
               setReplyContent={setReplyContent}
               submitReply={submitReply}
+              isAdmin={isAdmin}
+              onChanged={onChanged}
             />
           ))}
         </div>
@@ -865,6 +985,8 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
             user={user}
             titleRushRank={titleRushRanks.get(c.user_id || "")}
             xpRank={xpRanks.get(c.user_id || "")}
+            isAdmin={profile?.role === "admin" || profile?.role === "staff"}
+            onChanged={() => void loadComments(true)}
           />
         ))}
       </div>
