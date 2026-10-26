@@ -2,6 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { socialQuery } from "@/lib/social/db";
 import { isAdminAllowed, parseAdminAllowlist } from "@/lib/requestAuthPolicy";
 import { evaluateBan } from "@/lib/banPolicy";
 
@@ -67,26 +68,18 @@ export async function getVerifiedUserId(token: string): Promise<string> {
 
 const getCachedRoleByUserId = unstable_cache(
   async (userId: string): Promise<RoleRow> => {
-    const { data, error } = await supabaseAdmin
-      .from("profiles")
-      .select("role, is_banned, banned_until")
-      .eq("id", userId)
-      .maybeSingle();
+    // Sumber lokal (social_profiles): nol query Supabase per user per jam.
+    const { rows } = await socialQuery<{
+      role: string | null;
+      is_banned: boolean | null;
+      banned_until: string | null;
+    }>("select role, is_banned, banned_until from social_profiles where user_id = $1", [userId]);
 
-    if (error) {
-      // Ban columns not migrated yet: fall back to role-only so auth still works.
-      const fallback = await supabaseAdmin
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .maybeSingle();
-      if (fallback.error) throw fallback.error;
-      return ((fallback.data || {}) as RoleRow) || {};
-    }
-
-    return ((data || {}) as RoleRow) || {};
+    const row = rows[0];
+    if (!row) return {};
+    return { role: row.role, is_banned: row.is_banned, banned_until: row.banned_until };
   },
-  ["profile-role-v2"],
+  ["profile-role-v3"],
   {
     revalidate: ROLE_CACHE_SECONDS,
     tags: ["profile-role"],

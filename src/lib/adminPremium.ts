@@ -1,9 +1,9 @@
 import "server-only";
 
 import { computePremiumUntil } from "@/lib/requestAuthPolicy";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { socialQuery } from "@/lib/social/db";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
-import { mirrorProfileFields } from "@/lib/social/profileMirror";
+import { updateLocalProfile } from "@/lib/social/profileWrite";
 
 /**
  * Tambah masa premium user. Dipakai hadiah event (Marathon) supaya logika
@@ -13,25 +13,15 @@ export async function grantPremiumDays(userId: string, days: number): Promise<st
   const safeDays = Math.floor(Number(days) || 0);
   if (safeDays <= 0) return null;
 
-  const { data: current, error: readError } = await supabaseAdmin
-    .from("profiles")
-    .select("premium_until")
-    .eq("id", userId)
-    .maybeSingle();
-  if (readError) throw readError;
-
-  const premiumUntil = computePremiumUntil(
-    (current as { premium_until?: string | null } | null)?.premium_until ?? null,
-    Math.min(safeDays, 3650),
+  // Baca & tulis premium dari database lokal (sumber tunggal sejak irisan 2).
+  const { rows } = await socialQuery<{ premium_until: string | null }>(
+    "select premium_until from social_profiles where user_id = $1",
+    [userId],
   );
 
-  const { error } = await supabaseAdmin
-    .from("profiles")
-    .update({ is_premium: true, premium_until: premiumUntil })
-    .eq("id", userId);
-  if (error) throw error;
+  const premiumUntil = computePremiumUntil(rows[0]?.premium_until ?? null, Math.min(safeDays, 3650));
 
+  await updateLocalProfile(userId, { is_premium: true, premium_until: premiumUntil }, "adminPremium");
   await bumpProfileSignal(userId);
-  await mirrorProfileFields(userId, { is_premium: true, premium_until: premiumUntil }, "adminPremium");
   return premiumUntil;
 }

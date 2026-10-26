@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { paymentsEnabled, PAYMENTS_DISABLED_MESSAGE } from "@/lib/payments";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { getVerifiedUserId } from "@/lib/serverRoleCache";
 
@@ -7,6 +8,11 @@ const API_KEY = process.env.PAYMENT_GATEWAY_API_KEY;
 const API_URL = "https://app.pakasir.com/api/transactioncreate";
 
 export async function POST(request: Request) {
+  // Provider lama (Pakasir) sudah ditutup; jalur pembayaran dimatikan lebih dulu.
+  if (!paymentsEnabled()) {
+    return NextResponse.json({ error: PAYMENTS_DISABLED_MESSAGE }, { status: 503 });
+  }
+
   try {
     const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
     if (!token) {

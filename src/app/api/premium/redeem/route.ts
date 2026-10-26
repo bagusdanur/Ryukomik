@@ -3,7 +3,8 @@ import { requireUserId } from "@/lib/social/auth";
 import { computePremiumUntil } from "@/lib/requestAuthPolicy";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
-import { mirrorProfileFields } from "@/lib/social/profileMirror";
+import { updateLocalProfile } from "@/lib/social/profileWrite";
+import { socialQuery } from "@/lib/social/db";
 
 export const dynamic = "force-dynamic";
 
@@ -45,24 +46,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Kode tidak valid atau sudah dipakai" }, { status: 400 });
     }
 
-    const { data: profile, error: readError } = await supabaseAdmin
-      .from("profiles")
-      .select("premium_until")
-      .eq("id", userId)
-      .maybeSingle();
-    if (readError) throw readError;
-
-    const premiumUntil = computePremiumUntil(
-      (profile as { premium_until?: string | null } | null)?.premium_until ?? null,
-      row.duration_days,
+    // Premium dibaca & ditulis di database lokal (sumber tunggal sejak irisan 2).
+    const { rows: localRows } = await socialQuery<{ premium_until: string | null }>(
+      "select premium_until from social_profiles where user_id = $1",
+      [userId],
     );
+    const premiumUntil = computePremiumUntil(localRows[0]?.premium_until ?? null, row.duration_days);
 
-    const { error: grantError } = await supabaseAdmin
-      .from("profiles")
-      .update({ is_premium: true, premium_until: premiumUntil })
-      .eq("id", userId);
-
-    if (grantError) {
+    try {
+      await updateLocalProfile(userId, { is_premium: true, premium_until: premiumUntil }, "premium/redeem");
+    } catch (grantError) {
       // Release the code so a transient failure does not burn it.
       await supabaseAdmin
         .from("premium_codes")
@@ -71,7 +64,6 @@ export async function POST(request: Request) {
       throw grantError;
     }
     await bumpProfileSignal(userId);
-    await mirrorProfileFields(userId, { is_premium: true, premium_until: premiumUntil }, "premium/redeem");
 
     return NextResponse.json({
       success: true,

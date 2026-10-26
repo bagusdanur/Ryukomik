@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
+import { paymentsEnabled, PAYMENTS_DISABLED_MESSAGE } from "@/lib/payments";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
-import { mirrorProfileFields } from "@/lib/social/profileMirror";
+import { updateLocalProfile } from "@/lib/social/profileWrite";
 import { createSocialNotification } from "@/lib/social/notifications";
 import { sendPremiumActivatedPush } from "@/lib/premiumPush";
 
 export async function POST(request: Request) {
+  // Provider lama (Pakasir) sudah ditutup; jalur pembayaran dimatikan lebih dulu.
+  if (!paymentsEnabled()) {
+    return NextResponse.json({ error: PAYMENTS_DISABLED_MESSAGE }, { status: 503 });
+  }
+
   try {
     const body = await request.json();
     const { amount, order_id, project, status, payment_method, completed_at } = body;
@@ -109,7 +115,7 @@ export async function POST(request: Request) {
     // without a reload.
     if (!profileError) {
       await bumpProfileSignal(tx.user_id);
-      await mirrorProfileFields(
+      await updateLocalProfile(
         tx.user_id,
         { is_premium: true, premium_until: newPremiumUntil.toISOString() },
         "payment/webhook",

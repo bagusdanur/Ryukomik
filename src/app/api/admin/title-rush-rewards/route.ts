@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyAdminRequest } from "@/lib/adminApi";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
-import { mirrorProfileFields } from "@/lib/social/profileMirror";
+import { updateLocalProfile } from "@/lib/social/profileWrite";
 import { createSocialNotification } from "@/lib/social/notifications";
 
 type WinnerRow = {
@@ -233,21 +233,12 @@ export async function POST(request: Request) {
         baseUntil.getTime() + winner.prize_days * 24 * 60 * 60 * 1000,
       );
 
-      const { error } = await supabaseAdmin
-        .from("profiles")
-        .update({
-          is_premium: true,
-          premium_until: nextUntil.toISOString(),
-        })
-        .eq("id", winner.user_id);
-
-      if (error) throw error;
-      await bumpProfileSignal(winner.user_id);
-      await mirrorProfileFields(
+      await updateLocalProfile(
         winner.user_id,
         { is_premium: true, premium_until: nextUntil.toISOString() },
         "title-rush-rewards",
       );
+      await bumpProfileSignal(winner.user_id);
 
       await supabaseAdmin
         .from("title_rush_winners")

@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
+import { paymentsEnabled, PAYMENTS_DISABLED_MESSAGE } from "@/lib/payments";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { getVerifiedUserId } from "@/lib/serverRoleCache";
 
 export async function GET(request: Request) {
+  // Provider lama (Pakasir) sudah ditutup; jalur pembayaran dimatikan lebih dulu.
+  if (!paymentsEnabled()) {
+    return NextResponse.json({ error: PAYMENTS_DISABLED_MESSAGE }, { status: 503 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const order_id = searchParams.get("order_id");

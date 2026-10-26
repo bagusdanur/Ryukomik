@@ -5,7 +5,7 @@ import { banUntilFrom, canBanTarget, normalizeBanDays } from "@/lib/banPolicy";
 import { recordAdminAction } from "@/lib/adminAudit";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
-import { mirrorProfileFields } from "@/lib/social/profileMirror";
+import { updateLocalProfile } from "@/lib/social/profileWrite";
 import { socialQuery } from "@/lib/social/db";
 import { revalidateTag } from "next/cache";
 
@@ -88,25 +88,14 @@ export async function PATCH(request: Request) {
       }
 
       if (action === "unban") {
-        const { error } = await supabaseAdmin
-          .from("profiles")
-          .update({
-            is_banned: false,
-            banned_until: null,
-            ban_reason: null,
-            banned_at: null,
-            banned_by: null,
-          })
-          .eq("id", userId);
-        if (error) throw error;
-        await bumpProfileSignal(userId);
-        await mirrorProfileFields(userId, {
+        await updateLocalProfile(userId, {
           is_banned: false,
           banned_until: null,
           ban_reason: null,
           banned_at: null,
           banned_by: null,
         }, "admin/users");
+        await bumpProfileSignal(userId);
 
         // Lift the Supabase Auth ban so the account can sign in again.
         try {
@@ -124,25 +113,14 @@ export async function PATCH(request: Request) {
       const bannedUntil = banUntilFrom(banDays);
       const reasonText = String(reason || "").trim().slice(0, 300) || null;
 
-      const { error } = await supabaseAdmin
-        .from("profiles")
-        .update({
-          is_banned: true,
-          banned_until: bannedUntil,
-          ban_reason: reasonText,
-          banned_at: new Date().toISOString(),
-          banned_by: admin.userId,
-        })
-        .eq("id", userId);
-      if (error) throw error;
-      await bumpProfileSignal(userId);
-      await mirrorProfileFields(userId, {
+      await updateLocalProfile(userId, {
         is_banned: true,
         banned_until: bannedUntil,
         ban_reason: reasonText,
         banned_at: new Date().toISOString(),
         banned_by: admin.userId,
       }, "admin/users");
+      await bumpProfileSignal(userId);
 
       // Block sign-in and token refresh at the auth layer as well.
       try {
@@ -174,38 +152,23 @@ export async function PATCH(request: Request) {
     // UPDATE rights on `profiles` (that permissive policy was the breach).
     if (action === "premium" || action === "premium-remove") {
       if (action === "premium-remove") {
-        const { error } = await supabaseAdmin
-          .from("profiles")
-          .update({ is_premium: false, premium_until: null })
-          .eq("id", userId);
-        if (error) throw error;
+        await updateLocalProfile(userId, { is_premium: false, premium_until: null }, "admin/users");
         await bumpProfileSignal(userId);
-        await mirrorProfileFields(userId, { is_premium: false, premium_until: null }, "admin/users");
         revalidateTag("public-profile", { expire: 0 });
         await recordAdminAction({ actorId: admin.userId, action: "premium_remove", targetId: userId });
         return privateAdminJson({ success: true, userId, isPremium: false });
       }
 
       const safeDays = normalizePremiumDays(days);
-      const { data: current, error: readError } = await supabaseAdmin
-        .from("profiles")
-        .select("premium_until")
-        .eq("id", userId)
-        .maybeSingle();
-      if (readError) throw readError;
-
-      const premiumUntil = computePremiumUntil(
-        (current as { premium_until?: string | null } | null)?.premium_until ?? null,
-        safeDays,
+      // Premium dibaca & ditulis dari database lokal (sumber tunggal, irisan 2).
+      const { rows: localRows } = await socialQuery<{ premium_until: string | null }>(
+        "select premium_until from social_profiles where user_id = $1",
+        [userId],
       );
+      const premiumUntil = computePremiumUntil(localRows[0]?.premium_until ?? null, safeDays);
 
-      const { error } = await supabaseAdmin
-        .from("profiles")
-        .update({ is_premium: true, premium_until: premiumUntil })
-        .eq("id", userId);
-      if (error) throw error;
+      await updateLocalProfile(userId, { is_premium: true, premium_until: premiumUntil }, "admin/users");
       await bumpProfileSignal(userId);
-      await mirrorProfileFields(userId, { is_premium: true, premium_until: premiumUntil }, "admin/users");
 
       revalidateTag("public-profile", { expire: 0 });
       await recordAdminAction({
@@ -230,14 +193,8 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const { error } = await supabaseAdmin
-      .from("profiles")
-      .update({ role: normalizedRole })
-      .eq("id", userId);
-
-    if (error) throw error;
+    await updateLocalProfile(userId, { role: normalizedRole }, "admin/users");
     await bumpProfileSignal(userId);
-    await mirrorProfileFields(userId, { role: normalizedRole }, "admin/users");
 
     revalidateTag("profile-role", { expire: 0 });
     revalidateTag("public-profile", { expire: 0 });

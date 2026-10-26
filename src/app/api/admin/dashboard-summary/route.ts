@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyAdminRequest } from "@/lib/adminApi";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { socialQuery } from "@/lib/social/db";
 
 type ReadActivityRow = {
   user_id?: string | null;
@@ -24,8 +25,8 @@ export async function GET(request: Request) {
   const todayISO = todayStart.toISOString();
 
   const [
-    { count: totalUsers },
-    { count: premiumUsers },
+    { rows: [totalUsersRow] },
+    { rows: [premiumUsersRow] },
     { count: commentsToday },
     { count: totalComments },
     { count: readsToday },
@@ -33,11 +34,10 @@ export async function GET(request: Request) {
     { count: pendingRequests },
     { data: readRows },
   ] = await Promise.all([
-    supabaseAdmin.from("profiles").select("id", { count: "exact", head: true }),
-    supabaseAdmin
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .eq("is_premium", true),
+    // Jumlah user & user premium dari database lokal (profil = sumber lokal).
+    socialQuery<{ total: string }>("select count(*)::int as total from social_profiles"),
+    socialQuery<{ total: string }>("select count(*)::int as total from social_profiles where is_premium"),
+
     supabaseAdmin
       .from("comments")
       .select("id", { count: "exact", head: true })
@@ -60,13 +60,19 @@ export async function GET(request: Request) {
       .limit(40),
   ]);
 
+  const totalUsers = Number(totalUsersRow?.total || 0);
+  const premiumUsers = Number(premiumUsersRow?.total || 0);
+
   const reads = (readRows || []) as ReadActivityRow[];
   const userIds = Array.from(new Set(reads.map((read) => read.user_id).filter(Boolean))) as string[];
-  const { data: profiles } = userIds.length
-    ? await supabaseAdmin.from("profiles").select("id, username, avatar_url").in("id", userIds)
-    : { data: [] };
+  const localPeople = userIds.length
+    ? await socialQuery<{ id: string; username: string; avatar_url: string | null }>(
+        "select user_id as id, username, avatar_url from social_profiles where user_id = any($1::uuid[])",
+        [userIds],
+      )
+    : { rows: [] as Array<{ id: string; username: string; avatar_url: string | null }> };
 
-  const profileMap = new Map((profiles || []).map((profile: ProfileRow) => [profile.id, profile]));
+  const profileMap = new Map(localPeople.rows.map((profile) => [profile.id, profile]));
   const chapterCounts = new Map<string, number>();
   const userCounts = new Map<string, number>();
 
