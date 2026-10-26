@@ -989,7 +989,7 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
             user={user}
             titleRushRank={titleRushRanks.get(c.user_id || "")}
             xpRank={xpRanks.get(c.user_id || "")}
-            isAdmin={profile?.role === "admin" || profile?.role === "staff"}
+            isAdmin={profile?.role === "admin"}
             onChanged={() => void loadComments(true)}
           />
         ))}
