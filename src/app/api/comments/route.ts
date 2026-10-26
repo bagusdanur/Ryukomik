@@ -269,8 +269,6 @@ export async function DELETE(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const userId = await requireUserId(req);
-    const admin = await verifyAdminRequest(req);
-    const isAdmin = !("error" in admin);
 
     const body = (await req.json().catch(() => null)) as
       | { id?: string | number; content?: string; is_spoiler?: boolean }
@@ -291,18 +289,17 @@ export async function PATCH(req: NextRequest) {
     if (!row) return NextResponse.json({ error: "Komentar tidak ditemukan" }, { status: 404 });
     if (row.deleted_at) return NextResponse.json({ error: "Komentar sudah dihapus." }, { status: 400 });
 
+    // Edit hanya untuk pemilik komentar. Admin/staff hanya boleh menghapus.
     const isOwner = Boolean(row.user_id && String(row.user_id) === userId);
-    if (!isOwner && !isAdmin) {
-      return NextResponse.json({ error: "Tidak berhak mengedit komentar ini." }, { status: 403 });
+    if (!isOwner) {
+      return NextResponse.json({ error: "Hanya pemilik komentar yang bisa mengedit." }, { status: 403 });
     }
-    if (!isAdmin) {
-      const age = Date.now() - Date.parse(row.created_at);
-      if (age > EDIT_WINDOW_MS) {
-        return NextResponse.json({ error: "Batas waktu edit (15 menit) sudah lewat." }, { status: 403 });
-      }
-      if ((row.edit_count || 0) >= MAX_EDITS) {
-        return NextResponse.json({ error: `Maksimal ${MAX_EDITS}x edit per komentar.` }, { status: 403 });
-      }
+    const age = Date.now() - Date.parse(row.created_at);
+    if (age > EDIT_WINDOW_MS) {
+      return NextResponse.json({ error: "Batas waktu edit (15 menit) sudah lewat." }, { status: 403 });
+    }
+    if ((row.edit_count || 0) >= MAX_EDITS) {
+      return NextResponse.json({ error: `Maksimal ${MAX_EDITS}x edit per komentar.` }, { status: 403 });
     }
 
     const updated = await socialTransaction(async (client) => {

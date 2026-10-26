@@ -388,7 +388,8 @@ const CommentItem = memo(({
   const isOwner = Boolean(user?.id && data.user_id && user.id === data.user_id);
   const ageMs = data.created_at ? Date.now() - Date.parse(data.created_at) : Number.POSITIVE_INFINITY;
   const withinEditWindow = ageMs <= 15 * 60 * 1000 && (data.edit_count ?? 0) < 3;
-  const canEdit = !isDeleted && (isAdmin || (isOwner && withinEditWindow));
+  // Admin hanya boleh menghapus, bukan mengedit komentar orang lain.
+  const canEdit = !isDeleted && isOwner && withinEditWindow;
   const canDelete = !isDeleted && (isAdmin || isOwner);
 
   const authHeaders = async () => {
@@ -733,7 +734,10 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
     if (fresh) params.set("v", String(Date.now()));
 
     try {
-      const res = await fetch(`/api/comments?${params.toString()}`);
+      // Selalu minta versi segar: respons API punya s-maxage 30 menit di CDN,
+      // jadi tanpa `v` komentar baru bisa tidak muncul saat refresh.
+      params.set("v", String(Date.now()));
+      const res = await fetch(`/api/comments?${params.toString()}`, { cache: "no-store" });
       const raw = (await res.json()) as unknown;
       const data = Array.isArray(raw) ? (raw as CommentRow[]) : [];
 
