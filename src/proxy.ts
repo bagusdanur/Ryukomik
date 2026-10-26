@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isStorageHost } from "@/lib/storageHosts";
 import {
   normalizeChapterSlug,
   normalizeComicSlug,
@@ -12,7 +13,7 @@ export function proxy(request: NextRequest) {
   if (url.pathname === '/_next/image') {
     try {
       const image = new URL(url.searchParams.get('url') || '');
-      if (image.hostname === 'storage.ryukomik.my.id' && image.pathname.startsWith('/chapters/')) return new NextResponse('Use the protected chapter reader.', { status: 403, headers: { 'Cache-Control': 'no-store' } });
+      if (isStorageHost(image.hostname) && image.pathname.startsWith('/chapters/')) return new NextResponse('Use the protected chapter reader.', { status: 403, headers: { 'Cache-Control': 'no-store' } });
     } catch { /* Non-Project image. */ }
     return NextResponse.next();
   }

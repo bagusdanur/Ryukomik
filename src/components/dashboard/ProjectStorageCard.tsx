@@ -3,6 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { FiHardDrive, FiRefreshCw } from "react-icons/fi";
 
+type BucketUsage = {
+  id: string;
+  bucket: string;
+  publicBase: string;
+  usedBytes: number;
+  freeBytes: number;
+  objectCount: number;
+  percentUsed: number;
+};
+
 type Usage = {
   bucket: string;
   usedBytes: number;
@@ -10,6 +20,7 @@ type Usage = {
   limitBytes: number;
   objectCount: number;
   percentUsed: number;
+  buckets?: BucketUsage[];
   scannedAt: string;
 };
 
@@ -96,36 +107,77 @@ export default function ProjectStorageCard({
         <div className="h-9 animate-pulse rounded-xl bg-white/[.05]" />
       ) : (
         <>
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <p className="text-lg font-black leading-none">
-                {formatBytes(usage.usedBytes)}
-                <span className="text-xs font-bold text-white/40"> / {formatBytes(usage.limitBytes)}</span>
-              </p>
-              <p className="mt-1 text-[11px] text-white/45">
-                {usage.usedBytes > usage.limitBytes ? (
-                  <span className="font-bold text-rose-300">
-                    Lewat kuota {formatBytes(usage.usedBytes - usage.limitBytes)}
-                  </span>
-                ) : (
-                  <>
-                    Sisa <span className="font-bold text-emerald-300">{formatBytes(usage.freeBytes)}</span>
-                  </>
-                )}
-                {" · "}{usage.objectCount.toLocaleString("id-ID")} file
+          {usage.buckets && usage.buckets.length > 1 ? (
+            <div className="space-y-3">
+              {usage.buckets.map((item) => {
+                const itemPercent = Math.min(100, Math.max(0, item.percentUsed));
+                const itemColor =
+                  itemPercent >= 90 ? "bg-rose-500" : itemPercent >= 70 ? "bg-amber-400" : "bg-emerald-400";
+                return (
+                  <div key={item.id}>
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black leading-none">
+                          {formatBytes(item.usedBytes)}
+                          <span className="text-[11px] font-bold text-white/40"> / {formatBytes(usage.limitBytes)}</span>
+                        </p>
+                        <p className="mt-1 text-[10px] text-white/40">
+                          {item.id === "primary" ? "Akun 1" : "Akun 2"} · {new URL(item.publicBase).hostname} ·{" "}
+                          {item.objectCount.toLocaleString("id-ID")} file
+                          {item.usedBytes > usage.limitBytes ? (
+                            <span className="font-bold text-rose-300"> · lewat {formatBytes(item.usedBytes - usage.limitBytes)}</span>
+                          ) : (
+                            <span className="text-emerald-300/80"> · sisa {formatBytes(item.freeBytes)}</span>
+                          )}
+                        </p>
+                      </div>
+                      <span className="text-xs font-black tabular-nums text-white/70">{itemPercent.toFixed(1)}%</span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/[.07]">
+                      <div className={`h-full rounded-full ${itemColor}`} style={{ width: `${itemPercent}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="text-[10px] text-white/30">
+                Total {formatBytes(usage.usedBytes)} · {usage.objectCount.toLocaleString("id-ID")} file · dihitung{" "}
+                {new Date(usage.scannedAt).toLocaleTimeString("id-ID")} (cache 10 menit)
               </p>
             </div>
-            <span className="text-sm font-black tabular-nums text-white/70">{percent.toFixed(1)}%</span>
-          </div>
+          ) : (
+            <>
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-lg font-black leading-none">
+                    {formatBytes(usage.usedBytes)}
+                    <span className="text-xs font-bold text-white/40"> / {formatBytes(usage.limitBytes)}</span>
+                  </p>
+                  <p className="mt-1 text-[11px] text-white/45">
+                    {usage.usedBytes > usage.limitBytes ? (
+                      <span className="font-bold text-rose-300">
+                        Lewat kuota {formatBytes(usage.usedBytes - usage.limitBytes)}
+                      </span>
+                    ) : (
+                      <>
+                        Sisa <span className="font-bold text-emerald-300">{formatBytes(usage.freeBytes)}</span>
+                      </>
+                    )}
+                    {" · "}{usage.objectCount.toLocaleString("id-ID")} file
+                  </p>
+                </div>
+                <span className="text-sm font-black tabular-nums text-white/70">{percent.toFixed(1)}%</span>
+              </div>
 
-          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/[.07]">
-            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${percent}%` }} />
-          </div>
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/[.07]">
+                <div className={`h-full rounded-full ${barColor}`} style={{ width: `${percent}%` }} />
+              </div>
 
-          <p className="mt-2 text-[10px] text-white/30">
-            Bucket <span className="font-mono">{usage.bucket}</span> · dihitung{" "}
-            {new Date(usage.scannedAt).toLocaleTimeString("id-ID")} (cache 10 menit)
-          </p>
+              <p className="mt-2 text-[10px] text-white/30">
+                Bucket <span className="font-mono">{usage.bucket}</span> · dihitung{" "}
+                {new Date(usage.scannedAt).toLocaleTimeString("id-ID")} (cache 10 menit)
+              </p>
+            </>
+          )}
         </>
       )}
     </div>

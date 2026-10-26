@@ -1,3 +1,5 @@
+import { isStorageHost } from "@/lib/storageHosts";
+
 export type ChapterLock = { premium_lock_started_at?: string | null; premium_lock_until?: string | null };
 export type PremiumAccessProfile = { is_premium?: boolean | null; premium_until?: string | null };
 
@@ -19,7 +21,7 @@ export function evaluateChapterAccess(lock: ChapterLock, profile: PremiumAccessP
 export function parseProjectImageScope(value: string) {
   try {
     const url = new URL(value);
-    if (url.hostname !== 'storage.ryukomik.my.id') return null;
+    if (!isStorageHost(url.hostname)) return null;
     const match = decodeURIComponent(url.pathname).match(/^\/chapters\/([a-z0-9][a-z0-9-]*)\/(\d+(?:\.\d+)?)\//i);
     return match ? { slug: match[1].toLowerCase(), chapter: match[2], scope: `/chapters/${match[1].toLowerCase()}/${match[2]}/` } : null;
   } catch { return null; }

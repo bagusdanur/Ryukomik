@@ -10,6 +10,7 @@ import { useReaderStore } from "@/store/readerStore";
 import { useAutoScroll } from "@/components/reader/hooks/useAutoScroll";
 import { useHistoryStore } from "@/store/historyStore";
 import { fetchSeriesThumbnail } from "@/utils/historyThumbnail";
+import { isStorageHost } from "@/lib/storageHosts";
 import { useScrollBehavior } from "@/components/reader/hooks/useScrollBehavior";
 import { useTapScroll } from "@/components/reader/hooks/useTapScroll";
 import { useXpRead, useXpQueueFlush } from "@/hooks/useXpRead";
@@ -38,7 +39,7 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
   const [showSetting, setShowSetting] = useState(false);
   const needsImageAccess = Boolean(data?.images?.some((url) => {
     try {
-      return new URL(url).hostname === "storage.ryukomik.my.id" && new URL(url).pathname.startsWith("/chapters/");
+      return isStorageHost(new URL(url).hostname) && new URL(url).pathname.startsWith("/chapters/");
     } catch {
       return false;
     }

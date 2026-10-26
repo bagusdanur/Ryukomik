@@ -7,7 +7,11 @@
  * series tidak pernah diminta dua kali.
  */
 
-export const PROJECT_COVER_BASE = "https://storage.ryukomik.my.id/covers";
+import { ALT_STORAGE_BASE, PRIMARY_STORAGE_BASE } from "@/lib/storageHosts";
+
+/** Cover bisa berada di bucket akun pertama atau kedua (upload baru). */
+export const PROJECT_COVER_BASE = `${PRIMARY_STORAGE_BASE}/covers`;
+const PROJECT_COVER_BASES = Array.from(new Set([PRIMARY_STORAGE_BASE, ALT_STORAGE_BASE]));
 const PROJECT_COVER_EXTS = ["png", "webp", "jpg"] as const;
 
 export type HistoryThumbItem = {
@@ -49,7 +53,9 @@ export function normalizeProjectSlug(raw: string): string {
 export function projectCoverCandidates(slug: string): string[] {
   const safe = normalizeProjectSlug(slug);
   if (!safe) return [];
-  return PROJECT_COVER_EXTS.map((ext) => `${PROJECT_COVER_BASE}/${safe}/cover.${ext}`);
+  return PROJECT_COVER_BASES.flatMap((base) =>
+    PROJECT_COVER_EXTS.map((ext) => `${base}/covers/${safe}/cover.${ext}`),
+  );
 }
 
 /** Entry yang belum punya thumbnail, unik per sumber+slug, dibatasi `limit`. */

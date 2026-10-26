@@ -22,12 +22,21 @@ export async function GET(request: Request) {
     const freeBytes = Math.max(0, limitBytes - usage.usedBytes);
 
     return privateAdminJson({
-      bucket: usage.bucket,
+      bucket: usage.buckets.map((b) => b.bucket).join(", "),
       usedBytes: usage.usedBytes,
       freeBytes,
       limitBytes,
       objectCount: usage.objectCount,
       percentUsed: limitBytes > 0 ? Math.min(100, (usage.usedBytes / limitBytes) * 100) : 0,
+      buckets: usage.buckets.map((b) => ({
+        id: b.id,
+        bucket: b.bucket,
+        publicBase: b.publicBase,
+        usedBytes: b.usedBytes,
+        objectCount: b.objectCount,
+        freeBytes: Math.max(0, limitBytes - b.usedBytes),
+        percentUsed: limitBytes > 0 ? Math.min(100, (b.usedBytes / limitBytes) * 100) : 0,
+      })),
       scannedAt: new Date(usage.scannedAt).toISOString(),
     });
   } catch (error) {

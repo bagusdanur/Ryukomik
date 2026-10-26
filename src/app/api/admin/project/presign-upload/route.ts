@@ -1,21 +1,12 @@
 import { NextResponse } from "next/server";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { uploadTarget } from "@/lib/r2Targets";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 
 export const dynamic = "force-dynamic";
 
-const r2 = new S3Client({
-  region: "auto",
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
-  },
-  // Matikan auto-checksum CRC32 — R2 tidak support
-  requestChecksumCalculation: "WHEN_REQUIRED",
-  responseChecksumValidation: "WHEN_REQUIRED",
-});
+// Client R2 dipilih lewat r2Targets (akun kedua untuk upload baru).
 
 export async function POST(request: Request) {
   try {
@@ -44,8 +35,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "File harus berupa gambar" }, { status: 400 });
     }
 
-    const bucketName = process.env.R2_BUCKET_NAME || "ryukomik-translate";
-    const cdnUrl = process.env.NEXT_PUBLIC_TRANSLATE_CDN || "https://cdn.ryukomik.my.id";
+    const target = uploadTarget();
+    const bucketName = target.bucket;
+    const cdnUrl = target.publicBase;
 
     let uploadPath = "";
     if (type === "cover") {
@@ -64,7 +56,7 @@ export async function POST(request: Request) {
       ContentType: contentType,
     });
 
-    const presignedUrl = await getSignedUrl(r2, command, {
+    const presignedUrl = await getSignedUrl(target.client, command, {
       expiresIn: 600,
       unhoistableHeaders: new Set(["x-amz-checksum-crc32", "x-amz-sdk-checksum-algorithm"]),
     });

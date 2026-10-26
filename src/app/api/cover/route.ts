@@ -11,7 +11,7 @@ export const runtime = "nodejs";
  * Route ini menyajikan versi WebP yang sudah diperkecil lalu menyimpannya di
  * disk, jadi resize hanya sekali per ukuran. Hanya path /covers/ yang boleh.
  */
-const STORAGE_HOST = "storage.ryukomik.my.id";
+import { isStorageHost } from "@/lib/storageHosts";
 const MIN_WIDTH = 80;
 const MAX_WIDTH = 1400;
 const MAX_SOURCE_BYTES = 12 * 1024 * 1024;
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     return new NextResponse("Invalid url", { status: 400 });
   }
 
-  if (source.protocol !== "https:" || source.hostname !== STORAGE_HOST) {
+  if (source.protocol !== "https:" || !isStorageHost(source.hostname)) {
     return new NextResponse("Host is not allowed", { status: 403 });
   }
   if (!source.pathname.startsWith("/covers/")) {
