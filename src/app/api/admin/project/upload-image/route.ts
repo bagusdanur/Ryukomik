@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { uploadTarget } from "@/lib/r2Targets";
+import { targetById } from "@/lib/r2Targets";
 import { randomUUID } from "node:crypto";
 import { verifyAdminRequest } from "@/lib/adminApi";
 
@@ -36,6 +36,7 @@ export async function POST(request: Request) {
     const mangaSlug = formData.get("manga_slug") as string;
     const chapterNumber = formData.get("chapter_number") as string;
     const type = formData.get("type") as string; // 'cover' or 'chapter'
+    const storageAccount = formData.get("storage_account"); // 'primary' | 'alt'
 
     // Object keys must stay inside the intended prefix: form data is fully
     // attacker-controlled, so strip separators and traversal segments.
@@ -55,7 +56,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "File harus berupa gambar" }, { status: 400 });
     }
 
-    const target = uploadTarget();
+    const target = targetById(typeof storageAccount === "string" ? storageAccount : undefined);
     const bucketName = target.bucket;
     const cdnUrl = target.publicBase;
 

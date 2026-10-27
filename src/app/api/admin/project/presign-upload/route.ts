@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { uploadTarget } from "@/lib/r2Targets";
+import { targetById } from "@/lib/r2Targets";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { filename, contentType, mangaSlug, chapterNumber, type } = body;
+    const { filename, contentType, mangaSlug, chapterNumber, type, storageAccount } = body;
 
     if (!filename || !contentType || !mangaSlug || !type) {
       return NextResponse.json({ error: "Parameter tidak lengkap" }, { status: 400 });
@@ -35,7 +35,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "File harus berupa gambar" }, { status: 400 });
     }
 
-    const target = uploadTarget();
+    // Admin boleh memilih akun tujuan (akun 1 / akun 2). Default: akun kedua.
+    const target = targetById(typeof storageAccount === "string" ? storageAccount : undefined);
     const bucketName = target.bucket;
     const cdnUrl = target.publicBase;
 

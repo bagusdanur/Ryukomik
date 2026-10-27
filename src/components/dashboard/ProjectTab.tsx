@@ -212,6 +212,18 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadStats, setUploadStats] = useState<{ success: number; failed: number } | null>(null);
+  // Akun R2 tujuan upload baru (dipilih admin, disimpan di browser).
+  const [storageAccount, setStorageAccount] = useState<"primary" | "alt">("alt");
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("rk-upload-account");
+    if (saved === "primary" || saved === "alt") setStorageAccount(saved);
+  }, []);
+
+  const changeStorageAccount = (value: "primary" | "alt") => {
+    setStorageAccount(value);
+    window.localStorage.setItem("rk-upload-account", value);
+  };
 
   // Import dari source
   const [importCoverSource, setImportCoverSource] = useState(MANGA_SOURCES[0]?.id || "komiku");
@@ -1015,12 +1027,14 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     file: File,
     slug: string,
     type: "cover" | "chapter",
+    account: "primary" | "alt",
     chapterNumber?: string,
   ): Promise<string> => {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("manga_slug", slug);
     fd.append("type", type);
+    fd.append("storage_account", account);
     if (chapterNumber) fd.append("chapter_number", chapterNumber);
     const res = await fetch("/api/admin/project/upload-image", {
       method: "POST",
@@ -1053,6 +1067,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
           contentType: file.type,
           mangaSlug: mangaForm.slug || "new-manga",
           type: "cover",
+          storageAccount,
         }),
       });
       const presignData = await presignRes.json();
@@ -1076,7 +1091,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
         directOk = false;
       }
       if (!directOk) {
-        publicUrl = await serverFallbackUpload(token, file, mangaForm.slug || "new-manga", "cover");
+        publicUrl = await serverFallbackUpload(token, file, mangaForm.slug || "new-manga", "cover", storageAccount);
       }
 
       // 3. Set URL publik ke form
@@ -1349,6 +1364,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               mangaSlug: activeManga.slug,
               chapterNumber: String(chapterForm.chapter_number),
               type: "chapter",
+              storageAccount,
             }),
           });
 
@@ -1383,6 +1399,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 file,
                 activeManga.slug,
                 "chapter",
+                storageAccount,
                 String(chapterForm.chapter_number),
               );
               console.warn(`[upload] ${file.name}: PUT langsung gagal, tersimpan lewat server`);
@@ -1530,6 +1547,21 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 </button>
               )}
               <input type="file" ref={coverInputRef} className="hidden" accept="image/*" onChange={uploadCover} />
+              <div className="mt-2 flex items-center gap-1 rounded-lg border border-white/10 bg-white/[.03] p-1 text-[10px]">
+                {(["primary", "alt"] as const).map((acc) => (
+                  <button
+                    key={acc}
+                    type="button"
+                    onClick={() => changeStorageAccount(acc)}
+                    className={`flex-1 rounded-md px-2 py-1 font-bold transition ${
+                      storageAccount === acc ? "bg-[#7c5cfc] text-white" : "text-white/40 hover:text-white/70"
+                    }`}
+                    title={acc === "primary" ? "storage.ryukomik.my.id" : "storage.komano.my.id"}
+                  >
+                    {acc === "primary" ? "Akun 1" : "Akun 2"}
+                  </button>
+                ))}
+              </div>
             </div>
             <div>
               <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1 block">
@@ -2329,14 +2361,31 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                 <p className="font-bold text-sm">Gambar Chapter</p>
                 <p className="text-[10px] text-white/40 mt-1">Upload file berurutan. Diurutkan otomatis.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading || chapterForm.chapter_number == null}
-                className="flex items-center gap-2 rounded-xl bg-emerald-400/[.12] px-4 py-2.5 text-sm font-bold text-emerald-300 transition hover:bg-emerald-400/[.2] disabled:opacity-50"
-              >
-                {uploading ? `${uploadProgress}%` : <><FiUploadCloudIcon /> Pilih</>}
-              </button>
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/[.03] p-1 text-[10px]">
+                  {(["primary", "alt"] as const).map((acc) => (
+                    <button
+                      key={acc}
+                      type="button"
+                      onClick={() => changeStorageAccount(acc)}
+                      className={`rounded-md px-2 py-1 font-bold transition ${
+                        storageAccount === acc ? "bg-emerald-400/20 text-emerald-200" : "text-white/40 hover:text-white/70"
+                      }`}
+                      title={acc === "primary" ? "storage.ryukomik.my.id" : "storage.komano.my.id"}
+                    >
+                      {acc === "primary" ? "Akun 1" : "Akun 2"}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || chapterForm.chapter_number == null}
+                  className="flex items-center gap-2 rounded-xl bg-emerald-400/[.12] px-4 py-2.5 text-sm font-bold text-emerald-300 transition hover:bg-emerald-400/[.2] disabled:opacity-50"
+                >
+                  {uploading ? `${uploadProgress}%` : <><FiUploadCloudIcon /> Pilih</>}
+                </button>
+              </div>
               <input type="file" multiple accept="image/*" ref={fileInputRef} className="hidden" onChange={uploadChapterImages} />
             </div>
 

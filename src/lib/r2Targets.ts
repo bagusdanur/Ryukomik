@@ -63,6 +63,16 @@ export function uploadTarget(): R2Target {
   return alt ?? primary;
 }
 
+/**
+ * Pilih bucket tujuan dari nilai yang dikirim admin ("primary" | "alt").
+ * Nilai tak dikenal jatuh ke target default (akun kedua bila tersedia).
+ */
+export function targetById(id: string | null | undefined): R2Target {
+  if (id === "primary") return primary;
+  if (id === "alt") return alt ?? primary;
+  return uploadTarget();
+}
+
 export function allTargets(): R2Target[] {
   return alt ? [primary, alt] : [primary];
 }
