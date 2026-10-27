@@ -1,31 +1,41 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "ryukomik_age_verified";
+const VERIFIED_KEY = "ryukomik_age_verified";
+const HIDDEN_KEY = "ryukomik_adult_section_hidden";
 
 /**
  * Gerbang 18+ untuk section dewasa di /tonton.
- * Konten baru dirender setelah tombol ditekan (sekali per sesi browser).
+ * - "Saya 18+, lanjut" → konten dirender (sekali per sesi).
+ * - "Batal" → seluruh section disembunyikan (termasuk judulnya) sampai sesi
+ *   browser direset, jadi tidak ada konten dewasa yang tersisa di halaman.
  */
 export default function AdultGate({ children }: { children: React.ReactNode }) {
-  const [verified, setVerified] = useState<boolean | null>(null);
+  const [state, setState] = useState<"loading" | "verified" | "hidden" | "ask">("loading");
 
   useEffect(() => {
-    setVerified(sessionStorage.getItem(STORAGE_KEY) === "1");
+    if (sessionStorage.getItem(HIDDEN_KEY) === "1") setState("hidden");
+    else if (sessionStorage.getItem(VERIFIED_KEY) === "1") setState("verified");
+    else setState("ask");
   }, []);
 
   const confirm = () => {
-    sessionStorage.setItem(STORAGE_KEY, "1");
-    setVerified(true);
+    sessionStorage.setItem(VERIFIED_KEY, "1");
+    setState("verified");
   };
 
-  if (verified === null) {
+  const dismiss = () => {
+    sessionStorage.setItem(HIDDEN_KEY, "1");
+    setState("hidden");
+  };
+
+  if (state === "loading") {
     return <div className="mx-5 h-40 animate-pulse rounded-2xl bg-white/5" />;
   }
 
-  if (verified) return <>{children}</>;
+  if (state === "hidden") return null;
+  if (state === "verified") return <>{children}</>;
 
   return (
     <div className="mx-5 rounded-2xl border border-rose-500/25 bg-rose-500/[.06] p-6 text-center">
@@ -44,12 +54,13 @@ export default function AdultGate({ children }: { children: React.ReactNode }) {
         >
           Saya 18+, lanjut
         </button>
-        <Link
-          href="/anime/terbaru"
-          className="rounded-xl border border-white/10 px-4 py-2 text-[11px] font-bold text-white/60 transition hover:text-white"
+        <button
+          type="button"
+          onClick={dismiss}
+          className="rounded-xl border border-white/10 px-4 py-2 text-[11px] font-bold text-white/60 transition hover:border-white/25 hover:text-white"
         >
           Batal
-        </Link>
+        </button>
       </div>
     </div>
   );

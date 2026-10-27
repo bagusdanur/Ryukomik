@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
-  { label: "Anime", href: "/anime/terbaru" },
-  { label: "Donghua", href: "/donghua/terbaru" },
-  { label: "Dewasa", href: "/hentai/terbaru" },
+  { label: "Anime", href: "/anime/terbaru", color: "#22d3ee" },
+  { label: "Donghua", href: "/donghua/terbaru", color: "#ff9f1c" },
+  { label: "Dewasa", href: "/hentai/terbaru", color: "#ff5078" },
 ];
 
 /** Header halaman /tonton — gaya sama dengan AnimeHeader/DonghuaHeader. */
@@ -42,17 +42,23 @@ export default function TontonHeader() {
         </Link>
       </div>
 
-      <div className="mx-auto flex w-full max-w-lg gap-2 overflow-x-auto px-4 pb-2">
+      <div className="mx-auto grid w-full max-w-lg grid-cols-3 gap-2 px-4 pb-3">
         {TABS.map((tab) => {
           const active = pathname.startsWith(tab.href.split("/").slice(0, 2).join("/"));
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              className={`whitespace-nowrap rounded-xl px-3 py-1.5 text-[11px] font-bold transition ${
-                active ? "bg-white/10 text-white" : "text-white/45 hover:text-white/80"
+              className={`flex items-center justify-center gap-1.5 rounded-xl border px-2 py-2 text-[12px] font-black transition active:scale-95 ${
+                active ? "text-white" : "text-white/80 hover:text-white"
               }`}
+              style={{
+                borderColor: active ? tab.color : `${tab.color}55`,
+                background: active ? `${tab.color}26` : `${tab.color}12`,
+                boxShadow: active ? `inset 0 0 0 1px ${tab.color}66` : undefined,
+              }}
             >
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: tab.color }} />
               {tab.label}
             </Link>
           );

@@ -150,32 +150,32 @@ export default async function TontonPage() {
         </p>
       </div>
 
-      {sections.map((section) => (
-        <section key={section.key} id={section.key} className="mt-7 scroll-mt-28">
-          <div className="mb-3 flex items-end justify-between gap-3 px-5">
-            <div>
-              <h2 className="flex items-center gap-2 text-sm font-black">
-                {section.label}
-                {section.key === "dewasa" ? (
-                  <span className="rounded-md bg-rose-500/20 px-1.5 py-0.5 text-[9px] font-black text-rose-300">18+</span>
-                ) : null}
-              </h2>
-              <p className="text-[10px] text-white/35">{section.caption}</p>
+      {sections.map((section) => {
+        const block = (
+          <section key={section.key} id={section.key} className="mt-7 scroll-mt-28">
+            <div className="mb-3 flex items-end justify-between gap-3 px-5">
+              <div>
+                <h2 className="flex items-center gap-2 text-sm font-black">
+                  {section.label}
+                  {section.key === "dewasa" ? (
+                    <span className="rounded-md bg-rose-500/20 px-1.5 py-0.5 text-[9px] font-black text-rose-300">18+</span>
+                  ) : null}
+                </h2>
+                <p className="text-[10px] text-white/35">{section.caption}</p>
+              </div>
+              <Link href={section.href} className="text-[10px] font-bold uppercase tracking-widest text-white/45 transition hover:text-white">
+                Lihat semua
+              </Link>
             </div>
-            <Link href={section.href} className="text-[10px] font-bold uppercase tracking-widest text-white/45 transition hover:text-white">
-              Lihat semua
-            </Link>
-          </div>
 
-          {section.key === "dewasa" ? (
-            <AdultGate>
-              <CardGrid section={section} />
-            </AdultGate>
-          ) : (
             <CardGrid section={section} />
-          )}
-        </section>
-      ))}
+          </section>
+        );
+
+        // Section dewasa (termasuk judulnya) baru muncul setelah konfirmasi 18+;
+        // menekan "Batal" menghilangkan seluruh section dari halaman.
+        return section.key === "dewasa" ? <AdultGate key={section.key}>{block}</AdultGate> : block;
+      })}
     </div>
   );
 }
