@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import webPush from "web-push";
 import dotenv from "dotenv";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -22,7 +22,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 const CONTENT_API_URL = "https://api.ryukomik.web.id";
-const LOCAL_APP_URL = process.env.PUSH_NOTIFY_LOCAL_URL || "http://127.0.0.1:3000";
+// Aplikasi Next berjalan di 3008 (PM2 `ryukomik`). Port 3000 tidak dipakai,
+// jadi source project selalu ECONNREFUSED sebelum ini diperbaiki.
+const LOCAL_APP_URL = process.env.PUSH_NOTIFY_LOCAL_URL || "http://127.0.0.1:3008";
 const configuredProjectCacheTtl = Number.parseInt(process.env.PUSH_NOTIFY_PROJECT_CACHE_TTL_MS || "3600000", 10);
 const PROJECT_CACHE_TTL_MS = Number.isFinite(configuredProjectCacheTtl) && configuredProjectCacheTtl > 0
   ? configuredProjectCacheTtl
@@ -137,6 +139,15 @@ function getPushUrl(source, slug, item) {
 // cost stays roughly constant no matter how many items the lists return.
 const BATCH_CHUNK = 200;
 const SEP = "\u0000";
+// Hanya untuk pemeriksaan: tidak mengirim push dan tidak menandai apa pun.
+const DRY_RUN = process.argv.includes("--dry-run");
+// Cegah dua siklus berjalan bersamaan (cron tiap 15 menit). Dua siklus paralel
+// membuat chapter yang sama terkirim dua kali dan insert penanda bertabrakan.
+const LOCK_PATH = path.join(process.cwd(), "data", "push-notify.lock");
+const LOCK_TTL_MS = 10 * 60 * 1000;
+// Batasi jumlah chapter per siklus supaya backlog (mis. source project yang
+// lama gagal) tidak menembak puluhan notifikasi sekaligus ke semua perangkat.
+const MAX_PER_RUN = Math.max(1, Number.parseInt(process.env.PUSH_NOTIFY_MAX_PER_RUN || "15", 10) || 15);
 
 function chunked(values, size = BATCH_CHUNK) {
   const chunks = [];
@@ -151,14 +162,22 @@ async function fetchNotifiedSet(pairs) {
   const recorded = new Set();
 
   for (const slugsChunk of chunked(slugs)) {
-    const { data, error } = await supabase
-      .from("notified_chapters")
-      .select("comic_slug, chapter")
-      .in("comic_slug", slugsChunk);
-    if (error) throw new Error(`notified_chapters: ${error.message}`);
-    for (const row of data || []) {
-      const key = `${row.comic_slug}${SEP}${row.chapter}`;
-      if (wanted.has(key)) recorded.add(key);
+    // PostgREST membatasi 1.000 baris per request. Tanpa paginasi, komik dengan
+    // banyak chapter membuat penanda lama tidak terbaca → chapter dianggap baru
+    // dan push yang sama terkirim ulang tiap 15 menit.
+    const PAGE = 1000;
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from("notified_chapters")
+        .select("comic_slug, chapter")
+        .in("comic_slug", slugsChunk)
+        .range(from, from + PAGE - 1);
+      if (error) throw new Error(`notified_chapters: ${error.message}`);
+      for (const row of data || []) {
+        const key = `${row.comic_slug}${SEP}${row.chapter}`;
+        if (wanted.has(key)) recorded.add(key);
+      }
+      if (!data || data.length < PAGE) break;
     }
   }
   return recorded;
@@ -202,7 +221,30 @@ async function fetchSubscriptionsByUser(userIds) {
   return map;
 }
 
+async function acquireLock() {
+  try {
+    const raw = JSON.parse(await readFile(LOCK_PATH, "utf8"));
+    if (raw?.at && Date.now() - raw.at < LOCK_TTL_MS) return false;
+  } catch {
+    /* belum ada lock */
+  }
+  await mkdir(path.dirname(LOCK_PATH), { recursive: true });
+  await writeFile(LOCK_PATH, JSON.stringify({ at: Date.now(), pid: process.pid }), "utf8");
+  return true;
+}
+
+async function releaseLock() {
+  await unlink(LOCK_PATH).catch(() => {});
+}
+
 async function runCron() {
+  if (DRY_RUN) console.log("MODE DRY-RUN: tidak mengirim push dan tidak menandai chapter.");
+  if (!(await acquireLock())) {
+    console.log("Siklus sebelumnya masih berjalan — siklus ini dilewati.");
+    return;
+  }
+
+  try {
   console.log(`[${new Date().toISOString()}] Memulai pengecekan chapter terbaru...`);
   let notifSentCount = 0;
 
@@ -286,7 +328,11 @@ async function runCron() {
 
   // Phase 3 — kirim push, kumpulkan semua baris untuk satu insert penanda.
   const toMark = [];
-  for (const c of toNotify) {
+  const queue = toNotify.slice(0, MAX_PER_RUN);
+  if (toNotify.length > queue.length) {
+    console.log(`${toNotify.length - queue.length} chapter ditunda ke siklus berikutnya (batas ${MAX_PER_RUN}/siklus).`);
+  }
+  for (const c of queue) {
     toMark.push({ comic_slug: c.notificationKey, chapter: c.chapter });
 
     if (c.markOnly) continue;
@@ -295,6 +341,11 @@ async function runCron() {
       (userId) => subscriptionsByUser.get(userId) || [],
     );
     if (subscriptions.length === 0) continue;
+
+    if (DRY_RUN) {
+      console.log(`[dry-run] akan kirim ${c.source.id}/${c.slug} ${c.chapter} ke ${subscriptions.length} perangkat`);
+      continue;
+    }
 
     const pushUrl = getPushUrl(c.source, c.slug, c.item);
     const payload = JSON.stringify({
@@ -326,13 +377,25 @@ async function runCron() {
     }));
   }
 
-  // Satu insert batch, bukan insert per item.
+  // Upsert idempoten: satu baris duplikat tidak boleh menggagalkan seluruh
+  // batch (dulu insert biasa → duplicate key → chapter lain ikut tidak
+  // tertandai dan notifikasinya terulang terus).
   for (const rows of chunked(toMark)) {
-    const { error } = await supabase.from("notified_chapters").insert(rows);
-    if (error) console.error("Gagal menandai chapter sebagai terkirim:", error.message);
+    if (DRY_RUN) continue;
+    try {
+      const { error } = await supabase
+        .from("notified_chapters")
+        .upsert(rows, { onConflict: "comic_slug,chapter", ignoreDuplicates: true });
+      if (error) console.error("Gagal menandai chapter sebagai terkirim:", error.message);
+    } catch (error) {
+      console.error("Gagal menandai chapter sebagai terkirim:", error?.message || error);
+    }
   }
 
   console.log(`[${new Date().toISOString()}] Selesai. Total push terkirim: ${notifSentCount}`);
+  } finally {
+    await releaseLock();
+  }
 }
 
 runCron();
