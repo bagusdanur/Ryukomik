@@ -117,7 +117,8 @@ export default async function TontonPage() {
       label: "Anime",
       caption: "Anime Jepang sub indo terbaru",
       href: "/anime/terbaru",
-      episodeBase: "/anime/episode",
+      // animeid/terbaru mengembalikan slug SERI (bukan episode).
+      episodeBase: "/anime/detail",
       badgeBg: "#22d3ee",
       items: anime,
     },
