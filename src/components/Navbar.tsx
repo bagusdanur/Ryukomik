@@ -270,6 +270,7 @@ useEffect(() => {
     pathname.startsWith("/anime") ||
     pathname.startsWith("/hentai") ||
     pathname.startsWith("/donghua") ||
+    pathname.startsWith("/tonton") ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/topup")
   )

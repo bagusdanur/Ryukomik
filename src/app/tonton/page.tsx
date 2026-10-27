@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import AdultGate from "@/components/anime/AdultGate";
 import { nekoImg } from "@/utils/neko";
 
 export const revalidate = 120;
@@ -7,7 +8,7 @@ export const revalidate = 120;
 export const metadata: Metadata = {
   title: "Tonton Anime, Donghua & Anime Dewasa Sub Indo - Ryukomik",
   description:
-    "Pusat tontonan Ryukomik: anime terbaru, donghua (anime China), dan anime dewasa sub indo dalam satu halaman.",
+    "Pusat tontonan Ryukomik: anime terbaru, donghua (animasi China), dan anime dewasa sub indo dalam satu halaman.",
   alternates: { canonical: "https://ryukomik.my.id/tonton" },
 };
 
@@ -17,18 +18,19 @@ type WatchItem = {
   slug?: string;
   latestEpisode?: string | number | null;
   episode?: string | number | null;
-  episodeLabel?: string | null;
+  isMovie?: boolean;
   tag?: string | null;
+  subDub?: string | null;
+  status?: string | null;
 };
 
-type Section = {
-  key: "anime" | "donghua" | "hentai";
+type SectionConfig = {
+  key: "anime" | "donghua" | "dewasa";
   label: string;
   caption: string;
   href: string;
-  detailBase: string;
-  accent: string;
-  badge?: string;
+  episodeBase: string;
+  badgeBg: string;
   items: WatchItem[];
 };
 
@@ -37,34 +39,86 @@ async function fetchLatest(url: string): Promise<WatchItem[]> {
     const res = await fetch(url, { next: { revalidate: 120 } });
     if (!res.ok) return [];
     const json = (await res.json()) as { data?: WatchItem[] };
-    return Array.isArray(json.data) ? json.data.slice(0, 8) : [];
+    return Array.isArray(json.data) ? json.data.slice(0, 12) : [];
   } catch {
     return [];
   }
 }
 
-function episodeLabel(item: WatchItem): string {
-  if (item.episodeLabel) return String(item.episodeLabel);
-  if (item.episode) return `Eps ${item.episode}`;
-  if (item.latestEpisode) return `Eps ${item.latestEpisode}`;
-  return item.tag ? String(item.tag) : "Baru";
+function episodeBadge(item: WatchItem): string {
+  if (item.isMovie) return "MOVIE";
+  const value = item.episode ?? item.latestEpisode;
+  if (value !== null && value !== undefined && String(value).trim() !== "") return `EP ${value}`;
+  return item.tag ? String(item.tag).slice(0, 14) : "BARU";
+}
+
+function CardGrid({ section }: { section: SectionConfig }) {
+  if (section.items.length === 0) {
+    return (
+      <p className="mx-5 rounded-2xl border border-white/10 bg-white/[.03] p-4 text-xs text-white/40">
+        Belum ada update. Coba lagi beberapa saat.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-3 gap-2 px-5">
+      {section.items.map((item) => {
+        const thumb = section.key === "dewasa" ? nekoImg(item.thumbnail) : item.thumbnail || "";
+        return (
+          <Link
+            prefetch={false}
+            href={`${section.episodeBase}/${item.slug}`}
+            key={`${section.key}-${item.slug}`}
+            className="rk-card-soft group block overflow-hidden rounded-2xl"
+          >
+            <div className="relative" style={{ aspectRatio: "2/3" }}>
+              <img src={thumb} alt={item.title || section.label} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+
+              <div className="absolute left-1.5 top-1.5">
+                <div className="flex items-center gap-1 rounded-md px-1.5 py-0.5" style={{ background: section.badgeBg }}>
+                  <span className="text-[8px] font-black leading-none tracking-wide text-black">{episodeBadge(item)}</span>
+                </div>
+              </div>
+
+              {item.status === "Completed" ? (
+                <div className="absolute right-1.5 top-1.5 rounded-md border border-white/10 bg-black/60 px-1 py-0.5">
+                  <span className="text-[7px] font-bold leading-none tracking-wide text-white/60">END</span>
+                </div>
+              ) : null}
+
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#090a12] via-[#090a12]/85 to-transparent px-2 pb-2 pt-8">
+                <div className="mb-0.5 flex items-center gap-1">
+                  <div className="h-1 w-1 rounded-full" style={{ background: item.status === "Completed" ? "#888" : "#4ade80" }} />
+                  <span className="text-[7px] font-semibold uppercase tracking-widest text-white/40">
+                    {item.subDub || (section.key === "dewasa" ? "Sub Indo" : "Sub Indo")}
+                  </span>
+                </div>
+                <p className="line-clamp-2 text-[10px] font-bold leading-snug text-white">{item.title}</p>
+              </div>
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
 }
 
 export default async function TontonPage() {
-  const [anime, donghua, hentai] = await Promise.all([
+  const [anime, donghua, dewasa] = await Promise.all([
     fetchLatest("https://apiv2.ryukomik.web.id/animeid/terbaru"),
     fetchLatest("https://apiv2.ryukomik.web.id/anichin/terbaru"),
     fetchLatest("https://apiv2.ryukomik.web.id/nekopoi/terbaru?page=1"),
   ]);
 
-  const sections: Section[] = [
+  const sections: SectionConfig[] = [
     {
       key: "anime",
       label: "Anime",
       caption: "Anime Jepang sub indo terbaru",
       href: "/anime/terbaru",
-      detailBase: "/anime/detail",
-      accent: "from-cyan-500/20 to-blue-500/5",
+      episodeBase: "/anime/episode",
+      badgeBg: "#22d3ee",
       items: anime,
     },
     {
@@ -72,107 +126,56 @@ export default async function TontonPage() {
       label: "Donghua",
       caption: "Animasi China sub indo terbaru",
       href: "/donghua/terbaru",
-      detailBase: "/donghua/detail",
-      accent: "from-violet-500/20 to-fuchsia-500/5",
+      episodeBase: "/donghua/episode",
+      badgeBg: "#ff9f1c",
       items: donghua,
     },
     {
-      key: "hentai",
+      key: "dewasa",
       label: "Dewasa",
       caption: "Anime dewasa sub indo (18+)",
       href: "/hentai/terbaru",
-      detailBase: "/hentai/detail",
-      accent: "from-rose-500/20 to-orange-500/5",
-      badge: "18+",
-      items: hentai,
+      episodeBase: "/hentai/episode",
+      badgeBg: "#ff5078",
+      items: dewasa,
     },
   ];
 
   return (
-    <main className="rk-page min-h-screen pb-28 text-white">
-      <div className="rk-shell px-4 pt-6">
-        <h1 className="text-2xl font-black tracking-tight">Tonton</h1>
-        <p className="mt-1 text-xs text-white/50">
-          Anime, donghua, dan anime dewasa — semua update terbaru dalam satu tempat.
+    <div className="pb-28 text-white" style={{ fontFamily: "'Outfit', sans-serif" }}>
+      <div className="px-5 pt-4">
+        <h1 className="text-xl font-black tracking-tight">Tonton</h1>
+        <p className="mt-1 text-[11px] text-white/40">
+          Anime, donghua, dan anime dewasa — update terbaru dalam satu tempat.
         </p>
-
-        <div className="mt-5 grid grid-cols-3 gap-2">
-          {sections.map((section) => (
-            <Link
-              key={section.key}
-              href={section.href}
-              className={`rounded-2xl border border-white/10 bg-gradient-to-br ${section.accent} px-3 py-4 text-center transition hover:border-white/25`}
-            >
-              <span className="block text-sm font-black">{section.label}</span>
-              <span className="mt-1 block text-[10px] leading-tight text-white/50">
-                {section.key === "anime" ? "Jepang" : section.key === "donghua" ? "China" : "18+"}
-              </span>
-            </Link>
-          ))}
-        </div>
-
-        {sections.map((section) => (
-          <section key={section.key} className="mt-8">
-            <div className="flex items-end justify-between gap-3">
-              <div>
-                <h2 className="flex items-center gap-2 text-lg font-black">
-                  {section.label}
-                  {section.badge ? (
-                    <span className="rounded-md bg-rose-500/20 px-1.5 py-0.5 text-[9px] font-black text-rose-300">
-                      {section.badge}
-                    </span>
-                  ) : null}
-                </h2>
-                <p className="text-[11px] text-white/40">{section.caption}</p>
-              </div>
-              <Link href={section.href} className="text-[11px] font-bold text-[var(--accent-2)] hover:text-white">
-                Lihat semua
-              </Link>
-            </div>
-
-            {section.items.length === 0 ? (
-              <p className="mt-3 rounded-xl border border-white/10 bg-white/[.03] p-4 text-xs text-white/40">
-                Belum ada update. Coba lagi beberapa saat.
-              </p>
-            ) : (
-              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                {section.items.map((item) => {
-                  const thumb =
-                    section.key === "hentai"
-                      ? nekoImg(item.thumbnail)
-                      : item.thumbnail || "";
-                  return (
-                    <Link
-                      key={`${section.key}-${item.slug}`}
-                      href={`${section.detailBase}/${item.slug}`}
-                      className="group overflow-hidden rounded-xl border border-white/10 bg-white/[.03] transition hover:border-white/25"
-                    >
-                      <div className="relative aspect-[3/4] overflow-hidden bg-white/5">
-                        {thumb ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={thumb}
-                            alt={item.title || section.label}
-                            loading="lazy"
-                            decoding="async"
-                            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                          />
-                        ) : null}
-                        <span className="absolute bottom-1 left-1 rounded-md bg-black/70 px-1.5 py-0.5 text-[9px] font-black text-white/80">
-                          {episodeLabel(item)}
-                        </span>
-                      </div>
-                      <p className="line-clamp-2 px-2 py-2 text-[11px] font-semibold leading-snug text-white/80">
-                        {item.title}
-                      </p>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        ))}
       </div>
-    </main>
+
+      {sections.map((section) => (
+        <section key={section.key} id={section.key} className="mt-7 scroll-mt-28">
+          <div className="mb-3 flex items-end justify-between gap-3 px-5">
+            <div>
+              <h2 className="flex items-center gap-2 text-sm font-black">
+                {section.label}
+                {section.key === "dewasa" ? (
+                  <span className="rounded-md bg-rose-500/20 px-1.5 py-0.5 text-[9px] font-black text-rose-300">18+</span>
+                ) : null}
+              </h2>
+              <p className="text-[10px] text-white/35">{section.caption}</p>
+            </div>
+            <Link href={section.href} className="text-[10px] font-bold uppercase tracking-widest text-white/45 transition hover:text-white">
+              Lihat semua
+            </Link>
+          </div>
+
+          {section.key === "dewasa" ? (
+            <AdultGate>
+              <CardGrid section={section} />
+            </AdultGate>
+          ) : (
+            <CardGrid section={section} />
+          )}
+        </section>
+      ))}
+    </div>
   );
 }
