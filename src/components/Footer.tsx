@@ -113,7 +113,7 @@ export default function BottomNav() {
 
   const menu = [
     { href: "/", icon: FiHome, label: "Home" },
-    { href: "/anime/terbaru", icon: TbPlayerSkipForward, label: "Anime" },
+    { href: "/tonton", icon: TbPlayerSkipForward, label: "Tonton" },
     { href: "/terbaru", icon: FiClock, label: "Terbaru" },
     { href: "/files", icon: FiUsers, label: "Komunitas" },
     { href: "/setting", icon: FiSettings, label: "Setting" },
