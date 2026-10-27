@@ -377,6 +377,9 @@ export default function HentaiPlayer({ src }: { src?: string }) {
           allowFullScreen
           allow="autoplay; fullscreen"
           referrerPolicy="no-referrer"
+          /* Cegah iframe iklan/player membuka intent aplikasi (prompt izin
+             "akses aplikasi lain") dan menavigasi halaman utama. */
+          sandbox="allow-scripts allow-same-origin allow-presentation"
           frameBorder="0"
         />
       </div>

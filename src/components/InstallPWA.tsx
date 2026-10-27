@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -9,6 +10,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function InstallPWA() {
+  const pathname = usePathname();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [show, setShow] = useState(false);
 
@@ -39,6 +41,10 @@ export default function InstallPWA() {
     }
   };
 
+  // Jangan tampilkan ajakan install di halaman dewasa /tonton: dialog install
+  // Android (WebAPK) memunculkan permintaan izin "mengakses aplikasi dan layanan
+  // lain di perangkat ini", yang mengganggu di section 18+.
+  if (pathname?.startsWith("/hentai") || pathname?.startsWith("/tonton")) return null;
   if (!show) return null;
 
   return (
