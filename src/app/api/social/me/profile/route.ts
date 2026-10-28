@@ -69,7 +69,8 @@ export async function PATCH(request: Request) {
     }
 
     const nextBorder = updates.avatar_border as string | null | undefined;
-    if (isAdminOnlyBorder(nextBorder) && !(await getCachedRole(userId)).isAdmin) {
+    const role = await getCachedRole(userId);
+    if (isAdminOnlyBorder(nextBorder) && !role.isAdmin) {
       return socialJson({ error: "Border ini khusus admin." }, { status: 403 });
     }
 
@@ -84,7 +85,8 @@ export async function PATCH(request: Request) {
       const activePremium = Boolean(
         row?.is_premium && (!row.premium_until || Date.parse(row.premium_until) > Date.now()),
       );
-      if (!activePremium) {
+      // Admin tetap boleh memakai frame premium tanpa langganan.
+      if (!activePremium && !role.isAdmin) {
         return socialJson({ error: "Border ini khusus member premium." }, { status: 403 });
       }
     }
