@@ -4,7 +4,7 @@ import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
 import { AVATAR_BORDERS, isAdminOnlyBorder } from "@/lib/avatarBorders";
 import { getCachedRole } from "@/lib/serverRoleCache";
-import { isMarathonChampion } from "@/lib/social/marathonChampion";
+import { getMarathonRank } from "@/lib/social/marathonChampion";
 
 function mediaUrl(value: unknown) {
   if (value === null || value === "") return null;
@@ -38,8 +38,8 @@ export async function GET(request: Request) {
       {
         profile: result.rows[0] || null,
         is_admin: role.isAdmin,
-        // Dipakai galeri border: frame Juara 1 Marathon hanya terbuka untuk juara.
-        marathon_champion: await isMarathonChampion(userId),
+        // Dipakai galeri border: frame juara hanya terbuka untuk peringkat itu.
+        marathon_rank: await getMarathonRank(userId),
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );
@@ -97,9 +97,15 @@ export async function PATCH(request: Request) {
       }
     }
 
-    // Frame juara maraton: hanya pemimpin minggu berjalan / juara minggu lalu.
-    if (borderMeta?.championOnly && !role.isAdmin && !(await isMarathonChampion(userId))) {
-      return socialJson({ error: "Border ini khusus Juara 1 Marathon minggu ini." }, { status: 403 });
+    // Frame juara maraton: hanya peringkat yang sesuai di minggu berjalan.
+    if (borderMeta?.rankOnly && !role.isAdmin) {
+      const rank = await getMarathonRank(userId);
+      if (rank !== borderMeta.rankOnly) {
+        return socialJson(
+          { error: `Border ini khusus Juara ${borderMeta.rankOnly} Marathon minggu ini.` },
+          { status: 403 },
+        );
+      }
     }
 
     const assignments = Object.keys(updates).map((key, index) => `${key} = $${index + 2}`);

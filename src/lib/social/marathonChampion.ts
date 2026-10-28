@@ -1,47 +1,38 @@
 import { socialQuery } from "@/lib/social/db";
-import { previousWeekKey, weekKey } from "@/lib/marathon/period";
+import { weekKey } from "@/lib/marathon/period";
 
 /**
- * Juara 1 Marathon mingguan.
+ * Peringkat Marathon mingguan (1..3) untuk pemakaian frame juara.
  *
- * Frame "Juara 1 Marathon" hanya boleh dipakai juara minggu berjalan. Pemenang
- * ditentukan dua sumber:
- *  1. `marathon_winners`  — juara minggu yang sudah difinalisasi (peringkat 1).
- *  2. `marathon_scores`   — pemimpin sementara minggu ini, supaya frame sudah
- *     berpindah begitu klasemen berganti, tanpa menunggu finalisasi.
- * Dengan begitu pemilik frame otomatis berganti tiap minggu.
+ * Sumber:
+ *  1. `marathon_winners` — bila minggu berjalan sudah difinalisasi.
+ *  2. `marathon_scores`  — klasemen sementara minggu ini, supaya frame ikut
+ *     berpindah begitu posisi berubah, tanpa menunggu finalisasi.
+ *
+ * Hanya minggu berjalan: frame tidak menumpuk di juara minggu lalu.
  */
-export async function isMarathonChampion(userId: string, now: Date = new Date()): Promise<boolean> {
+export async function getMarathonRank(userId: string, now: Date = new Date()): Promise<number> {
   const current = weekKey(now);
-  const previous = previousWeekKey(now);
-
   try {
-    const { rows } = await socialQuery<{ ok: number }>(
-      `select 1 as ok
-         from marathon_winners
-        where user_id = $1
-          and period_type = 'weekly'
-          and rank = 1
-          and period_key = any($2::text[])
-        limit 1`,
-      [userId, [current, previous]],
+    const winner = await socialQuery<{ rank: number }>(
+      `select rank from marathon_winners
+        where user_id = $1 and period_type = 'weekly' and period_key = $2 and rank <= 3
+        order by rank asc limit 1`,
+      [userId, current],
     );
-    if (rows.length) return true;
+    if (winner.rows[0]?.rank) return Number(winner.rows[0].rank);
 
     const live = await socialQuery<{ user_id: string }>(
-      `select user_id
-         from marathon_scores
-        where period_type = 'weekly'
-          and period_key = $1
-          and chapters > 0
+      `select user_id from marathon_scores
+        where period_type = 'weekly' and period_key = $1 and chapters > 0
         order by chapters desc, updated_at asc
-        limit 1`,
+        limit 3`,
       [current],
     );
-    return live.rows[0]?.user_id === userId;
+    const index = live.rows.findIndex((row) => row.user_id === userId);
+    return index >= 0 ? index + 1 : 0;
   } catch (error) {
-    // Jangan blokir user hanya karena tabel event bermasalah.
-    console.error("[marathon-champion] cek gagal:", error instanceof Error ? error.message : error);
-    return false;
+    console.error("[marathon-rank] cek gagal:", error instanceof Error ? error.message : error);
+    return 0;
   }
 }

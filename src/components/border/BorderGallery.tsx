@@ -22,7 +22,7 @@ export default function BorderGallery() {
   const [tab, setTab] = useState<AvatarBorderGroup>("dasar");
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
-  const [isChampion, setIsChampion] = useState(false);
+  const [marathonRank, setMarathonRank] = useState(0);
   const [current, setCurrent] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -34,7 +34,7 @@ export default function BorderGallery() {
         if (!data) return;
         setIsAdmin(Boolean(data.is_admin));
         setIsPremium(Boolean(data.profile?.is_premium));
-        setIsChampion(Boolean(data.marathon_champion));
+        setMarathonRank(Number(data.marathon_rank) || 0);
         setCurrent(data.profile?.avatar_border ?? null);
       })
       .catch(() => undefined);
@@ -123,8 +123,8 @@ export default function BorderGallery() {
                   {border.premiumOnly ? (
                     <span className="rounded bg-amber-400/20 px-1 py-0.5 text-[8px] font-black text-amber-300">PREMIUM</span>
                   ) : null}
-                  {border.championOnly ? (
-                    <span className="rounded bg-yellow-400/20 px-1 py-0.5 text-[8px] font-black text-yellow-300">JUARA 1</span>
+                  {border.rankOnly ? (
+                    <span className="rounded bg-yellow-400/20 px-1 py-0.5 text-[8px] font-black text-yellow-300">JUARA {border.rankOnly}</span>
                   ) : null}
                 </p>
                 <button
@@ -134,7 +134,7 @@ export default function BorderGallery() {
                     active ||
                     saving === border.id ||
                     Boolean(border.premiumOnly && !isPremium && !isAdmin) ||
-                    Boolean(border.championOnly && !isChampion && !isAdmin)
+                    Boolean(border.rankOnly && marathonRank !== border.rankOnly && !isAdmin)
                   }
                   className={`w-full rounded-lg px-2 py-1.5 text-[10px] font-black uppercase transition ${
                     active
@@ -148,8 +148,8 @@ export default function BorderGallery() {
                       ? "Menyimpan..."
                       : border.premiumOnly && !isPremium && !isAdmin
                         ? "Khusus Premium"
-                        : border.championOnly && !isChampion && !isAdmin
-                          ? "Khusus Juara 1"
+                        : border.rankOnly && marathonRank !== border.rankOnly && !isAdmin
+                          ? `Khusus Juara ${border.rankOnly}`
                           : "Pakai"}
                 </button>
               </div>

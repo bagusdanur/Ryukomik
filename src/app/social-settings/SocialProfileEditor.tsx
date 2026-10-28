@@ -25,17 +25,17 @@ const BORDER_TABS: Array<{ key: "dasar" | "klasik" | "shop" | "event"; label: st
 export default function SocialProfileEditor() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isChampion, setIsChampion] = useState(false);
+  const [marathonRank, setMarathonRank] = useState(0);
   const [saving, setSaving] = useState(false);
   const [borderTab, setBorderTab] = useState<"dasar" | "klasik" | "shop" | "event">("dasar");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    socialFetch<{ profile: Profile; is_admin?: boolean; marathon_champion?: boolean }>("/api/social/me/profile")
+    socialFetch<{ profile: Profile; is_admin?: boolean; marathon_rank?: number }>("/api/social/me/profile")
       .then((result) => {
         setProfile(result.profile);
         setIsAdmin(Boolean(result.is_admin));
-        setIsChampion(Boolean(result.marathon_champion));
+        setMarathonRank(Number(result.marathon_rank) || 0);
       })
       .catch((error) => setMessage(error.message));
   }, []);
@@ -66,8 +66,8 @@ export default function SocialProfileEditor() {
     (border) =>
       !border.hidden &&
       (isAdmin || !isAdminOnlyBorder(border.id)) &&
-      // Frame juara maraton hanya tampil untuk juara minggu berjalan.
-      (isAdmin || !border.championOnly || isChampion),
+      // Frame juara maraton hanya tampil untuk peringkat yang sesuai.
+      (isAdmin || !border.rankOnly || border.rankOnly === marathonRank),
   );
 
   async function save(event: FormEvent) {

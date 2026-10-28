@@ -34,7 +34,8 @@ export type AvatarBorderId =
   | "shop-116"
   | "shop-117"
   | "shop-118"
-  | "marathon-1";
+  | "marathon-1"
+  | "marathon-2";
 
 export type AvatarBorder = {
   id: AvatarBorderId;
@@ -58,8 +59,8 @@ export type AvatarBorder = {
   hidden?: boolean;
   /** true = hanya untuk member premium (non-admin). */
   premiumOnly?: boolean;
-  /** true = hanya untuk Juara 1 Marathon minggu berjalan. */
-  championOnly?: boolean;
+  /** hanya untuk peringkat Marathon minggu berjalan (1..3). */
+  rankOnly?: 1 | 2 | 3;
 };
 
 export type AvatarBorderGroup = "dasar" | "klasik" | "shop" | "event";
@@ -137,7 +138,8 @@ export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
   "shop-116": { id: "shop-116", label: "Teme Red", type: "image", ring: "#38bdf8", src: "/borders/shop-116.webp" },
   "shop-117": { id: "shop-117", hidden: true, label: "White Skull", type: "image", ring: "#a855f7", src: "/borders/shop-117.webp" },
   "shop-118": { id: "shop-118", hidden: true, label: "Noir Splatter Aura", type: "image", ring: "#f59e0b", src: "/borders/shop-118.webp" },
-  "marathon-1": { id: "marathon-1", label: "Juara 1 Marathon", type: "image", ring: "#f5c542", src: "/borders/marathon-1.webp", group: "event", championOnly: true },
+  "marathon-1": { id: "marathon-1", label: "Juara 1 Marathon", type: "image", ring: "#f5c542", src: "/borders/marathon-1.webp", group: "event", rankOnly: 1 },
+  "marathon-2": { id: "marathon-2", label: "Juara 2 Marathon", type: "image", ring: "#cbd5e1", src: "/borders/marathon-2.webp", group: "event", rankOnly: 2 },
 
 };
 
