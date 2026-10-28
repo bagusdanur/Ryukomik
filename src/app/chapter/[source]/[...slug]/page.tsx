@@ -149,6 +149,9 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
       thumbnail,
       currentChapter: json.currentChapter || json.title || "",
       images: Array.isArray(json.images) ? json.images : [],
+      // Ditandai backend ketika gambar pertama chapter sudah 403 di CDN sumber.
+      sourceBroken: json.source_broken === true,
+      sourceStatus: typeof json.source_status === "number" ? json.source_status : 0,
       prev: qualifyJoseiNavigation(json.prev),
       next: qualifyJoseiNavigation(json.next),
     };

@@ -165,6 +165,17 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
     >
       {showUI && <ReaderTopBar title={slugStr} chapter={data.currentChapter} />}
 
+      {data.sourceBroken && (
+        <div className="mx-auto mt-3 max-w-3xl px-4">
+          <div className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-3.5 py-3 text-[12px] leading-relaxed text-amber-100/90">
+            <p className="font-bold">Sumber gambar chapter ini rusak</p>
+            <p className="mt-1 text-amber-100/70">
+              Server sumber membalas {data.sourceStatus || 403} untuk gambar chapter ini — biasanya chapter lama yang asetnya sudah dihapus dari CDN. Coba chapter lain, atau baca judul ini dari sumber lain.
+            </p>
+          </div>
+        </div>
+      )}
+
       <ReaderSupportAd />
 
       {imageAccessReady ? <ReaderImages

@@ -51,6 +51,10 @@ export interface ReaderChapter {
   locked?: boolean;
   lockUntil?: string | null;
   accessRequirement?: 'premium' | null;
+  /** true = gambar chapter sudah 403 di CDN sumber (chapter lama rusak). */
+  sourceBroken?: boolean;
+  /** status HTTP gambar pertama saat dicek backend. */
+  sourceStatus?: number;
 }
 
 import type { SourceId as ImportedSourceId } from "@/config/sources";
