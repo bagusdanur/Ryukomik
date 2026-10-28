@@ -20,6 +20,7 @@ const TABS: Array<{ key: AvatarBorderGroup; label: string; hint: string }> = [
 export default function BorderGallery() {
   const [tab, setTab] = useState<AvatarBorderGroup>("dasar");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const [current, setCurrent] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -30,6 +31,7 @@ export default function BorderGallery() {
       .then((data) => {
         if (!data) return;
         setIsAdmin(Boolean(data.is_admin));
+        setIsPremium(Boolean(data.profile?.is_premium));
         setCurrent(data.profile?.avatar_border ?? null);
       })
       .catch(() => undefined);
@@ -113,18 +115,29 @@ export default function BorderGallery() {
                   shape="circle"
                   border={border.id === "default" ? null : border.id}
                 />
-                <p className="text-[11px] font-bold text-white/80">{border.label}</p>
+                <p className="flex items-center gap-1 text-[11px] font-bold text-white/80">
+                  {border.label}
+                  {border.premiumOnly ? (
+                    <span className="rounded bg-amber-400/20 px-1 py-0.5 text-[8px] font-black text-amber-300">PREMIUM</span>
+                  ) : null}
+                </p>
                 <button
                   type="button"
                   onClick={() => apply(border.id === "default" ? null : border.id)}
-                  disabled={active || saving === border.id}
+                  disabled={active || saving === border.id || Boolean(border.premiumOnly && !isPremium && !isAdmin)}
                   className={`w-full rounded-lg px-2 py-1.5 text-[10px] font-black uppercase transition ${
                     active
                       ? "cursor-default bg-white/[.06] text-white/40"
                       : "bg-cyan-300/15 text-cyan-100 hover:bg-cyan-300/25 disabled:opacity-50"
                   }`}
                 >
-                  {active ? "Dipakai" : saving === border.id ? "Menyimpan..." : "Pakai"}
+                  {active
+                    ? "Dipakai"
+                    : saving === border.id
+                      ? "Menyimpan..."
+                      : border.premiumOnly && !isPremium && !isAdmin
+                        ? "Khusus Premium"
+                        : "Pakai"}
                 </button>
               </div>
             );

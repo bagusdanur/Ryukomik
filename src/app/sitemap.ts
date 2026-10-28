@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { buildCanonicalUrl, buildChapterUrl, buildComicUrl, PUBLIC_COMIC_SOURCES } from "@/lib/canonicalUrl";
+import { socialQuery } from "@/lib/social/db";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
@@ -84,8 +85,33 @@ async function fetchSource(source: string): Promise<MetadataRoute.Sitemap> {
   return routes;
 }
 
+/** Profil publik yang punya aktivitas (dibatasi agar sitemap tetap ringan). */
+async function fetchProfileRoutes(): Promise<MetadataRoute.Sitemap> {
+  try {
+    const { rows } = await socialQuery<{ username: string }>(
+      `select username from social_profiles
+        where username is not null
+          and coalesce(total_reads, 0) + coalesce(total_comments, 0) > 0
+        order by xp desc nulls last
+        limit 500`,
+    );
+    return rows
+      .filter((row) => row.username && !/^user-[0-9a-f]{8}$/i.test(row.username))
+      .map((row) => ({
+        url: buildCanonicalUrl(`/u/${encodeURIComponent(row.username)}`),
+        changeFrequency: "weekly" as const,
+        priority: 0.4,
+      }));
+  } catch {
+    return [];
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const sourceRoutes = await Promise.all(PUBLIC_COMIC_SOURCES.map(fetchSource));
+  const [sourceRoutes, profileRoutes] = await Promise.all([
+    Promise.all(PUBLIC_COMIC_SOURCES.map(fetchSource)),
+    fetchProfileRoutes(),
+  ]);
   return [
     { url: buildCanonicalUrl("/"), changeFrequency: "daily", priority: 1 },
     { url: buildCanonicalUrl("/list-komik"), changeFrequency: "daily", priority: 0.8 },
@@ -94,5 +120,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: buildCanonicalUrl("/leaderboard"), changeFrequency: "daily", priority: 0.6 },
     { url: buildCanonicalUrl("/border"), changeFrequency: "weekly", priority: 0.5 },
     ...sourceRoutes.flat(),
+    ...profileRoutes,
   ];
 }

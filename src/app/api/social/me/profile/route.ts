@@ -68,8 +68,25 @@ export async function PATCH(request: Request) {
       return socialJson({ error: "Tidak ada perubahan." }, { status: 400 });
     }
 
-    if (isAdminOnlyBorder(updates.avatar_border as string | null) && !(await getCachedRole(userId)).isAdmin) {
+    const nextBorder = updates.avatar_border as string | null | undefined;
+    if (isAdminOnlyBorder(nextBorder) && !(await getCachedRole(userId)).isAdmin) {
       return socialJson({ error: "Border ini khusus admin." }, { status: 403 });
+    }
+
+    // Border premium (mis. Red Wings / Black Wings) hanya untuk member premium.
+    const borderMeta = nextBorder ? AVATAR_BORDERS[nextBorder as keyof typeof AVATAR_BORDERS] : null;
+    if (borderMeta?.premiumOnly) {
+      const { rows } = await socialQuery<{ is_premium: boolean; premium_until: string | null }>(
+        "select is_premium, premium_until from social_profiles where user_id = $1",
+        [userId],
+      );
+      const row = rows[0];
+      const activePremium = Boolean(
+        row?.is_premium && (!row.premium_until || Date.parse(row.premium_until) > Date.now()),
+      );
+      if (!activePremium) {
+        return socialJson({ error: "Border ini khusus member premium." }, { status: 403 });
+      }
     }
 
     const assignments = Object.keys(updates).map((key, index) => `${key} = $${index + 2}`);

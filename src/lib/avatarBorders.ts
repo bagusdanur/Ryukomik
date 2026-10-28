@@ -55,6 +55,8 @@ export type AvatarBorder = {
   group?: AvatarBorderGroup;
   /** true = aset contoh/uji, tidak ditampilkan di picker. */
   hidden?: boolean;
+  /** true = hanya untuk member premium (non-admin). */
+  premiumOnly?: boolean;
 };
 
 export type AvatarBorderGroup = "dasar" | "klasik" | "shop";
@@ -123,10 +125,10 @@ export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
   "shop-107": { id: "shop-107", label: "Teme Purple", type: "image", ring: "#8b5cf6", src: "/borders/shop-107.webp" },
   "shop-108": { id: "shop-108", hidden: true, label: "Black Flower", type: "image", ring: "#f59e0b", src: "/borders/shop-108.webp" },
   "shop-109": { id: "shop-109", hidden: true, label: "Silver Moon", type: "image", ring: "#38bdf8", src: "/borders/shop-109.webp" },
-  "shop-110": { id: "shop-110", label: "Red Wings", type: "image", ring: "#8b5cf6", src: "/borders/shop-110.webp" },
+  "shop-110": { id: "shop-110", premiumOnly: true, label: "Red Wings", type: "image", ring: "#8b5cf6", src: "/borders/shop-110.webp" },
   "shop-111": { id: "shop-111", hidden: true, label: "Shark", type: "image", ring: "#f59e0b", src: "/borders/shop-111.webp" },
   "shop-112": { id: "shop-112", hidden: true, label: "Black Eye", type: "image", ring: "#8b5cf6", src: "/borders/shop-112.webp" },
-  "shop-113": { id: "shop-113", label: "Black Wings", type: "image", ring: "#a855f7", src: "/borders/shop-113.webp" },
+  "shop-113": { id: "shop-113", premiumOnly: true, label: "Black Wings", type: "image", ring: "#a855f7", src: "/borders/shop-113.webp" },
   "shop-114": { id: "shop-114", label: "White Wing", type: "image", ring: "#a855f7", src: "/borders/shop-114.webp" },
   "shop-115": { id: "shop-115", hidden: true, label: "White Flowers", type: "image", ring: "#f59e0b", src: "/borders/shop-115.webp" },
   "shop-116": { id: "shop-116", label: "Teme Red", type: "image", ring: "#38bdf8", src: "/borders/shop-116.webp" },
@@ -146,10 +148,8 @@ export const ADMIN_ONLY_BORDERS = new Set<AvatarBorderId>([
   "shop-107",
   "shop-108",
   "shop-109",
-  "shop-110",
   "shop-111",
   "shop-112",
-  "shop-113",
   "shop-114",
   "shop-115",
   "shop-116",

@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   FiActivity,
   FiBell,
+  FiBookOpen,
   FiCalendar,
   FiEdit3,
   FiFlag,
@@ -32,8 +33,10 @@ type SocialProfile = {
   banner_url?: string | null;
   bio?: string | null;
   level?: number;
+  xp?: number | null;
   role?: string;
   is_premium?: boolean;
+  premium_until?: string | null;
   total_reads?: number | null;
   total_comments?: number | null;
   created_at?: string;
@@ -313,6 +316,29 @@ export default function XPublicProfileHeader({ username, activeTab = "posts", on
           >
             Bagikan profil
           </button>
+        </div>
+
+        {typeof profile.xp === "number" ? (
+          <div className="mt-3 max-w-xs">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-cyan-300"
+                style={{ width: `${Math.min(100, Math.max(0, profile.xp % 100))}%` }}
+              />
+            </div>
+            <p className="mt-1 text-[10px] font-semibold text-white/35">
+              {profile.xp.toLocaleString("id-ID")} XP · {profile.xp % 100}/100 menuju Level {(profile.level || 1) + 1}
+            </p>
+          </div>
+        ) : null}
+
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/45">
+          {typeof profile.total_reads === "number" && (
+            <span className="flex items-center gap-1"><FiBookOpen /> {profile.total_reads.toLocaleString("id-ID")} chapter</span>
+          )}
+          {typeof profile.total_comments === "number" && (
+            <span className="flex items-center gap-1"><FiMessageCircle /> {profile.total_comments.toLocaleString("id-ID")} komentar</span>
+          )}
         </div>
 
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
