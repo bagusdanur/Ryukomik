@@ -6,6 +6,7 @@ export interface CachedProfile {
   id: string;
   username?: string | null;
   avatar_url?: string | null;
+  avatar_border?: string | null;
   level?: number | null;
   xp?: number | null;
   role?: string | null;

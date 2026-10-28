@@ -11,6 +11,7 @@ import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import LoginModal from "@/components/LoginModal";
 import AgeModal from "@/components/AgeModal";
 import Button from "@/components/Button";
+import UserAvatar from "@/components/UserAvatar";
 import {
   TITLE_RUSH_EVENT_TYPE,
 } from "@/utils/titleRushNotification";
@@ -35,7 +36,7 @@ export default function Navbar() {
   const [showNotif, setShowNotif] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const { avatarUrl, displayName } = useUserProfile(user);
+  const { profile, avatarUrl, displayName } = useUserProfile(user);
   const userId = user?.id || null;
   const [source, setSource] = useState<SourceKey>(DEFAULT_SOURCE);
 
@@ -377,11 +378,12 @@ useEffect(() => {
                 aria-label="Buka setting akun"
               >
                 {avatarUrl ? (
-                  <img
+                  <UserAvatar
                     src={avatarUrl}
-                    referrerPolicy="no-referrer"
-                    className="h-9 w-9 rounded-full border border-white/20 object-cover"
-                    alt={displayName}
+                    name={displayName}
+                    size={34}
+                    border={profile?.avatar_border ?? null}
+                    eager
                   />
                 ) : (
                   <FaUserCircle className="text-white/80 hover:text-[var(--accent-2)]" size={32} />
