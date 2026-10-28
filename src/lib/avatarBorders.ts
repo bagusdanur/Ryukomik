@@ -51,7 +51,21 @@ export type AvatarBorder = {
   /** Pengali ukuran frame terhadap kotak avatar (hanya tipe image).
    *  Default IMAGE_FRAME_SCALE; dipakai per-frame kalau ada yang perlu beda. */
   scale?: number;
+  /** Kelompok tampilan di picker (lihat borderGroup). */
+  group?: AvatarBorderGroup;
+  /** true = aset contoh/uji, tidak ditampilkan di picker. */
+  hidden?: boolean;
 };
+
+export type AvatarBorderGroup = "dasar" | "klasik" | "shop";
+
+/** Kelompok picker: warna CSS, frame klasik (SVG), frame shop (WebP). */
+export function borderGroup(border: AvatarBorder): AvatarBorderGroup {
+  if (border.group) return border.group;
+  if ((border.type ?? "css") === "css") return "dasar";
+  if ((border.src || "").includes("/borders/shop-")) return "shop";
+  return "klasik";
+}
 
 /** Frame gambar digambar lebih besar dari kotak avatar supaya ornamennya
  *  tidak terlihat mepet (perilaku lama 1:1 membuat sayap/aura terasa kecil). */
@@ -96,7 +110,8 @@ export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
     glow: "0 0 12px rgba(244,114,182,0.5)",
   },
   // Frame gambar (SVG orisinal Ryukomik, bukan aset pihak ketiga).
-  contoh: { id: "contoh", label: "Contoh", type: "image", ring: "#fbbf24", src: "/borders/contoh.svg" },
+  // Aset contoh untuk uji render — tidak dipakai di picker.
+  contoh: { id: "contoh", label: "Contoh", type: "image", ring: "#fbbf24", src: "/borders/contoh.svg", hidden: true },
   sakura: { id: "sakura", label: "Sakura", type: "image", ring: "#f472b6", src: "/borders/sakura.svg" },
   api: { id: "api", label: "Api", type: "image", ring: "#f97316", src: "/borders/api.svg" },
   es: { id: "es", label: "Es", type: "image", ring: "#38bdf8", src: "/borders/es.svg" },

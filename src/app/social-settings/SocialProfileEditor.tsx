@@ -1,7 +1,7 @@
 "use client";
 
 import UserAvatar from "@/components/UserAvatar";
-import { AVATAR_BORDERS, isAdminOnlyBorder, resolveAvatarBorder } from "@/lib/avatarBorders";
+import { AVATAR_BORDERS, borderGroup, isAdminOnlyBorder, resolveAvatarBorder } from "@/lib/avatarBorders";
 
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
@@ -15,10 +15,18 @@ type Profile = {
   banner_url?: string | null;
 };
 
+const BORDER_TABS: Array<{ key: "semua" | "dasar" | "klasik" | "shop"; label: string }> = [
+  { key: "semua", label: "Semua" },
+  { key: "dasar", label: "Warna" },
+  { key: "klasik", label: "Klasik" },
+  { key: "shop", label: "Shop" },
+];
+
 export default function SocialProfileEditor() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [borderTab, setBorderTab] = useState<"semua" | "dasar" | "klasik" | "shop">("semua");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -42,9 +50,10 @@ export default function SocialProfileEditor() {
     setProfile((current) => (current ? { ...current, [key]: value } : current));
 
   // Border yang terkunci hanya muncul untuk admin; server tetap menolak (403)
-  // kalau user biasa mengirim id-nya langsung.
+  // kalau user biasa mengirim id-nya langsung. Aset contoh (hidden) tidak
+  // pernah ditampilkan supaya picker tidak ramai.
   const availableBorders = Object.values(AVATAR_BORDERS).filter(
-    (border) => isAdmin || !isAdminOnlyBorder(border.id),
+    (border) => !border.hidden && (isAdmin || !isAdminOnlyBorder(border.id)),
   );
 
   async function save(event: FormEvent) {
@@ -106,14 +115,46 @@ export default function SocialProfileEditor() {
           <p className="text-[10px] text-white/30">{availableBorders.length} pilihan</p>
         </div>
 
-        {(["css", "image"] as const).map((kind) => (
-          <div key={kind} className="mb-4 last:mb-0">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/30">
-              {kind === "css" ? "Warna" : "Frame"}
-            </p>
+        {/* Pilih kelompok dulu supaya daftar tidak menumpuk jadi satu grid. */}
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {BORDER_TABS.map((tab) => {
+            const count = tab.key === "semua"
+              ? availableBorders.length
+              : availableBorders.filter((border) => borderGroup(border) === tab.key).length;
+            if (count === 0) return null;
+            const active = borderTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setBorderTab(tab.key)}
+                className={`rounded-lg border px-2.5 py-1 text-[10px] font-bold transition ${
+                  active
+                    ? "border-cyan-300/60 bg-cyan-300/10 text-cyan-100"
+                    : "border-white/[0.08] bg-white/[0.02] text-white/45 hover:text-white/70"
+                }`}
+              >
+                {tab.label}
+                <span className="ml-1 text-white/30">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {BORDER_TABS.filter((tab) => tab.key === "semua" || tab.key === borderTab).map((tab) => {
+          const items = tab.key === "semua"
+            ? availableBorders
+            : availableBorders.filter((border) => borderGroup(border) === tab.key);
+          if (items.length === 0) return null;
+          return (
+          <div key={tab.key} className="mb-4 last:mb-0">
+            {tab.key !== "semua" && (
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/30">
+                {tab.label}
+              </p>
+            )}
             <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
-              {availableBorders
-                .filter((border) => (border.type ?? "css") === kind)
+              {items
                 .map((border) => {
                   const active = (profile.avatar_border || "default") === border.id;
                   return (
@@ -151,7 +192,8 @@ export default function SocialProfileEditor() {
                 })}
             </div>
           </div>
-        ))}
+          );
+        })}
 
         <p className="mt-2 text-[10px] text-white/30">Border tampil di komentar, leaderboard, dan profil.</p>
       </div>
