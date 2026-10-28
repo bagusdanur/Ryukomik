@@ -98,8 +98,10 @@ export async function recordMarathonReads(
   ];
 
   return socialTransaction(async (client) => {
+    // Satu chapter tercatat DUA baris (weekly + monthly), jadi hitung chapter
+    // unik. Dengan count(*) cap 300 hanya memberi 150 chapter/hari.
     const { rows: capRows } = await client.query<{ c: number }>(
-      `select count(*)::int as c
+      `select count(distinct chapter_slug)::int as c
          from marathon_reads
         where user_id = $1
           and read_at >= (date_trunc('day', now() at time zone 'Asia/Jakarta') at time zone 'Asia/Jakarta')`,
