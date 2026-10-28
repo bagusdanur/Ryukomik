@@ -2,6 +2,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { cache } from "react";
 import ChapterClient from "./ChapterClient";
+import { markChapterSeen } from "@/lib/social/readGuard";
 import ProjectChapterGate from "./ProjectChapterGate";
 import type { Metadata } from "next";
 import type { ReaderChapter } from "@/types/content";
@@ -237,6 +238,10 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
   const data = await getChapter(canonicalSource, slugStr);
 
   if (!data) notFound();
+
+  // Catat chapter yang benar-benar dirender: /api/xp/read hanya menerima slug
+  // yang ada di sini, jadi slug karangan tidak bisa menambah XP/maraton.
+  void markChapterSeen(slugStr, canonicalSource);
 
   const title = buildTitle(data, slugStr);
   const canonicalUrl = buildChapterUrl(canonicalSource, slugStr);
