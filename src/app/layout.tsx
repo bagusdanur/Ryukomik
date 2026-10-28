@@ -7,6 +7,7 @@ import ThemeColorProvider from "@/components/ThemeColorProvider";
 
 import MaintenanceBanner from "@/components/MaintenanceBanner";
 import MonetagScript from "@/components/MonetagScript";
+import HeadAdScript from "@/components/HeadAdScript";
 import Navbar from "@/components/Navbar";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
@@ -92,6 +93,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="preconnect" href="https://cdn.komiku.co.id" />
         <link rel="dns-prefetch" href="https://cdn.komiku.co.id" />
         <MonetagScript />
+        <HeadAdScript />
         <Script
           id="histats-script"
           strategy="lazyOnload"
