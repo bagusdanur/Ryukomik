@@ -92,6 +92,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: buildCanonicalUrl("/terbaru"), changeFrequency: "daily", priority: 0.8 },
     { url: buildCanonicalUrl("/marathon"), changeFrequency: "daily", priority: 0.7 },
     { url: buildCanonicalUrl("/leaderboard"), changeFrequency: "daily", priority: 0.6 },
+    { url: buildCanonicalUrl("/border"), changeFrequency: "weekly", priority: 0.5 },
     ...sourceRoutes.flat(),
   ];
 }

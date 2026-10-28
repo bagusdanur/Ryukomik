@@ -292,6 +292,29 @@ export default function XPublicProfileHeader({ username, activeTab = "posts", on
           )}
         </div>
 
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Link
+            href="/border"
+            className="rounded-lg border border-white/10 bg-white/[.03] px-2.5 py-1 text-[10px] font-bold text-white/60 transition hover:text-white"
+          >
+            Koleksi border
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              const url = window.location.href;
+              if (navigator.share) {
+                navigator.share({ title: profile.username, url }).catch(() => undefined);
+              } else {
+                navigator.clipboard?.writeText(url);
+              }
+            }}
+            className="rounded-lg border border-white/10 bg-white/[.03] px-2.5 py-1 text-[10px] font-bold text-white/60 transition hover:text-white"
+          >
+            Bagikan profil
+          </button>
+        </div>
+
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
           <Link href={`/connections?tab=following&userId=${encodeURIComponent(profile.id)}`} className="hover:underline">
             <strong>{profile.following}</strong>{" "}

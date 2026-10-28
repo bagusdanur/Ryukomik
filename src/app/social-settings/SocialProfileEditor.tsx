@@ -37,6 +37,14 @@ export default function SocialProfileEditor() {
       .catch((error) => setMessage(error.message));
   }, []);
 
+  // Harus dipanggil SEBELUM early return: jumlah hook tidak boleh berubah
+  // antar render (dulu diletakkan setelah `if (!profile) return`, sehingga
+  // halaman /social-settings crash saat profil selesai dimuat).
+  useEffect(() => {
+    if (!profile?.avatar_border) return;
+    setBorderTab(borderGroup(resolveAvatarBorder(profile.avatar_border)));
+  }, [profile?.avatar_border]);
+
   if (!profile) {
     return (
       <div className="rk-card-soft rounded-2xl p-8 text-center text-sm text-white/50">
@@ -54,13 +62,6 @@ export default function SocialProfileEditor() {
   const availableBorders = Object.values(AVATAR_BORDERS).filter(
     (border) => !border.hidden && (isAdmin || !isAdminOnlyBorder(border.id)),
   );
-
-  // Saat profil selesai dimuat, buka tab sesuai border yang sedang dipakai
-  // supaya pilihan aktif langsung terlihat.
-  useEffect(() => {
-    const active = profile?.avatar_border ? resolveAvatarBorder(profile.avatar_border) : null;
-    if (active) setBorderTab(borderGroup(active));
-  }, [profile?.avatar_border]);
 
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -118,7 +119,9 @@ export default function SocialProfileEditor() {
       <div className="rk-card-soft rounded-2xl p-4">
         <div className="mb-3 flex items-baseline justify-between">
           <p className="text-xs font-bold text-white/55">Border avatar</p>
-          <p className="text-[10px] text-white/30">{availableBorders.length} pilihan</p>
+          <Link href="/border" className="text-[10px] font-bold text-cyan-200 hover:text-cyan-100">
+            Lihat koleksi border
+          </Link>
         </div>
 
         {/* Pilih kelompok dulu supaya daftar tidak menumpuk jadi satu grid. */}
