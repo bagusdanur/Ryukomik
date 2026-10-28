@@ -15,8 +15,7 @@ type Profile = {
   banner_url?: string | null;
 };
 
-const BORDER_TABS: Array<{ key: "semua" | "dasar" | "klasik" | "shop"; label: string }> = [
-  { key: "semua", label: "Semua" },
+const BORDER_TABS: Array<{ key: "dasar" | "klasik" | "shop"; label: string }> = [
   { key: "dasar", label: "Warna" },
   { key: "klasik", label: "Klasik" },
   { key: "shop", label: "Shop" },
@@ -26,7 +25,7 @@ export default function SocialProfileEditor() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [borderTab, setBorderTab] = useState<"semua" | "dasar" | "klasik" | "shop">("semua");
+  const [borderTab, setBorderTab] = useState<"dasar" | "klasik" | "shop">("dasar");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -55,6 +54,13 @@ export default function SocialProfileEditor() {
   const availableBorders = Object.values(AVATAR_BORDERS).filter(
     (border) => !border.hidden && (isAdmin || !isAdminOnlyBorder(border.id)),
   );
+
+  // Saat profil selesai dimuat, buka tab sesuai border yang sedang dipakai
+  // supaya pilihan aktif langsung terlihat.
+  useEffect(() => {
+    const active = profile?.avatar_border ? resolveAvatarBorder(profile.avatar_border) : null;
+    if (active) setBorderTab(borderGroup(active));
+  }, [profile?.avatar_border]);
 
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -118,9 +124,7 @@ export default function SocialProfileEditor() {
         {/* Pilih kelompok dulu supaya daftar tidak menumpuk jadi satu grid. */}
         <div className="mb-3 flex flex-wrap gap-1.5">
           {BORDER_TABS.map((tab) => {
-            const count = tab.key === "semua"
-              ? availableBorders.length
-              : availableBorders.filter((border) => borderGroup(border) === tab.key).length;
+            const count = availableBorders.filter((border) => borderGroup(border) === tab.key).length;
             if (count === 0) return null;
             const active = borderTab === tab.key;
             return (
@@ -141,18 +145,12 @@ export default function SocialProfileEditor() {
           })}
         </div>
 
-        {BORDER_TABS.filter((tab) => tab.key === "semua" || tab.key === borderTab).map((tab) => {
-          const items = tab.key === "semua"
-            ? availableBorders
-            : availableBorders.filter((border) => borderGroup(border) === tab.key);
+        {BORDER_TABS.filter((tab) => tab.key === borderTab).map((tab) => {
+          const items = availableBorders.filter((border) => borderGroup(border) === tab.key);
           if (items.length === 0) return null;
           return (
           <div key={tab.key} className="mb-4 last:mb-0">
-            {tab.key !== "semua" && (
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/30">
-                {tab.label}
-              </p>
-            )}
+
             <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
               {items
                 .map((border) => {
