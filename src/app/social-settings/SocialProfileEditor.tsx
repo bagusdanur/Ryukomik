@@ -15,24 +15,27 @@ type Profile = {
   banner_url?: string | null;
 };
 
-const BORDER_TABS: Array<{ key: "dasar" | "klasik" | "shop"; label: string }> = [
+const BORDER_TABS: Array<{ key: "dasar" | "klasik" | "shop" | "event"; label: string }> = [
   { key: "dasar", label: "Warna" },
   { key: "klasik", label: "Klasik" },
   { key: "shop", label: "Shop" },
+  { key: "event", label: "Event" },
 ];
 
 export default function SocialProfileEditor() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isChampion, setIsChampion] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [borderTab, setBorderTab] = useState<"dasar" | "klasik" | "shop">("dasar");
+  const [borderTab, setBorderTab] = useState<"dasar" | "klasik" | "shop" | "event">("dasar");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    socialFetch<{ profile: Profile; is_admin?: boolean }>("/api/social/me/profile")
+    socialFetch<{ profile: Profile; is_admin?: boolean; marathon_champion?: boolean }>("/api/social/me/profile")
       .then((result) => {
         setProfile(result.profile);
         setIsAdmin(Boolean(result.is_admin));
+        setIsChampion(Boolean(result.marathon_champion));
       })
       .catch((error) => setMessage(error.message));
   }, []);
@@ -60,7 +63,11 @@ export default function SocialProfileEditor() {
   // kalau user biasa mengirim id-nya langsung. Aset contoh (hidden) tidak
   // pernah ditampilkan supaya picker tidak ramai.
   const availableBorders = Object.values(AVATAR_BORDERS).filter(
-    (border) => !border.hidden && (isAdmin || !isAdminOnlyBorder(border.id)),
+    (border) =>
+      !border.hidden &&
+      (isAdmin || !isAdminOnlyBorder(border.id)) &&
+      // Frame juara maraton hanya tampil untuk juara minggu berjalan.
+      (isAdmin || !border.championOnly || isChampion),
   );
 
   async function save(event: FormEvent) {

@@ -33,7 +33,8 @@ export type AvatarBorderId =
   | "shop-115"
   | "shop-116"
   | "shop-117"
-  | "shop-118";
+  | "shop-118"
+  | "marathon-1";
 
 export type AvatarBorder = {
   id: AvatarBorderId;
@@ -57,9 +58,11 @@ export type AvatarBorder = {
   hidden?: boolean;
   /** true = hanya untuk member premium (non-admin). */
   premiumOnly?: boolean;
+  /** true = hanya untuk Juara 1 Marathon minggu berjalan. */
+  championOnly?: boolean;
 };
 
-export type AvatarBorderGroup = "dasar" | "klasik" | "shop";
+export type AvatarBorderGroup = "dasar" | "klasik" | "shop" | "event";
 
 /** Kelompok picker: warna CSS, frame klasik (SVG), frame shop (WebP). */
 export function borderGroup(border: AvatarBorder): AvatarBorderGroup {
@@ -134,6 +137,7 @@ export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
   "shop-116": { id: "shop-116", label: "Teme Red", type: "image", ring: "#38bdf8", src: "/borders/shop-116.webp" },
   "shop-117": { id: "shop-117", hidden: true, label: "White Skull", type: "image", ring: "#a855f7", src: "/borders/shop-117.webp" },
   "shop-118": { id: "shop-118", hidden: true, label: "Noir Splatter Aura", type: "image", ring: "#f59e0b", src: "/borders/shop-118.webp" },
+  "marathon-1": { id: "marathon-1", label: "Juara 1 Marathon", type: "image", ring: "#f5c542", src: "/borders/marathon-1.webp", group: "event", championOnly: true },
 
 };
 

@@ -15,12 +15,14 @@ const TABS: Array<{ key: AvatarBorderGroup; label: string; hint: string }> = [
   { key: "dasar", label: "Warna", hint: "Ring warna sederhana, gratis untuk semua member." },
   { key: "klasik", label: "Klasik", hint: "Frame orisinal Ryukomik." },
   { key: "shop", label: "Shop", hint: "Frame khusus — belum dibuka untuk umum." },
+  { key: "event", label: "Event", hint: "Hadiah event, contohnya Juara 1 Marathon mingguan." },
 ];
 
 export default function BorderGallery() {
   const [tab, setTab] = useState<AvatarBorderGroup>("dasar");
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  const [isChampion, setIsChampion] = useState(false);
   const [current, setCurrent] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -32,6 +34,7 @@ export default function BorderGallery() {
         if (!data) return;
         setIsAdmin(Boolean(data.is_admin));
         setIsPremium(Boolean(data.profile?.is_premium));
+        setIsChampion(Boolean(data.marathon_champion));
         setCurrent(data.profile?.avatar_border ?? null);
       })
       .catch(() => undefined);
@@ -120,11 +123,19 @@ export default function BorderGallery() {
                   {border.premiumOnly ? (
                     <span className="rounded bg-amber-400/20 px-1 py-0.5 text-[8px] font-black text-amber-300">PREMIUM</span>
                   ) : null}
+                  {border.championOnly ? (
+                    <span className="rounded bg-yellow-400/20 px-1 py-0.5 text-[8px] font-black text-yellow-300">JUARA 1</span>
+                  ) : null}
                 </p>
                 <button
                   type="button"
                   onClick={() => apply(border.id === "default" ? null : border.id)}
-                  disabled={active || saving === border.id || Boolean(border.premiumOnly && !isPremium && !isAdmin)}
+                  disabled={
+                    active ||
+                    saving === border.id ||
+                    Boolean(border.premiumOnly && !isPremium && !isAdmin) ||
+                    Boolean(border.championOnly && !isChampion && !isAdmin)
+                  }
                   className={`w-full rounded-lg px-2 py-1.5 text-[10px] font-black uppercase transition ${
                     active
                       ? "cursor-default bg-white/[.06] text-white/40"
@@ -137,7 +148,9 @@ export default function BorderGallery() {
                       ? "Menyimpan..."
                       : border.premiumOnly && !isPremium && !isAdmin
                         ? "Khusus Premium"
-                        : "Pakai"}
+                        : border.championOnly && !isChampion && !isAdmin
+                          ? "Khusus Juara 1"
+                          : "Pakai"}
                 </button>
               </div>
             );
