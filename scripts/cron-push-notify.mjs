@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import pg from "pg";
 import webPush from "web-push";
 import dotenv from "dotenv";
@@ -8,18 +7,14 @@ import path from "node:path";
 
 dotenv.config({ path: ".env.local" });
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.web.id";
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
   console.error("Environment variables belum lengkap!");
   process.exit(1);
 }
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // notified_chapters + push_subscriptions sudah pindah ke Postgres lokal.
 const SOCIAL_DB_URL = process.env.SOCIAL_DATABASE_URL;
@@ -187,13 +182,12 @@ async function fetchNotifiedSet(pairs) {
 // Returns Map<`${comic_slug}${SEP}${source}`, userId[]>.
 async function fetchBookmarksBySlugSource(slugs, sourceIds) {
   const map = new Map();
-  for (const slugsChunk of chunked(slugs)) {
-    const { data, error } = await supabase
-      .from("bookmark_sync")
-      .select("user_id, comic_slug, source")
-      .in("comic_slug", slugsChunk);
-    if (error) throw new Error(`bookmark_sync: ${error.message}`);
-    for (const row of data || []) {
+  for (const slugsChunk of chunked(slugs, 100)) {
+    const { rows } = await socialDb.query(
+      "select user_id, comic_slug, source from bookmark_sync where comic_slug = any($1::text[])",
+      [slugsChunk],
+    );
+    for (const row of rows) {
       if (!sourceIds.has(row.source)) continue;
       const key = `${row.comic_slug}${SEP}${row.source}`;
       const list = map.get(key);

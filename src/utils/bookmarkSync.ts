@@ -26,29 +26,13 @@ function readLocalBookmarks(): LocalBookmark[] {
 export async function syncBookmarks(userId: string): Promise<boolean> {
   try {
     const bookmarks = readLocalBookmarks();
-    // 1. Hapus semua bookmark_sync milik user ini
-    const { error: deleteError } = await supabase
-      .from("bookmark_sync")
-      .delete()
-      .eq("user_id", userId);
 
-    if (deleteError) {
-      console.error("Gagal hapus bookmark_sync:", deleteError);
-      return false;
-    }
-
-    // 2. Jika bookmark kosong, selesai (sudah dihapus semua)
-    if (bookmarks.length === 0) return true;
-
-    // 3. Insert semua bookmark dari localStorage
+    // "source/slug" atau slug polos.
     const rows = bookmarks.map((bm) => {
-      // Extract slug: bisa format "source/slug" atau plain "slug"
       const parts = bm.slug.split("/");
       const source = parts.length > 1 ? parts[0] : bm.source || "komiku";
       const comicSlug = parts.length > 1 ? parts.slice(1).join("/") : bm.slug;
-
       return {
-        user_id: userId,
         comic_slug: comicSlug,
         source,
         title: bm.title || null,
@@ -56,15 +40,21 @@ export async function syncBookmarks(userId: string): Promise<boolean> {
       };
     });
 
-    const { error: insertError } = await supabase
-      .from("bookmark_sync")
-      .upsert(rows, { onConflict: "user_id,comic_slug" });
+    // Server yang melakukan full-replace (hapus + insert) di Postgres lokal.
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return false;
 
-    if (insertError) {
-      console.error("Gagal insert bookmark_sync:", insertError);
+    const res = await fetch("/api/bookmarks/sync", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify({ bookmarks: rows }),
+    });
+
+    if (!res.ok) {
+      console.error("Gagal sync bookmark:", await res.text().catch(() => res.status));
       return false;
     }
-
     return true;
   } catch (err) {
     console.error("Gagal sync bookmarks:", err);
