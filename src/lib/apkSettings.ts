@@ -1,5 +1,5 @@
 import { revalidateTag, unstable_cache } from "next/cache";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getAppSetting, setAppSetting } from "@/lib/social/settingsStore";
 import { getLocalSetting, invalidateLocalSetting } from "@/lib/localSettings";
 
 export const APK_SETTING_KEY = "apk_download";
@@ -56,14 +56,9 @@ export function normalizeApkSettings(value?: Partial<ApkSettings> | null): ApkSe
 const APK_LOCAL_KEY = `app_settings:${APK_SETTING_KEY}`;
 
 async function loadApkRow(): Promise<ApkSettingRow | null> {
-  const { data, error } = await supabaseAdmin
-    .from("app_settings")
-    .select("key, value, updated_at")
-    .eq("key", APK_SETTING_KEY)
-    .maybeSingle();
-
-  if (error) return null;
-  return (data as ApkSettingRow | null) ?? null;
+  const row = await getAppSetting<ApkSettingRow["value"]>(APK_SETTING_KEY);
+  if (!row) return null;
+  return { key: APK_SETTING_KEY, value: row.value, updated_at: row.updated_at } as ApkSettingRow;
 }
 
 async function readApkSettings(): Promise<ApkSettings> {
@@ -87,25 +82,14 @@ export async function setApkSettings(settings: ApkSettings): Promise<ApkSettings
   const normalized = normalizeApkSettings(settings);
   const updatedAt = new Date().toISOString();
 
-  const { data, error } = await supabaseAdmin
-    .from("app_settings")
-    .upsert(
-      {
-        key: APK_SETTING_KEY,
-        value: {
-          downloadUrl: normalized.downloadUrl,
-          version: normalized.version,
-          changelog: normalized.changelog,
-          enabled: normalized.enabled,
-        },
-        updated_at: updatedAt,
-      },
-      { onConflict: "key" },
-    )
-    .select("key, value, updated_at")
-    .single();
+  const data = await setAppSetting(APK_SETTING_KEY, {
+    downloadUrl: normalized.downloadUrl,
+    version: normalized.version,
+    changelog: normalized.changelog,
+    enabled: normalized.enabled,
+    updatedAt,
+  });
 
-  if (error) throw error;
   invalidateLocalSetting(APK_LOCAL_KEY);
   revalidateTag(APK_SETTINGS_CACHE_TAG, { expire: 0 });
 

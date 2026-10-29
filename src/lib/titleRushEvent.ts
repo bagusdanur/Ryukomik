@@ -1,5 +1,5 @@
 import { revalidateTag, unstable_cache } from "next/cache";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getAppSetting, setAppSetting } from "@/lib/social/settingsStore";
 import { getLocalSetting, invalidateLocalSetting } from "@/lib/localSettings";
 
 const TITLE_RUSH_SETTING_KEY = "title_rush_event";
@@ -17,14 +17,9 @@ type TitleRushSettingRow = {
 const TITLE_RUSH_LOCAL_KEY = `app_settings:${TITLE_RUSH_SETTING_KEY}`;
 
 async function loadTitleRushRow(): Promise<TitleRushSettingRow | null> {
-  const { data, error } = await supabaseAdmin
-    .from("app_settings")
-    .select("key, value, updated_at")
-    .eq("key", TITLE_RUSH_SETTING_KEY)
-    .maybeSingle();
-
-  if (error) return null;
-  return (data as TitleRushSettingRow | null) ?? null;
+  const row = await getAppSetting<TitleRushSettingRow["value"]>(TITLE_RUSH_SETTING_KEY);
+  if (!row) return null;
+  return { key: TITLE_RUSH_SETTING_KEY, value: row.value, updated_at: row.updated_at } as TitleRushSettingRow;
 }
 
 async function readTitleRushEventStatus() {
@@ -47,20 +42,8 @@ export const getTitleRushEventStatus = unstable_cache(
 );
 
 export async function setTitleRushEventStatus(enabled: boolean) {
-  const { data, error } = await supabaseAdmin
-    .from("app_settings")
-    .upsert(
-      {
-        key: TITLE_RUSH_SETTING_KEY,
-        value: { enabled },
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "key" },
-    )
-    .select("key, value, updated_at")
-    .single();
+  const data = await setAppSetting(TITLE_RUSH_SETTING_KEY, { enabled });
 
-  if (error) throw error;
   invalidateLocalSetting(TITLE_RUSH_LOCAL_KEY);
   revalidateTag(TITLE_RUSH_EVENT_STATUS_TAG, { expire: 0 });
 

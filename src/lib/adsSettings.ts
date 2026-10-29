@@ -1,5 +1,5 @@
 import { unstable_cache, revalidateTag } from "next/cache";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { getAppSetting, setAppSetting } from "@/lib/social/settingsStore";
 import { getLocalSetting, invalidateLocalSetting } from "@/lib/localSettings";
 
 export const ADS_SETTING_KEY = "ads_config";
@@ -303,14 +303,9 @@ type AdsSettingRow = { value?: Partial<AdsConfig> | null; updated_at?: string | 
 const ADS_LOCAL_KEY = `app_settings:${ADS_SETTING_KEY}`;
 
 async function loadAdsRow(): Promise<AdsSettingRow | null> {
-  const { data, error } = await supabaseAdmin
-    .from("app_settings")
-    .select("key, value, updated_at")
-    .eq("key", ADS_SETTING_KEY)
-    .maybeSingle();
-
-  if (error || !data) return null;
-  return data as AdsSettingRow;
+  const row = await getAppSetting<Partial<AdsConfig> | null>(ADS_SETTING_KEY);
+  if (!row) return null;
+  return { key: ADS_SETTING_KEY, value: row.value, updated_at: row.updated_at } as AdsSettingRow;
 }
 
 async function readAdsConfig(): Promise<AdsConfig> {
@@ -374,16 +369,7 @@ export async function setAdsConfig(next: AdsConfig, adminUserId: string): Promis
     previous,
   };
 
-  const { data, error } = await supabaseAdmin
-    .from("app_settings")
-    .upsert(
-      { key: ADS_SETTING_KEY, value, updated_at: updatedAt },
-      { onConflict: "key" },
-    )
-    .select("key, value, updated_at")
-    .single();
-
-  if (error) throw error;
+  const data = await setAppSetting<Partial<AdsConfig> | null>(ADS_SETTING_KEY, value);
 
   invalidateLocalSetting(ADS_LOCAL_KEY);
   invalidateAdsCache();
@@ -421,13 +407,7 @@ export async function rollbackAdsConfig(adminUserId: string): Promise<AdsConfig>
     },
   };
 
-  const { data, error } = await supabaseAdmin
-    .from("app_settings")
-    .upsert({ key: ADS_SETTING_KEY, value, updated_at: updatedAt }, { onConflict: "key" })
-    .select("key, value, updated_at")
-    .single();
-
-  if (error) throw error;
+  const data = await setAppSetting<Partial<AdsConfig> | null>(ADS_SETTING_KEY, value);
 
   invalidateLocalSetting(ADS_LOCAL_KEY);
   invalidateAdsCache();
