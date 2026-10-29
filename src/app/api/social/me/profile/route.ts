@@ -5,6 +5,7 @@ import { ensureSocialProfile } from "@/lib/social/profileSync";
 import { AVATAR_BORDERS, isAdminOnlyBorder } from "@/lib/avatarBorders";
 import { getCachedRole } from "@/lib/serverRoleCache";
 import { getMarathonStanding } from "@/lib/social/marathonChampion";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 function mediaUrl(value: unknown) {
   if (value === null || value === "") return null;
@@ -58,6 +59,8 @@ export async function GET(request: Request) {
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }
@@ -132,6 +135,8 @@ export async function PATCH(request: Request) {
     );
     return socialJson({ success: true, ...updates });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     if (error instanceof Error && error.message === "INVALID_MEDIA") {
       return socialJson({ error: "Banner wajib berupa URL HTTPS publik." }, { status: 400 });
     }

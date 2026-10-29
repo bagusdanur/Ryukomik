@@ -2,6 +2,7 @@ import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialError, socialJson } from "@/lib/social/http";
 import { socialQuery } from "@/lib/social/db";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 const DEFAULTS = { follows: true, likes: true, replies: true, mentions: true, collections: true };
 
@@ -11,7 +12,9 @@ export async function GET(request: Request) {
     await ensureSocialProfile(userId);
     const result = await socialQuery("select follows,likes,replies,mentions,collections from social_notification_preferences where user_id=$1", [userId]);
     return socialJson({ preferences: result.rows[0] || DEFAULTS }, { headers: { "Cache-Control": "private, no-store" } });
-  } catch (error) { return socialError(error); }
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse; return socialError(error); }
 }
 
 export async function PATCH(request: Request) {
@@ -26,5 +29,7 @@ export async function PATCH(request: Request) {
       replies=excluded.replies,mentions=excluded.mentions,collections=excluded.collections,updated_at=now()`,
       [userId, preferences.follows, preferences.likes, preferences.replies, preferences.mentions, preferences.collections]);
     return socialJson({ preferences });
-  } catch (error) { return socialError(error); }
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse; return socialError(error); }
 }

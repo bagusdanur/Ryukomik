@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getVerifiedUserId } from "@/lib/serverRoleCache";
+import { requireUserId } from "@/lib/social/auth";
 import { projectApiFetch } from "@/lib/projectApiServer";
 
 function bearerToken(request: Request) {
@@ -7,9 +7,8 @@ function bearerToken(request: Request) {
 }
 
 async function authenticatedUser(request: Request) {
-  const token = bearerToken(request);
-  if (!token) throw new Error("Login diperlukan.");
-  return getVerifiedUserId(token);
+  // requireUserId juga menolak akun yang sedang diblokir (BANNED).
+  return requireUserId(request);
 }
 
 export async function GET(request: Request, props: { params: Promise<{ slug: string }> }) {
@@ -21,6 +20,9 @@ export async function GET(request: Request, props: { params: Promise<{ slug: str
     );
     return NextResponse.json(data, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
+    if (error instanceof Error && error.message === "BANNED") {
+      return NextResponse.json({ error: "Akun kamu diblokir.", code: "BANNED" }, { status: 403 });
+    }
     const message = error instanceof Error ? error.message : "Gagal mengambil upvote.";
     return NextResponse.json({ error: message }, { status: message.includes("Login") || message.includes("Sesi") ? 401 : 500 });
   }
@@ -36,6 +38,9 @@ export async function POST(request: Request, props: { params: Promise<{ slug: st
     );
     return NextResponse.json(data, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
+    if (error instanceof Error && error.message === "BANNED") {
+      return NextResponse.json({ error: "Akun kamu diblokir.", code: "BANNED" }, { status: 403 });
+    }
     const message = error instanceof Error ? error.message : "Gagal menyimpan upvote.";
     return NextResponse.json({ error: message }, { status: message.includes("Login") || message.includes("Sesi") ? 401 : 500 });
   }

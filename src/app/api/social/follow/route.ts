@@ -4,6 +4,7 @@ import { ensureSocialProfile } from "@/lib/social/profileSync";
 import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { allowsSocialNotification } from "@/lib/social/notifications";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 export async function POST(request: Request) {
   try {
@@ -30,7 +31,9 @@ export async function POST(request: Request) {
     revalidateTag("social-profile", { expire: 0 });
     revalidateTag("social-feed", { expire: 0 });
     return socialJson({ following: true });
-  } catch (error) { return socialError(error); }
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse; return socialError(error); }
 }
 
 export async function DELETE(request: Request) {
@@ -43,5 +46,7 @@ export async function DELETE(request: Request) {
     revalidateTag("social-profile", { expire: 0 });
     revalidateTag("social-feed", { expire: 0 });
     return socialJson({ following: false });
-  } catch (error) { return socialError(error); }
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse; return socialError(error); }
 }

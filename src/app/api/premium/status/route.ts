@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/social/auth";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,8 @@ export async function GET(request: Request) {
     if (error) throw error;
     return NextResponse.json({ request: data || null }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     const unauthorized = error instanceof Error && error.message === "UNAUTHORIZED";
     return NextResponse.json(
       { error: unauthorized ? "Login diperlukan." : "Gagal memeriksa status premium." },

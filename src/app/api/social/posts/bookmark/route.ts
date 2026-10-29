@@ -2,6 +2,7 @@ import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { socialQuery } from "@/lib/social/db";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 async function mutate(request: Request, remove: boolean) {
   assertSameOrigin(request);
@@ -17,5 +18,9 @@ async function mutate(request: Request, remove: boolean) {
   return socialJson({ bookmarked: !remove });
 }
 
-export async function POST(request: Request) { try { return await mutate(request, false); } catch (error) { return socialError(error); } }
-export async function DELETE(request: Request) { try { return await mutate(request, true); } catch (error) { return socialError(error); } }
+export async function POST(request: Request) { try { return await mutate(request, false); } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse; return socialError(error); } }
+export async function DELETE(request: Request) { try { return await mutate(request, true); } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse; return socialError(error); } }

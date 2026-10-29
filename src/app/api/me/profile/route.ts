@@ -3,6 +3,7 @@ import { socialQuery } from "@/lib/social/db";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
 import { supabaseAdmin } from "@/lib/supabaseServer";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 /**
  * Profil milik user sendiri — sumber data: Postgres LOKAL (social_profiles).
@@ -46,6 +47,8 @@ export async function GET(request: Request) {
     }
     return socialJson({ profile }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }
@@ -123,6 +126,8 @@ export async function PATCH(request: Request) {
           },
         });
       } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
         console.error("[me/profile] auth metadata gagal:", error instanceof Error ? error.message : error);
       }
     }
@@ -130,6 +135,8 @@ export async function PATCH(request: Request) {
     const result = await socialQuery(`select ${PROFILE_COLUMNS} from social_profiles where user_id=$1`, [userId]);
     return socialJson({ profile: result.rows[0] || null }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }

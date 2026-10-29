@@ -4,6 +4,7 @@ import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { NOBAR_EMOJIS } from "@/lib/social/nobar";
 import { publish } from "@/lib/social/nobarBus";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 /**
  * /api/social/nobar/[id]/reactions — reaksi cepat (🔥😂😱😭👏❤️).
@@ -45,6 +46,8 @@ export async function POST(request: Request, context: Ctx) {
     publish(id, { kind: "reaction" });
     return socialJson({ success: true }, { status: 201 });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }

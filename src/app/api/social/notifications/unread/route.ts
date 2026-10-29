@@ -1,6 +1,7 @@
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 /**
  * Jumlah notifikasi belum dibaca — versi ringan untuk badge di bottom nav.
@@ -71,6 +72,8 @@ export async function GET(request: Request) {
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }

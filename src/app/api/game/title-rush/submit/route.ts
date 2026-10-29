@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { getTitleRushEventStatus } from "@/lib/titleRushEvent";
-import { getVerifiedUserId } from "@/lib/serverRoleCache";
+import { requireUserId } from "@/lib/social/auth";
 
 type ExistingScore = {
   id: string;
@@ -46,8 +46,11 @@ export async function POST(request: Request) {
 
     let userId: string;
     try {
-      userId = await getVerifiedUserId(token);
-    } catch {
+      userId = await requireUserId(request);
+    } catch (error) {
+      if (error instanceof Error && error.message === "BANNED") {
+        return NextResponse.json({ error: "Akun kamu diblokir.", code: "BANNED" }, { status: 403 });
+      }
       return NextResponse.json({ error: "Sesi login tidak valid." }, { status: 401 });
     }
 

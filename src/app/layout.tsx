@@ -8,6 +8,7 @@ import ThemeColorProvider from "@/components/ThemeColorProvider";
 import MaintenanceBanner from "@/components/MaintenanceBanner";
 import MonetagScript from "@/components/MonetagScript";
 import Navbar from "@/components/Navbar";
+import BanGate from "@/components/BanGate";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -126,6 +127,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AntiAdblock />
         <AdBanner />
         <Footer />
+        <BanGate />
         <Analytics />
        
       </body>

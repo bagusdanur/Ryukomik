@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialQuery, socialTransaction } from "@/lib/social/db";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 const FREE_DAILY_LIMIT = 5;
 
@@ -56,6 +57,8 @@ export async function GET(request: Request) {
     const access = await accessFor(userId);
     return json({ quota: quotaPayload(access, await quotaFor(userId)) });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return json({ error: "Login diperlukan." }, { status: 401 });
     }
@@ -121,6 +124,8 @@ export async function POST(request: Request) {
     if (!updated.rows[0]) return json({ error: "Reservasi download sudah tidak berlaku." }, { status: 409 });
     return json({ success: true, quota: quotaPayload(access, await quotaFor(userId)) });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return json({ error: "Login diperlukan." }, { status: 401 });
     }

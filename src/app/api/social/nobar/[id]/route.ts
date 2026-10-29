@@ -10,6 +10,7 @@ import {
 } from "@/lib/social/nobar";
 import { publish } from "@/lib/social/nobarBus";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 /**
  * /api/social/nobar/[id] — polling utama ruang nobar.
@@ -130,6 +131,8 @@ export async function GET(request: Request, context: Ctx) {
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }
@@ -183,6 +186,8 @@ export async function PATCH(request: Request, context: Ctx) {
     }
     return socialJson({ success: true });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }
@@ -201,6 +206,8 @@ export async function DELETE(request: Request, context: Ctx) {
     if (!result.rowCount) return socialJson({ error: "Hanya host yang bisa menutup ruang." }, { status: 403 });
     return socialJson({ success: true });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }

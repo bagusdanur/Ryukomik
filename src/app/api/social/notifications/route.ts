@@ -3,6 +3,7 @@ import { ensureSocialProfile } from "@/lib/social/profileSync";
 import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { decodeSocialCursor, encodeSocialCursor } from "@/lib/social/cursor";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 type NotificationRow = {
   id: string;
@@ -68,6 +69,8 @@ export async function GET(request: Request) {
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }
@@ -111,6 +114,8 @@ export async function PATCH(request: Request) {
     });
     return socialJson({ updated });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }

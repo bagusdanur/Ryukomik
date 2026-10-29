@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/social/auth";
 import { getActiveEvent, getUserStanding } from "@/lib/marathon/repository";
 import { weekKey, monthKey } from "@/lib/marathon/period";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,8 @@ export async function GET(request: Request) {
     res.headers.set("Cache-Control", "private, max-age=30");
     return res;
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     console.error("[marathon] me failed:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: "Gagal memuat posisi." }, { status: 500 });
   }

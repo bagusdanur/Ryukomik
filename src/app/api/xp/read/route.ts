@@ -3,6 +3,7 @@ import { requireUserId } from "@/lib/social/auth";
 import { recordMarathonReads } from "@/lib/marathon/repository";
 import { recordReads } from "@/lib/social/xp";
 import { checkReadRate, filterSeenSlugs, filterValidSlugs } from "@/lib/social/readGuard";
+import { authErrorResponse } from "@/lib/social/authResponse";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
@@ -49,6 +50,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, recorded_count: recorded, xp_added: xpAdded });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     const unauthorized = error instanceof Error && error.message === "UNAUTHORIZED";
     if (!unauthorized) console.error("[XP Read Batch] Error:", error);
     return NextResponse.json({ error: unauthorized ? "unauthorized" : "failed" }, { status: unauthorized ? 401 : 500 });

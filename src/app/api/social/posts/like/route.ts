@@ -3,6 +3,7 @@ import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { socialQuery, socialTransaction } from "@/lib/social/db";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
 import { allowsSocialNotification } from "@/lib/social/notifications";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 async function mutate(request: Request, remove: boolean) {
   assertSameOrigin(request); const userId = await requireUserId(request);
@@ -23,5 +24,9 @@ async function mutate(request: Request, remove: boolean) {
   }
   return socialJson({ liked: !remove });
 }
-export async function POST(request: Request) { try { return await mutate(request, false); } catch (error) { return socialError(error); } }
-export async function DELETE(request: Request) { try { return await mutate(request, true); } catch (error) { return socialError(error); } }
+export async function POST(request: Request) { try { return await mutate(request, false); } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse; return socialError(error); } }
+export async function DELETE(request: Request) { try { return await mutate(request, true); } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse; return socialError(error); } }

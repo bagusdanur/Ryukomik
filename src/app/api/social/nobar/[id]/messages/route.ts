@@ -4,6 +4,7 @@ import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { cleanMessage } from "@/lib/social/nobar";
 import { publish } from "@/lib/social/nobarBus";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 /**
  * /api/social/nobar/[id]/messages — kirim chat nobar.
@@ -57,6 +58,8 @@ export async function POST(request: Request, context: Ctx) {
 
     return socialJson({ message }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }

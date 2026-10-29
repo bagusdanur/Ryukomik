@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabaseServer";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
 import { updateLocalProfile } from "@/lib/social/profileWrite";
 import { socialQuery } from "@/lib/social/db";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,8 @@ export async function POST(request: Request) {
       premiumUntil,
     });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Gagal mengaktifkan premium" },
       { status: 500 },

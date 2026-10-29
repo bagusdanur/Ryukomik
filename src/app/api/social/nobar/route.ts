@@ -3,6 +3,7 @@ import { socialQuery, socialTransaction } from "@/lib/social/db";
 import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { ROOM_IDLE_MINUTES, toRoom, type NobarRoomRow } from "@/lib/social/nobar";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
+import { authErrorResponse } from "@/lib/social/authResponse";
 
 /**
  * /api/social/nobar
@@ -71,6 +72,8 @@ export async function GET(request: Request) {
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }
@@ -123,6 +126,8 @@ export async function POST(request: Request) {
 
     return socialJson({ room: toRoom(room) }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
     return socialError(error);
   }
 }
