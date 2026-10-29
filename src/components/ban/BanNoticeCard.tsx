@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { MessageCircle, ShieldOff } from "lucide-react";
 
 export type BanInfo = {
   permanent?: boolean;
@@ -92,7 +93,7 @@ export default function BanNoticeCard({
         className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full text-2xl"
         style={{ background: "color-mix(in srgb, #fb7185 16%, transparent)", color: "#fb7185" }}
       >
-        🚫
+        <ShieldOff size={26} strokeWidth={2.2} />
       </div>
 
       <p className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--accent-2)" }}>
@@ -133,7 +134,8 @@ export default function BanNoticeCard({
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black text-[#04121a] transition hover:brightness-110"
         style={{ background: "var(--accent-2)" }}
       >
-        💬 Tanya di Grup WhatsApp
+        <MessageCircle size={15} strokeWidth={2.5} />
+        Tanya di Grup WhatsApp
       </a>
 
       {onLogout && (

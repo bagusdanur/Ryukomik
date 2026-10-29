@@ -5,17 +5,17 @@ import { createPortal } from "react-dom";
 import BanNoticeCard, { type BanInfo } from "@/components/ban/BanNoticeCard";
 
 const STORAGE_KEY = "rk-ban-notice";
+const LAST_USER_KEY = "rk-last-user";
 
 type StoredBan = BanInfo & { at: number };
 
 /**
  * Pemberitahuan saat login gagal karena akun diblokir.
  *
- * Sumbernya dua:
- *  1. Query `?login=banned` setelah callback OAuth ditolak Supabase.
- *  2. localStorage `rk-ban-notice` yang ditulis callback, supaya peringatan
- *     tetap muncul walau query string hilang saat redirect.
- * Detail (berakhir/alasan) ikut disimpan kalau tersedia dari /api/ban/lookup.
+ * Detail (sisa waktu, tanggal berakhir, alasan) diambil dari
+ * POST /api/ban/lookup memakai user id terakhir yang berhasil login di
+ * perangkat ini — Supabase mencabut sesi saat ban, jadi tidak ada token.
+ * Kalau lookup gagal, pakai penanda `rk-ban-notice` yang ditulis BanGate.
  */
 export default function BanLoginNotice() {
   const [info, setInfo] = useState<BanInfo | null>(null);
@@ -28,23 +28,52 @@ export default function BanLoginNotice() {
     const flagged = params.get("login") === "banned" || params.get("banned") === "1";
 
     let stored: StoredBan | null = null;
+    let lastUserId = "";
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) stored = JSON.parse(raw) as StoredBan;
+      const lastUser = localStorage.getItem(LAST_USER_KEY);
+      if (lastUser) lastUserId = (JSON.parse(lastUser) as { id?: string })?.id || "";
     } catch {
       stored = null;
     }
 
-    if (flagged || stored) {
+    if (!flagged && !stored) return;
+
+    // Tampilkan dulu apa yang tersimpan supaya responsnya instan.
+    if (stored) {
       setInfo({
-        bannedUntil: stored?.bannedUntil ?? null,
-        permanent: stored?.permanent,
-        reason: stored?.reason ?? null,
-        contactUrl: stored?.contactUrl,
+        bannedUntil: stored.bannedUntil ?? null,
+        permanent: stored.permanent,
+        reason: stored.reason ?? null,
+        contactUrl: stored.contactUrl,
       });
+    } else {
+      setInfo({});
     }
+
+    // Lalu segarkan dari server (sisa waktu paling akurat).
+    if (lastUserId) {
+      fetch("/api/ban/lookup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ userId: lastUserId }),
+        cache: "no-store",
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: (BanInfo & { banned?: boolean }) | null) => {
+          if (!data?.banned) return;
+          setInfo({
+            bannedUntil: data.bannedUntil ?? null,
+            permanent: data.permanent,
+            reason: data.reason ?? null,
+            contactUrl: data.contactUrl,
+          });
+        })
+        .catch(() => undefined);
+    }
+
     if (flagged) {
-      // Bersihkan query supaya tidak muncul lagi saat refresh.
       const url = new URL(window.location.href);
       url.searchParams.delete("login");
       url.searchParams.delete("banned");

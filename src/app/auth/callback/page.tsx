@@ -30,7 +30,16 @@ export default function Callback() {
         /* storage bisa diblokir browser */
       }
 
-      await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const lastUserId = sessionData.session?.user?.id;
+      if (lastUserId) {
+        try {
+          // Dipakai /api/ban/lookup kalau akun ini diblokir dan sesinya dicabut.
+          localStorage.setItem("rk-last-user", JSON.stringify({ id: lastUserId, at: Date.now() }));
+        } catch {
+          /* storage bisa diblokir browser */
+        }
+      }
 
       const next = params.get("next");
       window.location.replace(next || "/");
