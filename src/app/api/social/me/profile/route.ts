@@ -104,8 +104,8 @@ export async function PATCH(request: Request) {
     if (borderMeta?.rankOnly && !role.isAdmin) {
       const standing = await getMarathonStanding(userId);
       // Boleh kalau sedang di peringkat itu, atau pernah meraih title itu/sebelumnya.
-      const entitled =
-        standing.current === borderMeta.rankOnly || standing.best === borderMeta.rankOnly;
+      // Title bersifat mingguan: begitu title pindah orang, akses ikut pindah.
+      const entitled = standing.current === borderMeta.rankOnly;
       if (!entitled) {
         return socialJson(
           { error: `Border ini khusus Juara ${borderMeta.rankOnly} Marathon minggu ini.` },

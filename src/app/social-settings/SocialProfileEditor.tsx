@@ -69,10 +69,8 @@ export default function SocialProfileEditor() {
       !border.hidden &&
       (isAdmin || !isAdminOnlyBorder(border.id)) &&
       // Frame juara maraton hanya tampil untuk peringkat yang sesuai.
-      (isAdmin ||
-        !border.rankOnly ||
-        border.rankOnly === marathonRank ||
-        marathonBest === border.rankOnly),
+      // Title bergantung pada juara minggu berjalan.
+      (isAdmin || !border.rankOnly || border.rankOnly === marathonRank),
   );
 
   async function save(event: FormEvent) {

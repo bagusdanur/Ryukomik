@@ -23,7 +23,6 @@ export default function BorderGallery() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const [marathonRank, setMarathonRank] = useState(0);
-  const [marathonBest, setMarathonBest] = useState(0);
   const [current, setCurrent] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -36,7 +35,6 @@ export default function BorderGallery() {
         setIsAdmin(Boolean(data.is_admin));
         setIsPremium(Boolean(data.profile?.is_premium));
         setMarathonRank(Number(data.marathon_rank) || 0);
-        setMarathonBest(Number(data.marathon_best_rank) || 0);
         setCurrent(data.profile?.avatar_border ?? null);
       })
       .catch(() => undefined);
@@ -136,12 +134,7 @@ export default function BorderGallery() {
                     active ||
                     saving === border.id ||
                     Boolean(border.premiumOnly && !isPremium && !isAdmin) ||
-                    Boolean(
-                      border.rankOnly &&
-                        marathonRank !== border.rankOnly &&
-                        marathonBest !== border.rankOnly &&
-                        !isAdmin,
-                    )
+                    Boolean(border.rankOnly && marathonRank !== border.rankOnly && !isAdmin)
                   }
                   className={`w-full rounded-lg px-2 py-1.5 text-[10px] font-black uppercase transition ${
                     active
@@ -155,10 +148,7 @@ export default function BorderGallery() {
                       ? "Menyimpan..."
                       : border.premiumOnly && !isPremium && !isAdmin
                         ? "Khusus Premium"
-                        : border.rankOnly &&
-                            marathonRank !== border.rankOnly &&
-                            marathonBest !== border.rankOnly &&
-                            !isAdmin
+                        : border.rankOnly && marathonRank !== border.rankOnly && !isAdmin
                           ? `Khusus Juara ${border.rankOnly}`
                           : "Pakai"}
                 </button>
