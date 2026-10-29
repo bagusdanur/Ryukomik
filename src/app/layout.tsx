@@ -9,6 +9,7 @@ import MaintenanceBanner from "@/components/MaintenanceBanner";
 import MonetagScript from "@/components/MonetagScript";
 import Navbar from "@/components/Navbar";
 import BanGate from "@/components/BanGate";
+import BanLoginNotice from "@/components/ban/BanLoginNotice";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -128,6 +129,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AdBanner />
         <Footer />
         <BanGate />
+        <BanLoginNotice />
         <Analytics />
        
       </body>

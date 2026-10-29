@@ -1,41 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import BanNoticeCard, { type BanInfo } from "@/components/ban/BanNoticeCard";
 
-type BanState = {
-  banned: boolean;
-  permanent?: boolean;
-  bannedUntil?: string | null;
-  reason?: string | null;
-  contactUrl?: string;
-};
+type BanState = BanInfo & { banned: boolean };
 
-function formatUntil(state: BanState) {
-  if (state.permanent) return "permanen";
-  if (!state.bannedUntil) return "permanen";
-  const date = new Date(state.bannedUntil);
-  if (Number.isNaN(date.getTime())) return "permanen";
-  return date.toLocaleString("id-ID", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Asia/Jakarta",
-  });
-}
+const OVERLAY_ID = "rk-ban-gate";
+const Z_INDEX = 2147483000;
 
 /**
- * Gerbang blokir: kalau akun sedang diblokir, seluruh situs ditutup layer
- * penuh. Satu-satunya aksi yang tersedia adalah logout — sesuai kebijakan
- * "diblokir tidak bisa akses apa pun kecuali keluar".
+ * Gerbang blokir penuh untuk akun yang sedang login tapi diblokir.
+ *
+ * Tidak bisa ditutup: tanpa tombol close, Escape diblokir, dirender lewat
+ * portal ke <body> dengan z-index maksimum, isi <body> lain dibuat `inert`,
+ * dan node-nya menyembuhkan diri kalau dihapus/disembunyikan dari DOM.
+ * Server tetap penentu akhir — semua API menolak akun yang diblokir.
  */
 export default function BanGate() {
   const { user } = useSupabaseUser();
+  const pathname = usePathname();
   const [state, setState] = useState<BanState | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const nodeRef = useRef<HTMLDivElement | null>(null);
+  const savedNode = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!user?.id) {
@@ -43,35 +37,92 @@ export default function BanGate() {
       return;
     }
     let active = true;
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) return;
-      const res = await fetch("/api/me/ban-status", {
-        cache: "no-store",
-        headers: { authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return;
-      const json = (await res.json()) as BanState;
-      if (active && json?.banned) setState(json);
-    })().catch(() => undefined);
+
+    const check = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) return;
+        const res = await fetch("/api/me/ban-status", {
+          cache: "no-store",
+          headers: { authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as BanState;
+        if (active) setState(json?.banned ? json : null);
+      } catch {
+        // Jaringan bermasalah: jangan salah kunci user.
+      }
+    };
+
+    void check();
+    const interval = window.setInterval(check, 20_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void check();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       active = false;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [user?.id]);
+  }, [user?.id, pathname]);
 
   useEffect(() => {
     if (!state?.banned) return;
-    const previous = document.body.style.overflow;
+    const html = document.documentElement;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = document.body.style.overflow;
+    html.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
+
+    const inerted: Element[] = [];
+    for (const child of Array.from(document.body.children)) {
+      if ((child as HTMLElement).id === OVERLAY_ID) continue;
+      if (typeof (child as HTMLElement & { inert?: boolean }).inert === "boolean") {
+        (child as HTMLElement & { inert: boolean }).inert = true;
+        inerted.push(child);
+      }
+    }
+
     return () => {
-      document.body.style.overflow = previous;
+      html.style.overflow = prevHtmlOverflow;
+      document.body.style.overflow = prevBodyOverflow;
+      for (const el of inerted) (el as HTMLElement & { inert: boolean }).inert = false;
     };
   }, [state?.banned]);
 
-  if (!state?.banned) return null;
+  useEffect(() => {
+    if (!state?.banned) return;
+    const observer = new MutationObserver(() => {
+      const node = savedNode.current;
+      if (!node) return;
+      // Pasang kembali node yang sama kalau dihapus dari DOM, dan pulihkan
+      // inline style yang dipakai untuk menyembunyikannya.
+      if (!document.getElementById(OVERLAY_ID)) document.body.appendChild(node);
+      if (node.style.display === "none") node.style.display = "";
+      if (node.style.visibility === "hidden") node.style.visibility = "visible";
+      if (node.style.opacity === "0") node.style.opacity = "1";
+      if (node.style.pointerEvents === "none") node.style.pointerEvents = "auto";
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class"] });
+    return () => observer.disconnect();
+  }, [state?.banned]);
 
-  const contact = state.contactUrl || "https://chat.whatsapp.com/JJjlXcgdm90H5qNaJiXPDV";
+  useEffect(() => {
+    if (!state?.banned) return;
+    const block = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    window.addEventListener("keydown", block, true);
+    return () => window.removeEventListener("keydown", block, true);
+  }, [state?.banned]);
+
+  if (!mounted || !state?.banned) return null;
 
   async function logout() {
     setLeaving(true);
@@ -79,47 +130,23 @@ export default function BanGate() {
     window.location.href = "/";
   }
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#070a12] px-5 py-8">
-      <div className="w-full max-w-md rounded-2xl border border-rose-400/25 bg-rose-500/[0.06] p-6 text-center text-white shadow-[0_20px_80px_rgba(0,0,0,.6)]">
-        <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-rose-500/15 text-2xl">🚫</div>
-        <h1 className="text-lg font-black">Akun Kamu Diblokir</h1>
-        <p className="mt-1 text-xs leading-relaxed text-white/60">
-          Akses situs dan akun ditutup sementara sampai blokir dicabut admin.
-        </p>
-
-        <div className="mt-4 space-y-2 rounded-xl bg-black/25 p-3 text-left text-[11px] text-white/70">
-          <p>
-            <span className="font-bold text-white/50">Berakhir:</span> {formatUntil(state)}
-          </p>
-          <p>
-            <span className="font-bold text-white/50">Alasan:</span>{" "}
-            {state.reason?.trim() ? state.reason : "tidak disebutkan"}
-          </p>
-        </div>
-
-        <a
-          href={contact}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-xs font-black text-white transition hover:bg-emerald-400"
-        >
-          💬 Tanya / Ajukan Buka Blokir (Grup WhatsApp)
-        </a>
-
-        <button
-          type="button"
-          onClick={logout}
-          disabled={leaving}
-          className="mt-2 w-full rounded-xl border border-white/12 px-4 py-2.5 text-xs font-bold text-white/70 transition hover:bg-white/[0.06] disabled:opacity-50"
-        >
-          {leaving ? "Keluar..." : "Logout"}
-        </button>
-
-        <p className="mt-3 text-[10px] text-white/30">
-          Setelah logout kamu tetap bisa membaca sebagai tamu, tapi tidak bisa memakai akun.
-        </p>
-      </div>
-    </div>
+  return createPortal(
+    <div
+      id={OVERLAY_ID}
+      ref={(el) => {
+        nodeRef.current = el;
+        if (el) savedNode.current = el;
+      }}
+      style={{ zIndex: Z_INDEX }}
+      className="fixed inset-0 flex items-center justify-center px-5 py-8"
+    >
+      <div
+        className="absolute inset-0"
+        style={{ background: "color-mix(in srgb, var(--background) 92%, transparent)", backdropFilter: "blur(8px)" }}
+        onClick={(event) => event.stopPropagation()}
+      />
+      <BanNoticeCard info={state} busy={leaving} onLogout={logout} />
+    </div>,
+    document.body,
   );
 }
