@@ -32,21 +32,17 @@ export async function createBackup(userId?: string | null): Promise<boolean> {
     history = history.slice(0, BACKUP_ITEM_LIMIT);
     bookmarks = Array.isArray(bookmarks) ? bookmarks.slice(0, BACKUP_ITEM_LIMIT) : [];
 
-    const { error } = await supabase
-      .from("user_backup")
-      .upsert(
-        {
-          user_id: userId,
-          history,
-          bookmarks,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: "user_id",
-        }
-      );
+    // Backup disimpan di Postgres lokal lewat API kita.
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error("Login diperlukan.");
 
-    if (error) throw error;
+    const res = await fetch("/api/backup", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify({ history, bookmarks }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     return true;
   } catch (err) {
@@ -59,13 +55,17 @@ export async function restoreBackup(userId?: string | null): Promise<boolean> {
   if (!userId) return false;
 
   try {
-    const { data, error } = await supabase
-      .from("user_backup")
-      .select("history, bookmarks")
-      .eq("user_id", userId)
-      .single();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) throw new Error("Login diperlukan.");
 
-    if (error) throw error;
+    const res = await fetch("/api/backup", {
+      headers: { authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const payload = (await res.json()) as { backup?: { history?: unknown; bookmarks?: unknown } | null };
+    const data = payload.backup;
     if (!data) return false;
 
     const historyData = Array.isArray(data.history) ? data.history.slice(0, BACKUP_ITEM_LIMIT) : [];

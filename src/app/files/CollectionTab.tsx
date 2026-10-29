@@ -17,6 +17,23 @@ import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 import Button from "@/components/Button";
 
 const COLLECTION_KEY = "comic_collections";
+
+/** Semua operasi koleksi kini ke API kita (Postgres lokal), bukan Supabase. */
+async function collectionFetch<T>(path: string, init: RequestInit = {}): Promise<T | null> {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return null;
+    const res = await fetch(path, {
+      ...init,
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}`, ...(init.headers || {}) },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
 const cloudItemCache = new Map<string, NormalizedBookmark[]>();
 
 type BookmarkItem = {
@@ -123,15 +140,10 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
 
     setItemsLoading(true);
     try {
-      const { data } = await supabase
-        .from("user_collection_items")
-        .select("collection_id, source, slug, title, image, position, created_at")
-        .eq("collection_id", collectionId)
-        .eq("user_id", user.id)
-        .order("position", { ascending: true })
-        .order("created_at", { ascending: false });
-
-      const items = ((data || []) as CloudCollectionItemRow[]).map(normalizeBookmark);
+      const payload = await collectionFetch<{ items?: CloudCollectionItemRow[] }>(
+        `/api/collections/${encodeURIComponent(collectionId)}/items`,
+      );
+      const items = ((payload?.items || []) as CloudCollectionItemRow[]).map(normalizeBookmark);
       cloudItemCache.set(collectionId, items);
       setCollections((current) =>
         current.map((collection) =>
@@ -159,11 +171,9 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
       return;
     }
 
-    const { data: cloudCollections, error } = await supabase
-      .from("user_collections")
-      .select("id, name, is_public, created_at, updated_at")
-      .eq("user_id", user.id)
-      .order("updated_at", { ascending: false });
+    const listPayload = await collectionFetch<{ collections?: CloudCollectionRow[] }>("/api/collections");
+    const cloudCollections = listPayload?.collections ?? null;
+    const error = listPayload ? null : new Error("gagal memuat koleksi");
 
     if (error) {
       setCloudReady(false);
@@ -216,26 +226,19 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
     if (localCollections.length === 0) return;
 
     for (const collection of localCollections) {
-      const { data: inserted } = await supabase
-        .from("user_collections")
-        .insert({
-          user_id: user.id,
-          name: collection.name,
-          is_public: collection.is_public !== false,
-        })
-        .select("id")
-        .single();
+      const created = await collectionFetch<{ id?: string }>("/api/collections", {
+        method: "POST",
+        body: JSON.stringify({ name: collection.name, isPublic: collection.is_public !== false }),
+      });
 
-      if (inserted?.id && collection.items?.length) {
-        await supabase.from("user_collection_items").insert(
-          collection.items.map((item, index) => ({
-            collection_id: inserted.id,
-            user_id: user.id,
-            ...normalizeBookmark(item),
-            position: index,
-          })),
-        );
-        cloudItemCache.delete(inserted.id);
+      if (created?.id && collection.items?.length) {
+        await collectionFetch(`/api/collections/${encodeURIComponent(created.id)}/items`, {
+          method: "POST",
+          body: JSON.stringify({
+            items: collection.items.map((item, index) => ({ ...normalizeBookmark(item), position: index })),
+          }),
+        });
+        cloudItemCache.delete(created.id);
       }
     }
 
@@ -287,13 +290,12 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
     if (!name) return;
 
     if (cloudReady && user?.id) {
-      const { data } = await supabase
-        .from("user_collections")
-        .insert({ user_id: user.id, name, is_public: true })
-        .select("id")
-        .single();
+      const created = await collectionFetch<{ id?: string }>("/api/collections", {
+        method: "POST",
+        body: JSON.stringify({ name, isPublic: true }),
+      });
       setNewName("");
-      if (data?.id) setActiveId(data.id);
+      if (created?.id) setActiveId(created.id);
       await loadCollections();
       return;
     }
@@ -315,7 +317,7 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
 
   async function deleteCollection(id: string) {
     if (cloudReady && user?.id) {
-      await supabase.from("user_collections").delete().eq("id", id).eq("user_id", user.id);
+      await collectionFetch(`/api/collections/${encodeURIComponent(id)}`, { method: "DELETE" });
       cloudItemCache.delete(id);
       await loadCollections();
       return;
@@ -329,17 +331,10 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
     const normalized = normalizeBookmark(item);
 
     if (cloudReady && user?.id) {
-      await supabase.from("user_collection_items").insert({
-        collection_id: activeCollection.id,
-        user_id: user.id,
-        ...normalized,
-        position: 0,
+      await collectionFetch(`/api/collections/${encodeURIComponent(activeCollection.id)}/items`, {
+        method: "POST",
+        body: JSON.stringify({ item: { ...normalized, position: 0 } }),
       });
-      await supabase
-        .from("user_collections")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", activeCollection.id)
-        .eq("user_id", user.id);
       cloudItemCache.delete(activeCollection.id);
       await loadCollections();
       await loadCloudCollectionItems(activeCollection.id, true);
@@ -362,13 +357,11 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
     if (!activeCollection) return;
 
     if (cloudReady && user?.id) {
-      await supabase
-        .from("user_collection_items")
-        .delete()
-        .eq("collection_id", activeCollection.id)
-        .eq("user_id", user.id)
-        .eq("source", item.source || "komiku")
-        .eq("slug", item.slug);
+      const params = new URLSearchParams({ slug: item.slug, source: item.source || "komiku" });
+      await collectionFetch(
+        `/api/collections/${encodeURIComponent(activeCollection.id)}/items?${params.toString()}`,
+        { method: "DELETE" },
+      );
       cloudItemCache.delete(activeCollection.id);
       await loadCollections();
       await loadCloudCollectionItems(activeCollection.id, true);
@@ -394,11 +387,10 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
     const nextPublic = collection.is_public === false;
 
     if (cloudReady && user?.id) {
-      await supabase
-        .from("user_collections")
-        .update({ is_public: nextPublic, updated_at: new Date().toISOString() })
-        .eq("id", collection.id)
-        .eq("user_id", user.id);
+      await collectionFetch(`/api/collections/${encodeURIComponent(collection.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ isPublic: nextPublic }),
+      });
       await loadCollections();
       return;
     }
