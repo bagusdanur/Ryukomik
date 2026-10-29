@@ -29,16 +29,27 @@ export default function BorderGallery() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetch("/api/social/me/profile", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!data) return;
-        setIsAdmin(Boolean(data.is_admin));
-        setIsPremium(Boolean(data.profile?.is_premium));
-        setMarathonRank(Number(data.marathon_rank) || 0);
-        setCurrent(data.profile?.avatar_border ?? null);
-      })
-      .catch(() => undefined);
+    // Wajib kirim token: tanpa header Authorization endpoint membalas 401 dan
+    // semua frame premium/admin akan tampak terkunci walau user berhak.
+    (async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      const res = await fetch("/api/social/me/profile", {
+        cache: "no-store",
+        headers: { authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        is_admin?: boolean;
+        marathon_rank?: number;
+        profile?: { is_premium?: boolean; avatar_border?: string | null } | null;
+      };
+      setIsAdmin(Boolean(data.is_admin));
+      setIsPremium(Boolean(data.profile?.is_premium));
+      setMarathonRank(Number(data.marathon_rank) || 0);
+      setCurrent(data.profile?.avatar_border ?? null);
+    })().catch(() => undefined);
   }, []);
 
   const visible = Object.values(AVATAR_BORDERS).filter(
