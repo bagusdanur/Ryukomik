@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminErrorResponse, privateAdminJson, verifyAdminRequest } from "@/lib/adminApi";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { socialQuery } from "@/lib/social/db";
 
 export const dynamic = "force-dynamic";
 
@@ -15,15 +15,15 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit") || 50)));
 
-    const { data, error } = await supabaseAdmin
-      .from("activity_events")
-      .select("id, actor_id, actor_name, event_type, entity_id, entity_label, created_at")
-      .like("event_type", "admin.%")
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (error) throw error;
-    return privateAdminJson({ entries: data || [] });
+    const { rows } = await socialQuery(
+      `select id::text as id, actor_id, actor_name, event_type, entity_id, entity_label, created_at
+         from activity_events
+        where event_type like 'admin.%'
+        order by created_at desc
+        limit $1`,
+      [limit],
+    );
+    return privateAdminJson({ entries: rows });
   } catch (error) {
     return adminErrorResponse(error, "Gagal memuat audit log.");
   }

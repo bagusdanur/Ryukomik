@@ -1,6 +1,5 @@
 import "server-only";
 
-import { supabaseAdmin } from "@/lib/supabaseServer";
 import { socialQuery } from "@/lib/social/db";
 
 export type AdminAuditAction =
@@ -39,14 +38,12 @@ export async function recordAdminAction(input: {
       actorName = rows[0]?.username || "admin";
     }
 
-    await supabaseAdmin.from("activity_events").insert({
-      actor_id: input.actorId,
-      actor_name: actorName,
-      event_type: `admin.${input.action}`,
-      entity_id: input.targetId || null,
-      entity_label: input.detail || null,
-      visibility: "private",
-    });
+    // Audit disimpan di Postgres lokal (tabel activity_events).
+    await socialQuery(
+      `insert into activity_events (actor_id, actor_name, event_type, entity_id, entity_label, visibility)
+       values ($1, $2, $3, $4, $5, 'private')`,
+      [input.actorId, actorName, `admin.${input.action}`, input.targetId || null, input.detail || null],
+    );
   } catch {
     // Never let an audit failure block or roll back the privileged action.
   }
