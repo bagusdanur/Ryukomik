@@ -3,11 +3,15 @@ export function projectApiUrl(path: string): string | null {
   return base ? `${base}${path}` : null;
 }
 
+/**
+ * Fallback baca project dari Supabase SUDAH DIMATIKAN permanen.
+ *
+ * Katalog project sekarang hanya dari Project API (127.0.0.1:4101). Kode
+ * fallback lama dibiarkan sebagai referensi tapi tidak pernah dijalankan,
+ * supaya tidak ada jalur baca Supabase yang hidup tanpa sengaja.
+ */
 export function allowSupabaseProjectReadFallback(): boolean {
-  const configured = process.env.PROJECT_SUPABASE_READ_FALLBACK;
-  if (configured === "true") return true;
-  if (configured === "false") return false;
-  return process.env.NODE_ENV !== "production";
+  return false;
 }
 
 export class ProjectApiError extends Error {

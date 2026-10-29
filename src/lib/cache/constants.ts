@@ -20,6 +20,5 @@ export const PRIVATE_PATH_PREFIXES = [
 ] as const;
 
 export const PRIVATE_API_PREFIXES = [
-  "/api/reactions",
   "/api/xp",
 ] as const;
