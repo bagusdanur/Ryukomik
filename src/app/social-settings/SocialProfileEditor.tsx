@@ -26,16 +26,18 @@ export default function SocialProfileEditor() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [marathonRank, setMarathonRank] = useState(0);
+  const [marathonBest, setMarathonBest] = useState(0);
   const [saving, setSaving] = useState(false);
   const [borderTab, setBorderTab] = useState<"dasar" | "klasik" | "shop" | "event">("dasar");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    socialFetch<{ profile: Profile; is_admin?: boolean; marathon_rank?: number }>("/api/social/me/profile")
+    socialFetch<{ profile: Profile; is_admin?: boolean; marathon_rank?: number; marathon_best_rank?: number }>("/api/social/me/profile")
       .then((result) => {
         setProfile(result.profile);
         setIsAdmin(Boolean(result.is_admin));
         setMarathonRank(Number(result.marathon_rank) || 0);
+        setMarathonBest(Number(result.marathon_best_rank) || 0);
       })
       .catch((error) => setMessage(error.message));
   }, []);
@@ -67,7 +69,10 @@ export default function SocialProfileEditor() {
       !border.hidden &&
       (isAdmin || !isAdminOnlyBorder(border.id)) &&
       // Frame juara maraton hanya tampil untuk peringkat yang sesuai.
-      (isAdmin || !border.rankOnly || border.rankOnly === marathonRank),
+      (isAdmin ||
+        !border.rankOnly ||
+        border.rankOnly === marathonRank ||
+        marathonBest === border.rankOnly),
   );
 
   async function save(event: FormEvent) {

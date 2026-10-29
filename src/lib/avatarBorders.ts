@@ -139,9 +139,9 @@ export const AVATAR_BORDERS: Record<AvatarBorderId, AvatarBorder> = {
   "shop-116": { id: "shop-116", label: "Teme Red", type: "image", ring: "#38bdf8", src: "/borders/shop-116.webp" },
   "shop-117": { id: "shop-117", hidden: true, label: "White Skull", type: "image", ring: "#a855f7", src: "/borders/shop-117.webp" },
   "shop-118": { id: "shop-118", hidden: true, label: "Noir Splatter Aura", type: "image", ring: "#f59e0b", src: "/borders/shop-118.webp" },
-  "marathon-1": { id: "marathon-1", label: "Juara 1 Marathon", type: "image", ring: "#f5c542", src: "/borders/marathon-1-v2.webp", group: "event", rankOnly: 1 },
-  "marathon-2": { id: "marathon-2", label: "Juara 2 Marathon", type: "image", ring: "#cbd5e1", src: "/borders/marathon-2-v2.webp", group: "event", rankOnly: 2 },
-  "marathon-3": { id: "marathon-3", label: "Juara 3 Marathon", type: "image", ring: "#d6a17a", src: "/borders/marathon-3-v2.webp", group: "event", rankOnly: 3 },
+  "marathon-1": { id: "marathon-1", label: "Juara 1 Marathon", type: "image", ring: "#f5c542", src: "/borders/marathon-1-v2.webp", group: "event", rankOnly: 1, scale: 1.64 },
+  "marathon-2": { id: "marathon-2", label: "Juara 2 Marathon", type: "image", ring: "#cbd5e1", src: "/borders/marathon-2-v2.webp", group: "event", rankOnly: 2, scale: 1.56 },
+  "marathon-3": { id: "marathon-3", label: "Juara 3 Marathon", type: "image", ring: "#d6a17a", src: "/borders/marathon-3-v2.webp", group: "event", rankOnly: 3, scale: 1.55 },
 
 };
 

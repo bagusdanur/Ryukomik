@@ -4,7 +4,7 @@ import { socialError, socialJson, socialLimit } from "@/lib/social/http";
 import { ensureSocialProfile } from "@/lib/social/profileSync";
 import { AVATAR_BORDERS, isAdminOnlyBorder } from "@/lib/avatarBorders";
 import { getCachedRole } from "@/lib/serverRoleCache";
-import { getMarathonRank } from "@/lib/social/marathonChampion";
+import { getMarathonStanding } from "@/lib/social/marathonChampion";
 
 function mediaUrl(value: unknown) {
   if (value === null || value === "") return null;
@@ -38,8 +38,11 @@ export async function GET(request: Request) {
       {
         profile: result.rows[0] || null,
         is_admin: role.isAdmin,
-        // Dipakai galeri border: frame juara hanya terbuka untuk peringkat itu.
-        marathon_rank: await getMarathonRank(userId),
+        // Dipakai galeri border: peringkat minggu ini + title terbaik yang pernah diraih.
+        ...(await getMarathonStanding(userId).then((standing) => ({
+          marathon_rank: standing.current,
+          marathon_best_rank: standing.best,
+        }))),
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );
@@ -99,8 +102,11 @@ export async function PATCH(request: Request) {
 
     // Frame juara maraton: hanya peringkat yang sesuai di minggu berjalan.
     if (borderMeta?.rankOnly && !role.isAdmin) {
-      const rank = await getMarathonRank(userId);
-      if (rank !== borderMeta.rankOnly) {
+      const standing = await getMarathonStanding(userId);
+      // Boleh kalau sedang di peringkat itu, atau pernah meraih title itu/sebelumnya.
+      const entitled =
+        standing.current === borderMeta.rankOnly || standing.best === borderMeta.rankOnly;
+      if (!entitled) {
         return socialJson(
           { error: `Border ini khusus Juara ${borderMeta.rankOnly} Marathon minggu ini.` },
           { status: 403 },
