@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     { rows: [totalCommentsRow] },
     { rows: [readsTodayRow] },
     { rows: totalReadsRows },
-    { count: pendingRequests },
+    pendingRequestsResult,
     { rows: readRows },
   ] = await Promise.all([
     // Jumlah user & user premium dari database lokal (profil = sumber lokal).
@@ -49,10 +49,9 @@ export async function GET(request: Request) {
       [todayISO],
     ),
     socialQuery<{ total: string }>("select coalesce(sum(total_reads),0)::bigint as total from social_profiles"),
-    supabaseAdmin
-      .from("premium_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
+    socialQuery<{ total: number }>(
+      "select count(*)::int as total from premium_requests where status = 'pending'",
+    ),
     socialQuery<{ user_id: string; chapter_slug: string }>(
       `select user_id, chapter_slug from user_reads
         where created_at >= $1
@@ -96,7 +95,7 @@ export async function GET(request: Request) {
       readsToday: readsToday ?? 0,
       totalReads: Number(totalReads || 0),
     },
-    pendingCount: pendingRequests ?? 0,
+    pendingCount: Number(pendingRequestsResult.rows[0]?.total ?? 0),
     activityToday: {
       recent: [],
       topChapters: Array.from(chapterCounts.entries())

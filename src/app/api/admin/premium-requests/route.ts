@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminErrorResponse, privateAdminJson, verifyAdminRequest } from "@/lib/adminApi";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { approvePremiumRequest, listPremiumRequests, rejectPremiumRequest } from "@/lib/social/moneyStore";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
 import { updateLocalProfile } from "@/lib/social/profileWrite";
 import { createSocialNotification } from "@/lib/social/notifications";
@@ -15,17 +15,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const filter = url.searchParams.get("filter") || "all";
-    let query = supabaseAdmin
-      .from("premium_requests")
-      .select("id, user_id, status, name, proof_url, package_name, duration_days, amount, sk_agreed, sk_agreed_at, created_at, profiles(username, avatar_url)")
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (filter !== "all") query = query.eq("status", filter);
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return privateAdminJson({ requests: data || [] });
+    return privateAdminJson({ requests: await listPremiumRequests(filter, 50) });
   } catch (error) {
     return adminErrorResponse(error, "Gagal memuat request premium.");
   }
@@ -51,26 +41,18 @@ export async function POST(request: Request) {
     }
 
     if (body.action === "reject") {
-      const { data, error } = await supabaseAdmin
-        .from("premium_requests")
-        .update({ status: "rejected", updated_at: new Date().toISOString() })
-        .eq("id", body.id)
-        .eq("status", "pending")
-        .select("id")
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) return NextResponse.json({ error: "Permintaan sudah diproses." }, { status: 409 });
+      const rejected = await rejectPremiumRequest(String(body.id));
+      if (!rejected) return NextResponse.json({ error: "Permintaan sudah diproses." }, { status: 409 });
       return privateAdminJson({ success: true, status: "rejected" });
     }
 
-    const { data, error } = await supabaseAdmin.rpc("approve_manual_premium_request", {
-      p_request_id: body.id,
-    });
-    if (error) {
-      const status = error.message.includes("sudah diproses") ? 409 : 400;
-      return NextResponse.json({ error: error.message }, { status });
+    let result: ApprovalResult | null = null;
+    try {
+      result = (await approvePremiumRequest(String(body.id))) as ApprovalResult;
+    } catch (approveError) {
+      const message = approveError instanceof Error ? approveError.message : "Gagal menyetujui.";
+      return NextResponse.json({ error: message }, { status: message.includes("sudah diproses") ? 409 : 400 });
     }
-    const result = (Array.isArray(data) ? data[0] : data) as ApprovalResult | null;
     if (!result?.user_id || !result.premium_until) {
       throw new Error("Hasil aktivasi premium tidak valid.");
     }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminErrorResponse, privateAdminJson, verifyAdminRequest } from "@/lib/adminApi";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { listPaymentTransactions } from "@/lib/social/moneyStore";
 import { getSocialProfiles } from "@/lib/social/profileLookup";
 
 export async function GET(request: Request) {
@@ -13,18 +13,10 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const filter = url.searchParams.get("filter") || "all";
 
-    let query = supabaseAdmin
-      .from("payment_transactions")
-      .select("id, user_id, order_id, package_name, duration_days, amount, fee, total_payment, payment_method, payment_number, status, expired_at, completed_at, created_at")
-      .order("created_at", { ascending: false })
-      .limit(100);
-
+    let transactions = await listPaymentTransactions(100);
     if (filter !== "all") {
-      query = query.eq("status", filter);
+      transactions = transactions.filter((row) => (row as { status?: string }).status === filter);
     }
-
-    const { data: transactions, error } = await query;
-    if (error) throw error;
     
     let mergedTransactions = [];
     if (transactions && transactions.length > 0) {

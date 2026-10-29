@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminErrorResponse, privateAdminJson, verifyAdminRequest } from "@/lib/adminApi";
 import { normalizePremiumDays } from "@/lib/requestAuthPolicy";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { deletePremiumCode, generatePremiumCode, listPremiumCodes } from "@/lib/social/moneyStore";
 
 export async function GET(request: Request) {
   const admin = await verifyAdminRequest(request);
@@ -10,14 +10,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { data, error } = await supabaseAdmin
-      .from("premium_codes")
-      .select("id, code, used, duration_days, created_at, used_at, used_by")
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    if (error) throw error;
-    return privateAdminJson({ codes: data || [] });
+    return privateAdminJson({ codes: await listPremiumCodes(100) });
   } catch (error) {
     return adminErrorResponse(error, "Gagal memuat kode premium.");
   }
@@ -37,12 +30,7 @@ export async function POST(request: Request) {
     const days = normalizePremiumDays(body.days);
     const prefix = String(body.prefix || "RYUKO").replace(/[^A-Za-z0-9]/g, "").slice(0, 12) || "RYUKO";
 
-    const { data, error } = await supabaseAdmin.rpc("generate_premium_code", {
-      p_duration_days: days,
-      p_prefix: prefix,
-    });
-
-    if (error) throw error;
+    const data = await generatePremiumCode(days, prefix);
     return privateAdminJson({ success: true, result: data });
   } catch (error) {
     return adminErrorResponse(error, "Gagal membuat kode premium.");
@@ -61,8 +49,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "id wajib diisi." }, { status: 400 });
     }
 
-    const { error } = await supabaseAdmin.from("premium_codes").delete().eq("id", body.id);
-    if (error) throw error;
+    await deletePremiumCode(String(body.id));
     return privateAdminJson({ success: true, id: body.id });
   } catch (error) {
     return adminErrorResponse(error, "Gagal menghapus kode premium.");

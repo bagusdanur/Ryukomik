@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/social/auth";
 import { computePremiumUntil } from "@/lib/requestAuthPolicy";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { claimPremiumCode, releasePremiumCode } from "@/lib/social/moneyStore";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
 import { updateLocalProfile } from "@/lib/social/profileWrite";
 import { socialQuery } from "@/lib/social/db";
@@ -34,15 +34,7 @@ export async function POST(request: Request) {
     }
 
     // Atomic claim: only succeeds if the code is unused at this instant.
-    const { data: claimed, error: claimError } = await supabaseAdmin
-      .from("premium_codes")
-      .update({ used: true, used_by: userId, used_at: new Date().toISOString() })
-      .eq("code", code)
-      .eq("used", false)
-      .select("id, duration_days");
-
-    if (claimError) throw claimError;
-    const row = (claimed || [])[0] as { id: string; duration_days: number } | undefined;
+    const row = await claimPremiumCode(code, userId);
     if (!row) {
       return NextResponse.json({ error: "Kode tidak valid atau sudah dipakai" }, { status: 400 });
     }
@@ -58,10 +50,7 @@ export async function POST(request: Request) {
       await updateLocalProfile(userId, { is_premium: true, premium_until: premiumUntil }, "premium/redeem");
     } catch (grantError) {
       // Release the code so a transient failure does not burn it.
-      await supabaseAdmin
-        .from("premium_codes")
-        .update({ used: false, used_by: null, used_at: null })
-        .eq("id", row.id);
+      await releasePremiumCode(row.id);
       throw grantError;
     }
     await bumpProfileSignal(userId);
