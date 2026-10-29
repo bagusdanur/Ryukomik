@@ -1,7 +1,7 @@
 import 'server-only';
 import { unstable_cache, revalidateTag } from 'next/cache';
 import { getVerifiedUserId } from '@/lib/serverRoleCache';
-import { supabaseAdmin } from '@/lib/supabaseServer';
+import { socialQuery } from '@/lib/social/db';
 import { projectApiFetch } from '@/lib/projectApiServer';
 import { evaluateChapterAccess, type ChapterLock, type PremiumAccessProfile } from './chapterAccessPolicy';
 
@@ -43,11 +43,16 @@ export async function getPremiumAccess(token: string, force = false): Promise<Pr
     forcedAt.set(userId, Date.now());
   }
   if (premiumRequests.has(userId)) return premiumRequests.get(userId)!;
+  // Entitlement premium = data LOKAL (social_profiles). Membaca tabel `profiles`
+  // Supabase di sini membuat premium yang baru di-grant admin tidak terbaca
+  // (chapter premium tetap terkunci) dan sebaliknya.
   const request = unstable_cache(async () => {
-    const { data, error } = await supabaseAdmin.from('profiles').select('is_premium,premium_until').eq('id', userId).maybeSingle();
-    if (error) throw error;
-    return data as PremiumAccessProfile | null;
-  }, ['premium-access-v1', userId], { revalidate: 60, tags: [`premium-access:${userId}`] })().finally(() => { if (premiumRequests.get(userId) === request) premiumRequests.delete(userId); });
+    const { rows } = await socialQuery<PremiumAccessProfile>(
+      'select is_premium, premium_until from social_profiles where user_id = $1',
+      [userId],
+    );
+    return rows[0] ?? null;
+  }, ['premium-access-v2', userId], { revalidate: 60, tags: [`premium-access:${userId}`] })().finally(() => { if (premiumRequests.get(userId) === request) premiumRequests.delete(userId); });
   premiumRequests.set(userId, request);
   return request;
 }
