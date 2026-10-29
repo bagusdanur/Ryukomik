@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { listAwardedTitleRushWinners } from "@/lib/social/titleRushStore";
 import { socialQuery } from "@/lib/social/db";
 
 interface LeaderboardProfile {
@@ -48,12 +48,7 @@ const getLeaderboardCached = unstable_cache(
     const profileRows = localRows as LeaderboardProfile[];
     const ids = profileRows.map((p) => p.id);
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: titleWinners } = await supabaseAdmin
-      .from("title_rush_winners")
-      .select("user_id, rank")
-      .not("awarded_at", "is", null)
-      .gte("awarded_at", since)
-      .in("user_id", ids);
+    const titleWinners = await listAwardedTitleRushWinners(since, ids as string[]);
 
     const titleRank: Record<string, number> = {};
     ((titleWinners || []) as Array<{ user_id: string; rank: number }>).forEach((winner) => {

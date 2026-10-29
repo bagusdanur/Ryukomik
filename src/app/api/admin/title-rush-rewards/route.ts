@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { verifyAdminRequest } from "@/lib/adminApi";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import {
+  deleteTitleRushWeek,
+  getLockedTitleRushWinners,
+  getTitleRushTopScores,
+  insertTitleRushWinners,
+  listTitleRushWeeks,
+  markTitleRushWinnerAwarded,
+} from "@/lib/social/titleRushStore";
 import { bumpProfileSignal } from "@/lib/social/profileSignals";
 import { updateLocalProfile } from "@/lib/social/profileWrite";
 import { createSocialNotification } from "@/lib/social/notifications";
@@ -52,29 +59,8 @@ function getWeekStartFromRequest(request: Request) {
 }
 
 async function getEventWeeks() {
-  const [scoresResult, winnersResult] = await Promise.all([
-    supabaseAdmin
-      .from("title_rush_scores")
-      .select("week_start")
-      .order("week_start", { ascending: false })
-      .limit(100),
-    supabaseAdmin
-      .from("title_rush_winners")
-      .select("week_start")
-      .order("week_start", { ascending: false })
-      .limit(100),
-  ]);
-
-  if (scoresResult.error) throw scoresResult.error;
-  if (winnersResult.error) throw winnersResult.error;
-
-  const weeks = Array.from(
-    new Set(
-      [...(scoresResult.data || []), ...(winnersResult.data || [])]
-        .map((row) => row.week_start)
-        .filter(Boolean),
-    ),
-  );
+  const { scoreWeeks, winnerWeeks } = await listTitleRushWeeks(100);
+  const weeks = Array.from(new Set([...scoreWeeks, ...winnerWeeks].filter(Boolean)));
   const currentWeek = getCurrentWeekStart();
 
   return weeks.includes(currentWeek) ? weeks : [currentWeek, ...weeks];
@@ -101,17 +87,8 @@ function mapWinner(row: WinnerRow, index: number) {
 }
 
 async function getLockedWinners(weekStart: string) {
-  const { data, error } = await supabaseAdmin
-    .from("title_rush_winners")
-    .select(
-      "id, user_id, rank, score, total_rounds, best_streak, prize_days, premium_until, awarded_at, week_start, created_at, profiles(username, avatar_url, premium_until, is_premium)",
-    )
-    .eq("week_start", weekStart)
-    .order("rank", { ascending: true });
-
-  if (error) throw error;
-
-  return ((data || []) as unknown as WinnerRow[]).map((row, index) =>
+  const data = await getLockedTitleRushWinners(weekStart);
+  return (data as unknown as WinnerRow[]).map((row, index) =>
     mapWinner({ ...row, updated_at: row.awarded_at || row.week_start }, index),
   );
 }
@@ -122,22 +99,11 @@ async function getWinners(weekStart = getCurrentWeekStart()) {
     return { weekStart, winners: locked };
   }
 
-  const { data, error } = await supabaseAdmin
-    .from("title_rush_scores")
-    .select(
-      "user_id, score, total_rounds, best_streak, week_start, updated_at, profiles(username, avatar_url, premium_until, is_premium)",
-    )
-    .eq("week_start", weekStart)
-    .order("score", { ascending: false })
-    .order("best_streak", { ascending: false })
-    .order("updated_at", { ascending: true })
-    .limit(3);
-
-  if (error) throw error;
+  const data = await getTitleRushTopScores(weekStart, 3);
 
   return {
     weekStart,
-    winners: ((data || []) as WinnerRow[]).map((row, index) => mapWinner(row, index)),
+    winners: (data as unknown as WinnerRow[]).map((row, index) => mapWinner(row, index)),
   };
 }
 
@@ -148,7 +114,7 @@ async function lockWinners(weekStart: string) {
   const { winners } = await getWinners(weekStart);
   if (winners.length === 0) return [];
 
-  const { error } = await supabaseAdmin.from("title_rush_winners").insert(
+  await insertTitleRushWinners(
     winners.map((winner) => ({
       week_start: weekStart,
       user_id: winner.user_id,
@@ -160,7 +126,6 @@ async function lockWinners(weekStart: string) {
     })),
   );
 
-  if (error) throw error;
   return getLockedWinners(weekStart);
 }
 
@@ -240,14 +205,10 @@ export async function POST(request: Request) {
       );
       await bumpProfileSignal(winner.user_id);
 
-      await supabaseAdmin
-        .from("title_rush_winners")
-        .update({
-          premium_until: nextUntil.toISOString(),
-          awarded_at: winner.awarded_at || new Date().toISOString(),
-        })
-        .eq("week_start", weekStart)
-        .eq("user_id", winner.user_id);
+      await markTitleRushWinnerAwarded(weekStart, winner.user_id, {
+        premium_until: nextUntil.toISOString(),
+        awarded_at: winner.awarded_at || new Date().toISOString(),
+      });
 
       if (!winner.awarded_at) {
         await createSocialNotification({
@@ -295,19 +256,9 @@ export async function DELETE(request: Request) {
     const weekStart = isValidWeekStart(body?.week_start)
       ? body.week_start
       : getCurrentWeekStart();
-    const { error, count } = await supabaseAdmin
-      .from("title_rush_scores")
-      .delete({ count: "exact" })
-      .eq("week_start", weekStart);
-
-    if (error) throw error;
-
-    const { error: winnersError, count: winnersCount } = await supabaseAdmin
-      .from("title_rush_winners")
-      .delete({ count: "exact" })
-      .eq("week_start", weekStart);
-
-    if (winnersError) throw winnersError;
+    const deleted = await deleteTitleRushWeek(weekStart);
+    const count = deleted.scores;
+    const winnersCount = deleted.winners;
 
     return NextResponse.json({
       deleted: count || 0,

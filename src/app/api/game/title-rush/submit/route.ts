@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { addTitleRushScore, getTitleRushScore } from "@/lib/social/titleRushStore";
 import { getTitleRushEventStatus } from "@/lib/titleRushEvent";
 import { requireUserId } from "@/lib/social/auth";
 
@@ -81,15 +81,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: existing, error: existingError } = await supabaseAdmin
-      .from("title_rush_scores")
-      .select("id, score, total_rounds, best_streak, updated_at")
-      .eq("user_id", userId)
-      .eq("week_start", weekStart)
-      .maybeSingle();
-
-    if (existingError) throw existingError;
-
+    const existing = await getTitleRushScore(userId, weekStart);
     const current = existing as ExistingScore | null;
     const lastUpdate = current?.updated_at ? new Date(current.updated_at).getTime() : 0;
 
@@ -106,22 +98,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const payload = {
-      user_id: userId,
-      week_start: weekStart,
-      score: (current?.score || 0) + score,
-      total_rounds: (current?.total_rounds || 0) + totalRounds,
-      best_streak: Math.max(current?.best_streak || 0, bestStreak),
-      source_page: sourcePage,
-      updated_at: new Date().toISOString(),
-    };
-
-    const query = current
-      ? supabaseAdmin.from("title_rush_scores").update(payload).eq("id", current.id)
-      : supabaseAdmin.from("title_rush_scores").insert(payload);
-
-    const { error } = await query;
-    if (error) throw error;
+    const payload = await addTitleRushScore({
+      userId,
+      weekStart,
+      score,
+      totalRounds,
+      bestStreak,
+      sourcePage: sourcePage ?? null,
+    });
+    if (!payload) throw new Error("Gagal menyimpan skor.");
 
     return NextResponse.json({
       saved: true,
