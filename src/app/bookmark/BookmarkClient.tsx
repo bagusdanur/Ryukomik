@@ -25,7 +25,7 @@ export default function BookmarkPage() {
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const { user } = useSupabaseUser();
 
-  // Cron push notification membaca tabel bookmark_sync di Supabase; tanpa
+  // Cron push notification membaca tabel bookmark_sync (Postgres lokal); tanpa
   // sinkronisasi, perubahan di halaman ini hanya hidup di localStorage dan
   // notifikasi tidak pernah tahu bookmark-mu berubah. Hanya jalan saat login.
   const syncToServer = () => {

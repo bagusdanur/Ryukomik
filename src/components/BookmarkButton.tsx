@@ -64,7 +64,7 @@ export default function BookmarkButton({
     checkSubscription();
   }, [user]);
 
-  // Sinkronkan bookmark ke tabel bookmark_sync (Supabase): cron push
+  // Sinkronkan bookmark ke tabel bookmark_sync (Postgres lokal): cron push
   // notification membaca tabel itu untuk mencari tahu siapa yang bookmark
   // suatu komik. Tanpa langkah ini bookmark hanya hidup di localStorage,
   // jadi notifikasi chapter baru tidak pernah terkirim. scheduleBookmarkSync
