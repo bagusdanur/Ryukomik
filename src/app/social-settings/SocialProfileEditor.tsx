@@ -13,6 +13,8 @@ type Profile = {
   avatar_url?: string | null;
   avatar_border?: string | null;
   banner_url?: string | null;
+  is_premium?: boolean | null;
+  premium_until?: string | null;
 };
 
 const BORDER_TABS: Array<{ key: "dasar" | "klasik" | "shop" | "event"; label: string }> = [
