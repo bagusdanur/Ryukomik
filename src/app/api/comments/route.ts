@@ -416,12 +416,9 @@ export async function POST(req: NextRequest) {
           targetId: String(replyToId),
         });
 
-        // Push subscription masih disimpan di Supabase (tidak dimigrasikan).
-        const { supabaseAdmin } = await import("@/lib/supabaseServer");
-        const { data: subs } = await supabaseAdmin
-          .from("push_subscriptions")
-          .select("endpoint, p256dh, auth")
-          .eq("user_id", replyToUserId);
+        // Subscription push dibaca dari Postgres lokal (bukan Supabase).
+        const { listPushSubscriptions } = await import("@/lib/social/pushStore");
+        const subs = await listPushSubscriptions(replyToUserId);
 
         if (subs && subs.length > 0) {
           const webPush = await import("web-push");

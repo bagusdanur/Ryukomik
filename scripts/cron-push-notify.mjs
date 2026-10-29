@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import pg from "pg";
 import webPush from "web-push";
 import dotenv from "dotenv";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
@@ -19,6 +20,15 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !VAPID_PUBLIC_KEY || !VAPID_PRIVAT
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+// notified_chapters + push_subscriptions sudah pindah ke Postgres lokal.
+const SOCIAL_DB_URL = process.env.SOCIAL_DATABASE_URL;
+if (!SOCIAL_DB_URL) {
+  console.error("SOCIAL_DATABASE_URL belum diset!");
+  process.exit(1);
+}
+const socialDb = new pg.Client({ connectionString: SOCIAL_DB_URL });
+await socialDb.connect();
 webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 const CONTENT_API_URL = "https://api.ryukomik.web.id";
@@ -161,23 +171,14 @@ async function fetchNotifiedSet(pairs) {
   const wanted = new Set(pairs.map((p) => `${p.comic_slug}${SEP}${p.chapter}`));
   const recorded = new Set();
 
-  for (const slugsChunk of chunked(slugs)) {
-    // PostgREST membatasi 1.000 baris per request. Tanpa paginasi, komik dengan
-    // banyak chapter membuat penanda lama tidak terbaca → chapter dianggap baru
-    // dan push yang sama terkirim ulang tiap 15 menit.
-    const PAGE = 1000;
-    for (let from = 0; ; from += PAGE) {
-      const { data, error } = await supabase
-        .from("notified_chapters")
-        .select("comic_slug, chapter")
-        .in("comic_slug", slugsChunk)
-        .range(from, from + PAGE - 1);
-      if (error) throw new Error(`notified_chapters: ${error.message}`);
-      for (const row of data || []) {
-        const key = `${row.comic_slug}${SEP}${row.chapter}`;
-        if (wanted.has(key)) recorded.add(key);
-      }
-      if (!data || data.length < PAGE) break;
+  for (const slugsChunk of chunked(slugs, 50)) {
+    const { rows } = await socialDb.query(
+      "select comic_slug, chapter from notified_chapters where comic_slug = any($1::text[])",
+      [slugsChunk],
+    );
+    for (const row of rows) {
+      const key = `${row.comic_slug}${SEP}${row.chapter}`;
+      if (wanted.has(key)) recorded.add(key);
     }
   }
   return recorded;
@@ -207,12 +208,11 @@ async function fetchBookmarksBySlugSource(slugs, sourceIds) {
 async function fetchSubscriptionsByUser(userIds) {
   const map = new Map();
   for (const usersChunk of chunked(userIds)) {
-    const { data, error } = await supabase
-      .from("push_subscriptions")
-      .select("id, endpoint, p256dh, auth, user_id")
-      .in("user_id", usersChunk);
-    if (error) throw new Error(`push_subscriptions: ${error.message}`);
-    for (const row of data || []) {
+    const { rows } = await socialDb.query(
+      "select id::text as id, endpoint, p256dh, auth, user_id from push_subscriptions where user_id = any($1::uuid[])",
+      [usersChunk],
+    );
+    for (const row of rows) {
       const list = map.get(row.user_id);
       if (list) list.push(row);
       else map.set(row.user_id, [row]);
@@ -369,7 +369,7 @@ async function runCron() {
         notifSentCount += 1;
       } catch (error) {
         if (error.statusCode === 404 || error.statusCode === 410) {
-          await supabase.from("push_subscriptions").delete().eq("id", sub.id);
+          await socialDb.query("delete from push_subscriptions where id = $1", [sub.id]);
         } else {
           console.error("Gagal mengirim ke endpoint push:", error);
         }
@@ -383,10 +383,15 @@ async function runCron() {
   for (const rows of chunked(toMark)) {
     if (DRY_RUN) continue;
     try {
-      const { error } = await supabase
-        .from("notified_chapters")
-        .upsert(rows, { onConflict: "comic_slug,chapter", ignoreDuplicates: true });
-      if (error) console.error("Gagal menandai chapter sebagai terkirim:", error.message);
+      const slugs = rows.map((row) => row.comic_slug);
+      const chapters = rows.map((row) => row.chapter);
+      const sources = rows.map((row) => row.source ?? null);
+      await socialDb.query(
+        `insert into notified_chapters (comic_slug, chapter, source)
+         select * from unnest($1::text[], $2::text[], $3::text[])
+         on conflict (comic_slug, chapter) do nothing`,
+        [slugs, chapters, sources],
+      );
     } catch (error) {
       console.error("Gagal menandai chapter sebagai terkirim:", error?.message || error);
     }
@@ -395,6 +400,7 @@ async function runCron() {
   console.log(`[${new Date().toISOString()}] Selesai. Total push terkirim: ${notifSentCount}`);
   } finally {
     await releaseLock();
+    await socialDb.end().catch(() => {});
   }
 }
 

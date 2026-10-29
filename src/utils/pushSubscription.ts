@@ -2,6 +2,20 @@
 
 import { supabase } from "@/lib/supabaseClient";
 
+/** Subscription push disimpan di Postgres lokal lewat API kita (bukan Supabase). */
+async function pushApi(method: "POST" | "DELETE", body: Record<string, unknown>) {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { ok: false, error: "Login diperlukan." };
+  const res = await fetch("/api/push/subscriptions", {
+    method,
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  const json = (await res.json().catch(() => ({}))) as { error?: string };
+  return { ok: res.ok, error: json?.error };
+}
+
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -50,18 +64,14 @@ export async function subscribePush(userId: string): Promise<boolean> {
     const json = subscription.toJSON();
     const keys = json.keys || {};
 
-    const { error } = await supabase.from("push_subscriptions").upsert(
-      {
-        user_id: userId,
-        endpoint: json.endpoint!,
-        p256dh: keys.p256dh || "",
-        auth: keys.auth || "",
-      },
-      { onConflict: "endpoint" },
-    );
+    const saved = await pushApi("POST", {
+      endpoint: json.endpoint!,
+      p256dh: keys.p256dh || "",
+      auth: keys.auth || "",
+    });
 
-    if (error) {
-      console.error("Gagal simpan push subscription:", error);
+    if (!saved.ok) {
+      console.error("Gagal simpan push subscription:", saved.error);
       return false;
     }
 
@@ -79,11 +89,7 @@ export async function unsubscribePush(userId: string): Promise<boolean> {
       const endpoint = subscription.endpoint;
       await subscription.unsubscribe();
 
-      await supabase
-        .from("push_subscriptions")
-        .delete()
-        .eq("user_id", userId)
-        .eq("endpoint", endpoint);
+      await pushApi("DELETE", { endpoint });
     }
     return true;
   } catch (err) {
