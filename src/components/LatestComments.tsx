@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import { socialQuery } from "@/lib/social/db";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import { listAwardedTitleRushWinners } from "@/lib/social/titleRushStore";
 import { getSocialProfiles } from "@/lib/social/profileLookup";
 import { getXpLeadersCached, type XpLeaderRow } from "@/lib/profileServerCache";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
@@ -228,16 +228,7 @@ const getLatestCommentsCached = unstable_cache(
 const getActiveTitleRushWinnersCached = unstable_cache(
   async () => {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { data, error } = await supabaseAdmin
-      .from("title_rush_winners")
-      .select("user_id, rank")
-      .not("awarded_at", "is", null)
-      .gte("awarded_at", since)
-      .order("rank", { ascending: true })
-      .limit(3);
-
-    if (error) return [];
-    return (data || []) as TitleRushWinnerRow[];
+    return (await listAwardedTitleRushWinners(since, undefined, 3)) as TitleRushWinnerRow[];
   },
   ["active-title-rush-winners"],
   { revalidate: 3600, tags: ["title-rush-winners"] },

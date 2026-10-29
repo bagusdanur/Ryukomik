@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabaseServer";
+import {
+  getAwardedTitleRushWinnersDetailed,
+  getTitleRushLeaderboard,
+  getTitleRushWinnerHistory,
+} from "@/lib/social/titleRushStore";
 
 type ScoreRow = {
   id: string;
@@ -61,18 +65,8 @@ function mapScoreRow(row: ScoreRow, index: number) {
 }
 
 async function getActiveTitleWinners(limit = 3) {
-  const { data, error } = await supabaseAdmin
-    .from("title_rush_winners")
-    .select(
-      "id, user_id, rank, score, total_rounds, best_streak, week_start, awarded_at, profiles(username, avatar_url, role, is_premium)",
-    )
-    .not("awarded_at", "is", null)
-    .gte("awarded_at", getActiveTitleSince())
-    .order("rank", { ascending: true })
-    .limit(limit);
-
-  if (error) throw error;
-  return ((data || []) as unknown as WinnerRow[]).map((row, index) => ({
+  const data = await getAwardedTitleRushWinnersDetailed(getActiveTitleSince(), limit);
+  return (data as unknown as WinnerRow[]).map((row, index) => ({
     ...mapScoreRow(
       {
         ...row,
@@ -87,34 +81,12 @@ async function getActiveTitleWinners(limit = 3) {
 export async function GET() {
   try {
     const weekStart = getCurrentWeekStart();
-    const { data, error } = await supabaseAdmin
-      .from("title_rush_scores")
-      .select(
-        "id, user_id, score, total_rounds, best_streak, week_start, updated_at, profiles(username, avatar_url, role, is_premium)",
-      )
-      .eq("week_start", weekStart)
-      .order("score", { ascending: false })
-      .order("best_streak", { ascending: false })
-      .order("updated_at", { ascending: true })
-      .limit(10);
-
-    if (error) throw error;
-
-    const rows = ((data || []) as ScoreRow[]).map(mapScoreRow);
+    const data = await getTitleRushLeaderboard(weekStart, 10);
+    const rows = ((data || []) as unknown as ScoreRow[]).map(mapScoreRow);
     const previousWeekStart = getPreviousWeekStart(weekStart);
     const activeWinners = await getActiveTitleWinners(3);
 
-    const { data: historyData, error: historyError } = await supabaseAdmin
-      .from("title_rush_winners")
-      .select(
-        "id, user_id, rank, score, total_rounds, best_streak, week_start, awarded_at, profiles(username, avatar_url, role, is_premium)",
-      )
-      .lt("week_start", weekStart)
-      .order("week_start", { ascending: false })
-      .order("rank", { ascending: true })
-      .limit(80);
-
-    if (historyError) throw historyError;
+    const historyData = await getTitleRushWinnerHistory(weekStart, 80);
 
     const grouped = new Map<string, WinnerRow[]>();
     for (const row of (historyData || []) as unknown as WinnerRow[]) {

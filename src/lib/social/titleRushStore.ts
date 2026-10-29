@@ -153,6 +153,57 @@ export async function addTitleRushScore(input: {
   return rows[0];
 }
 
+/** Papan peringkat minggu berjalan + profil (role ikut untuk badge). */
+export async function getTitleRushLeaderboard(weekStart: string, limit = 10) {
+  const { rows } = await socialQuery(
+    `select s.id::text as id, s.user_id, s.score, s.total_rounds, s.best_streak,
+            s.week_start::text as week_start, s.updated_at,
+            json_build_object('username', p.username, 'avatar_url', p.avatar_url,
+                              'role', p.role, 'is_premium', p.is_premium) as profiles
+       from title_rush_scores s
+       left join social_profiles p on p.user_id = s.user_id
+      where s.week_start = $1::date
+      order by s.score desc, s.best_streak desc, s.updated_at asc
+      limit $2`,
+    [weekStart, limit],
+  );
+  return rows;
+}
+
+/** Juara aktif (sudah diberi hadiah) lengkap dengan profil. */
+export async function getAwardedTitleRushWinnersDetailed(sinceIso: string, limit = 3) {
+  const { rows } = await socialQuery(
+    `select w.id::text as id, w.user_id, w.rank, w.score, w.total_rounds, w.best_streak,
+            w.week_start::text as week_start, w.awarded_at,
+            json_build_object('username', p.username, 'avatar_url', p.avatar_url,
+                              'role', p.role, 'is_premium', p.is_premium) as profiles
+       from title_rush_winners w
+       left join social_profiles p on p.user_id = w.user_id
+      where w.awarded_at is not null and w.awarded_at >= $1::timestamptz
+      order by w.rank asc
+      limit $2`,
+    [sinceIso, limit],
+  );
+  return rows;
+}
+
+/** Riwayat juara sebelum minggu berjalan. */
+export async function getTitleRushWinnerHistory(beforeWeek: string, limit = 80) {
+  const { rows } = await socialQuery(
+    `select w.id::text as id, w.user_id, w.rank, w.score, w.total_rounds, w.best_streak,
+            w.week_start::text as week_start, w.awarded_at,
+            json_build_object('username', p.username, 'avatar_url', p.avatar_url,
+                              'role', p.role, 'is_premium', p.is_premium) as profiles
+       from title_rush_winners w
+       left join social_profiles p on p.user_id = w.user_id
+      where w.week_start < $1::date
+      order by w.week_start desc, w.rank asc
+      limit $2`,
+    [beforeWeek, limit],
+  );
+  return rows;
+}
+
 /** Juara yang sudah diberi hadiah sejak `since` (badge di leaderboard/komentar). */
 export async function listAwardedTitleRushWinners(sinceIso: string, userIds?: string[], limit?: number) {
   const params: unknown[] = [sinceIso];

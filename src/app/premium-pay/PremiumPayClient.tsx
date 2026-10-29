@@ -315,14 +315,15 @@ export default function PremiumPayClient({ autoEnabled = true }: { autoEnabled?:
       }
       setIsCheckingPending(true);
       try {
-        const { data } = await supabase
-          .from("premium_requests")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("status", "pending")
-          .limit(1);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        const pendingRes = token
+          ? await fetch("/api/premium/request", { headers: { authorization: `Bearer ${token}` }, cache: "no-store" })
+          : null;
+        const pendingJson = pendingRes?.ok ? ((await pendingRes.json()) as { pending?: { id: string } | null }) : null;
+        const data = pendingJson?.pending ? [pendingJson.pending] : [];
 
-        if (data && data.length > 0) {
+        if (data.length > 0) {
           setHasPendingRequest(true);
           markPremiumRequestPending(user.id, data[0].id);
         } else {
@@ -438,17 +439,22 @@ export default function PremiumPayClient({ autoEnabled = true }: { autoEnabled?:
       if (!imgData.success || !imgData.data?.url) {
         throw new Error("Upload gambar gagal. Coba format lain atau kompres file.");
       }
-      const { data: requestRow, error: dbErr } = await supabase.from("premium_requests").insert({
-        user_id: user.id,
-        name: profile?.username || user.email || "User",
-        proof_url: imgData.data.url,
-        package_name: selectedPlan.name,
-        duration_days: selectedPlan.durationDays,
-        amount: selectedPlan.amount,
-        sk_agreed: true,
-        sk_agreed_at: new Date().toISOString(),
-      }).select("id").single();
-      if (dbErr) throw new Error(dbErr.message);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Login diperlukan.");
+      const requestRes = await fetch("/api/premium/request", {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          proofUrl: imgData.data.url,
+          packageName: selectedPlan.name,
+          durationDays: selectedPlan.durationDays,
+          amount: selectedPlan.amount,
+        }),
+      });
+      const requestJson = (await requestRes.json().catch(() => ({}))) as { id?: string; error?: string };
+      if (!requestRes.ok) throw new Error(requestJson.error || "Gagal mengirim permintaan.");
+      const requestRow = requestJson.id ? { id: requestJson.id } : null;
 
       markPremiumRequestPending(user.id, requestRow?.id);
       setHasPendingRequest(true);
