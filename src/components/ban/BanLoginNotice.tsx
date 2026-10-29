@@ -20,6 +20,8 @@ type StoredBan = BanInfo & { at: number };
 export default function BanLoginNotice() {
   const [info, setInfo] = useState<BanInfo | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -81,6 +83,48 @@ export default function BanLoginNotice() {
     }
   }, []);
 
+  async function lookupByEmail(email: string) {
+    setChecking(true);
+    setLookupError(null);
+    try {
+      const res = await fetch("/api/ban/lookup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email }),
+        cache: "no-store",
+      });
+      const data = (await res.json().catch(() => null)) as (BanInfo & { banned?: boolean }) | null;
+      if (!data?.banned) {
+        setLookupError("Email ini tidak sedang diblokir.");
+        return;
+      }
+      setInfo({
+        bannedUntil: data.bannedUntil ?? null,
+        permanent: data.permanent,
+        reason: data.reason ?? null,
+        contactUrl: data.contactUrl,
+      });
+      try {
+        localStorage.setItem(
+          "rk-ban-notice",
+          JSON.stringify({
+            bannedUntil: data.bannedUntil ?? null,
+            permanent: data.permanent ?? false,
+            reason: data.reason ?? null,
+            contactUrl: data.contactUrl,
+            at: Date.now(),
+          }),
+        );
+      } catch {
+        /* storage bisa diblokir browser */
+      }
+    } catch {
+      setLookupError("Gagal memeriksa. Coba lagi sebentar.");
+    } finally {
+      setChecking(false);
+    }
+  }
+
   function close() {
     setInfo(null);
     try {
@@ -90,6 +134,7 @@ export default function BanLoginNotice() {
     }
   }
 
+  const hasDetails = Boolean(info?.bannedUntil || info?.permanent || info?.reason);
   if (!mounted || !info) return null;
 
   return createPortal(
@@ -101,7 +146,15 @@ export default function BanLoginNotice() {
       <BanNoticeCard
         info={info}
         title="Akun Masih Diblokir"
-        description="Login tidak bisa dilanjutkan karena akun ini masih diblokir admin."
+        description={
+          hasDetails
+            ? "Login tidak bisa dilanjutkan karena akun ini masih diblokir admin."
+            : "Masukkan email akunmu untuk melihat sampai kapan blokirnya berlaku."
+        }
+        askEmail={!hasDetails}
+        checking={checking}
+        lookupError={lookupError}
+        onEmailSubmit={lookupByEmail}
         onClose={close}
       />
     </div>,

@@ -56,6 +56,10 @@ export default function BanNoticeCard({
   title = "Akun Kamu Diblokir",
   description = "Situs dan akun tidak bisa dipakai sampai blokir dicabut admin.",
   busy = false,
+  checking = false,
+  lookupError = null,
+  askEmail = false,
+  onEmailSubmit,
   onLogout,
   onClose,
 }: {
@@ -63,9 +67,14 @@ export default function BanNoticeCard({
   title?: string;
   description?: string;
   busy?: boolean;
+  checking?: boolean;
+  lookupError?: string | null;
+  askEmail?: boolean;
+  onEmailSubmit?: (email: string) => void;
   onLogout?: () => void;
   onClose?: () => void;
 }) {
+  const [email, setEmail] = useState("");
   const contact = info.contactUrl || DEFAULT_CONTACT;
   const showDetails = Boolean(info.bannedUntil || info.permanent || info.reason);
 
@@ -126,6 +135,38 @@ export default function BanNoticeCard({
           </p>
         </div>
       )}
+
+      {askEmail && onEmailSubmit ? (
+        <form
+          className="mt-4 space-y-2 text-left"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (email.trim()) onEmailSubmit(email.trim());
+          }}
+        >
+          <label className="block text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
+            Cek sisa blokir
+          </label>
+          <input
+            type="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="Email akun yang diblokir"
+            className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+            style={{ background: "var(--surface-2)", border: "1px solid var(--line-soft)", color: "var(--foreground)" }}
+          />
+          <button
+            type="submit"
+            disabled={checking}
+            className="w-full rounded-xl px-3 py-2 text-xs font-bold transition hover:bg-white/[0.06] disabled:opacity-50"
+            style={{ border: "1px solid var(--line-soft)" }}
+          >
+            {checking ? "Memeriksa..." : "Tampilkan sisa waktu"}
+          </button>
+          {lookupError ? <p className="text-[10px]" style={{ color: "#fb7185" }}>{lookupError}</p> : null}
+        </form>
+      ) : null}
 
       <a
         href={contact}

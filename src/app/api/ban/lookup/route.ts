@@ -7,11 +7,14 @@ export const runtime = "nodejs";
 /**
  * Detail blokir untuk layar login.
  *
- * Saat akun diblokir, Supabase mencabut sesi sehingga tidak ada token untuk
- * memanggil /api/me/ban-status. Klien hanya menyimpan user id terakhir yang
- * berhasil login (localStorage `rk-last-user`), jadi endpoint ini menerima id
- * itu dan hanya membalas data blokir — bukan data profil lain. Id bersifat UUID
- * (tidak bisa ditebak) dan permintaan dibatasi per IP.
+ * Supabase mencabut sesi saat akun diblokir, jadi tidak ada token. Klien bisa
+ * mengirim salah satu:
+ *  - `userId` : user id terakhir yang tersimpan di perangkat (paling cepat), atau
+ *  - `email`  : dicari lewat Supabase Admin (filter exact) saat perangkat tidak
+ *               punya simpanan (mis. login dari HP/browser lain).
+ *
+ * Balasan hanya berisi data blokir, tidak pernah profil lain. Dibatasi per IP
+ * supaya tidak bisa dipakai menebak-nebak status akun orang lain.
  */
 
 const WINDOW_MS = 60_000;
@@ -29,20 +32,55 @@ function rateLimited(ip: string) {
   return entry.count > MAX_PER_WINDOW;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type AuthUser = { id?: string; email?: string | null; banned_until?: string | null };
+
+/** Cari user id + banned_until dari Supabase Auth berdasarkan email exact. */
+async function findAuthUserByEmail(email: string): Promise<AuthUser | null> {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!base || !key) return null;
+  try {
+    const res = await fetch(`${base}/auth/v1/admin/users?filter=${encodeURIComponent(email)}`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { users?: AuthUser[] } | AuthUser[];
+    const list = Array.isArray(json) ? json : json.users ?? [];
+    return list.find((entry) => entry.email?.toLowerCase() === email.toLowerCase()) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
     "unknown";
   if (rateLimited(ip)) {
-    return NextResponse.json({ banned: false }, { status: 429 });
+    return NextResponse.json({ banned: false, error: "rate_limited" }, { status: 429 });
   }
 
-  const body = (await request.json().catch(() => null)) as { userId?: unknown } | null;
-  const userId = typeof body?.userId === "string" ? body.userId.trim() : "";
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
-    return NextResponse.json({ banned: false });
+  const body = (await request.json().catch(() => null)) as { userId?: unknown; email?: unknown } | null;
+  const rawUserId = typeof body?.userId === "string" ? body.userId.trim() : "";
+  const rawEmail = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+
+  let userId = UUID.test(rawUserId) ? rawUserId : "";
+  let authBannedUntil: string | null = null;
+
+  if (!userId && EMAIL.test(rawEmail)) {
+    const authUser = await findAuthUserByEmail(rawEmail);
+    if (authUser?.id) {
+      userId = authUser.id;
+      authBannedUntil = authUser.banned_until ?? null;
+    }
   }
+
+  if (!userId) return NextResponse.json({ banned: false });
 
   try {
     const { rows } = await socialQuery<{
@@ -52,14 +90,21 @@ export async function POST(request: Request) {
     }>("select is_banned, banned_until, ban_reason from social_profiles where user_id = $1", [userId]);
 
     const row = rows[0];
-    const ban = evaluateBan(row);
-    if (!ban.banned) return NextResponse.json({ banned: false });
+    const localBan = evaluateBan(row);
+
+    // Blokir bisa hanya ada di Auth (mis. di-ban dari dashboard Supabase).
+    const authUntil = authBannedUntil ? Date.parse(authBannedUntil) : NaN;
+    const authBanActive = Number.isFinite(authUntil) && authUntil > Date.now();
+
+    if (!localBan.banned && !authBanActive) {
+      return NextResponse.json({ banned: false });
+    }
 
     return NextResponse.json(
       {
         banned: true,
-        permanent: ban.permanent,
-        bannedUntil: ban.expiresAt ?? row?.banned_until ?? null,
+        permanent: localBan.permanent,
+        bannedUntil: localBan.expiresAt ?? row?.banned_until ?? (authBanActive ? authBannedUntil : null),
         reason: row?.ban_reason ?? null,
         contactUrl: process.env.NEXT_PUBLIC_BAN_CONTACT_URL || "https://chat.whatsapp.com/JJjlXcgdm90H5qNaJiXPDV",
       },
