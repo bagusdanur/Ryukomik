@@ -49,7 +49,28 @@ export default function BanGate() {
         });
         if (!res.ok) return;
         const json = (await res.json()) as BanState;
-        if (active) setState(json?.banned ? json : null);
+        if (!active) return;
+        setState(json?.banned ? json : null);
+        try {
+          // Simpan detail blokir supaya peringatan saat login lagi tetap memuat
+          // sisa waktu meski sesi sudah dicabut Auth.
+          if (json?.banned) {
+            localStorage.setItem(
+              "rk-ban-notice",
+              JSON.stringify({
+                bannedUntil: json.bannedUntil ?? null,
+                permanent: json.permanent ?? false,
+                reason: json.reason ?? null,
+                contactUrl: json.contactUrl,
+                at: Date.now(),
+              }),
+            );
+          } else {
+            localStorage.removeItem("rk-ban-notice");
+          }
+        } catch {
+          /* storage bisa diblokir browser */
+        }
       } catch {
         // Jaringan bermasalah: jangan salah kunci user.
       }

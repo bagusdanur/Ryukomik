@@ -9,6 +9,8 @@
  * --line-soft, --accent-2. Jangan hardcode warna baru di sini.
  */
 
+import { useEffect, useState } from "react";
+
 export type BanInfo = {
   permanent?: boolean;
   bannedUntil?: string | null;
@@ -17,6 +19,22 @@ export type BanInfo = {
 };
 
 const DEFAULT_CONTACT = "https://chat.whatsapp.com/JJjlXcgdm90H5qNaJiXPDV";
+
+/** "1 hari 3 jam", "2 jam 15 menit", "kurang dari 1 menit". */
+function formatRemaining(bannedUntil: string | null | undefined, now: number) {
+  if (!bannedUntil) return null;
+  const end = Date.parse(bannedUntil);
+  if (!Number.isFinite(end)) return null;
+  const diff = end - now;
+  if (diff <= 0) return "sudah berakhir";
+  const minutes = Math.floor(diff / 60_000);
+  const days = Math.floor(minutes / (60 * 24));
+  const hours = Math.floor((minutes % (60 * 24)) / 60);
+  const mins = minutes % 60;
+  if (days > 0) return `${days} hari ${hours} jam`;
+  if (hours > 0) return `${hours} jam ${mins} menit`;
+  return `${Math.max(1, mins)} menit`;
+}
 
 function formatUntil(info: BanInfo) {
   if (info.permanent || !info.bannedUntil) return "permanen";
@@ -50,6 +68,14 @@ export default function BanNoticeCard({
   const contact = info.contactUrl || DEFAULT_CONTACT;
   const showDetails = Boolean(info.bannedUntil || info.permanent || info.reason);
 
+  // Hitung sisa waktu berkala supaya angka tidak basi saat modal dibiarkan terbuka.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const remaining = formatRemaining(info.bannedUntil, now);
+
   return (
     <div
       role="alertdialog"
@@ -80,6 +106,14 @@ export default function BanNoticeCard({
           className="mt-4 space-y-2 rounded-xl p-3 text-left text-[11px]"
           style={{ background: "var(--surface-2)", border: "1px solid var(--line-soft)" }}
         >
+          {info.bannedUntil ? (
+            <p className="text-white/60">
+              <span className="font-bold text-white/40">Sisa waktu:</span>{" "}
+              <span style={{ color: "var(--accent-2)" }} className="font-bold">
+                {remaining}
+              </span>
+            </p>
+          ) : null}
           {info.bannedUntil || info.permanent ? (
             <p className="text-white/60">
               <span className="font-bold text-white/40">Berakhir:</span> {formatUntil(info)}

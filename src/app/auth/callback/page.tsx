@@ -23,6 +23,13 @@ export default function Callback() {
         return;
       }
 
+      // Login berhasil → penanda blokir lama tidak relevan lagi.
+      try {
+        localStorage.removeItem("rk-ban-notice");
+      } catch {
+        /* storage bisa diblokir browser */
+      }
+
       await supabase.auth.getSession();
 
       const next = params.get("next");
