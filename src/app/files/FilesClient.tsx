@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { FiBookOpen, FiClock, FiFolder, FiHeart, FiSearch, FiUsers } from "react-icons/fi";
+import { FaCrown } from "react-icons/fa";
 import CommunityNotifications from "@/components/social/CommunityNotifications";
 import { socialFetch } from "@/lib/social/client";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
@@ -83,6 +84,7 @@ export default function FilesClient() {
             <p className="mt-1 text-xs text-white/40 sm:text-sm">Timeline, notifikasi, dan semua bacaan tersimpan.</p>
           </div>
           <div className="flex shrink-0 gap-2">
+            <Link href="/border" aria-label="Koleksi border avatar" title="Koleksi border" className="grid h-10 w-10 place-items-center rounded-full border border-white/10 text-amber-200/70 transition hover:bg-white/5 hover:text-amber-200"><FaCrown /></Link>
             <Link href="/connections" aria-label="Koneksi sosial" title="Koneksi sosial" className="grid h-10 w-10 place-items-center rounded-full border border-white/10 text-white/55 transition hover:bg-white/5 hover:text-white"><FiUsers /></Link>
             <CommunityNotifications />
             <Link href={profile?.username ? `/u/${encodeURIComponent(profile.username)}` : "/social-settings"} aria-label="Buka profil sosial" title="Profil sosial" className="shrink-0">

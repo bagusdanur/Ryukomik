@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import UserAvatar from "@/components/UserAvatar";
+import { FaCrown } from "react-icons/fa";
 import { supabase } from "@/lib/supabaseClient";
 import {
   AVATAR_BORDERS,
@@ -121,7 +122,7 @@ export default function BorderGallery() {
                 <p className="flex items-center gap-1 text-[11px] font-bold text-white/80">
                   {border.label}
                   {border.premiumOnly ? (
-                    <span className="rounded bg-amber-400/20 px-1 py-0.5 text-[8px] font-black text-amber-300">PREMIUM</span>
+                    <FaCrown size={10} className="text-amber-300" aria-label="Khusus premium" />
                   ) : null}
                   {border.rankOnly ? (
                     <span className="rounded bg-yellow-400/20 px-1 py-0.5 text-[8px] font-black text-yellow-300">JUARA {border.rankOnly}</span>

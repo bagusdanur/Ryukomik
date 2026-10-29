@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     const userId = await requireUserId(request);
     await ensureSocialProfile(userId);
     const result = await socialQuery(
-      "select user_id as id,username,avatar_url,avatar_border,banner_url,bio,level from social_profiles where user_id=$1",
+      "select user_id as id,username,avatar_url,avatar_border,banner_url,bio,level,is_premium,premium_until from social_profiles where user_id=$1",
       [userId],
     );
     // Dipakai UI untuk menyembunyikan border yang terkunci; penegakannya tetap
@@ -36,7 +36,18 @@ export async function GET(request: Request) {
     const role = await getCachedRole(userId);
     return socialJson(
       {
-        profile: result.rows[0] || null,
+        profile: result.rows[0]
+          ? {
+              ...result.rows[0],
+              // Premium dianggap aktif hanya kalau masa berlakunya belum lewat;
+              // galeri border memakai ini untuk membuka tab Premium.
+              is_premium: Boolean(
+                result.rows[0].is_premium &&
+                  (!result.rows[0].premium_until ||
+                    Date.parse(result.rows[0].premium_until) > Date.now()),
+              ),
+            }
+          : null,
         is_admin: role.isAdmin,
         // Dipakai galeri border: peringkat minggu ini + title terbaik yang pernah diraih.
         ...(await getMarathonStanding(userId).then((standing) => ({

@@ -26,6 +26,7 @@ export default function SocialProfileEditor() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [marathonRank, setMarathonRank] = useState(0);
+  const [isPremium, setIsPremium] = useState(false);
   const [marathonBest, setMarathonBest] = useState(0);
   const [saving, setSaving] = useState(false);
   const [borderTab, setBorderTab] = useState<"dasar" | "klasik" | "shop" | "event">("dasar");
@@ -37,6 +38,7 @@ export default function SocialProfileEditor() {
         setProfile(result.profile);
         setIsAdmin(Boolean(result.is_admin));
         setMarathonRank(Number(result.marathon_rank) || 0);
+        setIsPremium(Boolean(result.profile?.is_premium));
         setMarathonBest(Number(result.marathon_best_rank) || 0);
       })
       .catch((error) => setMessage(error.message));
@@ -70,7 +72,9 @@ export default function SocialProfileEditor() {
       (isAdmin || !isAdminOnlyBorder(border.id)) &&
       // Frame juara maraton hanya tampil untuk peringkat yang sesuai.
       // Title bergantung pada juara minggu berjalan.
-      (isAdmin || !border.rankOnly || border.rankOnly === marathonRank),
+      (isAdmin || !border.rankOnly || border.rankOnly === marathonRank) &&
+      // Frame premium hanya untuk member premium (admin bebas).
+      (isAdmin || !border.premiumOnly || isPremium),
   );
 
   async function save(event: FormEvent) {
