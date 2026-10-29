@@ -6,7 +6,7 @@ import BorderGallery from "@/components/border/BorderGallery";
 export const metadata: Metadata = {
   title: "Koleksi Border Avatar - Ryukomik",
   description:
-    "Semua border avatar Ryukomik: ring warna, frame klasik, dan frame shop. Pilih dan pakai langsung dari profilmu.",
+    "Semua border avatar Ryukomik: ring warna, frame klasik, frame premium, dan frame juara marathon. Pilih dan pakai langsung dari profilmu.",
   alternates: { canonical: "https://ryukomik.my.id/border" },
   openGraph: {
     title: "Koleksi Border Avatar - Ryukomik",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export default function BorderGalleryPage() {
   return (
     <main className="rk-page min-h-dvh pb-24 text-white">
-      <div className="mx-auto max-w-2xl px-4 pt-6">
+      <div className="mx-auto max-w-2xl px-4 pt-20">
         <div className="mb-4 flex items-center gap-3">
           <Link
             href="/social-settings"

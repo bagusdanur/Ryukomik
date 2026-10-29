@@ -18,7 +18,7 @@ type Profile = {
 const BORDER_TABS: Array<{ key: "dasar" | "klasik" | "shop" | "event"; label: string }> = [
   { key: "dasar", label: "Warna" },
   { key: "klasik", label: "Klasik" },
-  { key: "shop", label: "Shop" },
+  { key: "shop", label: "Premium" },
   { key: "event", label: "Event" },
 ];
 

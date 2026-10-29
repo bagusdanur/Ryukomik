@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import NotificationDropdown from "@/components/terbaru/NotificationDropdown";
 import SourcePicker from "@/components/SourcePicker";
 import { SOURCE_MAP, DEFAULT_SOURCE } from "@/config/sources";
@@ -25,6 +26,7 @@ import {
   FaGlobeAsia,
 } from "react-icons/fa"; // Tambah FaBell
 import { FiSearch } from "react-icons/fi";
+import { FaCrown } from "react-icons/fa";
 
 type SourceKey = SourceId;
 
@@ -349,6 +351,15 @@ useEffect(() => {
               </>
             )}
           </div>
+
+          <Link
+            href="/border"
+            aria-label="Koleksi border avatar"
+            title="Koleksi border avatar"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-amber-200/80 transition hover:bg-white/10 hover:text-amber-200"
+          >
+            <FaCrown size={16} />
+          </Link>
 
           <NotificationDropdown
             user={user}

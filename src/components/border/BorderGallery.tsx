@@ -14,7 +14,7 @@ import {
 const TABS: Array<{ key: AvatarBorderGroup; label: string; hint: string }> = [
   { key: "dasar", label: "Warna", hint: "Ring warna sederhana, gratis untuk semua member." },
   { key: "klasik", label: "Klasik", hint: "Frame orisinal Ryukomik." },
-  { key: "shop", label: "Shop", hint: "Frame khusus — belum dibuka untuk umum." },
+  { key: "shop", label: "Premium", hint: "Frame khusus member premium — aktif otomatis selama langganan." },
   { key: "event", label: "Event", hint: "Hadiah event, contohnya Juara 1 Marathon mingguan." },
 ];
 
