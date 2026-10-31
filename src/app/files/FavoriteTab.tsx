@@ -178,6 +178,11 @@ export default function FavoriteTab({ search = "" }: FavoriteTabProps) {
         const lastRead = chapterNumber(readEntry?.lastChapter ?? readEntry?.lastChapterSlug);
         // Chapter baru = chapter terbaru di sumber lebih tinggi dari yang terakhir dibaca.
         const hasNewChapter = latest !== null && (lastRead === null || latest > lastRead);
+        // Selisih chapter baru; dibulatkan ke bawah dan minimal 1.
+        const newCount =
+          latest !== null && lastRead !== null && latest > lastRead
+            ? Math.max(1, Math.floor(latest - lastRead))
+            : null;
         return (
           <div key={item.slug} className="relative group">
             {/* HAPUS */}
@@ -190,7 +195,7 @@ export default function FavoriteTab({ search = "" }: FavoriteTabProps) {
 
             {hasNewChapter ? (
               <span className="absolute right-2 top-2 z-10 rounded-md bg-emerald-400 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-black">
-                New Ch {latest}
+                {newCount !== null ? `+${newCount} Ch` : "New Ch"}
               </span>
             ) : update?.at && Date.now() - Date.parse(update.at) < 7 * 24 * 60 * 60 * 1000 ? (
               <span className="absolute right-2 top-2 z-10 rounded-md bg-cyan-500 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-black">
@@ -203,11 +208,7 @@ export default function FavoriteTab({ search = "" }: FavoriteTabProps) {
                 <img referrerPolicy="no-referrer" src={getProxiedThumbnailUrl(item.image, item.source)} className="h-full w-full object-cover" alt={item.title ?? "Bookmark"} />
               </div>
               <p className="mt-2 text-sm font-bold leading-snug text-white/90 line-clamp-2 transition-colors duration-200 group-hover:text-cyan-100">{item.title}</p>
-              {hasNewChapter ? (
-                <p className="mt-0.5 text-[10px] font-semibold text-emerald-300/80">
-                  Ch. {latest} siap dibaca{lastRead !== null ? ` · kamu di Ch. ${lastRead}` : ""}
-                </p>
-              ) : update?.at ? (
+              {update?.at ? (
                 <p className="mt-0.5 text-[10px] font-semibold text-cyan-200/70">{relativeUpdate(update.at)}</p>
               ) : null}
             </a>
