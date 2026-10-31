@@ -37,11 +37,19 @@ export async function GET(request: Request, props: { params: Promise<{ id: strin
     const { id } = await props.params;
     if (!UUID.test(id)) return NextResponse.json({ error: "id tidak valid." }, { status: 400 });
 
+    const sort = new URL(request.url).searchParams.get("sort") || "newest";
+    const orderBy =
+      sort === "updated"
+        ? "latest_chapter_at desc nulls last, created_at desc"
+        : sort === "oldest"
+          ? "created_at asc"
+          : "created_at desc";
+
     const { rows } = await socialQuery(
-      `select collection_id, source, slug, title, image, position, created_at
+      `select collection_id, source, slug, title, image, position, created_at, latest_chapter_at
          from user_collection_items
         where collection_id = $1 and user_id = $2
-        order by position asc, created_at desc`,
+        order by ${orderBy}`,
       [id, userId],
     );
     return NextResponse.json({ items: rows }, { headers: { "Cache-Control": "private, no-store" } });
@@ -78,6 +86,25 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
         items.map((item) => item.position),
       ],
     );
+    // Tanggal update seri diambil best-effort (cache 1 jam). Kegagalan fetch
+    // tidak boleh menggagalkan penambahan item — kolomnya cuma untuk sorting.
+    const { getSeriesMeta } = await import("@/lib/seriesMeta");
+    await Promise.all(
+      items.slice(0, 20).map(async (item) => {
+        try {
+          const meta = await getSeriesMeta(item.source || "komiku", item.slug);
+          if (meta.latestChapterAt) {
+            await socialQuery(
+              "update user_collection_items set latest_chapter_at = $1 where collection_id = $2 and user_id = $3 and slug = $4",
+              [meta.latestChapterAt, id, userId, item.slug],
+            );
+          }
+        } catch {
+          // biarkan null
+        }
+      }),
+    );
+
     await socialQuery("update user_collections set updated_at = now() where id = $1", [id]);
 
     return NextResponse.json({ success: true, added: items.length });

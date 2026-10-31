@@ -48,6 +48,10 @@ type NormalizedBookmark = {
   source: string;
   title: string;
   image: string;
+  /** Kapan ditambahkan ke koleksi (untuk urutan). */
+  addedAt?: number;
+  /** Tanggal update seri terakhir (untuk urutan "komik terupdate"). */
+  seriesUpdatedAt?: number;
 };
 
 type ComicCollection = {
@@ -71,6 +75,7 @@ type CloudCollectionItemRow = BookmarkItem & {
   collection_id: string;
   position?: number;
   created_at?: string;
+  latest_chapter_at?: string;
 };
 
 type CollectionTabProps = {
@@ -82,11 +87,16 @@ function makeId() {
 }
 
 function normalizeBookmark(item: BookmarkItem): NormalizedBookmark {
+  const raw = item as BookmarkItem & { created_at?: string; latest_chapter_at?: string };
+  const added = raw.created_at ? Date.parse(raw.created_at) : NaN;
+  const updated = raw.latest_chapter_at ? Date.parse(raw.latest_chapter_at) : NaN;
   return {
     slug: item.slug,
     source: item.source || "komiku",
     title: item.title || "Unknown",
     image: item.image || "",
+    addedAt: Number.isFinite(added) ? added : undefined,
+    seriesUpdatedAt: Number.isFinite(updated) ? updated : undefined,
   };
 }
 
@@ -124,6 +134,7 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
   const [loading, setLoading] = useState(true);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [hasLocalCollections, setHasLocalCollections] = useState(false);
+  const [itemSort, setItemSort] = useState<"newest" | "updated" | "oldest">("newest");
 
   useEffect(() => {
     loadCollections();
@@ -273,9 +284,19 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
   const filteredItems = useMemo(() => {
     const items = activeCollection?.items || [];
     const q = search.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((item) => item.title.toLowerCase().includes(q));
-  }, [activeCollection, search]);
+    const filtered = q ? items.filter((item) => item.title.toLowerCase().includes(q)) : items;
+    // Salin dulu: array dari state tidak boleh di-sort in-place.
+    const sorted = [...filtered];
+    if (itemSort === "oldest") {
+      sorted.sort((a, b) => (a.addedAt ?? 0) - (b.addedAt ?? 0));
+    } else if (itemSort === "updated") {
+      // Item tanpa tanggal update ditaruh paling bawah, bukan dibuang.
+      sorted.sort((a, b) => (b.seriesUpdatedAt ?? 0) - (a.seriesUpdatedAt ?? 0));
+    } else {
+      sorted.sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0));
+    }
+    return sorted;
+  }, [activeCollection, search, itemSort]);
 
   const availableBookmarks = useMemo(() => {
     const selected = new Set(
@@ -557,6 +578,29 @@ export default function CollectionTab({ search = "" }: CollectionTabProps) {
                 <FiTrash2 size={16} />
               </button>
             </div>
+          </div>
+
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/35">
+              Urutkan
+            </span>
+            {([
+              ["newest", "Terbaru ditambahkan"],
+              ["updated", "Komik terupdate"],
+              ["oldest", "Terlama"],
+            ] as const).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setItemSort(key)}
+                className={`rounded-lg border px-2.5 py-1 text-[10px] font-bold transition ${
+                  itemSort === key
+                    ? "border-[color:color-mix(in_srgb,var(--accent-2)_30%,transparent)] bg-[color:color-mix(in_srgb,var(--accent-2)_12%,transparent)] text-[var(--accent-2)]"
+                    : "border-white/[0.08] bg-white/[0.04] text-white/50 hover:text-white"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
           {filteredItems.length === 0 ? (
