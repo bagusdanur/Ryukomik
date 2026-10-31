@@ -142,11 +142,11 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
     let lastError: unknown = new Error("Chapter fetch gagal");
     for (let attempt = 0; attempt < 2 && !json; attempt += 1) {
       try {
-        // v=2: kunci cache baru. Entri lama (404/403 dari upstream yang
-        // sempat ter-cache) membuat chapter tampil "tidak ditemukan" padahal
-        // ada, jadi cache lama sengaja tidak dipakai lagi.
+        // v=3: kunci cache baru. Entri lama berisi URL gambar 127.0.0.1 hasil
+        // fallback pertama; versi ini memakai domain API publik. Naikkan versi
+        // setiap kali BENTUK respons backend berubah.
         const res = await fetch(
-          `https://api.ryukomik.web.id/${apiSource}/chapter/${apiSlug}?v=2`,
+          `https://api.ryukomik.web.id/${apiSource}/chapter/${apiSlug}?v=3`,
           {
             next: {
               revalidate: CHAPTER_JSON_TTL,
