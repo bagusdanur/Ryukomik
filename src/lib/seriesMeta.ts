@@ -76,6 +76,63 @@ export const getSeriesMeta = unstable_cache(
   { revalidate: 3600 },
 );
 
+type ProjectApiRow = {
+  cover_url?: string | null;
+  updated_at?: string | null;
+  chapters?: { chapter_number?: string | number | null; uploaded_at?: string | null }[];
+};
+
+/**
+ * Project bukan hasil scrape: chapter & tanggalnya ada di Project API lokal
+ * (127.0.0.1:4101). Dipakai supaya komik project juga dapat badge "New Ch"
+ * dan ikut urutan "terupdate" di Favorit.
+ */
+export const getProjectMeta = unstable_cache(
+  async (slug: string): Promise<SeriesMeta> => {
+    const base = process.env.PROJECT_API_URL?.replace(/\/$/, "");
+    if (!base) return { thumbnail: null, latestChapter: null, latestChapterAt: null };
+    try {
+      // Endpoint detail per slug. Filter ?slug= di endpoint list DIABAIKAN
+      // (selalu mengembalikan project pertama), jadi jangan dipakai di sini.
+      const res = await fetch(`${base}/projects/${encodeURIComponent(slug)}`, {
+        headers: {
+          Accept: "application/json",
+          ...(process.env.PROJECT_API_INTERNAL_TOKEN
+            ? { Authorization: `Bearer ${process.env.PROJECT_API_INTERNAL_TOKEN}` }
+            : {}),
+        },
+        next: { revalidate: 900 },
+      });
+      if (!res.ok) return { thumbnail: null, latestChapter: null, latestChapterAt: null };
+
+      const json = (await res.json()) as { data?: ProjectApiRow };
+      const data = json.data;
+      if (!data) return { thumbnail: null, latestChapter: null, latestChapterAt: null };
+
+      const chapters = Array.isArray(data.chapters) ? data.chapters : [];
+      const latest = chapters.reduce<{ num: number | null; at: string | null }>(
+        (acc, chapter) => {
+          const num = parseChapterNumber(chapter.chapter_number);
+          if (num === null) return acc;
+          if (acc.num !== null && num <= acc.num) return acc;
+          return { num, at: parseDate(chapter.uploaded_at) ?? acc.at };
+        },
+        { num: null, at: null },
+      );
+
+      return {
+        thumbnail: data.cover_url || null,
+        latestChapter: latest.num,
+        latestChapterAt: latest.at ?? parseDate(data.updated_at),
+      };
+    } catch {
+      return { thumbnail: null, latestChapter: null, latestChapterAt: null };
+    }
+  },
+  ["project-meta-v1"],
+  { revalidate: 900 },
+);
+
 export const getProjectCover = unstable_cache(
   async (slug: string): Promise<string | null> => {
     for (const candidate of projectCoverCandidates(slug)) {

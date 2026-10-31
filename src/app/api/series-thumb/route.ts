@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSourceConfig } from "@/config/sources";
-import { getProjectCover, getSeriesMeta } from "@/lib/seriesMeta";
+import { getProjectCover, getProjectMeta, getSeriesMeta } from "@/lib/seriesMeta";
 
 /**
  * Thumbnail + chapter terbaru + tanggal update untuk kartu riwayat/koleksi.
@@ -18,10 +18,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "invalid" }, { status: 400 });
     }
 
-    const meta =
-      config.group === "project"
-        ? { thumbnail: await getProjectCover(slug), latestChapter: null, latestChapterAt: null }
-        : await getSeriesMeta(source, slug);
+    let meta = config.group === "project" ? await getProjectMeta(slug) : await getSeriesMeta(source, slug);
+
+    // Project lama yang belum punya cover_url tetap dicarikan cover di storage.
+    if (config.group === "project" && !meta.thumbnail) {
+      meta = { ...meta, thumbnail: await getProjectCover(slug) };
+    }
 
     const response = NextResponse.json(meta);
     response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=3600");
