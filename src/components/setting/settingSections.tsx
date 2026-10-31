@@ -28,6 +28,7 @@ import {
 } from "./settingsUtils";
 import { RowLeft, Section, StatCard, ThemePreview } from "./settingUi";
 import PushNotifToggle from "@/components/PushNotifToggle";
+import AdultFilterToggle from "@/components/setting/AdultFilterToggle";
 
 type Profile = {
   username?: string | null;
@@ -269,6 +270,14 @@ export function AppearanceSection({
         <RowLeft icon={<FaPalette className="text-white/70" />} label="Tema Website" />
         <ThemePreview themeKey={themeColor} />
       </button>
+    </Section>
+  );
+}
+
+export function ContentFilterSection() {
+  return (
+    <Section label="Konten">
+      <AdultFilterToggle />
     </Section>
   );
 }

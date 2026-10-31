@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AdultGate from "@/components/anime/AdultGate";
 import ContinueWatching from "@/components/anime/ContinueWatching";
+import { adultContentHidden } from "@/lib/adultPrefServer";
 import { nekoImg } from "@/utils/neko";
 
 export const revalidate = 120;
@@ -106,6 +107,7 @@ function CardGrid({ section }: { section: SectionConfig }) {
 }
 
 export default async function TontonPage() {
+  const hideAdult = await adultContentHidden();
   const [anime, donghua, dewasa] = await Promise.all([
     fetchLatest("https://apiv2.ryukomik.web.id/animeid/terbaru"),
     fetchLatest("https://apiv2.ryukomik.web.id/anichin/terbaru"),
@@ -154,7 +156,7 @@ export default async function TontonPage() {
 
       <ContinueWatching />
 
-      {sections.map((section) => {
+      {(hideAdult ? sections.filter((section) => section.key !== "dewasa") : sections).map((section) => {
         const block = (
           <section key={section.key} id={section.key} className="mt-7 scroll-mt-28">
             <div className="mb-3 flex items-end justify-between gap-3 px-5">

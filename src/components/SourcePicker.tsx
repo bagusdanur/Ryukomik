@@ -1,5 +1,7 @@
 "use client";
+import { useEffect, useState } from "react";
 import { FaCheckCircle, FaBookOpen, FaExclamationTriangle, FaFolderOpen } from "react-icons/fa";
+import { ADULT_PREF_EVENT, isAdultHidden } from "@/utils/adultFilter";
 import {
   MANGA_SOURCES,
   ADULT_SOURCES,
@@ -73,6 +75,15 @@ function SectionDivider() {
 }
 
 export default function SourcePicker({ source, onSelect, onAdultGate }: SourcePickerProps) {
+  const [hideAdult, setHideAdult] = useState(false);
+
+  useEffect(() => {
+    setHideAdult(isAdultHidden());
+    const sync = () => setHideAdult(isAdultHidden());
+    window.addEventListener(ADULT_PREF_EVENT, sync);
+    return () => window.removeEventListener(ADULT_PREF_EVENT, sync);
+  }, []);
+
   const handleSelect = (config: SourceConfig) => {
     if (config.gate === "age+login" && onAdultGate) {
       onAdultGate(config.id);
@@ -137,24 +148,28 @@ export default function SourcePicker({ source, onSelect, onAdultGate }: SourcePi
 
         <SectionDivider />
 
-        {/* Adult Group */}
-        <div>
-          <p className="flex items-center gap-1.5 text-[10px] font-semibold text-rose-400/80 uppercase tracking-wider mb-3">
-            <FaExclamationTriangle className="text-[11px]" /> 18+
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {ADULT_SOURCES.map(config => (
-              <SourceChip
-                key={config.id}
-                config={config}
-                isActive={source === config.id}
-                onClick={() => handleSelect(config)}
-              />
-            ))}
-          </div>
-        </div>
+        {/* Adult Group — hilang total saat filter 18+ aktif di Setting */}
+        {!hideAdult && (
+          <>
+            <div>
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold text-rose-400/80 uppercase tracking-wider mb-3">
+                <FaExclamationTriangle className="text-[11px]" /> 18+
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {ADULT_SOURCES.map((config) => (
+                  <SourceChip
+                    key={config.id}
+                    config={config}
+                    isActive={source === config.id}
+                    onClick={() => handleSelect(config)}
+                  />
+                ))}
+              </div>
+            </div>
 
-        <SectionDivider />
+            <SectionDivider />
+          </>
+        )}
 
         {/* Novel Group */}
         <div>
