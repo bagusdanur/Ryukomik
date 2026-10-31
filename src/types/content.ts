@@ -55,6 +55,8 @@ export interface ReaderChapter {
   sourceBroken?: boolean;
   /** status HTTP gambar pertama saat dicek backend. */
   sourceStatus?: number;
+  /** Sumber memblokir scraper (403/Cloudflare) — chapter belum tentu hilang. */
+  blocked?: boolean;
 }
 
 import type { SourceId as ImportedSourceId } from "@/config/sources";

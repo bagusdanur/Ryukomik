@@ -122,18 +122,57 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
     ? await resolveLegacyKiryuuSlug(slugStr)
     : slugStr;
   try {
-    const res = await fetch(
-      `https://api.ryukomik.web.id/${apiSource}/chapter/${apiSlug}`,
-      {
-        next: {
-          revalidate: CHAPTER_JSON_TTL,
-          tags: [`chapter:${source}:${apiSlug}`],
-        },
+    // Backend sesekali 5xx/timeout. Dulu itu langsung dianggap 404 → Google
+    // melihat chapter "hilang" padahal cuma gangguan sesaat. Sekarang:
+    // 404 → null (memang tidak ada), gangguan → dicoba sekali lagi lalu
+    // dilempar sebagai error 500 supaya bisa dicoba ulang.
+    let json: {
+      success?: boolean;
+      mangaId?: unknown;
+      series?: { slug?: unknown };
+      images?: unknown;
+      thumbnail?: unknown;
+      currentChapter?: unknown;
+      title?: unknown;
+      source_broken?: unknown;
+      source_status?: unknown;
+      prev?: unknown;
+      next?: unknown;
+    } | null = null;
+    let lastError: unknown = new Error("Chapter fetch gagal");
+    for (let attempt = 0; attempt < 2 && !json; attempt += 1) {
+      try {
+        // v=2: kunci cache baru. Entri lama (404/403 dari upstream yang
+        // sempat ter-cache) membuat chapter tampil "tidak ditemukan" padahal
+        // ada, jadi cache lama sengaja tidak dipakai lagi.
+        const res = await fetch(
+          `https://api.ryukomik.web.id/${apiSource}/chapter/${apiSlug}?v=2`,
+          {
+            next: {
+              revalidate: CHAPTER_JSON_TTL,
+              tags: [`chapter:${source}:${apiSlug}`],
+            },
+          },
+        );
+        if (res.status === 404) return null;
+        if (res.ok) {
+          const body = (await res.json()) as NonNullable<typeof json> & { message?: string };
+          if (!body.success) {
+            // Sumber memblokir scraper (Cloudflare 403) bukan berarti chapter
+            // dihapus. Jangan jadi 404 — tampilkan halaman gangguan sementara.
+            lastError = new Error(`SUMBER_BLOKIR: ${body.message || "gagal"}`);
+            continue;
+          }
+          json = body;
+          break;
+        }
+        lastError = new Error(`Backend chapter ${res.status}`);
+      } catch (error) {
+        lastError = error;
       }
-    );
-    if (!res.ok) return null;
-    const json = await res.json();
-    if (!json.success) return null;
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+    if (!json) throw lastError;
 
     const mangaId = String(json.mangaId || json.series?.slug || "");
     const qualifyJoseiNavigation = (value: unknown) => {
@@ -146,18 +185,32 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
     const thumbnail = await getSeriesThumbnail(apiSource, mangaId || apiSlug);
     return {
       ...json,
+      title: String(json.title || ""),
       mangaId,
       thumbnail,
-      currentChapter: json.currentChapter || json.title || "",
+      currentChapter: String(json.currentChapter || json.title || ""),
       images: Array.isArray(json.images) ? json.images : [],
       // Ditandai backend ketika gambar pertama chapter sudah 403 di CDN sumber.
       sourceBroken: json.source_broken === true,
       sourceStatus: typeof json.source_status === "number" ? json.source_status : 0,
-      prev: qualifyJoseiNavigation(json.prev),
-      next: qualifyJoseiNavigation(json.next),
+      prev: qualifyJoseiNavigation(json.prev) as string | undefined,
+      next: qualifyJoseiNavigation(json.next) as string | undefined,
     };
-  } catch {
-    return null;
+  } catch (error) {
+    // Gangguan backend/sumber bukan "chapter tidak ada": biarkan error boundary
+    // yang menangani agar crawler tidak menandai halaman ini 404.
+    if (error instanceof Error && error.message.startsWith("SUMBER_BLOKIR")) {
+      // Jangan 404/500: halaman chapter yang sudah ada tetap bisa dibuka dan
+      // pengguna melihat pesan "sumber sedang diblokir" dengan tombol coba lagi.
+      return {
+        title: prettySlug(slugStr),
+        mangaId: slugStr.replace(/-chapter-[\d.]+$/i, ""),
+        currentChapter: "",
+        images: [],
+        blocked: true,
+      };
+    }
+    throw error;
   }
 });
 
@@ -201,6 +254,8 @@ export async function generateMetadata({ params }: ChapterPageProps): Promise<Me
 
   return {
     title: { absolute: `${title} | Ryukomik` },
+    // Chapter yang sumbernya diblokir jangan diindeks sebagai halaman kosong.
+    ...(data?.blocked ? { robots: { index: false, follow: true } } : {}),
     description,
     alternates: {
       canonical: url,
@@ -238,6 +293,34 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
   const data = await getChapter(canonicalSource, slugStr);
 
   if (!data) notFound();
+
+  if (data.blocked) {
+    return (
+      <div className="rk-page flex min-h-[60vh] items-center justify-center px-4 text-white">
+        <div className="rk-card w-full max-w-md rounded-2xl p-6 text-center">
+          <h1 className="text-lg font-black">Sumber komik sedang diblokir</h1>
+          <p className="mt-2 text-sm leading-relaxed text-white/60">
+            Server sumber menolak permintaan sementara, jadi chapter ini belum bisa dimuat.
+            Chapter-nya belum tentu hilang — coba lagi beberapa saat.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <a
+              href={`/chapter/${canonicalSource}/${slugStr}`}
+              className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-black text-black transition hover:bg-cyan-400"
+            >
+              Coba lagi
+            </a>
+            <Link
+              href={buildComicUrl(canonicalSource, String(data.mangaId || ""))}
+              className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold text-white/80 transition hover:text-white"
+            >
+              Halaman komik
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Catat chapter yang benar-benar dirender: /api/xp/read hanya menerima slug
   // yang ada di sini, jadi slug karangan tidak bisa menambah XP/maraton.

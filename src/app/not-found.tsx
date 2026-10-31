@@ -28,7 +28,7 @@ export default function NotFound() {
           <Link href="/search" className="flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.05] backdrop-blur-sm px-5 py-2.5 text-sm font-black text-white/80 transition hover:bg-white/10">
             <FiSearch /> Cari komik
           </Link>
-          <Link href="/pustaka" className="flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.05] backdrop-blur-sm px-5 py-2.5 text-sm font-black text-white/80 transition hover:bg-white/10">
+          <Link href="/list-komik" className="flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.05] backdrop-blur-sm px-5 py-2.5 text-sm font-black text-white/80 transition hover:bg-white/10">
             <FiCompass /> Jelajahi
           </Link>
         </div>
