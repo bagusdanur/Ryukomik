@@ -9,6 +9,7 @@ import type { Chapter, Series } from "@/types/content";
 import { useHistoryStore } from "@/store/historyStore";
 import CommentsSupabase from "@/components/CommentsSupabase";
 import BookmarkButton from "@/components/BookmarkButton";
+import SaveToCollectionButton from "@/components/SaveToCollectionButton";
 import Button from "@/components/Button";
 import { FaArrowLeft, FaHeart, FaCommentDots } from "react-icons/fa";
 import ChapterList from "@/components/ChapterList";
@@ -247,8 +248,14 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
               </span>
             </div>
             {/* TOMBOL SAVED/BOOKMARK */}
-            <div className="mt-4">
+            <div className="mt-4 space-y-2">
               <BookmarkButton
+                slug={slug}
+                source={source}
+                title={data.title}
+                image={data.thumbnail}
+              />
+              <SaveToCollectionButton
                 slug={slug}
                 source={source}
                 title={data.title}
