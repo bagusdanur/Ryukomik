@@ -1,6 +1,8 @@
 "use client";
 
 import { useHistoryStore } from "@/store/historyStore";
+import HistoryThumb from "@/components/history/HistoryThumb";
+import useHistoryThumbBackfill from "@/hooks/useHistoryThumbBackfill";
 
 /** Judul seri dari slug, untuk data lama yang terlanjur menyimpan "Chapter N". */
 function prettifySlug(slug?: string | null) {
@@ -13,9 +15,19 @@ function displayTitle(item: { title?: string | null; comicSlug?: string | null }
   return chapterLike ? prettifySlug(item.comicSlug) : title;
 }
 
+function chapterHref(item: { source?: string | null; lastChapterSlug?: string | null }) {
+  const source = item.source || "komiku";
+  const slug = item.lastChapterSlug || "";
+  if (source === "meionovels") return `/novel/chapter/${slug}`;
+  return `/chapter/${source}/${slug}`;
+}
+
 export default function HistoryPage() {
   const history = useHistoryStore((state) => state.history);
   const clearHistory = useHistoryStore((state) => state.clearHistory);
+
+  // Cover riwayat lama diisi bertahap (maks 12 per kunjungan) lewat cache.
+  useHistoryThumbBackfill(history);
 
   return (
     <div className="rk-page px-4 pb-24 pt-20 text-white md:px-18">
@@ -41,16 +53,25 @@ export default function HistoryPage() {
         {history.map((item, i) => (
           <a
             key={i}
-            href={`/chapter/${item.source || "komiku"}/${item.lastChapterSlug ?? (item as any).slug ?? ""}`}
-            className="rk-card-soft flex flex-col rounded-2xl p-3 transition hover:border-cyan-200/20 md:flex-row md:items-center md:justify-between"
+            href={chapterHref(item)}
+            className="rk-card-soft flex items-center gap-3 rounded-2xl p-3 transition hover:border-cyan-200/20"
           >
-            {/* Title + chapter */}
-            <span className="text-sm md:text-base font-medium">
-              {displayTitle(item)} {item.lastChapter ?? (item as any).chapter}
-            </span>
+            <HistoryThumb
+              thumbnail={item.thumbnail}
+              title={displayTitle(item)}
+              className="h-16 w-11"
+            />
 
-            {/* Date */}
-            <span className="text-xs md:text-sm text-gray-300 mt-1 md:mt-0">
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-2 text-sm font-medium md:text-base">
+                {displayTitle(item)}
+              </p>
+              <p className="mt-0.5 line-clamp-1 text-xs font-semibold text-cyan-200">
+                {item.lastChapter ?? (item as any).chapter ?? ""}
+              </p>
+            </div>
+
+            <span className="ml-2 whitespace-nowrap text-xs text-gray-300 md:text-sm">
               {(item as any).date || (item.updatedAt
                 ? new Date(item.updatedAt).toLocaleDateString("id-ID")
                 : "")}

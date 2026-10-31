@@ -5,6 +5,8 @@ import { FiTrash2 } from "react-icons/fi";
 import { useHistoryStore } from "@/store/historyStore";
 import type { ReadHistoryItem } from "@/types/user";
 import Button from "@/components/Button";
+import HistoryThumb from "@/components/history/HistoryThumb";
+import useHistoryThumbBackfill from "@/hooks/useHistoryThumbBackfill";
 
 
 type HistoryTabProps = {
@@ -137,6 +139,8 @@ const cleanTitle = useCallback((title?: string) => {
   }
 }, [normalizeHistory, historyStore]);
 
+  useHistoryThumbBackfill(data);
+
   const deleteItem = () => {
     if (!confirm) return;
     removeHistory(confirm.comicSlug);
@@ -164,6 +168,12 @@ const cleanTitle = useCallback((title?: string) => {
             className="rk-card-soft group flex items-center justify-between rounded-2xl p-3 transition-colors duration-200 hover:border-cyan-200/20"
           >
             {/* LEFT */}
+            <div className="flex min-w-0 items-center gap-3">
+            <HistoryThumb
+              thumbnail={item.thumbnail}
+              title={item.title}
+              className="h-14 w-10"
+            />
             <div className="flex flex-col gap-1 min-w-0">
               <span className="text-sm font-medium line-clamp-2">
                 {item.title}
@@ -171,6 +181,7 @@ const cleanTitle = useCallback((title?: string) => {
               <span className="text-xs font-semibold text-cyan-200 line-clamp-1">
                 {item.lastChapter}
               </span>
+            </div>
             </div>
 
             {/* RIGHT */}
