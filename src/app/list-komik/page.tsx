@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { permanentRedirect } from "next/navigation";
 import { buildCanonicalUrl, buildComicUrl, normalizeSource } from "@/lib/canonicalUrl";
+import { DEFAULT_SOURCE } from "@/config/sources";
 import type { ListKomikItem } from "@/types/content";
 
 export const revalidate = 600;
@@ -15,7 +16,7 @@ const slugFromLink = (link?: string) => (link || "").split("/").filter(Boolean).
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const query = await searchParams;
   const page = Math.max(1, Number(value(query.page)) || 1);
-  const source = normalizeSource(value(query.source) || "komiku") || "komiku";
+  const source = normalizeSource(value(query.source) || DEFAULT_SOURCE) || DEFAULT_SOURCE;
   const filtered = Boolean(value(query.huruf) || value(query.tipe));
   return {
     title: { absolute: `Daftar Komik Bahasa Indonesia${page > 1 ? ` Halaman ${page}` : ""} | Ryukomik` },
@@ -29,8 +30,8 @@ export default async function KomikList({ searchParams }: Props) {
   const query = await searchParams;
   const rawPage = value(query.page);
   const page = Math.max(1, Number(rawPage) || 1);
-  const source = normalizeSource(value(query.source) || "komiku") || "komiku";
-  if (rawPage === "1") permanentRedirect(source === "komiku" ? "/list-komik" : `/list-komik?source=${source}`);
+  const source = normalizeSource(value(query.source) || DEFAULT_SOURCE) || DEFAULT_SOURCE;
+  if (rawPage === "1") permanentRedirect(source === DEFAULT_SOURCE ? "/list-komik" : `/list-komik?source=${source}`);
   const params = new URLSearchParams({ page: String(page) });
   const huruf = value(query.huruf); const tipe = value(query.tipe);
   if (huruf) params.set("huruf", huruf); if (tipe) params.set("tipe", tipe);
@@ -42,6 +43,38 @@ export default async function KomikList({ searchParams }: Props) {
     const response = await fetch(endpoint, { next: { revalidate: 600 } });
     if (response.ok) payload = await response.json();
   } catch {}
+
+  // Sebagian sumber (mis. komikid) tidak punya endpoint /list. Pakai /pustaka
+  // dengan pemetaan field yang sama supaya katalognya tetap tampil.
+  if (!(payload.data || []).length) {
+    try {
+      const response = await fetch(
+        `https://api.ryukomik.web.id/${source}/pustaka?${params}`,
+        { next: { revalidate: 600 } },
+      );
+      if (response.ok) {
+        const alt = (await response.json()) as {
+          data?: Array<Record<string, unknown>>;
+          total?: number;
+          meta?: { totalItems?: number };
+        };
+        if (Array.isArray(alt.data) && alt.data.length) {
+          payload = {
+            data: alt.data.map((row) => ({
+              slug: String(row.slug ?? ""),
+              title: String(row.title ?? ""),
+              image: String(row.image ?? row.thumbnail ?? ""),
+              status: String(row.status ?? row.type ?? ""),
+            })) as CatalogItem[],
+            total: alt.meta?.totalItems ?? alt.total ?? alt.data.length,
+          };
+        }
+      }
+    } catch {
+      // biarkan kosong; UI menampilkan "Daftar komik belum tersedia"
+    }
+  }
+
   const items = payload.data || [];
   const total = payload.meta?.totalKomik || payload.total || items.length;
   const pageUrl = (nextPage: number) => {

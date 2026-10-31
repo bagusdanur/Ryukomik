@@ -1,12 +1,14 @@
 // app/terbaru/page.jsx
 
 import TerbaruClient from "./TerbaruClient";
+import { DEFAULT_SOURCE } from "@/config/sources";
 import type { Metadata } from "next";
 import type { Dict } from "@/types/common";
 import type { TerbaruFilters, UpdateItem } from "@/types/content";
 
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
-const INITIAL_SOURCE = "komiku";
+// Sumber awal mengikuti slot 1 (default sumber aktif di src/config/sources.ts).
+const INITIAL_SOURCE = DEFAULT_SOURCE;
 
 export const revalidate = 600;
 
