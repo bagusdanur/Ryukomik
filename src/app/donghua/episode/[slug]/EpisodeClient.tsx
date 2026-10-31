@@ -71,7 +71,12 @@ export default function DonghuaEpisodeClient({ data, episodeSlug, seriesSlug, se
         <WatchHistoryTracker
           type="donghua"
           seriesSlug={seriesSlug}
-          title={seriesTitle || data?.title || data?.episodeTitle || null}
+          title={
+            seriesTitle ||
+            (data?.title || data?.episodeTitle || "").replace(/\s*(?:episode|ep)\s*[\d.]+.*$/i, "").trim() ||
+            data?.title ||
+            null
+          }
           thumbnail={data?.thumbnail || null}
           episodeSlug={episodeSlug}
           episodeLabel={data?.episodeTitle?.match(/(?:episode|ep)\s*([\d.]+)/i)?.[1] ? `EP ${data?.episodeTitle?.match(/(?:episode|ep)\s*([\d.]+)/i)?.[1]}` : null}

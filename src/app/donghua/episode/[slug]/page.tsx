@@ -54,8 +54,18 @@ export default async function DonghuaEpisodePage({ params, searchParams }: Route
     <DonghuaEpisodeClient
       data={data}
       episodeSlug={slug}
-      seriesSlug={typeof sp.s === "string" ? sp.s.slice(0, 200) : null}
-      seriesTitle={typeof sp.t === "string" ? sp.t.slice(0, 200) : null}
+      seriesSlug={
+        typeof sp.s === "string" && sp.s.trim()
+          ? sp.s.slice(0, 200)
+          : typeof (data as { navigation?: { allEpisode?: string } } | null)?.navigation?.allEpisode === "string"
+            ? String((data as { navigation?: { allEpisode?: string } }).navigation?.allEpisode).slice(0, 200)
+            : null
+      }
+      seriesTitle={
+        typeof sp.t === "string" && sp.t.trim()
+          ? sp.t.slice(0, 200)
+          : (data as { series?: { title?: string } } | null)?.series?.title || null
+      }
     />
   );
 }

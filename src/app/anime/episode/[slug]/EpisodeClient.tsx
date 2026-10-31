@@ -70,7 +70,7 @@ export default function EpisodeClient({ data, slug, thumbnail, seriesSlug, serie
       <WatchHistoryTracker
         type="anime"
         seriesSlug={seriesSlug}
-        title={seriesTitle || cleanTitle}
+        title={seriesTitle || cleanTitle.replace(/\s*(?:episode|ep)\s*[\d.]+.*$/i, "").trim() || cleanTitle}
         thumbnail={thumbnail}
         episodeSlug={slug}
         episodeLabel={cleanTitle.match(/(?:episode|ep)\s*([\d.]+)/i)?.[1] ? `EP ${cleanTitle.match(/(?:episode|ep)\s*([\d.]+)/i)?.[1]}` : null}

@@ -13,6 +13,8 @@ type RouteProps = {
 
 type AnimeEpisode = {
   title?: string;
+  thumbnail?: string;
+  allEpisode?: string;
   [key: string]: unknown;
 };
 
@@ -80,7 +82,13 @@ export default async function EpisodePage({ params, searchParams }: RouteProps) 
       data={data}
       slug={slug}
       thumbnail={thumbnail}
-      seriesSlug={typeof sp.s === "string" ? sp.s.slice(0, 200) : null}
+      seriesSlug={
+        typeof sp.s === "string" && sp.s.trim()
+          ? sp.s.slice(0, 200)
+          : typeof data.allEpisode === "string" && data.allEpisode.trim()
+            ? data.allEpisode.slice(0, 200)
+            : null
+      }
       seriesTitle={typeof sp.t === "string" ? sp.t.slice(0, 200) : null}
     />
   );
