@@ -21,7 +21,7 @@ export default function MarathonWinnerBadge({
     <span
       className={`inline-flex items-center gap-0.5 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase leading-none tracking-wider ${
         monthly
-          ? "bg-amber-400 text-amber-950 shadow-[0_1px_4px_rgba(251,191,36,0.5)]"
+          ? "bg-violet-400 text-violet-950 shadow-[0_1px_4px_rgba(167,139,250,0.5)]"
           : "bg-sky-400 text-sky-950 shadow-[0_1px_4px_rgba(56,189,248,0.5)]"
       } ${className}`}
       title={`Juara ${rank} Marathon Reading ${monthly ? "Bulanan" : "Mingguan"}`}
