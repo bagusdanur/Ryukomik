@@ -33,6 +33,7 @@ type CommentRow = {
   user_id: string | null;
   avatar_url: string | null;
   is_spoiler: boolean;
+  image_url: string | null;
   created_at: string;
   edited_at: string | null;
   deleted_at: string | null;
@@ -47,6 +48,7 @@ type CreateCommentBody = {
   author_name?: string;
   avatar_url?: string;
   is_spoiler?: boolean;
+  imageUrl?: string;
 };
 
 const COMMENTS_REVALIDATE_SECONDS = 1800;
@@ -100,7 +102,7 @@ async function fetchComments(
   values.push(limit);
 
   const { rows } = await socialQuery<CommentRow>(
-    `select id, content, parent_id, author_name, user_id, avatar_url, is_spoiler,
+    `select id, content, parent_id, author_name, user_id, avatar_url, is_spoiler, image_url,
             created_at, edited_at, deleted_at
        from comments
       where ${conditions.join(" and ")}
@@ -124,6 +126,7 @@ async function fetchComments(
       user_id: item.user_id,
       avatar_url: item.avatar_url,
       is_spoiler: item.is_spoiler,
+      image_url: item.image_url ?? null,
       created_at: item.created_at,
       edited_at: item.edited_at,
       deleted_at: item.deleted_at,
@@ -332,7 +335,7 @@ export async function PATCH(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as CreateCommentBody;
-    const { type, slug, chapter, content, parent_id, author_name, avatar_url, is_spoiler } = body;
+    const { type, slug, chapter, content, parent_id, author_name, avatar_url, is_spoiler, imageUrl } = body;
 
     let tokenUserId: string | null = null;
     let banned = false;
@@ -345,7 +348,29 @@ export async function POST(req: NextRequest) {
 
     const user_id = resolveActorUserId(tokenUserId);
     if (!user_id) return NextResponse.json({ error: "Harus login dulu" }, { status: 401 });
-    if (!type || !content) return NextResponse.json({ error: "Konten atau Type kosong" }, { status: 400 });
+    // Lampiran gambar: hanya https, panjang wajar, host lokal ditolak.
+    let image_url: string | null = null;
+    if (imageUrl !== undefined && imageUrl !== null && String(imageUrl).trim() !== "") {
+      const raw = String(imageUrl).trim();
+      if (raw.length > 2048 || !raw.startsWith("https://")) {
+        return NextResponse.json({ error: "URL gambar tidak valid." }, { status: 400 });
+      }
+      let host = "";
+      try {
+        host = new URL(raw).hostname;
+      } catch {
+        return NextResponse.json({ error: "URL gambar tidak valid." }, { status: 400 });
+      }
+      if (["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(host)) {
+        return NextResponse.json({ error: "URL gambar tidak valid." }, { status: 400 });
+      }
+      image_url = raw;
+    }
+
+    // Komentar boleh berupa gambar saja.
+    if (!type || (!content && !image_url)) {
+      return NextResponse.json({ error: "Konten atau Type kosong" }, { status: 400 });
+    }
 
     const people = await getSocialProfiles([user_id]);
     const profile = people.get(user_id);
@@ -378,9 +403,9 @@ export async function POST(req: NextRequest) {
     const finalContent = `${mention}${content}`.slice(0, MAX_CONTENT);
 
     const inserted = await socialQuery<CommentRow>(
-      `insert into comments (id, type, slug, chapter, content, parent_id, author_name, user_id, avatar_url, is_spoiler)
-       values (nextval('comments_id_seq'), $1, $2, $3, $4, $5, $6, $7, $8, $9)
-       returning id, type, slug, chapter, content, parent_id, author_name, user_id, avatar_url, is_spoiler, created_at, edited_at, deleted_at`,
+      `insert into comments (id, type, slug, chapter, content, parent_id, author_name, user_id, avatar_url, is_spoiler, image_url)
+       values (nextval('comments_id_seq'), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       returning id, type, slug, chapter, content, parent_id, author_name, user_id, avatar_url, is_spoiler, image_url, created_at, edited_at, deleted_at`,
       [
         type,
         slug || null,
@@ -391,6 +416,7 @@ export async function POST(req: NextRequest) {
         user_id,
         profile?.avatar_url || avatar_url || null,
         Boolean(is_spoiler),
+        image_url,
       ],
     );
     const comment = inserted.rows[0];

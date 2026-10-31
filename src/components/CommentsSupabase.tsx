@@ -6,6 +6,8 @@ import type { Dispatch, SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
+import { RiImageAddLine, RiCloseLine } from "react-icons/ri";
+import { uploadImageToImgbb } from "@/utils/uploadImage";
 import LoginModal from "@/components/LoginModal";
 import UserBadges from "@/components/UserBadges";
 import ProfilePopover from "@/components/profile/ProfilePopover";
@@ -40,6 +42,7 @@ type CommentRow = {
   content?: string | null;
   created_at?: string | null;
   is_spoiler?: boolean | null;
+  image_url?: string | null;
   author_name?: string | null;
   avatar_url?: string | null;
   avatar_border?: string | null;
@@ -525,12 +528,31 @@ const CommentItem = memo(({
               ) : isDeleted ? (
                 <p className="italic text-gray-500">Komentar telah dihapus.</p>
               ) : (
-                <CommentContent
-                  text={data.content}
-                  isSpoiler={data.is_spoiler}
-                  openSpoiler={openSpoiler}
-                  onOpenSpoiler={() => setOpenSpoiler(true)}
-                />
+                <>
+                  <CommentContent
+                    text={data.content}
+                    isSpoiler={data.is_spoiler}
+                    openSpoiler={openSpoiler}
+                    onOpenSpoiler={() => setOpenSpoiler(true)}
+                  />
+                  {data.image_url && (
+                    <a
+                      href={data.image_url}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                      className="mt-2 block w-fit"
+                    >
+                      <img
+                        src={data.image_url}
+                        alt="Lampiran komentar"
+                        loading="lazy"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
+                        className="max-h-60 rounded-xl border border-white/10 object-contain"
+                      />
+                    </a>
+                  )}
+                </>
               )}
             </div>
 
@@ -673,6 +695,10 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
   // ---- State ----
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [content, setContent] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const [authorName, setAuthorName] = useState("");
   const [sort, setSort] = useState<CommentSort>("new");
   const [loading, setLoading] = useState(false);
@@ -809,7 +835,8 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
 
     const isReply = !!parentId;
     const text = isReply ? replyContent : content;
-    if (!text.trim()) return alert("Komentar kosong!");
+    // Balasan tetap wajib teks; komentar utama boleh gambar saja.
+    if (!text.trim() && !(imageUrl && !isReply)) return alert("Komentar kosong!");
 
     setSending(true);
 
@@ -823,6 +850,7 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
       user_id: user?.id || null,
       avatar_url: profile?.avatar_url || user?.user_metadata?.avatar_url || null,
       parent_id: parentId,
+      imageUrl: !isReply && imageUrl ? imageUrl : undefined,
     };
 
     try {
@@ -847,6 +875,7 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
         } else {
           setContent("");
           setAuthorName("");
+          setImageUrl(null);
         }
         loadComments(true);
       }
@@ -855,11 +884,11 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
     } finally {
       setSending(false);
     }
-  }, [sending, user, profile, replyContent, content, isSpoiler, type, compoundSlug, chapter, commentMap, loadComments]);
+  }, [sending, user, profile, replyContent, content, imageUrl, isSpoiler, type, compoundSlug, chapter, commentMap, loadComments]);
 
   // ---- Memoized values ----
   const isLoggedIn = !!user;
-  const canSubmit = !sending && content.trim().length > 0;
+  const canSubmit = !sending && !imageUploading && (content.trim().length > 0 || !!imageUrl);
 
   // ---- Sticker handlers ----
   const toggleSticker = useCallback(() => setShowSticker((p) => !p), []);
@@ -892,8 +921,32 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
           className="rk-input w-full resize-none rounded-2xl p-4 text-sm"
         />
 
+        {(imageUrl || imageError) && (
+          <div className="mt-3 flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-2">
+            {imageUrl ? (
+              <div className="relative">
+                <img
+                  src={imageUrl}
+                  alt="Pratinjau lampiran"
+                  className="max-h-32 rounded-lg object-contain"
+                />
+                <button
+                  type="button"
+                  onClick={() => setImageUrl(null)}
+                  className="absolute -right-2 -top-2 rounded-full bg-black/80 p-1 text-white/80 hover:text-white"
+                  aria-label="Hapus gambar"
+                >
+                  <RiCloseLine size={14} />
+                </button>
+              </div>
+            ) : (
+              <p className="text-xs text-rose-300">{imageError}</p>
+            )}
+          </div>
+        )}
+
         <div className="flex justify-between mt-4 items-center">
-          <div className="relative">
+          <div className="relative flex items-center gap-1">
             <Button
               type="button"
               onClick={toggleSticker}
@@ -901,6 +954,39 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
             >
               <RiEmojiStickerLine className="text-xl" />
             </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                if (!isLoggedIn) return setShowLogin(true);
+                imageInputRef.current?.click();
+              }}
+              disabled={imageUploading}
+              className="rounded-xl px-2 py-2 text-lg"
+              title="Lampirkan gambar"
+            >
+              <RiImageAddLine className={imageUploading ? "animate-pulse text-xl" : "text-xl"} />
+            </Button>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (!file) return;
+                setImageError(null);
+                setImageUploading(true);
+                try {
+                  setImageUrl(await uploadImageToImgbb(file));
+                } catch (error) {
+                  setImageUrl(null);
+                  setImageError(error instanceof Error ? error.message : "Upload gambar gagal.");
+                } finally {
+                  setImageUploading(false);
+                }
+              }}
+            />
             {showSticker && (
               <StickerPicker onSelect={insertToTextarea} onClose={closeSticker} />
             )}
