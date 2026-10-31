@@ -4,6 +4,8 @@ import { CONTENT_API_URL, fetchContentJson } from "@/lib/contentApi";
 
 type KomikuListItem = {
   link: string;
+  slug?: string;
+  source?: string;
   image?: string;
   title?: string;
   type?: string;
@@ -27,7 +29,46 @@ const toKomikuList = (value: unknown): KomikuListItem[] => {
   return Array.isArray(value) ? value.filter(isKomikuListItem) : [];
 };
 
+/**
+ * Update terbaru dari Komikid (slot 1).
+ *
+ * Komiku sedang diblokir Cloudflare, jadi feed beranda memakai Komikid lebih
+ * dulu. Bentuk data /komikid/pustaka dipetakan ke bentuk yang dipakai kartu
+ * UpdateList (link, slug, chapter_terbaru, waktu).
+ */
+async function getTerbaruKomikid(): Promise<KomikuListItem[]> {
+  const json = await fetchContentJson<{ data?: Array<Record<string, unknown>> }>(
+    `${CONTENT_API_URL}/komikid/pustaka?page=1`,
+    { revalidate: 60, timeoutMs: 27_000 },
+  );
+  const rows = Array.isArray(json?.data) ? json.data : [];
+  return rows
+    .map((row) => {
+      const slug = String(row.slug ?? "").trim();
+      if (!slug) return null;
+      return {
+        link: `${slug}/`,
+        slug,
+        source: "komikid",
+        title: typeof row.title === "string" ? row.title : undefined,
+        image: typeof row.image === "string" ? row.image : undefined,
+        chapter_terbaru:
+          typeof row.chapter_terbaru === "string" ? row.chapter_terbaru : undefined,
+        waktu: typeof row.info === "string" ? row.info : undefined,
+        type: typeof row.type === "string" ? row.type : undefined,
+      } satisfies KomikuListItem;
+    })
+    .filter((item) => item !== null) as KomikuListItem[];
+}
+
 export async function getTerbaru(): Promise<KomikuListItem[]> {
+  try {
+    const komikid = await getTerbaruKomikid();
+    if (komikid.length) return komikid;
+  } catch (error) {
+    console.error("getTerbaru komikid error:", error);
+  }
+
   try {
     const json = await fetchContentJson<unknown>(
       `${CONTENT_API_URL}/komiku/terbaru`,

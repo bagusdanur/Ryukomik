@@ -33,11 +33,15 @@ export type SourceId = (typeof SOURCES)[number]["id"];
 
 // Derived helpers
 export const SOURCE_IDS = SOURCES.map(s => s.id);
-export const VISIBLE_SOURCES = SOURCES.filter(s => s.group !== "legacy");
-export const MANGA_SOURCES = SOURCES.filter(s => s.group === "manga");
-export const ADULT_SOURCES = SOURCES.filter(s => s.group === "adult");
-export const NOVEL_SOURCES = SOURCES.filter(s => s.group === "novel");
-export const PROJECT_SOURCES = SOURCES.filter(s => s.group === "project");
+// Urutan tampil SELALU mengikuti field `order`, bukan urutan deklarasi array.
+// Kalau memakai urutan deklarasi, hasil tukar slot (Komikid <-> Komiku) jadi
+// tampil acak seperti 4, 2, 3, 1, 5.
+const byOrder = (a: SourceConfig, b: SourceConfig) => a.order - b.order;
+export const VISIBLE_SOURCES = SOURCES.filter(s => s.group !== "legacy").sort(byOrder);
+export const MANGA_SOURCES = SOURCES.filter(s => s.group === "manga").sort(byOrder);
+export const ADULT_SOURCES = SOURCES.filter(s => s.group === "adult").sort(byOrder);
+export const NOVEL_SOURCES = SOURCES.filter(s => s.group === "novel").sort(byOrder);
+export const PROJECT_SOURCES = SOURCES.filter(s => s.group === "project").sort(byOrder);
 export const ADULT_SOURCE_IDS = new Set(ADULT_SOURCES.map(s => s.id));
 export const VALID_SOURCE_IDS = new Set(SOURCES.map(s => s.id));
 export const FILTERABLE_SOURCE_IDS = new Set(SOURCES.filter(s => s.hasFilter).map(s => s.id));

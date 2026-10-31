@@ -7,6 +7,8 @@ import { setPendingSource } from "@/store/pendingSource";
 
 type UpdateListItem = {
   link: string;
+  slug?: string;
+  source?: string;
   image?: string;
   title?: string;
   type?: string;
@@ -27,7 +29,13 @@ const typeBadge = (type?: string) => {
   return type?.slice(0, 3).toUpperCase();
 };
 
-export default function UpdateList({ list = [] }: { list?: UpdateListItem[] }) {
+export default function UpdateList({
+  list = [],
+  source = "komiku",
+}: {
+  list?: UpdateListItem[];
+  source?: string;
+}) {
   const router = useRouter();
   const [retryItems, setRetryItems] = useState<UpdateListItem[]>([]);
 
@@ -35,7 +43,7 @@ export default function UpdateList({ list = [] }: { list?: UpdateListItem[] }) {
     if (list.length) return;
 
     let cancelled = false;
-    void fetch("/api/source/komiku/terbaru", { cache: "no-store" })
+    void fetch(`/api/source/${source}/terbaru`, { cache: "no-store" })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
       .then((payload: { data?: UpdateListItem[] }) => {
         if (!cancelled && Array.isArray(payload.data) && payload.data.length) setRetryItems(payload.data);
@@ -43,7 +51,7 @@ export default function UpdateList({ list = [] }: { list?: UpdateListItem[] }) {
       .catch((error) => console.error("Latest update retry failed:", error));
 
     return () => { cancelled = true; };
-  }, [list]);
+  }, [list, source]);
 
   const items = list.length ? list : retryItems;
 
@@ -59,7 +67,7 @@ export default function UpdateList({ list = [] }: { list?: UpdateListItem[] }) {
         <button
           type="button"
           onClick={() => {
-            setPendingSource("josei");
+            setPendingSource(source as never);
             router.push("/terbaru");
           }}
           className="rk-chip rounded-full px-3 py-1.5 text-xs font-bold hover:border-cyan-200/40 hover:text-cyan-100 transition-colors duration-200"
@@ -76,12 +84,13 @@ export default function UpdateList({ list = [] }: { list?: UpdateListItem[] }) {
         <div className="overflow-x-auto pb-3 no-scrollbar">
           <div className="grid auto-cols-[118px] grid-flow-col gap-3 sm:auto-cols-[138px] md:auto-cols-[150px]">
             {items.map((item, idx) => {
-              const slug = getSlugFromLink(item.link);
+              const slug = item.slug || getSlugFromLink(item.link);
+              const itemSource = item.source || source;
 
               return (
                 <SeriesCard
                   key={`${slug}-${idx}`}
-                  href={`/komik/komiku/${slug}`}
+                  href={`/komik/${itemSource}/${slug}`}
                   title={item.title}
                   image={item.image}
                   badge={typeBadge(item.type)}
