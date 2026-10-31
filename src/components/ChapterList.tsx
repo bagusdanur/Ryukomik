@@ -94,8 +94,29 @@ export default function ChapterList({
         c.title?.toLowerCase().includes(keyword.toLowerCase()),
       )
       : chapters;
-    const shouldReverse = source === "project" ? !reverse : reverse;
-    return shouldReverse ? [...filtered].reverse() : filtered;
+
+    // Urutan chapter TIDAK boleh bergantung pada urutan dari sumber: komiku
+    // mengirim menurun, sumber lain menaik. Dulu array-nya cuma di-reverse,
+    // jadi hanya komiku yang "terbaru di atas". Sekarang diurutkan berdasarkan
+    // nomor chapter supaya semua sumber konsisten.
+    const numberOf = (chapter: { title?: string; slug?: string }): number | null => {
+      const fromTitle = String(chapter.title ?? "").match(/(\d+(?:\.\d+)?)(?!.*\d)/);
+      if (fromTitle) return Number(fromTitle[1]);
+      const fromSlug = String(chapter.slug ?? "").match(/(\d+(?:\.\d+)?)(?!.*\d)/);
+      return fromSlug ? Number(fromSlug[1]) : null;
+    };
+
+    // Semua sumber: default `reverse` = chapter terbaru di paling atas.
+    const shouldReverse = reverse;
+    const sorted = [...filtered].sort((a, b) => {
+      const na = numberOf(a);
+      const nb = numberOf(b);
+      if (na === null && nb === null) return 0;
+      if (na === null) return 1;
+      if (nb === null) return -1;
+      return shouldReverse ? nb - na : na - nb;
+    });
+    return sorted;
   }, [data.chapters, keyword, reverse, source]);
 
   const toggleSelect = (slug: string) => {
