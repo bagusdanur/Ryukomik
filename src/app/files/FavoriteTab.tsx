@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FiTrash2 } from "react-icons/fi";
 import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
+import { useHistoryStore } from "@/store/historyStore";
 
 type BookmarkItem = {
   slug: string;
@@ -40,6 +41,12 @@ function writeMeta(meta: Record<string, SeriesUpdate>) {
   }
 }
 
+/** Nomor chapter dari "Chapter 336" / "Ch. 12.5" / slug chapter-336. */
+function chapterNumber(value: unknown): number | null {
+  const match = String(value ?? "").match(/(\d+(?:\.\d+)?)/);
+  return match ? Number(match[1]) : null;
+}
+
 function relativeUpdate(iso: string) {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000;
   if (!Number.isFinite(diff) || diff < 0) return "baru update";
@@ -53,6 +60,7 @@ export default function FavoriteTab({ search = "" }: FavoriteTabProps) {
   const [data, setData] = useState<BookmarkItem[]>([]);
   const [meta, setMeta] = useState<Record<string, SeriesUpdate>>({});
   const attempted = useRef<Set<string>>(new Set());
+  const history = useHistoryStore((state) => state.history);
 
   const normalizeBookmark = (item: BookmarkItem): BookmarkItem =>
     item.source ? item : { ...item, source: "komiku" };
@@ -161,6 +169,15 @@ export default function FavoriteTab({ search = "" }: FavoriteTabProps) {
     <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
       {filtered.map((item) => {
         const update = meta[`${item.source || "komiku"}:${item.slug}`];
+        const latest = update?.chapter ?? null;
+        const readEntry = history.find(
+          (entry) =>
+            entry.comicSlug === item.slug &&
+            (entry.source || "komiku") === (item.source || "komiku"),
+        );
+        const lastRead = chapterNumber(readEntry?.lastChapter ?? readEntry?.lastChapterSlug);
+        // Chapter baru = chapter terbaru di sumber lebih tinggi dari yang terakhir dibaca.
+        const hasNewChapter = latest !== null && (lastRead === null || latest > lastRead);
         return (
           <div key={item.slug} className="relative group">
             {/* HAPUS */}
@@ -171,20 +188,28 @@ export default function FavoriteTab({ search = "" }: FavoriteTabProps) {
               <FiTrash2 />
             </button>
 
-            {update?.at && Date.now() - Date.parse(update.at) < 7 * 24 * 60 * 60 * 1000 && (
+            {hasNewChapter ? (
+              <span className="absolute right-2 top-2 z-10 rounded-md bg-emerald-400 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-black">
+                New Ch {latest}
+              </span>
+            ) : update?.at && Date.now() - Date.parse(update.at) < 7 * 24 * 60 * 60 * 1000 ? (
               <span className="absolute right-2 top-2 z-10 rounded-md bg-cyan-500 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-black">
                 Update
               </span>
-            )}
+            ) : null}
 
             <a href={`/komik/${item.source}/${item.slug}`}>
               <div className="aspect-[3/4] overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04]">
                 <img referrerPolicy="no-referrer" src={getProxiedThumbnailUrl(item.image, item.source)} className="h-full w-full object-cover" alt={item.title ?? "Bookmark"} />
               </div>
               <p className="mt-2 text-sm font-bold leading-snug text-white/90 line-clamp-2 transition-colors duration-200 group-hover:text-cyan-100">{item.title}</p>
-              {update?.at && (
+              {hasNewChapter ? (
+                <p className="mt-0.5 text-[10px] font-semibold text-emerald-300/80">
+                  Ch. {latest} siap dibaca{lastRead !== null ? ` · kamu di Ch. ${lastRead}` : ""}
+                </p>
+              ) : update?.at ? (
                 <p className="mt-0.5 text-[10px] font-semibold text-cyan-200/70">{relativeUpdate(update.at)}</p>
-              )}
+              ) : null}
             </a>
           </div>
         );
