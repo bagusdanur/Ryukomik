@@ -237,7 +237,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
         <div className="px-5 grid grid-cols-2 gap-2 mb-6">
           <Link
             prefetch={false}
-            href={`/donghua/episode/${firstEpisodeSlug}`}
+            href={`/donghua/episode/${firstEpisodeSlug}?s=${encodeURIComponent(slug)}`}
             className="rk-btn-ghost group flex items-center justify-center gap-2 rounded-2xl py-3.5 active:scale-95"
           >
             <div className="w-2 h-2 bg-white/20 rounded-full transition-colors duration-200 group-hover:bg-white/50" />
@@ -250,7 +250,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
           </Link>
           <Link
             prefetch={false}
-            href={`/donghua/episode/${latestEpisodeSlug}`}
+            href={`/donghua/episode/${latestEpisodeSlug}?s=${encodeURIComponent(slug)}`}
             className="flex items-center justify-center gap-2 py-3.5 rounded-2xl active:scale-95"
             style={{
               background: "#ff9f1c",
@@ -426,7 +426,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                 <Link
                   prefetch={false}
                   key={ep.slug ?? `${ep.num}-${ep.displayNum}`}
-                  href={`/donghua/episode/${ep.slug ?? ""}`}
+                  href={`/donghua/episode/${ep.slug ?? ""}?s=${encodeURIComponent(slug)}`}
                   className="rk-card-soft group flex items-center gap-3 rounded-2xl p-3"
                 >
                   {/* Number box */}

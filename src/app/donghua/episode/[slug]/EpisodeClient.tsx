@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
+import WatchHistoryTracker from "@/components/anime/WatchHistoryTracker";
 
 type DonghuaPlayer = {
   label?: string;
@@ -38,9 +39,12 @@ type DonghuaEpisode = {
 
 type DonghuaEpisodeClientProps = {
   data: DonghuaEpisode | null;
+  episodeSlug?: string;
+  seriesSlug?: string | null;
+  seriesTitle?: string | null;
 };
 
-export default function DonghuaEpisodeClient({ data }: DonghuaEpisodeClientProps) {
+export default function DonghuaEpisodeClient({ data, episodeSlug, seriesSlug, seriesTitle }: DonghuaEpisodeClientProps) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   // Field anichin: episodeTitle, bukan title
@@ -63,6 +67,16 @@ export default function DonghuaEpisodeClient({ data }: DonghuaEpisodeClientProps
 
   return (
     <div className="rk-page text-white pb-28" style={{ fontFamily: "'Syne', sans-serif" }}>
+      {episodeSlug && (
+        <WatchHistoryTracker
+          type="donghua"
+          seriesSlug={seriesSlug}
+          title={seriesTitle || data?.title || data?.episodeTitle || null}
+          thumbnail={data?.thumbnail || null}
+          episodeSlug={episodeSlug}
+          episodeLabel={data?.episodeTitle?.match(/(?:episode|ep)\s*([\d.]+)/i)?.[1] ? `EP ${data?.episodeTitle?.match(/(?:episode|ep)\s*([\d.]+)/i)?.[1]}` : null}
+        />
+      )}
 
       {/* ── PLAYER ── */}
       <div className="w-full bg-[#0a0a0a] relative">

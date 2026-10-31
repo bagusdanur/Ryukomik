@@ -8,6 +8,7 @@ export const dynamic = "force-static";
 
 type RouteProps = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ s?: string; t?: string }>;
 };
 
 type AnimeEpisode = {
@@ -63,8 +64,9 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   };
 }
 
-export default async function EpisodePage({ params }: RouteProps) {
+export default async function EpisodePage({ params, searchParams }: RouteProps) {
   const { slug } = await params;
+  const sp = (await searchParams) || {};
   const data = await getEpisode(slug);
 
   if (!data) notFound();
@@ -73,5 +75,13 @@ export default async function EpisodePage({ params }: RouteProps) {
     typeof data.allEpisode === "string" ? data.allEpisode : undefined
   );
 
-  return <EpisodeClient data={data} slug={slug} thumbnail={thumbnail} />;
+  return (
+    <EpisodeClient
+      data={data}
+      slug={slug}
+      thumbnail={thumbnail}
+      seriesSlug={typeof sp.s === "string" ? sp.s.slice(0, 200) : null}
+      seriesTitle={typeof sp.t === "string" ? sp.t.slice(0, 200) : null}
+    />
+  );
 }

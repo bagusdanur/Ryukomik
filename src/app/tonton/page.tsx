@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AdultGate from "@/components/anime/AdultGate";
+import ContinueWatching from "@/components/anime/ContinueWatching";
 import { nekoImg } from "@/utils/neko";
 
 export const revalidate = 120;
@@ -150,6 +151,8 @@ export default async function TontonPage() {
           Anime, donghua, dan anime dewasa — update terbaru dalam satu tempat.
         </p>
       </div>
+
+      <ContinueWatching />
 
       {sections.map((section) => {
         const block = (

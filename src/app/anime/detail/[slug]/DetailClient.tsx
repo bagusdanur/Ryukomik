@@ -249,7 +249,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
         <div className="px-5 grid grid-cols-2 gap-2 mb-6">
           <Link
             prefetch={false}
-            href={`/anime/episode/${data.firstEpisode?.slug ?? ""}`}
+            href={`/anime/episode/${data.firstEpisode?.slug ?? ""}?s=${encodeURIComponent(slug)}&t=${encodeURIComponent(data?.title ?? "")}`}
             onClick={() => setLoadingEpisode(data.firstEpisode?.title || "Episode 1")}
             className="rk-btn-ghost group flex items-center justify-center gap-2 rounded-2xl py-3.5 active:scale-95"
           >
@@ -263,7 +263,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
           </Link>
           <Link
             prefetch={false}
-            href={`/anime/episode/${data.lastEpisode?.slug ?? ""}`}
+            href={`/anime/episode/${data.lastEpisode?.slug ?? ""}?s=${encodeURIComponent(slug)}&t=${encodeURIComponent(data?.title ?? "")}`}
             onClick={() => setLoadingEpisode(data.lastEpisode?.title || "Episode terbaru")}
             className="flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white active:scale-95"
             style={{ background: "#8b5cf6" }}
@@ -393,7 +393,7 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                 <Link
                   prefetch={false}
                   key={ep.slug ?? `${ep.title}-${ep.num}`}
-                  href={`/anime/episode/${ep.slug ?? ""}`}
+                  href={`/anime/episode/${ep.slug ?? ""}?s=${encodeURIComponent(slug)}&t=${encodeURIComponent(data?.title ?? "")}`}
                   onClick={() => setLoadingEpisode(ep.title)}
                   className="group flex items-center gap-3 p-3 rounded-2xl bg-[var(--surface-1)] border border-white/5 hover:border-[rgba(34,211,238,0.35)] hover:bg-[var(--accent)]/5 transition-colors duration-200"
                 >

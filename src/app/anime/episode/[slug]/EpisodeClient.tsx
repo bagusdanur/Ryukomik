@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import AnimePlayer from "@/components/anime/AnimePlayer";
+import WatchHistoryTracker from "@/components/anime/WatchHistoryTracker";
 import AnimeComments from "@/components/anime/AnimeComments";
 import NobarButton from "@/components/anime/NobarButton";
 import { isCleanPlayer, playerBaseName, playerDisplayName, playerQuality } from "@/lib/anime/playerName";
@@ -35,13 +36,15 @@ type EpisodeClientProps = {
   data: AnimeEpisode | null;
   slug: string;
   thumbnail?: string | null;
+  seriesSlug?: string | null;
+  seriesTitle?: string | null;
 };
 
 /** Server tanpa iklan ("ryu-lokal"): filedon & mega di-resolve jadi <video>
  *  lokal; Blogger bersih dari sananya jadi iframe-nya dipakai langsung.
  *  Definisi aslinya di @/lib/anime/playerName supaya sama dengan nobar. */
 
-export default function EpisodeClient({ data, slug, thumbnail }: EpisodeClientProps) {
+export default function EpisodeClient({ data, slug, thumbnail, seriesSlug, seriesTitle }: EpisodeClientProps) {
   const cleanTitle = data?.title?.replace(" Sub Indo", "") || "";
   // Server "Ryu-lokal" (filedon/mega/blogger = tanpa iklan) selalu diurutkan
   // paling atas dan namanya diseragamkan: "Ryu-lokal 360p", "Ryu-lokal 480p", ...
@@ -64,6 +67,14 @@ export default function EpisodeClient({ data, slug, thumbnail }: EpisodeClientPr
 
   return (
     <div className="rk-page text-white pb-28" style={{ fontFamily: "'Syne', sans-serif" }}>
+      <WatchHistoryTracker
+        type="anime"
+        seriesSlug={seriesSlug}
+        title={seriesTitle || cleanTitle}
+        thumbnail={thumbnail}
+        episodeSlug={slug}
+        episodeLabel={cleanTitle.match(/(?:episode|ep)\s*([\d.]+)/i)?.[1] ? `EP ${cleanTitle.match(/(?:episode|ep)\s*([\d.]+)/i)?.[1]}` : null}
+      />
         
       {/* ── PLAYER ── */}
       {/* AnimePlayer = "ryu-lokal": server yang didukung resolver (filedon) akan

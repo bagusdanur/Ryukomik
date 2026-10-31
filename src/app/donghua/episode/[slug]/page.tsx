@@ -6,6 +6,7 @@ export const dynamic = "force-static";
 
 type RouteProps = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ s?: string; t?: string }>;
 };
 
 type DonghuaEpisode = {
@@ -44,9 +45,17 @@ async function getData(slug: string): Promise<DonghuaEpisode | null> {
   return json.success ? json.data : null;
 }
 
-export default async function DonghuaEpisodePage({ params }: RouteProps) {
+export default async function DonghuaEpisodePage({ params, searchParams }: RouteProps) {
   const { slug } = await params;
+  const sp = (await searchParams) || {};
 
   const data = await getData(slug);
-  return <DonghuaEpisodeClient data={data} />;
+  return (
+    <DonghuaEpisodeClient
+      data={data}
+      episodeSlug={slug}
+      seriesSlug={typeof sp.s === "string" ? sp.s.slice(0, 200) : null}
+      seriesTitle={typeof sp.t === "string" ? sp.t.slice(0, 200) : null}
+    />
+  );
 }
