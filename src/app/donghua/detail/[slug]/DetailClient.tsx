@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useWatchHistoryStore } from "@/store/watchHistoryStore";
 import Button from "@/components/Button";
 
 type DonghuaInfo = {
@@ -54,6 +55,12 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
   const [synopsisOpen, setSynopsisOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sortAsc, setSortAsc] = useState(false);
+  const [historyReady, setHistoryReady] = useState(false);
+  const watched = useWatchHistoryStore((state) =>
+    state.history.find((entry) => entry.seriesSlug === slug),
+  );
+
+  useEffect(() => setHistoryReady(true), []);
 
   const filteredEpisodes = useMemo(() => {
     if (!data?.episodeList) return [];
@@ -352,6 +359,28 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
         {/* ── DIVIDER ── */}
         <div className="mx-5 h-px bg-white/5 mb-6" />
 
+        {historyReady && watched && (
+          <div className="px-5 mb-5">
+            <Link
+              prefetch={false}
+              href={`/donghua/episode/${watched.episodeSlug}?s=${encodeURIComponent(slug)}`}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-[#ff9f1c]/25 bg-[#ff9f1c]/10 px-4 py-3 transition-colors hover:border-[#ff9f1c]/45"
+            >
+              <div className="min-w-0">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-[#ff9f1c]/80">
+                  Kamu sudah menonton
+                </p>
+                <p className="truncate text-sm font-black text-white" style={{ fontFamily: "'Syne', sans-serif" }}>
+                  {watched.episodeLabel || "Episode terakhir"}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-xl bg-[#ff9f1c] px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-[#1a0900]">
+                Lanjut
+              </span>
+            </Link>
+          </div>
+        )}
+
         {/* ── EPISODE LIST ── */}
         <div className="px-5">
           <div className="flex items-center justify-between mb-3">
@@ -460,6 +489,12 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                     </p>
                     <p className="text-[9px] text-white/25 font-medium mt-0.5">{ep.date}</p>
                   </div>
+
+                  {historyReady && watched?.episodeSlug === ep.slug && (
+                    <span className="shrink-0 rounded-md bg-[#ff9f1c]/20 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-[#ff9f1c]">
+                      Terakhir
+                    </span>
+                  )}
 
                   {/* Play button */}
                   <div className="opacity-0 group-hover:opacity-100 shrink-0 transition-opacity duration-200">

@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useWatchHistoryStore } from "@/store/watchHistoryStore";
 import NobarCard from "@/components/anime/NobarCard";
 
 type AnimeGenre = {
@@ -51,6 +52,12 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
   const [search, setSearch] = useState("");
   const [sortAsc, setSortAsc] = useState(false);
   const [loadingEpisode, setLoadingEpisode] = useState("");
+  const [historyReady, setHistoryReady] = useState(false);
+  const watched = useWatchHistoryStore((state) =>
+    state.history.find((entry) => entry.seriesSlug === slug),
+  );
+
+  useEffect(() => setHistoryReady(true), []);
 
   const filteredEpisodes = useMemo(() => {
     const episodes = Array.isArray(data?.episodeList) ? data.episodeList : [];
@@ -325,6 +332,29 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
         {/* ── DIVIDER ── */}
         <div className="mx-5 h-px bg-white/5 mb-6" />
 
+        {historyReady && watched && (
+          <div className="px-5 mb-6">
+            <Link
+              prefetch={false}
+              href={`/anime/episode/${watched.episodeSlug}?s=${encodeURIComponent(slug)}&t=${encodeURIComponent(data?.title ?? "")}`}
+              onClick={() => setLoadingEpisode(watched.episodeLabel || "Lanjut menonton")}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-cyan-200/20 bg-cyan-500/10 px-4 py-3 transition-colors hover:border-cyan-200/40"
+            >
+              <div className="min-w-0">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-cyan-200/70">
+                  Kamu sudah menonton
+                </p>
+                <p className="truncate text-sm font-black text-white" style={{ fontFamily: "'Syne', sans-serif" }}>
+                  {watched.episodeLabel || "Episode terakhir"}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-xl bg-cyan-500 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-black">
+                Lanjut
+              </span>
+            </Link>
+          </div>
+        )}
+
         {/* ── EPISODE LIST ── */}
         <div className="px-5">
           <div className="flex items-center justify-between mb-3">
@@ -395,7 +425,11 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                   key={ep.slug ?? `${ep.title}-${ep.num}`}
                   href={`/anime/episode/${ep.slug ?? ""}?s=${encodeURIComponent(slug)}&t=${encodeURIComponent(data?.title ?? "")}`}
                   onClick={() => setLoadingEpisode(ep.title)}
-                  className="group flex items-center gap-3 p-3 rounded-2xl bg-[var(--surface-1)] border border-white/5 hover:border-[rgba(34,211,238,0.35)] hover:bg-[var(--accent)]/5 transition-colors duration-200"
+                  className={`group flex items-center gap-3 p-3 rounded-2xl bg-[var(--surface-1)] border transition-colors duration-200 hover:bg-[var(--accent)]/5 ${
+                    historyReady && watched?.episodeSlug === ep.slug
+                      ? "border-cyan-400/40"
+                      : "border-white/5 hover:border-[rgba(34,211,238,0.35)]"
+                  }`}
                 >
                   <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 transition-colors duration-200 group-hover:bg-[var(--accent)] shrink-0">
                     <span
@@ -416,6 +450,11 @@ export default function DetailClient({ data, slug }: DetailClientProps) {
                       {ep.date}
                     </p>
                   </div>
+                  {historyReady && watched?.episodeSlug === ep.slug && (
+                    <span className="shrink-0 rounded-md bg-cyan-500/20 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-cyan-200">
+                      Terakhir
+                    </span>
+                  )}
                   <div className="opacity-0 group-hover:opacity-100 shrink-0 transition-opacity duration-200">
                     <div className="w-7 h-7 rounded-full bg-cyan-600 flex items-center justify-center">
                       <svg
