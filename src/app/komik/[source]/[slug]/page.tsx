@@ -12,7 +12,7 @@ import {
   normalizeSource,
 } from "@/lib/canonicalUrl";
 
-export const revalidate = 3600;
+export const revalidate = 300;
 export const dynamic = "force-static";
 
 interface DetailPageProps {
@@ -83,7 +83,7 @@ const getDetail = async (source: string, slug: string): Promise<ComicDetail | nu
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       const res = await fetch(endpoint, {
-        next: { revalidate: 3600 },
+        next: { revalidate: 300 },
         headers: {
           Accept: "application/json",
         },
