@@ -146,7 +146,7 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
         // fallback pertama; versi ini memakai domain API publik. Naikkan versi
         // setiap kali BENTUK respons backend berubah.
         const res = await fetch(
-          `https://api.ryukomik.web.id/${apiSource}/chapter/${apiSlug}?v=3`,
+          `https://api.ryukomik.web.id/${apiSource}/chapter/${apiSlug}?v=4`,
           {
             next: {
               revalidate: CHAPTER_JSON_TTL,
