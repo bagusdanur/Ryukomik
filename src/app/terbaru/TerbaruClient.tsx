@@ -604,6 +604,9 @@ export default function TerbaruPage({
         case "luvyaa":
           url = buildSourceUrl("luvyaa", filterActive ? "pustaka-filter" : "pustaka", params);
           break;
+        case "voratoon":
+          url = buildSourceUrl("voratoon", "pustaka", params);
+          break;
         case "sekte":
           url = buildSourceUrl("sekte", "pustaka-filter", params);
           break;

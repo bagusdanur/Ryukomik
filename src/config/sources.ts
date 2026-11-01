@@ -22,9 +22,11 @@ export const SOURCES: readonly SourceConfig[] = [
   { id: "komikid",    label: "5",       group: "manga",     order: 5, activeColor: "accent",   hasFilter: true },
   // Kiryuu naik ke slot 1: satu-satunya sumber besar yang masih bisa di-scrape.
   { id: "kiryuu",     label: "1",       group: "manga",     order: 1, activeColor: "accent",   hasFilter: true },
-  { id: "sekte",      label: "6",       group: "adult",     order: 6, activeColor: "accent-3", gate: "age+login", hasFilter: true },
-  { id: "doujindesu", label: "7",       group: "adult",     order: 7, activeColor: "accent-3", gate: "age+login", hasFilter: true },
-  { id: "meionovels", label: "Novel",   group: "novel",     order: 8, activeColor: "accent"   },
+  { id: "sekte",      label: "7",       group: "adult",     order: 7, activeColor: "accent-3", gate: "age+login", hasFilter: true },
+  { id: "doujindesu", label: "8",       group: "adult",     order: 8, activeColor: "accent-3", gate: "age+login", hasFilter: true },
+  // VoraToon: situs baru, HTML server-rendered, tidak memblokir IP server.
+  { id: "voratoon",   label: "6",       group: "manga",     order: 6, activeColor: "accent",   hasFilter: false },
+  { id: "meionovels", label: "Novel",   group: "novel",     order: 9, activeColor: "accent"   },
   { id: "project",  label: "Project", group: "project", order: 9, activeColor: "emerald-500", hasFilter: true },
   // Tetap valid untuk URL, histori, bookmark, dan komentar lama, tetapi tidak ditampilkan di pemilih sumber.
   { id: "ikiru", label: "Ikiru Legacy", group: "legacy", order: 99, activeColor: "accent-2" },
