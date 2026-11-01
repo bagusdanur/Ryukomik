@@ -147,6 +147,11 @@ export function clearCachedProfile(userId?: string | null) {
     }
   }
   publishProfile(userId, null);
+  // Siaran null membuat semua subscriber (badge VIP, iklan, frame premium)
+  // jatuh ke "Basic". Dulu tidak ada yang memicu fetch ulang, jadi status
+  // premium hilang sampai halaman di-reload. Ambil ulang di background agar
+  // subscriber segera menerima data yang benar.
+  void loadCachedProfile(userId, { force: true }).catch(() => {});
 }
 
 function fetchProfile(userId: string): Promise<CachedProfile | null> {

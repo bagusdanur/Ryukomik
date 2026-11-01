@@ -10,7 +10,7 @@ import {
 } from "@/components/ThemeColorProvider";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
-import { clearCachedProfile, loadCachedProfile, subscribeProfile } from "@/utils/profileCache";
+import { clearCachedProfile, loadCachedProfile, refreshProfile, subscribeProfile } from "@/utils/profileCache";
 import { createBackup, restoreBackup } from "@/utils/backup";
 import { getCacheSizeMB } from "@/utils/getCacheSizeMB";
 import {
@@ -370,7 +370,10 @@ export default function SettingsClient() {
         const payload = (await response.json().catch(() => ({}))) as { error?: string };
         throw new Error(payload.error || "Gagal menyimpan");
       }
-      clearCachedProfile(user.id);
+      // refreshProfile: cache dibuang lalu langsung diambil ulang. Memakai
+      // clearCachedProfile saja menyiarkan profil null ke subscriber premium
+      // (badge VIP/iklan/frame) sehingga akun tampak "kembali Basic".
+      void refreshProfile(user.id).catch(() => {});
       showToast("success", "Privacy profil diperbarui");
     } catch (error) {
       setPrivacy((current) => ({ ...current, [field]: previous }));
