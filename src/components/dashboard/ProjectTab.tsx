@@ -111,6 +111,7 @@ type Manga = {
   genres: string[];
   is_published: boolean;
   is_spotlight?: boolean;
+  is_adult?: boolean;
   view_count?: number;
   created_at: string;
   deleted_at?: string | null;
@@ -1887,6 +1888,28 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
               />
             </div>
 
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-400/20 bg-rose-400/[.06] px-4 py-3">
+              <div className="flex min-w-0 items-start gap-3">
+                <FiAlertTriangleIcon size={16} className="mt-0.5 shrink-0 text-rose-300" />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-rose-100">Tandai 18+</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-white/45">
+                    Seri ini disembunyikan dari pengunjung yang mengaktifkan filter 18+ di Setting.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={Boolean(mangaForm.is_adult)}
+                aria-label="Tandai 18+"
+                onClick={() => setMangaForm({ ...mangaForm, is_adult: !mangaForm.is_adult })}
+                className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${mangaForm.is_adult ? "bg-rose-500" : "bg-white/15"}`}
+              >
+                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${mangaForm.is_adult ? "left-6" : "left-1"}`} />
+              </button>
+            </div>
+
             <div className="flex items-center justify-end gap-3 border-t border-white/[.06] pt-5">
               <button type="button" onClick={() => setView("mangaList")} className="rounded-xl px-4 py-3 text-sm font-bold text-white/50 transition hover:bg-white/[.06] hover:text-white">Batal</button>
               <button
@@ -2825,6 +2848,11 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                     >
                       ★
                     </button>
+                    {manga.is_adult && (
+                      <span className="rounded-full bg-rose-500/90 px-1.5 py-0.5 text-[9px] font-black text-white">
+                        18+
+                      </span>
+                    )}
                     <span className="flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-sm px-2 py-1 text-[9px] font-bold text-white/80">
                       <FiEyeIcon size={10} />
                       {(manga.view_count || 0).toLocaleString("id-ID")}

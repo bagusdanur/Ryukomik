@@ -38,6 +38,7 @@ export async function GET(request: Request) {
             chapter_terbaru: item.latest_chapter != null ? `Chapter ${item.latest_chapter}` : "",
             type: item.type || "",
             genres: item.genres || [],
+            is_adult: item.is_adult === true,
           }));
 
           const results = (await adultContentHidden())

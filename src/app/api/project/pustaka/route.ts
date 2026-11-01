@@ -66,6 +66,7 @@ export async function GET(request: Request) {
             updated_at: item.latest_chapter_uploaded_at || item.updated_at || null,
             status: item.status || "",
             genres: item.genres || [],
+            is_adult: item.is_adult === true,
           }));
 
           // Filter 18+ global (cookie rk_hide_adult): buang seri project dewasa.

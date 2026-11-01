@@ -28,7 +28,10 @@ export function isAdultProject(item: {
   type_genre?: string | null;
   genres?: string[] | null;
   type?: string | null;
+  is_adult?: boolean | null;
 }): boolean {
+  // Toggle manual dari dashboard Project adalah sumber utama.
+  if (item.is_adult === true) return true;
   if (isAdultGenreText(item.type_genre)) return true;
   const parts = [item.type, ...(item.genres || [])].filter(Boolean) as string[];
   return parts.some((part) => ADULT_GENRES.has(String(part).trim().toLowerCase()));
