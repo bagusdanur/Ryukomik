@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FiTrash2 } from "react-icons/fi";
 import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 import { useHistoryStore } from "@/store/historyStore";
@@ -17,12 +17,12 @@ type FavoriteTabProps = {
 };
 
 /** Meta update per seri, disimpan 12 jam supaya tidak memanggil backend terus. */
-type SeriesUpdate = { at: string; chapter: number | null; fetchedAt: number };
+type SeriesUpdate = { at: string | null; chapter: number | null; fetchedAt: number };
 
 const META_KEY = "rk_fav_updates_v1";
 const META_TTL_MS = 12 * 60 * 60 * 1000;
-/** Batas pemeriksaan per kunjungan: favorit bisa ratusan, jangan dibanjiri. */
-const CHECK_PER_VISIT = 18;
+/** Satu request batch bisa memuat sampai 120 favorit sekaligus. */
+const CHECK_PER_VISIT = 120;
 
 function readMeta(): Record<string, SeriesUpdate> {
   try {
@@ -59,7 +59,6 @@ function relativeUpdate(iso: string) {
 export default function FavoriteTab({ search = "" }: FavoriteTabProps) {
   const [data, setData] = useState<BookmarkItem[]>([]);
   const [meta, setMeta] = useState<Record<string, SeriesUpdate>>({});
-  const attempted = useRef<Set<string>>(new Set());
   const history = useHistoryStore((state) => state.history);
 
   const normalizeBookmark = (item: BookmarkItem): BookmarkItem =>
@@ -78,51 +77,46 @@ export default function FavoriteTab({ search = "" }: FavoriteTabProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Periksa update seri favorit: yang paling lama dicek didahulukan, maksimal
-  // CHECK_PER_VISIT per kunjungan. Hasilnya disimpan agar kunjungan berikutnya
-  // tidak memanggil backend lagi.
+  // Ambil tanggal update SEMUA favorit dalam satu request batch. Sebelumnya
+  // dicek satu per satu maksimal 18 per kunjungan, sehingga sebagian besar
+  // favorit belum punya tanggal dan urutannya jatuh ke "favorit terbaru".
   useEffect(() => {
     if (data.length === 0) return;
-    let cancelled = false;
 
-    const pending = data
-      .map((item) => ({ item, key: `${item.source || "komiku"}:${item.slug}` }))
+    const missing = data
+      .map((item) => ({ key: `${item.source || "komiku"}:${item.slug}` }))
       .filter(({ key }) => {
-        if (attempted.current.has(key)) return false;
         const cached = meta[key];
         return !cached || Date.now() - cached.fetchedAt > META_TTL_MS;
       })
-      .sort((a, b) => (meta[a.key]?.fetchedAt ?? 0) - (meta[b.key]?.fetchedAt ?? 0))
       .slice(0, CHECK_PER_VISIT);
 
-    if (pending.length === 0) return;
+    if (missing.length === 0) return;
 
+    let cancelled = false;
     (async () => {
-      const next: Record<string, SeriesUpdate> = { ...readMeta() };
-      let changed = false;
-      for (const { item, key } of pending) {
-        attempted.current.add(key);
-        try {
-          const res = await fetch(
-            `/api/series-thumb?source=${encodeURIComponent(item.source || "komiku")}&slug=${encodeURIComponent(item.slug)}`,
-          );
-          if (!res.ok) continue;
-          const json = (await res.json()) as { latestChapterAt?: string | null; latestChapter?: number | null };
-          if (json.latestChapterAt) {
-            next[key] = {
-              at: json.latestChapterAt,
-              chapter: json.latestChapter ?? null,
-              fetchedAt: Date.now(),
-            };
-            changed = true;
-          }
-        } catch {
-          // biarkan, dicoba lagi di kunjungan berikutnya
+      try {
+        const query = encodeURIComponent(missing.map((entry) => entry.key).join(","));
+        const res = await fetch(`/api/series-meta?items=${query}`);
+        if (!res.ok) return;
+        const json = (await res.json()) as {
+          items?: Record<string, { at: string | null; chapter: number | null }>;
+        };
+        const next: Record<string, SeriesUpdate> = { ...readMeta() };
+        const fetchedAt = Date.now();
+        for (const [key, value] of Object.entries(json.items || {})) {
+          next[key] = { at: value.at ?? null, chapter: value.chapter ?? null, fetchedAt };
         }
+        // Tandai juga yang tidak punya tanggal supaya tidak diminta terus.
+        for (const { key } of missing) {
+          if (!next[key]) next[key] = { at: null, chapter: null, fetchedAt };
+        }
+        if (cancelled) return;
+        writeMeta(next);
+        setMeta(next);
+      } catch {
+        // biarkan; dicoba lagi pada kunjungan berikutnya
       }
-      if (cancelled || !changed) return;
-      writeMeta(next);
-      setMeta(next);
     })();
 
     return () => {
