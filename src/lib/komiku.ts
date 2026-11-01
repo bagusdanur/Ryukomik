@@ -36,6 +36,31 @@ const toKomikuList = (value: unknown): KomikuListItem[] => {
  * dulu. Bentuk data /komikid/pustaka dipetakan ke bentuk yang dipakai kartu
  * UpdateList (link, slug, chapter_terbaru, waktu).
  */
+async function getTerbaruKiryuu(): Promise<KomikuListItem[]> {
+  const json = await fetchContentJson<{ data?: Array<Record<string, unknown>> }>(
+    `${CONTENT_API_URL}/kiryuu/pustaka?page=1`,
+    { revalidate: 60, timeoutMs: 27_000 },
+  );
+  const rows = Array.isArray(json?.data) ? json.data : [];
+  return rows
+    .map((row) => {
+      const slug = String(row.slug ?? "").trim();
+      if (!slug) return null;
+      return {
+        link: `${slug}/`,
+        slug,
+        source: "kiryuu",
+        title: typeof row.title === "string" ? row.title : undefined,
+        image: typeof row.image === "string" ? row.image : undefined,
+        chapter_terbaru:
+          typeof row.chapter_terbaru === "string" ? row.chapter_terbaru : undefined,
+        waktu: typeof row.info === "string" ? row.info : undefined,
+        type: typeof row.type_genre === "string" ? row.type_genre : undefined,
+      } satisfies KomikuListItem;
+    })
+    .filter((item) => item !== null) as KomikuListItem[];
+}
+
 async function getTerbaruKomikid(): Promise<KomikuListItem[]> {
   const json = await fetchContentJson<{ data?: Array<Record<string, unknown>> }>(
     `${CONTENT_API_URL}/komikid/pustaka?page=1`,
@@ -62,6 +87,14 @@ async function getTerbaruKomikid(): Promise<KomikuListItem[]> {
 }
 
 export async function getTerbaru(): Promise<KomikuListItem[]> {
+  // Slot 1 (Kiryuu) jadi sumber utama feed beranda.
+  try {
+    const kiryuu = await getTerbaruKiryuu();
+    if (kiryuu.length) return kiryuu;
+  } catch (error) {
+    console.error("getTerbaru kiryuu error:", error);
+  }
+
   try {
     const komikid = await getTerbaruKomikid();
     if (komikid.length) return komikid;

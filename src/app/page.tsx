@@ -39,7 +39,7 @@ export default async function Home() {
         <RecruitBanner />
         <RyukomikDiscordBanner />
         {titleRushStatus.enabled && <TitleRushNotice className="pb-3" />}
-        <UpdateList list={list} source="komikid" />
+        <UpdateList list={list} source="kiryuu" />
         <ProjectUpdateList list={projectUpdates} />
         <PopularSection data={popular} />
         <LatestComments />

@@ -11,16 +11,17 @@ export interface SourceConfig {
   hasFilter?: boolean;
 }
 
-export const DEFAULT_SOURCE = "komikid";
+export const DEFAULT_SOURCE = "kiryuu";
 
 export const SOURCES: readonly SourceConfig[] = [
-  // Komiku (komiku.org) sedang diblokir Cloudflare → diturunkan ke slot 4.
+  // Komiku (komiku.org) diblokir Cloudflare → slot 4.
   { id: "komiku",     label: "4",       group: "manga",     order: 4, activeColor: "accent",   hasFilter: true },
   { id: "josei",      label: "2",       group: "manga",     order: 2, activeColor: "accent-2", hasFilter: true },
   { id: "luvyaa",     label: "3",       group: "manga",     order: 3, activeColor: "accent-2", hasFilter: true },
-  // Komikid naik ke slot 1 karena sumbernya masih bisa di-scrape normal.
-  { id: "komikid",    label: "1",       group: "manga",     order: 1, activeColor: "accent",   hasFilter: true },
-  { id: "kiryuu",     label: "5",       group: "manga",     order: 5, activeColor: "accent",   hasFilter: true },
+  // Komikid ikut kena blokir → pindah ke slot 5 (bekas Kiryuu).
+  { id: "komikid",    label: "5",       group: "manga",     order: 5, activeColor: "accent",   hasFilter: true },
+  // Kiryuu naik ke slot 1: satu-satunya sumber besar yang masih bisa di-scrape.
+  { id: "kiryuu",     label: "1",       group: "manga",     order: 1, activeColor: "accent",   hasFilter: true },
   { id: "sekte",      label: "6",       group: "adult",     order: 6, activeColor: "accent-3", gate: "age+login", hasFilter: true },
   { id: "doujindesu", label: "7",       group: "adult",     order: 7, activeColor: "accent-3", gate: "age+login", hasFilter: true },
   { id: "meionovels", label: "Novel",   group: "novel",     order: 8, activeColor: "accent"   },

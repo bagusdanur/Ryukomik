@@ -597,7 +597,9 @@ export default function TerbaruPage({
           url = buildSourceUrl("josei", filterActive ? "pustaka-filter" : "pustaka", params);
           break;
         case "kiryuu":
-          url = buildSourceUrl("kiryuu", "pustaka-filter", params);
+          // pustaka-filter tidak membawa chapter_terbaru (hanya field WP REST),
+          // jadi tanpa filter pakai pustaka yang punya info chapter di kartu.
+          url = buildSourceUrl("kiryuu", filterActive ? "pustaka-filter" : "pustaka", params);
           break;
         case "luvyaa":
           url = buildSourceUrl("luvyaa", filterActive ? "pustaka-filter" : "pustaka", params);
