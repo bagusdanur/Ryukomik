@@ -11,6 +11,7 @@ type SearchSourceId = SourceId | "doujindesu";
 type SearchSource = { id: SearchSourceId; label: string };
 type SearchPageResultItem = Omit<SearchResultItem, "source"> & { source: SearchSourceId };
 
+import { isAdultHidden, ADULT_PREF_EVENT } from "@/utils/adultFilter";
 import {
   MANGA_SOURCES,
   ADULT_SOURCES as ADULT_SOURCE_CONFIGS,
@@ -155,6 +156,22 @@ export default function SearchClient({
   const [adultLoading, setAdultLoading] = useState(false);
   const [adultError, setAdultError] = useState(false);
   const [adultUnlocked, setAdultUnlocked] = useState(false);
+  // Filter 18+ global (Setting) — kalau aktif, panel & hasil Source 6/7 hilang.
+  const [hideAdult, setHideAdult] = useState(false);
+
+  useEffect(() => {
+    setHideAdult(isAdultHidden());
+    const sync = () => setHideAdult(isAdultHidden());
+    window.addEventListener(ADULT_PREF_EVENT, sync);
+    return () => window.removeEventListener(ADULT_PREF_EVENT, sync);
+  }, []);
+
+  useEffect(() => {
+    if (!hideAdult) return;
+    setAdultData([]);
+    setAdultUnlocked(false);
+    setAdultError(false);
+  }, [hideAdult]);
   const [sourceStatus, setSourceStatus] = useState<Record<string, "loading" | "done" | "error">>({});
 
   useEffect(() => {
@@ -233,6 +250,8 @@ export default function SearchClient({
   }, [initialQuery, q]);
 
   async function searchAdultSources() {
+    // Preferensi 18+ aktif → jangan pernah memuat sumber dewasa.
+    if (hideAdult) return;
     if (!q || adultLoading || adultUnlocked) return;
 
     setAdultUnlocked(true);
@@ -273,7 +292,9 @@ export default function SearchClient({
   }
 
   const combinedData = useMemo(() => {
-    const allItems = [...data, ...adultData];
+    const allItems = hideAdult
+      ? data.filter((item) => !ADULT_SOURCE_IDS.has(item.source))
+      : [...data, ...adultData];
     const activeProjectItems = allItems.filter(
       (item) => item.source === "project" && !isInactiveProject(item),
     );
@@ -289,7 +310,7 @@ export default function SearchClient({
           (SOURCE_PRIORITY.get(left.source) ?? Number.MAX_SAFE_INTEGER) -
           (SOURCE_PRIORITY.get(right.source) ?? Number.MAX_SAFE_INTEGER),
       );
-  }, [adultData, data]);
+  }, [adultData, data, hideAdult]);
 
   return (
     <div className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
@@ -329,7 +350,7 @@ export default function SearchClient({
         )}
       </div>
 
-      {q && (
+      {q && !hideAdult && (
         <div className="rk-card mb-5 rounded-2xl p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
