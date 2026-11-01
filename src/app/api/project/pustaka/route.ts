@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { allowSupabaseProjectReadFallback, projectApiUrl } from "@/lib/projectApiServer";
+import { adultContentHidden } from "@/lib/adultPrefServer";
+import { isAdultProject } from "@/lib/adultGenres";
 
 function formatRelativeDate(dateStr: string): string {
   if (!dateStr) return "";
@@ -49,7 +51,7 @@ export async function GET(request: Request) {
         });
         if (upstream.ok) {
           const json = await upstream.json();
-          const results = (json.data || []).map((item: any) => ({
+          const mapped = (json.data || []).map((item: any) => ({
             slug: item.slug,
             title: item.title,
             image: item.cover_url || item.image || "",
@@ -63,7 +65,13 @@ export async function GET(request: Request) {
             chapter_terbaru: item.latest_chapter != null ? `Chapter ${item.latest_chapter}` : "",
             updated_at: item.latest_chapter_uploaded_at || item.updated_at || null,
             status: item.status || "",
+            genres: item.genres || [],
           }));
+
+          // Filter 18+ global (cookie rk_hide_adult): buang seri project dewasa.
+          const results = (await adultContentHidden())
+            ? mapped.filter((item: any) => !isAdultProject(item))
+            : mapped;
 
           const response = NextResponse.json({
             success: true,
@@ -75,6 +83,8 @@ export async function GET(request: Request) {
             "Cache-Control",
             "public, s-maxage=60, stale-while-revalidate=180",
           );
+          // Hasil bergantung cookie filter 18+, jangan disatukan di cache CDN.
+          response.headers.set("Vary", "Cookie");
           return response;
         }
       } catch (upstreamErr) {

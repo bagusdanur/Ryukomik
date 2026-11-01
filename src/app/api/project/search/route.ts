@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { allowSupabaseProjectReadFallback, projectApiUrl } from "@/lib/projectApiServer";
+import { adultContentHidden } from "@/lib/adultPrefServer";
+import { isAdultProject } from "@/lib/adultGenres";
 
 function searchTokens(value: string) {
   return [...new Set(value.toLocaleLowerCase("id-ID").match(/[\p{L}\p{N}]+/gu) || [])]
@@ -26,7 +28,7 @@ export async function GET(request: Request) {
         });
         if (upstream.ok) {
           const json = await upstream.json();
-          const results = (json.data || []).map((item: any) => ({
+          const mapped = (json.data || []).map((item: any) => ({
             slug: item.slug,
             title: item.title,
             image: item.cover_url || item.image || "",
@@ -34,12 +36,20 @@ export async function GET(request: Request) {
             status: item.status || "",
             update: item.status || "",
             chapter_terbaru: item.latest_chapter != null ? `Chapter ${item.latest_chapter}` : "",
+            type: item.type || "",
+            genres: item.genres || [],
           }));
+
+          const results = (await adultContentHidden())
+            ? mapped.filter((item: any) => !isAdultProject(item))
+            : mapped;
+
           const response = NextResponse.json({ success: true, data: results });
           response.headers.set(
             "Cache-Control",
             "public, s-maxage=30, stale-while-revalidate=60",
           );
+          response.headers.set("Vary", "Cookie");
           return response;
         }
       } catch (upstreamErr) {

@@ -13,6 +13,8 @@ import {
 } from "@/utils/titleRushNotification";
 import { fetchCachedNotifications, markNotificationsRead } from "@/utils/notificationFetch";
 import { useHistoryStore } from "@/store/historyStore";
+import { isAdultHidden } from "@/utils/adultFilter";
+import { isAdultProject } from "@/lib/adultGenres";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import type { NotificationItem, SourceId, TerbaruFilters, UpdateItem } from "@/types/content";
 import type { ReadHistoryItem } from "@/types/user";
@@ -544,7 +546,12 @@ export default function TerbaruPage({
       genre2,
       status,
     );
-    const cached = readListingCache(cacheKey, currentSource);
+    // Cache listing Project bisa berisi seri 18+ (dibuat saat toggle mati),
+    // jadi jangan dipakai saat filter 18+ aktif.
+    const cached =
+      currentSource === "project" && isAdultHidden()
+        ? null
+        : readListingCache(cacheKey, currentSource);
     if (cached?.length) {
       setData((prev) => {
         if (p === 1) return cached;
@@ -632,10 +639,21 @@ export default function TerbaruPage({
 
       if (requestId !== requestIdRef.current) return;
 
-      const nextData = normalizeListingItems(json.data, currentSource);
+      // Seri Project menandai dewasa lewat genre (18+/Mature/Ecchi). Saring
+      // sebelum dinormalisasi supaya kartu 18+ tidak muncul saat toggle aktif.
+      const hideAdultNow = isAdultHidden();
+      const rawData = Array.isArray(json.data) ? json.data : [];
+      const visibleRaw =
+        currentSource === "project" && hideAdultNow
+          ? rawData.filter((row: Record<string, unknown>) => !isAdultProject(row))
+          : rawData;
+
+      const nextData = normalizeListingItems(visibleRaw as never, currentSource);
 
       if (nextData.length > 0) {
-        writeListingCache(cacheKey, currentSource, nextData);
+        if (!(currentSource === "project" && hideAdultNow)) {
+          writeListingCache(cacheKey, currentSource, nextData);
+        }
         setData((prev) => {
           if (p === 1) return nextData;
           const existingSlugs = new Set(prev.map((item) => item.slug));

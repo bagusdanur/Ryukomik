@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { permanentRedirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { buildCanonicalUrl, buildComicUrl, normalizeSource } from "@/lib/canonicalUrl";
 import { DEFAULT_SOURCE } from "@/config/sources";
 import type { ListKomikItem } from "@/types/content";
@@ -40,7 +41,17 @@ export default async function KomikList({ searchParams }: Props) {
     const endpoint = source === "project"
       ? `https://ryukomik.my.id/api/project/pustaka?${params}`
       : `https://api.ryukomik.web.id/${source}/list?${params}`;
-    const response = await fetch(endpoint, { next: { revalidate: 600 } });
+    // Endpoint project memfilter 18+ berdasarkan cookie, jadi cookie harus
+    // diteruskan (fetch server tidak membawanya otomatis) dan cache dimatikan
+    // saat filter aktif supaya hasil terfilter tidak tersimpan untuk semua orang.
+    const cookieHeader = (await cookies()).toString();
+    const hideAdult = cookieHeader.includes("rk_hide_adult=1");
+    const response = await fetch(
+      endpoint,
+      hideAdult
+        ? { cache: "no-store", headers: { cookie: cookieHeader } }
+        : { next: { revalidate: 600 } },
+    );
     if (response.ok) payload = await response.json();
   } catch {}
 
