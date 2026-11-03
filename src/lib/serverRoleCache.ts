@@ -2,6 +2,8 @@ import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import { verifyAccessToken } from "@/lib/auth/jwt";
+
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { socialQuery } from "@/lib/social/db";
@@ -82,13 +84,18 @@ export async function getVerifiedUserId(token: string): Promise<string> {
     return cached.userId;
   }
 
-  // JWT project lama (HS256) diverifikasi lokal dengan SUPABASE_JWT_SECRET.
-  // Kalau secret belum diset, pakai jalur lama (JWKS / Auth server).
+  // 1) Token auth lokal (diterbitkan setelah login Google).
+  // 2) Token Supabase lama (masa transisi, sebelum Supabase dimatikan).
+  const ownSecret = process.env.AUTH_JWT_SECRET;
+  const ownClaims = ownSecret ? verifyAccessToken(token, ownSecret) : null;
   const localSecret = process.env.SUPABASE_JWT_SECRET;
   let userId: string | undefined;
   let expSeconds: number | undefined;
 
-  if (localSecret) {
+  if (ownClaims) {
+    userId = ownClaims.sub;
+    expSeconds = ownClaims.exp;
+  } else if (localSecret) {
     const claims = verifyLegacyJwt(token, localSecret);
     if (!claims || typeof claims.sub !== "string" || !claims.sub) {
       throw new Error("Sesi login tidak valid.");
