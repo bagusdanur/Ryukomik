@@ -223,9 +223,36 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
 
   // ── Fullscreen ──
   useEffect(() => {
-    const onFs = () => setIsFullscreen(!!document.fullscreenElement);
+    const onFs = () => {
+      const active = !!document.fullscreenElement;
+      setIsFullscreen(active);
+      if (active) {
+        // Sebagian browser menolak lock saat promise requestFullscreen masih
+        // berjalan; ulangi setelah event fullscreen benar-benar aktif.
+        try {
+          void (
+            screen.orientation as unknown as {
+              lock?: (mode: string) => Promise<void>;
+            }
+          )?.lock?.("landscape");
+        } catch {
+          // diabaikan
+        }
+      }
+      if (!active) {
+        try {
+          (screen.orientation as unknown as { unlock?: () => void })?.unlock?.();
+        } catch {
+          // diabaikan
+        }
+      }
+    };
     document.addEventListener("fullscreenchange", onFs);
-    return () => document.removeEventListener("fullscreenchange", onFs);
+    document.addEventListener("webkitfullscreenchange", onFs as EventListener);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFs);
+      document.removeEventListener("webkitfullscreenchange", onFs as EventListener);
+    };
   }, []);
 
   // ── Sinkronisasi nobar (hanya untuk <video> milik kita) ──
@@ -236,6 +263,21 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
   //   <video src> tanpa crossOrigin tidak butuh CORS — jadi langsung saja.
   // - Selain itu: proxy lokal supaya bebas CORS/hotlink.
   const streamUrl = stream ? (stream.isHls || stream.direct ? stream.url : stream.url_proxy) : null;
+
+  // iOS Safari memakai fullscreen bawaan <video> (tidak memicu
+  // `fullscreenchange`), jadi status fullscreen diambil dari event webkit.
+  useEffect(() => {
+    const video = videoRef.current as HTMLVideoElement | null;
+    if (!video) return;
+    const onBegin = () => setIsFullscreen(true);
+    const onEnd = () => setIsFullscreen(false);
+    video.addEventListener("webkitbeginfullscreen", onBegin);
+    video.addEventListener("webkitendfullscreen", onEnd);
+    return () => {
+      video.removeEventListener("webkitbeginfullscreen", onBegin);
+      video.removeEventListener("webkitendfullscreen", onEnd);
+    };
+  }, [streamUrl]);
   const syncCapable = Boolean(sync && streamUrl && !failed);
   const syncRole = sync?.role ?? null;
   // Callback & state disimpan di ref supaya effect tidak dipasang-ulang tiap
@@ -390,11 +432,47 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
     }
   };
 
+  // Kunci orientasi ke landscape saat fullscreen. Hanya boleh dipanggil
+  // setelah elemen benar-benar masuk fullscreen (syarat browser).
+  const lockLandscape = async () => {
+    try {
+      const orientation = screen.orientation as unknown as {
+        lock?: (mode: string) => Promise<void>;
+      };
+      await orientation?.lock?.("landscape");
+    } catch {
+      // iOS/desktop tidak mendukung; video tetap tampil penuh.
+    }
+  };
+
+  const unlockOrientation = () => {
+    try {
+      (screen.orientation as unknown as { unlock?: () => void })?.unlock?.();
+    } catch {
+      // diabaikan
+    }
+  };
+
   const toggleFullscreen = async () => {
     const el = containerRef.current;
-    if (!el) return;
-    if (document.fullscreenElement) await document.exitFullscreen().catch(() => {});
-    else await el.requestFullscreen?.().catch(() => {});
+    const video = videoRef.current as
+      | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
+      | null;
+
+    if (document.fullscreenElement) {
+      await document.exitFullscreen().catch(() => {});
+      unlockOrientation();
+      return;
+    }
+
+    if (el?.requestFullscreen) {
+      await el.requestFullscreen({ navigationUI: "hide" }).catch(() => {});
+      if (document.fullscreenElement) await lockLandscape();
+      return;
+    }
+
+    // iOS Safari hanya mengizinkan fullscreen pada elemen <video>.
+    video?.webkitEnterFullscreen?.();
   };
 
   const seekTo = (clientX: number) => {
@@ -460,6 +538,36 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
           referrerPolicy="no-referrer"
           frameBorder="0"
         />
+
+        {/* Embed pihak ketiga punya kontrolnya sendiri, tapi fullscreen-nya
+            tidak mengunci landscape. Tombol ini memperbesar wrapper + lock. */}
+        <button
+          type="button"
+          aria-label="Layar penuh"
+          onClick={async (event) => {
+            const wrapper = event.currentTarget.parentElement as HTMLElement | null;
+            if (!wrapper) return;
+            if (document.fullscreenElement) {
+              await document.exitFullscreen().catch(() => {});
+              return;
+            }
+            await wrapper.requestFullscreen?.({ navigationUI: "hide" }).catch(() => {});
+            if (document.fullscreenElement) {
+              try {
+                await (
+                  screen.orientation as unknown as {
+                    lock?: (mode: string) => Promise<void>;
+                  }
+                )?.lock?.("landscape");
+              } catch {
+                // orientasi tidak bisa dikunci (iOS) — fullscreen tetap jalan
+              }
+            }
+          }}
+          className="absolute bottom-2 right-2 z-30 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white/90 backdrop-blur transition hover:bg-black/80"
+        >
+          <FaExpand size={13} />
+        </button>
       </div>
     );
   }
@@ -473,7 +581,12 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
       className={`relative w-full bg-black select-none group ${
         isFullscreen ? "" : "overflow-hidden"
       }`}
-      style={{ paddingTop: isFullscreen ? 0 : "56.25%", height: isFullscreen ? "100vh" : "auto" }}
+      style={{
+        paddingTop: isFullscreen ? 0 : "56.25%",
+        // 100dvh mengikuti tinggi viewport dinamis (address bar mobile),
+        // 100vh membuat video terpotong saat landscape.
+        height: isFullscreen ? "100dvh" : "auto",
+      }}
       onMouseMove={showControlsTemporarily}
       onMouseLeave={() => !videoRef.current?.paused && setShowControls(false)}
       onTouchStart={showControlsTemporarily}

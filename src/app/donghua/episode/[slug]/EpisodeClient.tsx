@@ -97,6 +97,41 @@ export default function DonghuaEpisodeClient({ data, episodeSlug, seriesSlug, se
               referrerPolicy="no-referrer"
               frameBorder="0"
             />
+
+            {/* Fullscreen embed + kunci landscape (tombol milik embed sering
+                tidak memutar layar di HP). */}
+            <button
+              type="button"
+              aria-label="Layar penuh"
+              onClick={async (event) => {
+                const wrapper = event.currentTarget.parentElement as HTMLElement | null;
+                if (!wrapper) return;
+                if (document.fullscreenElement) {
+                  await document.exitFullscreen().catch(() => {});
+                  return;
+                }
+                await wrapper.requestFullscreen?.({ navigationUI: "hide" }).catch(() => {});
+                if (document.fullscreenElement) {
+                  try {
+                    await (
+                      screen.orientation as unknown as {
+                        lock?: (mode: string) => Promise<void>;
+                      }
+                    )?.lock?.("landscape");
+                  } catch {
+                    // iOS tidak mendukung lock orientasi
+                  }
+                }
+              }}
+              className="absolute bottom-2 right-2 z-30 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white/90 backdrop-blur transition hover:bg-black/80"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+                <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+                <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+                <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+              </svg>
+            </button>
           </div>
         ) : (
           <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
