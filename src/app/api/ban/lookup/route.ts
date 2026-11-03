@@ -37,8 +37,22 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type AuthUser = { id?: string; email?: string | null; banned_until?: string | null };
 
-/** Cari user id + banned_until dari Supabase Auth berdasarkan email exact. */
+/**
+ * Cari user id + banned_until berdasarkan email exact.
+ * Sumber pertama: tabel auth lokal (nol egress). Fallback: Supabase Auth admin
+ * selama masa transisi, karena email di auth_users baru terisi saat login baru.
+ */
 async function findAuthUserByEmail(email: string): Promise<AuthUser | null> {
+  try {
+    const { rows } = await socialQuery<{ id: string; email: string | null; banned_until: string | null }>(
+      "select id, email, banned_until from auth_users where lower(email) = lower($1) limit 1",
+      [email],
+    );
+    if (rows[0]) return { id: rows[0].id, email: rows[0].email, banned_until: rows[0].banned_until };
+  } catch {
+    // tabel belum ada / DB bermasalah: lanjut ke jalur lama
+  }
+
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!base || !key) return null;

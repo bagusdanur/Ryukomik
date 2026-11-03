@@ -8,6 +8,7 @@ import { bumpProfileSignal } from "@/lib/social/profileSignals";
 import { updateLocalProfile } from "@/lib/social/profileWrite";
 import { socialQuery } from "@/lib/social/db";
 import { revalidateTag } from "next/cache";
+import { setAuthBan } from "@/lib/auth/userStore";
 
 const PER_PAGE = 20;
 const VALID_ROLES = new Set([null, "staff", "admin"]);
@@ -104,6 +105,13 @@ export async function PATCH(request: Request) {
           // Auth record may be gone; the profile flag is already cleared.
         }
 
+        // Auth lokal (Fase A): siap dipakai saat Supabase dimatikan.
+        try {
+          await setAuthBan(userId, null);
+        } catch {
+          // Tabel auth_users belum tentu punya baris ini; profile sudah bersih.
+        }
+
         revalidateTag("profile-role", { expire: 0 });
         await recordAdminAction({ actorId: admin.userId, action: "unban", targetId: userId });
         return privateAdminJson({ success: true, userId, isBanned: false });
@@ -128,6 +136,13 @@ export async function PATCH(request: Request) {
         await supabaseAdmin.auth.admin.updateUserById(userId, { ban_duration: `${hours}h` });
       } catch {
         // The profile flag still blocks every API call; auth ban is a bonus.
+      }
+
+      // Auth lokal (Fase A): set ban + cabut sesi lokal.
+      try {
+        await setAuthBan(userId, bannedUntil);
+      } catch {
+        // Tidak fatal: profile flag tetap memblokir semua API.
       }
 
       revalidateTag("profile-role", { expire: 0 });
