@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createHmac, timingSafeEqual } from "node:crypto";
+
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { socialQuery } from "@/lib/social/db";
@@ -44,6 +46,35 @@ function pruneAuthUserCache(now: number) {
   }
 }
 
+/**
+ * Verifikasi JWT HS256 (project Supabase lama) secara lokal.
+ *
+ * Tanpa ini, `auth.getClaims()` tidak punya kunci untuk JWT simetris sehingga
+ * SDK memanggil `GET /auth/v1/user` ke server Supabase pada tiap request —
+ * sumber utama egress Auth (40 MB/hari) sekaligus memperlambat API.
+ */
+function verifyLegacyJwt(token: string, secret: string): { sub?: string; exp?: number } | null {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  const [headerPart, payloadPart, signaturePart] = parts;
+
+  const expected = createHmac("sha256", secret).update(`${headerPart}.${payloadPart}`).digest();
+  let actual: Buffer;
+  try {
+    actual = Buffer.from(signaturePart.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+  } catch {
+    return null;
+  }
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
+
+  try {
+    const json = Buffer.from(payloadPart.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+    return JSON.parse(json) as { sub?: string; exp?: number };
+  } catch {
+    return null;
+  }
+}
+
 export async function getVerifiedUserId(token: string): Promise<string> {
   const now = Date.now();
   const cached = authUserCache.get(token);
@@ -51,16 +82,29 @@ export async function getVerifiedUserId(token: string): Promise<string> {
     return cached.userId;
   }
 
-  // Asymmetric Supabase JWTs are verified locally against cached JWKS.
-  // Legacy symmetric projects automatically fall back to the Auth server.
-  const { data: claimsData, error: authError } = await supabaseAdmin.auth.getClaims(token);
-  const userId = claimsData?.claims?.sub;
-  if (authError || typeof userId !== "string" || !userId) {
-    throw new Error("Sesi login tidak valid.");
+  // JWT project lama (HS256) diverifikasi lokal dengan SUPABASE_JWT_SECRET.
+  // Kalau secret belum diset, pakai jalur lama (JWKS / Auth server).
+  const localSecret = process.env.SUPABASE_JWT_SECRET;
+  let userId: string | undefined;
+  let expSeconds: number | undefined;
+
+  if (localSecret) {
+    const claims = verifyLegacyJwt(token, localSecret);
+    if (!claims || typeof claims.sub !== "string" || !claims.sub) {
+      throw new Error("Sesi login tidak valid.");
+    }
+    userId = claims.sub;
+    expSeconds = Number(claims.exp);
+  } else {
+    const { data: claimsData, error: authError } = await supabaseAdmin.auth.getClaims(token);
+    if (authError) throw new Error("Sesi login tidak valid.");
+    userId = claimsData?.claims?.sub;
+    expSeconds = Number(claimsData?.claims?.exp);
+    if (typeof userId !== "string" || !userId) throw new Error("Sesi login tidak valid.");
   }
 
   pruneAuthUserCache(now);
-  const expiresAt = Number(claimsData?.claims?.exp) * 1000;
+  const expiresAt = Number(expSeconds) * 1000;
   if (!Number.isFinite(expiresAt) || expiresAt <= now) throw new Error('Sesi login sudah berakhir.');
   authUserCache.set(token, { at: now, userId, expiresAt });
   return userId;
