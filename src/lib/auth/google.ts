@@ -30,6 +30,9 @@ export async function createOAuthState(nextUrl: string): Promise<{ state: string
   const verifier = randomBytes(32).toString("base64url");
   const challenge = createHash("sha256").update(verifier).digest("base64url");
 
+  // Bersihkan state lama supaya tabel tidak bisa ditumbuhi request berulang.
+  await socialQuery("delete from auth_oauth_states where created_at < now() - interval '15 minutes'").catch(() => undefined);
+
   await socialQuery(
     "insert into auth_oauth_states (state, code_verifier, next_url) values ($1,$2,$3)",
     [state, verifier, nextUrl.slice(0, 500)],
@@ -40,7 +43,7 @@ export async function createOAuthState(nextUrl: string): Promise<{ state: string
 
 export async function consumeOAuthState(state: string): Promise<{ verifier: string; nextUrl: string } | null> {
   const { rows } = await socialQuery<{ code_verifier: string; next_url: string | null }>(
-    "delete from auth_oauth_states where state = $1 returning code_verifier, next_url",
+    "delete from auth_oauth_states where state = $1 and created_at > now() - interval '15 minutes' returning code_verifier, next_url",
     [state],
   );
   const row = rows[0];

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { authBaseUrl, consumeOAuthState, exchangeGoogleCode, googleConfigured } from "@/lib/auth/google";
 import { createSession, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/session";
 import { upsertAuthUserFromGoogle } from "@/lib/auth/userStore";
-import { signAccessToken } from "@/lib/auth/jwt";
+import { socialQuery } from "@/lib/social/db";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +37,17 @@ export async function GET(request: Request) {
     picture: identity.picture,
   });
 
-  if (user.banned_until && new Date(user.banned_until).getTime() > Date.now()) {
+  // Ban dicek di dua sumber: tabel auth lokal dan profil sosial (sumber
+  // kebenaran otorisasi API selama masa transisi).
+  const { rows: profileRows } = await socialQuery<{ is_banned: boolean | null; banned_until: string | null }>(
+    "select is_banned, banned_until from social_profiles where user_id = $1 limit 1",
+    [user.id],
+  );
+  const profile = profileRows[0];
+  const bannedUntil = [user.banned_until, profile?.banned_until]
+    .map((value) => (value ? new Date(value).getTime() : 0))
+    .reduce((left, right) => Math.max(left, right), 0);
+  if (profile?.is_banned || bannedUntil > Date.now()) {
     return NextResponse.redirect(`${base}/?login=banned`);
   }
 
@@ -47,18 +57,13 @@ export async function GET(request: Request) {
     ip,
   });
 
-  const access = signAccessToken(user.id, process.env.AUTH_JWT_SECRET || "", 60 * 60 * 24 * 7);
   const target = pending.nextUrl.startsWith("/") && !pending.nextUrl.startsWith("//") ? pending.nextUrl : "/";
   const response = NextResponse.redirect(`${base}${target}`);
 
-  // Refresh token (httpOnly) dipakai untuk /api/auth/me & rotasi sesi.
+  // Hanya refresh token yang disimpan di cookie — httpOnly, tidak bisa dibaca
+  // JavaScript, jadi XSS tidak bisa mencurinya. Access token diminta klien ke
+  // /api/auth/me dan disimpan di memori saja.
   response.cookies.set(SESSION_COOKIE, refreshToken, sessionCookieOptions(expiresAt));
-  // Access token dibaca klien untuk memanggil API (bearer), sama seperti pola lama.
-  response.cookies.set("rk_access", access, {
-    ...sessionCookieOptions(expiresAt),
-    httpOnly: false,
-    sameSite: "lax",
-  });
 
   return response;
 }
