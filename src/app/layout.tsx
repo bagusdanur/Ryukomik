@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import Footer from "@/components/Footer";
 import AutoBackup from "@/components/AutoBackup";
 import InstallPWA from "@/components/InstallPWA";
@@ -115,12 +117,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="antialiased">
+        {/* Fase B/C: provider auth lokal; tidak melakukan apa pun sampai
+            NEXT_PUBLIC_AUTH_LOCAL=1 (login Supabase tetap jalur aktif). */}
+        <AuthProvider>
         
         <SWRegister />
         <ThemeColorProvider />
         <AutoBackup />
         <Navbar />
         {children}
+        </AuthProvider>
         <InstallPWA />
         <NotificationPrompt />
         <YukiChatEmbed />
