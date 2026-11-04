@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/social/auth";
 import { authErrorResponse } from "@/lib/social/authResponse";
 import { socialQuery } from "@/lib/social/db";
+import { notifyPremiumRequest } from "@/lib/telegram";
 
 export const runtime = "nodejs";
 
@@ -59,6 +60,17 @@ export async function POST(request: Request) {
        returning id::text as id`,
       [userId, name, proofUrl, packageName, durationDays, amount],
     );
+
+    // Notifikasi Telegram (pengganti webhook Supabase yang sudah mati).
+    // Tidak di-await: pengajuan user tetap sukses walau Telegram bermasalah.
+    void notifyPremiumRequest({
+      id: rows[0].id,
+      name,
+      packageName,
+      durationDays,
+      amount,
+      proofUrl,
+    }).catch((error) => console.error("[premium-notify] gagal:", error instanceof Error ? error.message : error));
 
     return NextResponse.json({ success: true, id: rows[0].id });
   } catch (error) {
