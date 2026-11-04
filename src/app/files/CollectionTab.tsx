@@ -15,13 +15,14 @@ import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 import Button from "@/components/Button";
+import { getSession } from "@/lib/auth/getSession";
 
 const COLLECTION_KEY = "comic_collections";
 
 /** Semua operasi koleksi kini ke API kita (Postgres lokal), bukan Supabase. */
 async function collectionFetch<T>(path: string, init: RequestInit = {}): Promise<T | null> {
   try {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await getSession();
     const token = data.session?.access_token;
     if (!token) return null;
     const res = await fetch(path, {

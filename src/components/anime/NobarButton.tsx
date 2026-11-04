@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { FiRadio, FiUsers, FiArrowRight } from "react-icons/fi";
 import { supabase } from "@/lib/supabaseClient";
 import { socialFetch, socialRead } from "@/lib/social/client";
+import { getSession } from "@/lib/auth/getSession";
 
 type Room = { id: string; hostName: string; episodeTitle: string | null };
 
@@ -78,7 +79,7 @@ export default function NobarButton({
   async function start() {
     setBusy(true);
     try {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await getSession();
       if (!data.session) {
         router.push("/login");
         return;

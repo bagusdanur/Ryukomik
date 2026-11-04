@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabaseClient";
 import UserBadges from "@/components/UserBadges";
 import UserAvatar from "@/components/UserAvatar";
 import MarathonWinnerBadge from "@/components/MarathonWinnerBadge";
+import { getSession } from "@/lib/auth/getSession";
 
 type Period = "weekly" | "monthly";
 
@@ -319,7 +320,7 @@ export default function MarathonClient() {
       return;
     }
     try {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await getSession();
       const token = data.session?.access_token;
       if (!token) return;
       const res = await fetch("/api/marathon/me", {

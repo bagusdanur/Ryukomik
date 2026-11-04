@@ -1,7 +1,5 @@
 "use client";
 import { useState } from "react";
-import type { Provider } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabaseClient";
 import { FcGoogle } from "react-icons/fc";
 import { FaDiscord, FaTwitter } from "react-icons/fa";
 import Button from "@/components/Button";
@@ -16,18 +14,10 @@ type LoginTab = "social" | "password";
 export default function LoginModal({ close }: LoginModalProps) {
   const [tab, setTab] = useState<LoginTab>("social");
 
-  const redirectUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-          window.location.href
-        )}`
-      : "";
-
-  const login = async (provider: Provider) => {
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: redirectUrl },
-    });
+  const login = () => {
+    // Auth lokal (Fase B): Google OAuth ditangani route sendiri.
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.href = `/api/auth/google/start?next=${next}`;
   };
 
   return (
@@ -93,7 +83,7 @@ export default function LoginModal({ close }: LoginModalProps) {
           {tab === "social" && (
             <div className="space-y-3">
               <button
-                onClick={() => login("google")}
+                onClick={() => login()}
                 className="w-full flex items-center justify-center gap-3
                 bg-white text-black py-3 rounded-xl
                 hover:bg-gray-100 transition"

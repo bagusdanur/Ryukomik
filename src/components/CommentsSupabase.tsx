@@ -16,6 +16,7 @@ import { stickers } from "@/data/stickers";
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { loadCachedProfile } from "@/utils/profileCache";
 import { supabase } from "@/lib/supabaseClient";
+import { getSession } from "@/lib/auth/getSession";
 
 // ============================================
 // CONSTANTS
@@ -396,7 +397,7 @@ const CommentItem = memo(({
   const canDelete = !isDeleted && (isAdmin || isOwner);
 
   const authHeaders = async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await getSession();
     const token = sessionData.session?.access_token;
     return {
       "Content-Type": "application/json",
@@ -856,7 +857,7 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
     try {
       // Server derives the author from this token; user_id in the body is now
       // ignored so nobody can post as another user.
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSession();
       const token = sessionData.session?.access_token;
       const res = await fetch("/api/comments", {
         method: "POST",
@@ -978,7 +979,7 @@ export default function CommentsSupabase({ type = "komik", slug, chapter }: Comm
                 setImageError(null);
                 setImageUploading(true);
                 try {
-                  const { data: sessionData } = await supabase.auth.getSession();
+                  const { data: sessionData } = await getSession();
                   const token = sessionData.session?.access_token;
                   if (!token) throw new Error("Login diperlukan.");
                   setImageUrl(await uploadImageToImgbb(file, { token }));

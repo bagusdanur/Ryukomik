@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { getSession } from "@/lib/auth/getSession";
 
 type LocalBookmark = {
   slug: string;
@@ -41,7 +42,7 @@ export async function syncBookmarks(userId: string): Promise<boolean> {
     });
 
     // Server yang melakukan full-replace (hapus + insert) di Postgres lokal.
-    const { data } = await supabase.auth.getSession();
+    const { data } = await getSession();
     const token = data.session?.access_token;
     if (!token) return false;
 

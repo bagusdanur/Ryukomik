@@ -29,6 +29,7 @@ import Button from "@/components/Button";
 import { supabase } from "@/lib/supabaseClient";
 import { markPremiumRequestPending } from "@/utils/premiumStatusSync";
 import { uploadImageToImgbb } from "@/utils/uploadImage";
+import { getSession } from "@/lib/auth/getSession";
 
 const features = [
   {
@@ -312,7 +313,7 @@ export default function PremiumPayClient({ autoEnabled = true }: { autoEnabled?:
       }
       setIsCheckingPending(true);
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await getSession();
         const token = sessionData.session?.access_token;
         const pendingRes = token
           ? await fetch("/api/premium/request", { headers: { authorization: `Bearer ${token}` }, cache: "no-store" })
@@ -426,7 +427,7 @@ export default function PremiumPayClient({ autoEnabled = true }: { autoEnabled?:
     setLoading(true);
     setError("");
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSession();
       const token = sessionData.session?.access_token;
       if (!token) throw new Error("Login diperlukan.");
       const proofUrl = await uploadImageToImgbb(file, {
@@ -486,7 +487,7 @@ export default function PremiumPayClient({ autoEnabled = true }: { autoEnabled?:
 
     try {
       // Setup token
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await getSession();
       const token = session?.access_token;
       
       const res = await fetch("/api/payment/create-transaction", {
@@ -562,7 +563,7 @@ export default function PremiumPayClient({ autoEnabled = true }: { autoEnabled?:
     if (paymentMode === "auto" && step === 2 && paymentData?.order_id) {
       pollingInterval = setInterval(async () => {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
+          const { data: { session } } = await getSession();
           const token = session?.access_token;
           
           const res = await fetch(`/api/payment/check-status?order_id=${paymentData.order_id}`, {

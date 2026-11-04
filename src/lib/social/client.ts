@@ -1,9 +1,10 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { getSession } from "@/lib/auth/getSession";
 
 export async function socialFetch<T>(input: string, init: RequestInit = {}): Promise<T> {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await getSession();
   const token = data.session?.access_token;
   if (!token) throw new Error("Login diperlukan.");
   const response = await fetch(input, {
@@ -19,7 +20,7 @@ export async function socialFetch<T>(input: string, init: RequestInit = {}): Pro
  *  bila ada supaya penanda "disukai"/"milik saya" tetap akurat. Dipakai untuk
  *  komentar anime, yang pengunjungnya kebanyakan belum masuk. */
 export async function socialRead<T>(input: string): Promise<T> {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await getSession();
   const token = data.session?.access_token;
   const response = await fetch(input, {
     headers: token ? { authorization: `Bearer ${token}` } : undefined,

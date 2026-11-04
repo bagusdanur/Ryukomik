@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import BanNoticeCard, { type BanInfo } from "@/components/ban/BanNoticeCard";
+import { getSession } from "@/lib/auth/getSession";
 
 type BanState = BanInfo & { banned: boolean };
 
@@ -40,7 +41,7 @@ export default function BanGate() {
 
     const check = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await getSession();
         const token = data.session?.access_token;
         if (!token) return;
         const res = await fetch("/api/me/ban-status", {

@@ -43,6 +43,7 @@ import {
   ThemeModal,
 } from "@/components/setting/settingModals";
 import { Toast } from "@/components/setting/settingUi";
+import { getSession } from "@/lib/auth/getSession";
 
 const initialStats = { total_comments: 0, level: 1, xp: 0, username: "", avatar_url: "" };
 const initialProfileForm = { username: "", avatar_url: "" };
@@ -285,7 +286,7 @@ export default function SettingsClient() {
   async function uploadProfileImage() {
     if (!profileImageFile) return profileForm.avatar_url.trim();
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await getSession();
     const token = sessionData.session?.access_token;
     if (!token) throw new Error("Sesi login tidak valid");
 
@@ -305,7 +306,7 @@ export default function SettingsClient() {
 
     try {
       const avatarUrl = await uploadProfileImage();
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) throw new Error("Sesi login tidak valid");
 
@@ -350,7 +351,7 @@ export default function SettingsClient() {
     setSavingPrivacyField(field);
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) throw new Error("Sesi login tidak valid");
 

@@ -28,6 +28,7 @@ import SkPremiumModal from "@/components/SkPremiumModal";
 import Button from "@/components/Button";
 import { markPremiumRequestPending } from "@/utils/premiumStatusSync";
 import { uploadImageToImgbb } from "@/utils/uploadImage";
+import { getSession } from "@/lib/auth/getSession";
 
 const features = [
   {
@@ -231,7 +232,7 @@ export default function PremiumPage() {
       }
       setIsCheckingPending(true);
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await getSession();
         const token = sessionData.session?.access_token;
         const pendingRes = token
           ? await fetch("/api/premium/request", { headers: { authorization: `Bearer ${token}` }, cache: "no-store" })
@@ -333,7 +334,7 @@ export default function PremiumPage() {
     setLoading(true);
     setError("");
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSession();
       const token = sessionData.session?.access_token;
       if (!token) throw new Error("Login diperlukan.");
       const proofUrl = await uploadImageToImgbb(file, {

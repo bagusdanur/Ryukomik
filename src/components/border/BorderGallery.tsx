@@ -11,6 +11,7 @@ import {
   isAdminOnlyBorder,
   type AvatarBorderGroup,
 } from "@/lib/avatarBorders";
+import { getSession } from "@/lib/auth/getSession";
 
 const TABS: Array<{ key: AvatarBorderGroup; label: string; hint: string }> = [
   { key: "dasar", label: "Warna", hint: "Ring warna sederhana, gratis untuk semua member." },
@@ -32,7 +33,7 @@ export default function BorderGallery() {
     // Wajib kirim token: tanpa header Authorization endpoint membalas 401 dan
     // semua frame premium/admin akan tampak terkunci walau user berhak.
     (async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSession();
       const token = sessionData.session?.access_token;
       if (!token) return;
       const res = await fetch("/api/social/me/profile", {
@@ -61,7 +62,7 @@ export default function BorderGallery() {
     setSaving(id ?? "default");
     setMessage("");
     try {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await getSession();
       const token = data.session?.access_token;
       if (!token) {
         setMessage("Login dulu untuk memakai border.");

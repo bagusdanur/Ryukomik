@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { socialFetch } from "@/lib/social/client";
+import { getSession } from "@/lib/auth/getSession";
 
 type Person = { id: string; username: string; avatar_url?: string | null;
   avatar_border?: string | null; bio?: string | null; level?: number; created_at: string };
@@ -22,7 +23,7 @@ export default function ConnectionsClient() {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setViewerId(data.session?.user.id ?? null));
+    getSession().then(({ data }) => setViewerId(data.session?.user.id ?? null));
   }, []);
 
   async function load(reset = false, selected = mode) {

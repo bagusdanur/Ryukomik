@@ -29,6 +29,7 @@ import { stickers } from "@/data/stickers";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
 import UserAvatar from "@/components/UserAvatar";
+import { getSession } from "@/lib/auth/getSession";
 
 type Author = { username?: string; avatar_url?: string | null; avatar_border?: string | null; level?: number; role?: string | null; is_premium?: boolean | null; total_reads?: number | null };
 type Post = {
@@ -228,7 +229,7 @@ function Composer({
     setUploading(true);
     setError("");
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSession();
       const token = sessionData.session?.access_token;
       if (!token) throw new Error("Login diperlukan.");
       setImage(await uploadImageToImgbb(file, { token }));

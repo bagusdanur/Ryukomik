@@ -37,6 +37,7 @@ import ProjectTab from "@/components/dashboard/ProjectTab";
 import ProjectDbTab from "@/components/dashboard/ProjectDbTab";
 import AnnouncementsTab from "@/components/dashboard/AnnouncementsTab";
 import { FiBookOpen } from "react-icons/fi";
+import { getSession } from "@/lib/auth/getSession";
 
 
 // ── constants ──────────────────────────────────────────────────────────────
@@ -273,7 +274,7 @@ export default function AdminDashboard() {
   const [adsNotice, setAdsNotice] = useState("");
 
   const getAdminToken = useCallback(async () => {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await getSession();
     return data.session?.access_token || "";
   }, []);
 
@@ -383,7 +384,7 @@ export default function AdminDashboard() {
       // Hapus lewat API server (bukan langsung ke Supabase dari browser) supaya
       // cache komentar per-slug di server ikut di-invalidasi — kalau tidak,
       // komentar hasil moderasi bisa tampil basi sampai TTL cache habis.
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSession();
       const token = sessionData.session?.access_token;
       const res = await fetch("/api/comments", {
         method: "DELETE",
@@ -1120,7 +1121,7 @@ export default function AdminDashboard() {
   async function givePremium(userId: string, days = 30) {
     try {
       const safeDays = Math.max(1, Math.min(3650, Math.floor(Number(days) || 30)));
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSession();
       const token = sessionData.session?.access_token;
       const res = await fetch("/api/admin/users", {
         method: "PATCH",
@@ -1145,7 +1146,7 @@ export default function AdminDashboard() {
 
   async function removePremium(userId: string) {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSession();
       const token = sessionData.session?.access_token;
       const res = await fetch("/api/admin/users", {
         method: "PATCH",

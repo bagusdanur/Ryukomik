@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FiBookOpen, FiGrid, FiHeart, FiMessageCircle, FiUserPlus } from "react-icons/fi";
 import { supabase } from "@/lib/supabaseClient";
 import { relativeTime } from "@/lib/social/relativeTime";
+import { getSession } from "@/lib/auth/getSession";
 
 type Collection = {
   id: string;
@@ -52,7 +53,7 @@ export default function PublicProfileSections({ username, section, viewerId }: {
         .catch(() => { if (active) setCollections([]); });
     } else {
       setCollections(null);
-      supabase.auth.getSession()
+      getSession()
         .then(({ data }) => {
           const token = data.session?.access_token;
           return fetch(`/api/social/profile/${encodeURIComponent(username)}/activity`, { cache: "no-store", headers: token ? { authorization: token } : undefined });

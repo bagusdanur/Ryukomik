@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { getSession } from "@/lib/auth/getSession";
 
 type Listener = (user: User | null) => void;
 
@@ -19,18 +20,17 @@ function emit(user: User | null) {
 export function initSupabaseUser() {
   if (initPromise) return initPromise;
 
-  initPromise = supabase.auth.getSession()
-    .then(({ data, error }) => {
-      if (error) {
-        console.error("Session fetch error:", error);
-      }
-      const user = data?.session?.user || null;
+  // getSession() adalah jembatan: sesi Supabase lama atau sesi auth lokal.
+  initPromise = getSession()
+    .then(({ data }) => {
+      const user = (data?.session?.user as User | undefined) || null;
       emit(user);
 
       if (!initialized) {
         initialized = true;
         supabase.auth.onAuthStateChange((_event, session) => {
-          emit(session?.user || null);
+          if (session?.user) emit(session.user);
+          else void getSession().then(({ data: next }) => emit((next?.session?.user as User | undefined) || null));
         });
       }
 
@@ -47,6 +47,11 @@ export function initSupabaseUser() {
 
 export function getCachedSupabaseUser() {
   return currentUser;
+}
+
+export function refreshSupabaseUser() {
+  initPromise = null;
+  return initSupabaseUser();
 }
 
 export function useSupabaseUser() {

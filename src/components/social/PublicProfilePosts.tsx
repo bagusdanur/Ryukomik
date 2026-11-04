@@ -10,6 +10,7 @@ import ComicLinkCard from "@/components/social/ComicLinkCard";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
 import UserAvatar from "@/components/UserAvatar";
+import { getSession } from "@/lib/auth/getSession";
 
 type Author = {
   username?: string;
@@ -50,7 +51,7 @@ export default function PublicProfilePosts({ username }: { username: string }) {
   async function load(reset = false) {
     setLoading(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSession();
       const token = sessionData.session?.access_token;
       const response = await fetch(
         `/api/social/profile/${encodeURIComponent(username)}/posts${!reset && cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,

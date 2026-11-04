@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import Button from "@/components/Button";
 import { FaCheck, FaCrown, FaFire, FaMedal, FaRedoAlt, FaTimes, FaTrophy } from "react-icons/fa";
 import { FiArrowRight, FiAward, FiBarChart2, FiCheckSquare, FiClock, FiHome, FiRefreshCw, FiTarget, FiZap } from "react-icons/fi";
+import { getSession } from "@/lib/auth/getSession";
 
 const ROUND_LIMIT = 10;
 const OPTION_COUNT = 4;
@@ -253,7 +254,7 @@ export default function TebakJudulClient({
     async function submitScore() {
       setSubmitState({ status: "saving", message: "Menyimpan skor..." });
 
-      const { data } = await supabase.auth.getSession();
+      const { data } = await getSession();
       const token = data.session?.access_token;
 
       if (!token) {

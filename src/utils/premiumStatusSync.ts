@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { refreshProfile } from "@/utils/profileCache";
+import { getSession } from "@/lib/auth/getSession";
 
 const PENDING_KEY = "rk-premium-pending";
 const POLL_MS = 60_000;
@@ -39,7 +40,7 @@ async function checkStatus() {
   const userId = activeUserId;
   if (readMarker()?.userId !== userId) return;
   checking = (async () => {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await getSession();
     const accessToken = data.session?.access_token;
     if (!accessToken) return;
     const response = await fetch("/api/premium/status", {

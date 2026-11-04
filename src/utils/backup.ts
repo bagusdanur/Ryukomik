@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { getSession } from "@/lib/auth/getSession";
 
 type BackupPayload = unknown[];
 const BACKUP_ITEM_LIMIT = 500;
@@ -33,7 +34,7 @@ export async function createBackup(userId?: string | null): Promise<boolean> {
     bookmarks = Array.isArray(bookmarks) ? bookmarks.slice(0, BACKUP_ITEM_LIMIT) : [];
 
     // Backup disimpan di Postgres lokal lewat API kita.
-    const { data } = await supabase.auth.getSession();
+    const { data } = await getSession();
     const token = data.session?.access_token;
     if (!token) throw new Error("Login diperlukan.");
 
@@ -55,7 +56,7 @@ export async function restoreBackup(userId?: string | null): Promise<boolean> {
   if (!userId) return false;
 
   try {
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await getSession();
     const token = sessionData.session?.access_token;
     if (!token) throw new Error("Login diperlukan.");
 

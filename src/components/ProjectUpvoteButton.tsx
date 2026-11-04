@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { FaThumbsUp, FaFire, FaStar, FaClock } from "react-icons/fa";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { getSession } from "@/lib/auth/getSession";
 
 const reactions = [
   { id: "suka", label: "Suka", icon: FaThumbsUp },
@@ -25,7 +26,7 @@ export default function ProjectUpvoteButton({ slug, initialCount = 0, initialCou
   const total = useMemo(() => Object.values(counts).reduce((sum, count) => sum + Number(count || 0), 0) || Number(initialCount) || 0, [counts, initialCount]);
 
   const request = useCallback(async (method: "GET" | "POST", reactionType?: ReactionId) => {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await getSession();
     const token = data.session?.access_token;
     if (!token) throw new Error("Silakan login untuk memberikan reaksi.");
     const response = await fetch(`/api/project/${encodeURIComponent(slug)}/upvote`, {

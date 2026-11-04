@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { getSession } from "@/lib/auth/getSession";
 
 export interface CachedProfile {
   id: string;
@@ -156,7 +157,7 @@ export function clearCachedProfile(userId?: string | null) {
 
 function fetchProfile(userId: string): Promise<CachedProfile | null> {
   return (async () => {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await getSession();
     const token = data.session?.access_token;
     if (!token) return null;
 

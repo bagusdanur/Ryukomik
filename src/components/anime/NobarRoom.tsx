@@ -19,6 +19,7 @@ import { relativeTime } from "@/lib/social/relativeTime";
 import { NOBAR_EMOJIS, MAX_SYNC_STALE_S } from "@/lib/social/nobarShared";
 import { playerDisplayName } from "@/lib/anime/playerName";
 import { thumbUrl } from "@/lib/anime/thumb";
+import { getSession } from "@/lib/auth/getSession";
 
 type Player = { name?: string; iframe?: string; streamUrl?: string };
 type Member = { userId: string; name: string; avatarUrl: string | null; isHost: boolean };
@@ -86,7 +87,7 @@ export default function NobarRoom({
   );
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSignedIn(Boolean(data.session)));
+    getSession().then(({ data }) => setSignedIn(Boolean(data.session)));
   }, []);
 
   const applyPoll = useCallback((data: Poll) => {

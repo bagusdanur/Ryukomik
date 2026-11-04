@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
+import { getSession } from "@/lib/auth/getSession";
 
 interface UseXpReadArgs { user: User | null; slugStr: string }
 interface XpQueueItem { user_id: string; chapter_slug: string; retryCount: number }
@@ -29,7 +30,7 @@ async function flushXpQueue(uid:string){
   flushPromise=(async()=>{
     const selected=readQueue().filter((x)=>x.user_id===uid).slice(0,MAX_BATCH);
     if(!selected.length)return;
-    const {data}=await supabase.auth.getSession(); const token=data.session?.access_token; if(!token)return;
+    const {data}=await getSession(); const token=data.session?.access_token; if(!token)return;
     const slugs=[...new Set(selected.map((x)=>x.chapter_slug))];
     try{
       const response=await fetch("/api/xp/read",{method:"POST",headers:{"Content-Type":"application/json",authorization:`Bearer ${token}`},body:JSON.stringify({chapter_slugs:slugs}),keepalive:true});
@@ -45,4 +46,4 @@ async function flushXpQueue(uid:string){
 }
 
 export function useXpRead({user,slugStr}:UseXpReadArgs){const uid=user?.id;useEffect(()=>{if(!uid||!slugStr||alreadyTracked(uid,slugStr))return;const timer=window.setTimeout(()=>enqueue(uid,slugStr),30_000);return()=>window.clearTimeout(timer);},[uid,slugStr]);}
-export function useXpQueueFlush(){useEffect(()=>{let stopped=false;const flush=async()=>{if(stopped)return;const {data}=await supabase.auth.getSession();if(data.session?.user.id)await flushXpQueue(data.session.user.id);};const interval=window.setInterval(()=>void flush(),FLUSH_MS);const onVisibility=()=>{if(document.visibilityState==="hidden")void flush();};document.addEventListener("visibilitychange",onVisibility);void flush();return()=>{stopped=true;window.clearInterval(interval);document.removeEventListener("visibilitychange",onVisibility);};},[]);}
+export function useXpQueueFlush(){useEffect(()=>{let stopped=false;const flush=async()=>{if(stopped)return;const {data}=await getSession();if(data.session?.user.id)await flushXpQueue(data.session.user.id);};const interval=window.setInterval(()=>void flush(),FLUSH_MS);const onVisibility=()=>{if(document.visibilityState==="hidden")void flush();};document.addEventListener("visibilitychange",onVisibility);void flush();return()=>{stopped=true;window.clearInterval(interval);document.removeEventListener("visibilitychange",onVisibility);};},[]);}

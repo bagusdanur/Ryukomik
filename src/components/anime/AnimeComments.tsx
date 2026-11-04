@@ -18,6 +18,7 @@ import { socialFetch, socialRead } from "@/lib/social/client";
 import { relativeTime } from "@/lib/social/relativeTime";
 import UserBadges from "@/components/UserBadges";
 import UserAvatar from "@/components/UserAvatar";
+import { getSession } from "@/lib/auth/getSession";
 
 type Author = {
   username?: string;
@@ -70,7 +71,7 @@ export default function AnimeComments({ slug, title }: { slug: string; title?: s
 
   useEffect(() => {
     let alive = true;
-    supabase.auth.getSession().then(({ data }) => {
+    getSession().then(({ data }) => {
       if (!alive) return;
       setSignedIn(Boolean(data.session));
       setViewerId(data.session?.user.id ?? null);

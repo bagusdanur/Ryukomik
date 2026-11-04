@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import XPublicProfileHeader from "@/components/social/XPublicProfileHeader";
 import PublicProfilePosts from "@/components/social/PublicProfilePosts";
 import PublicProfileSections from "@/components/social/PublicProfileSections";
+import { getSession } from "@/lib/auth/getSession";
 
 export type ProfileTab = "posts" | "collections" | "activity";
 
@@ -19,7 +20,7 @@ export default function PublicProfileView({ username }: { username: string }) {
 
   useEffect(() => {
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
+    getSession().then(({ data }) => {
       if (active) setViewerId(data.session?.user.id ?? null);
     }).catch(() => undefined);
     return () => { active = false; };

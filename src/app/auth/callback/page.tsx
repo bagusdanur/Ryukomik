@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { getSession } from "@/lib/auth/getSession";
 
 export default function Callback() {
   useEffect(() => {
@@ -30,7 +31,7 @@ export default function Callback() {
         /* storage bisa diblokir browser */
       }
 
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSession();
       const lastUserId = sessionData.session?.user?.id;
       if (lastUserId) {
         try {

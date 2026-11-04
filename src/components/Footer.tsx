@@ -7,6 +7,7 @@ import { FiClock, FiHome, FiSettings, FiUsers } from "react-icons/fi";
 import { TbPlayerSkipForward } from "react-icons/tb";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { supabase } from "@/lib/supabaseClient";
+import { getSession } from "@/lib/auth/getSession";
 
 const BADGE_POLL_MS = 90_000;
 const TIMELINE_SEEN_KEY = "rk-timeline-seen-at";
@@ -53,7 +54,7 @@ function useUnreadCount(path: string) {
       if (!seen) writeTimelineSeen();
       const since = new Date(readTimelineSeen() ?? Date.now()).toISOString();
 
-      const { data } = await supabase.auth.getSession();
+      const { data } = await getSession();
       const token = data.session?.access_token;
       if (!token) return;
       const res = await fetch(

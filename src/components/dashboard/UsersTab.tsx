@@ -13,6 +13,7 @@ import {
 import { RiVipCrownLine } from "react-icons/ri";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { getSession } from "@/lib/auth/getSession";
 
 type AuditEntry = {
   id: number;
@@ -136,7 +137,7 @@ export default function UsersTab({
   async function fetchAudit() {
     setAuditBusy(true);
     try {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await getSession();
       const token = data.session?.access_token;
       const res = await fetch("/api/admin/audit-log?limit=20", {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -154,7 +155,7 @@ export default function UsersTab({
   }, []);
 
   async function callUsersApi(payload: Record<string, unknown>) {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await getSession();
     const token = data.session?.access_token;
     const res = await fetch("/api/admin/users", {
       method: "PATCH",

@@ -11,6 +11,7 @@ import {
   loadCachedProfile,
 } from "@/utils/profileCache";
 import Button from "@/components/Button";
+import { getSession } from "@/lib/auth/getSession";
 
 type PremiumProfile = {
   is_premium?: boolean;
@@ -72,7 +73,7 @@ export default function PremiumModal({ open, onClose }: PremiumModalProps) {
       return;
     }
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    const { data: sessionData } = await getSession();
     const token = sessionData.session?.access_token;
     if (!token) {
       setError("Silakan login terlebih dahulu");

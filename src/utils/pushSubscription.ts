@@ -1,10 +1,11 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { getSession } from "@/lib/auth/getSession";
 
 /** Subscription push disimpan di Postgres lokal lewat API kita (bukan Supabase). */
 async function pushApi(method: "POST" | "DELETE", body: Record<string, unknown>) {
-  const { data } = await supabase.auth.getSession();
+  const { data } = await getSession();
   const token = data.session?.access_token;
   if (!token) return { ok: false, error: "Login diperlukan." };
   const res = await fetch("/api/push/subscriptions", {

@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { clearCachedProfile, refreshProfile } from "@/utils/profileCache";
+import { getSession } from "@/lib/auth/getSession";
 
 /**
  * Polling ringan ke API kita sendiri (database lokal) untuk mendeteksi
@@ -46,7 +47,7 @@ export function startProfileSignalWatcher(userId: string): () => void {
     }
 
     try {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await getSession();
       const token = data.session?.access_token;
       if (!token) {
         schedule();

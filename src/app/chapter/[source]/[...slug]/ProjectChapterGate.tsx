@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabaseClient';
 import type { ReaderChapter } from '@/types/content';
 import MarqueeCoverGrid from '@/components/MarqueeCoverGrid';
 import ChapterClient from './ChapterClient';
+import { getSession } from "@/lib/auth/getSession";
 
 type Props = { initialData: ReaderChapter; source: string; slugStr: string };
 export default function ProjectChapterGate({ initialData, source, slugStr }: Props) {
@@ -35,7 +36,7 @@ export default function ProjectChapterGate({ initialData, source, slugStr }: Pro
     const abort = new AbortController();
     controller.current = abort;
     try {
-      const session = await supabase.auth.getSession();
+      const session = await getSession();
       if (abort.signal.aborted) return;
       const accessToken = session.data.session?.access_token;
       const [slug] = slugStr.split('/');
