@@ -12,7 +12,11 @@ import { supabase } from "@/lib/supabaseClient";
  */
 export type SessionLike = {
   access_token: string;
-  user: { id: string; email?: string | null };
+  user: {
+    id: string;
+    email?: string | null;
+    user_metadata?: { name?: string | null; avatar_url?: string | null };
+  };
 };
 
 type SessionResult = { data: { session: SessionLike | null } };
@@ -32,11 +36,20 @@ async function readLocalSession(): Promise<SessionLike | null> {
 
   inflight = fetch("/api/auth/me", { cache: "no-store", credentials: "include" })
     .then(async (response) => (response.ok ? response.json() : null))
-    .then((json: { user?: { id?: string; email?: string | null }; accessToken?: string } | null) => {
+    .then((json: { user?: { id?: string; email?: string | null; name?: string | null; avatar?: string | null }; accessToken?: string } | null) => {
       const id = json?.user?.id;
       const token = json?.accessToken;
       const session: SessionLike | null =
-        id && token ? { access_token: token, user: { id, email: json?.user?.email ?? null } } : null;
+        id && token
+          ? {
+              access_token: token,
+              user: {
+                id,
+                email: json?.user?.email ?? null,
+                user_metadata: { name: json?.user?.name ?? null, avatar_url: json?.user?.avatar ?? null },
+              },
+            }
+          : null;
       localCache = { at: Date.now(), session };
       return session;
     })

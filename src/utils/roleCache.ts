@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "@/lib/supabaseClient";
+import { getSession } from "@/lib/auth/getSession";
 
 export const ROLE_CACHE_MS = 10 * 60 * 1000;
 
@@ -76,8 +76,7 @@ export async function loadCachedRole(
   const pending = pendingRequests.get(userId);
   if (!options.force && pending) return pending;
 
-  const request = supabase.auth
-    .getSession()
+  const request = getSession()
     .then(async ({ data }) => {
       const token = data.session?.access_token;
       if (!token) return { role: null, isAdmin: false };

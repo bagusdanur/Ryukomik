@@ -1,5 +1,7 @@
 "use client";
 
+import AuthStatusCard from "./AuthStatusCard";
+
 import {
   FiActivity,
   FiBookOpen,
@@ -43,6 +45,7 @@ type ActivityToday = {
 
 type DashboardHomeTabProps = {
   adminUser?: AdminUser | null;
+  getAdminToken: () => Promise<string>;
   stats: DashboardStats;
   activityToday: ActivityToday;
   activityLoading: boolean;
@@ -150,6 +153,7 @@ function StatCard({ icon, badge, value, label, detail }: StatCardProps) {
 
 export default function DashboardHomeTab({
   adminUser,
+  getAdminToken,
   stats,
   activityToday,
   activityLoading,
@@ -175,6 +179,8 @@ export default function DashboardHomeTab({
           </p>
         </div>
       </div>
+
+      <AuthStatusCard getAdminToken={getAdminToken} />
 
       <div className="grid grid-cols-2 gap-3">
         <StatCard

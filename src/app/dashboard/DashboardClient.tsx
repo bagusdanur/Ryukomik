@@ -1382,6 +1382,7 @@ export default function AdminDashboard() {
         {page === "dashboard" && (
           <DashboardHomeTab
             adminUser={adminUser}
+            getAdminToken={getAdminToken}
             stats={stats}
             activityToday={activityToday}
             activityLoading={activityLoading}
