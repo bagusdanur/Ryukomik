@@ -63,6 +63,10 @@ export async function notifyPremiumRequest(item: PremiumRequestNotification): Pr
 
   const keyboard = {
     inline_keyboard: [
+      [
+        { text: "ACC", callback_data: `prem:approve:${item.id}` },
+        { text: "Tolak", callback_data: `prem:reject:${item.id}` },
+      ],
       [{ text: "Buka Dashboard Premium", url: "https://ryukomik.my.id/dashboard?page=requests" }],
     ],
   };
