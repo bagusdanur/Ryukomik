@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { clearCachedProfile, loadCachedProfile, refreshProfile, subscribeProfile } from "@/utils/profileCache";
 import { createBackup, restoreBackup } from "@/utils/backup";
+import { uploadImageToImgbb } from "@/utils/uploadImage";
 import { getCacheSizeMB } from "@/utils/getCacheSizeMB";
 import {
   clearCoreCache,
@@ -66,7 +67,8 @@ type PrivacyField = keyof typeof initialPrivacy;
 type ConfirmAction = "clear-core" | "unregister-sw" | "backup" | "restore";
 type ToastState = { type: "success" | "error"; message: string } | null;
 type ProfileForm = typeof initialProfileForm;
-type ImgBbResponse = { success?: boolean; data?: { url?: string } };
+
+
 
 export default function SettingsClient() {
   const { user } = useSupabaseUser();
@@ -283,20 +285,11 @@ export default function SettingsClient() {
   async function uploadProfileImage() {
     if (!profileImageFile) return profileForm.avatar_url.trim();
 
-    const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
-    if (!apiKey) throw new Error("API key upload gambar belum diatur");
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) throw new Error("Sesi login tidak valid");
 
-    const formData = new FormData();
-    formData.append("image", profileImageFile);
-
-    const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-      method: "POST",
-      body: formData,
-    });
-    const result = (await response.json()) as ImgBbResponse;
-
-    if (!result.success || !result.data?.url) throw new Error("Upload foto gagal");
-    return result.data.url;
+    return uploadImageToImgbb(profileImageFile, { token });
   }
 
   async function saveProfile() {

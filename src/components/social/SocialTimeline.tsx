@@ -19,6 +19,8 @@ import {
 } from "react-icons/fi";
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { socialFetch } from "@/lib/social/client";
+import { supabase } from "@/lib/supabaseClient";
+import { uploadImageToImgbb } from "@/utils/uploadImage";
 import { parseComicPost } from "@/lib/social/comicLink";
 import { relativeTime } from "@/lib/social/relativeTime";
 import ComicLinkCard from "@/components/social/ComicLinkCard";
@@ -223,22 +225,15 @@ function Composer({
   async function uploadToImgbb(file: File) {
     if (!file.type.startsWith("image/")) return setError("File harus berupa gambar.");
     if (file.size > 8 * 1024 * 1024) return setError("Ukuran gambar maksimal 8 MB.");
-    const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
-    if (!apiKey) return setError("Upload gambar belum dikonfigurasi.");
     setUploading(true);
     setError("");
     try {
-      const formData = new FormData();
-      formData.append("image", file);
-      const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
-        method: "POST",
-        body: formData,
-      });
-      const result = (await response.json()) as { success?: boolean; data?: { url?: string } };
-      if (!result.success || !result.data?.url) throw new Error("Upload imgbb gagal");
-      setImage(result.data.url);
-    } catch {
-      setError("Upload gambar gagal. Coba lagi.");
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Login diperlukan.");
+      setImage(await uploadImageToImgbb(file, { token }));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Upload gambar gagal. Coba lagi.");
     } finally {
       setUploading(false);
     }

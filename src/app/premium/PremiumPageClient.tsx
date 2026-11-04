@@ -27,6 +27,7 @@ import LoginModal from "@/components/LoginModal";
 import SkPremiumModal from "@/components/SkPremiumModal";
 import Button from "@/components/Button";
 import { markPremiumRequestPending } from "@/utils/premiumStatusSync";
+import { uploadImageToImgbb } from "@/utils/uploadImage";
 
 const features = [
   {
@@ -133,12 +134,8 @@ type PremiumProfile = {
   premium_until?: string | null;
 };
 
-type ImgBbResponse = {
-  success?: boolean;
-  data?: {
-    url?: string;
-  };
-};
+
+
 
 function StepIndicator({ step }: { step: number }) {
   const steps = ["Bayar", "Upload", "Konfirmasi"];
@@ -336,24 +333,18 @@ export default function PremiumPage() {
     setLoading(true);
     setError("");
     try {
-      const formData = new FormData();
-      formData.append("image", file);
-      const imgRes = await fetch(
-        `https://api.imgbb.com/1/upload?key=${process.env.NEXT_PUBLIC_IMGBB_API_KEY}`,
-        { method: "POST", body: formData }
-      );
-      const imgData = (await imgRes.json()) as ImgBbResponse;
-      if (!imgData.success || !imgData.data?.url) {
-        throw new Error("Upload gambar gagal. Coba format lain atau kompres file.");
-      }
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) throw new Error("Login diperlukan.");
+      const proofUrl = await uploadImageToImgbb(file, {
+        token,
+        maxBytes: 5 * 1024 * 1024,
+      });
       const requestRes = await fetch("/api/premium/request", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          proofUrl: imgData.data.url,
+          proofUrl,
           packageName: selectedPlan.name,
           durationDays: selectedPlan.durationDays,
           amount: selectedPlan.amount,
