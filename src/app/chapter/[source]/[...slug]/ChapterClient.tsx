@@ -163,7 +163,15 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
       className="relative min-h-screen select-none bg-[var(--background)] text-white"
       onClick={handleTap}
     >
-      {showUI && <ReaderTopBar title={slugStr} chapter={data.currentChapter} />}
+      {showUI && (
+        <ReaderTopBar
+          title={slugStr}
+          chapter={data.currentChapter}
+          source={source}
+          previousSlug={data.prev}
+          nextSlug={data.next}
+        />
+      )}
 
       {data.sourceBroken && (
         <div className="mx-auto mt-3 max-w-3xl px-4">

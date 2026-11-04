@@ -19,6 +19,11 @@ type Props = {
   nextSlug?: string;
 };
 
+function chapterNumber(value?: string) {
+  const match = value?.match(/(?:chapter[-_])?(\d+(?:\.\d+)?)(?:$|[-_])/i);
+  return match?.[1] ?? null;
+}
+
 function chapterHref(source: string, slug?: string) {
   if (!slug) return "";
   return slug.startsWith("chapter/") ? `/${slug}` : `/chapter/${source}/${slug}`;
@@ -66,6 +71,9 @@ export default function ReaderEndSection({
   }, [activated, mangaSlug, source]);
 
   const comicHref = mangaSlug ? `/komik/${source}/${mangaSlug}` : "/";
+  const currentNumber = chapterNumber(slugStr);
+  const previousNumber = chapterNumber(previousSlug);
+  const nextNumber = chapterNumber(nextSlug);
 
   return (
     <section
@@ -86,18 +94,24 @@ export default function ReaderEndSection({
             </div>
           </div>
 
-          <nav aria-label="Navigasi akhir chapter" className="mt-5 grid grid-cols-3 gap-2">
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <span className="rounded-full border border-[var(--accent)]/30 bg-[var(--accent)]/10 px-3 py-1.5 text-xs font-black text-[var(--accent-2)]">
+              Sedang dibaca: {currentNumber ? `CH ${currentNumber}` : "Chapter"}
+            </span>
+          </div>
+
+          <nav aria-label="Navigasi akhir chapter" className="mt-3 grid grid-cols-3 gap-2">
             {previousSlug ? (
               <Link href={chapterHref(source, previousSlug)} className="rk-btn-ghost flex min-w-0 items-center justify-center gap-1.5 rounded-2xl px-2 py-3 text-xs font-bold">
-                <FiChevronLeft /> <span className="truncate">Sebelumnya</span>
+                <FiChevronLeft /> <span className="truncate">{previousNumber ? `CH ${previousNumber}` : "Sebelumnya"}</span>
               </Link>
-            ) : <span className="rounded-2xl border border-white/5 px-2 py-3 text-center text-xs text-white/25">Awal</span>}
+            ) : <span className="rounded-2xl border border-white/5 px-2 py-3 text-center text-xs text-white/25">CH 1</span>}
             <Link href={comicHref} className="rk-btn-ghost flex min-w-0 items-center justify-center gap-1.5 rounded-2xl px-2 py-3 text-xs font-bold">
               <FiBookOpen /> <span className="truncate">Detail</span>
             </Link>
             {nextSlug ? (
               <Link href={chapterHref(source, nextSlug)} className="rk-btn-primary flex min-w-0 items-center justify-center gap-1.5 rounded-2xl px-2 py-3 text-xs font-bold">
-                <span className="truncate">Berikutnya</span> <FiChevronRight />
+                <span className="truncate">{nextNumber ? `CH ${nextNumber}` : "Berikutnya"}</span> <FiChevronRight />
               </Link>
             ) : <span className="rounded-2xl border border-white/5 px-2 py-3 text-center text-xs text-white/25">Terbaru</span>}
           </nav>
