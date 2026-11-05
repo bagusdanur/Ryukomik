@@ -26,7 +26,14 @@ type ReportRow = {
   reason: string; detail: string | null; status: string; admin_note: string | null;
   created_at: string; reporter: string | null;
 };
-type WorkReview = { id: string; slug: string; title: string; cover_url: string | null; type: string | null; is_adult: boolean; scanlator_handle: string | null; scanlator_team: string | null };
+type PendingChapter = { id: string; chapter_number: number; title: string | null; pages: number; is_published: boolean };
+
+type WorkReview = {
+  id: string; slug: string; title: string; cover_url: string | null; type: string | null;
+  is_adult: boolean; scanlator_handle: string | null; scanlator_team: string | null;
+  chapters?: PendingChapter[];
+  pendingChapters?: PendingChapter[];
+};
 
 type TabId = "pengajuan" | "karya" | "scanlator" | "moderasi" | "laporan";
 
@@ -97,23 +104,36 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
     } finally { setBusy(null); }
   };
 
-  const reviewWork = async (work: WorkReview, action: "approve" | "reject") => {
-    const note = (notes[work.id] || "").trim();
-    if (action === "reject" && !note) {
+  const reviewWork = async (
+    work: WorkReview,
+    action: "approve_series" | "reject_series" | "approve_chapter" | "reject_chapter",
+    chapterId?: string,
+  ) => {
+    const noteKey = chapterId || work.id;
+    const note = (notes[noteKey] || notes[work.id] || "").trim();
+    if (action.includes("reject") && !note) {
       setNotice("Isi alasan penolakan dulu — Scanlator perlu tahu yang harus diperbaiki.");
       return;
     }
-    setBusy(work.id);
+    setBusy(chapterId || work.id);
     try {
       const token = await getAdminToken();
       const res = await fetch("/api/admin/scanlator/review", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ id: work.id, action, note }),
+        body: JSON.stringify({ id: work.id, chapter_id: chapterId, action, note }),
       });
       const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
       if (!res.ok || !json?.success) { setNotice(json?.error || "Gagal."); return; }
-      setNotice(action === "approve" ? `“${work.title}” terbit.` : `“${work.title}” ditolak.`);
+      setNotice(
+        action === "approve_series"
+          ? `Seri “${work.title}” disetujui. Chapter di-ACC satu per satu.`
+          : action === "reject_series"
+            ? `Seri “${work.title}” ditolak.`
+            : action === "approve_chapter"
+              ? "Chapter diterbitkan."
+              : "Chapter ditolak.",
+      );
       await load();
     } finally { setBusy(null); }
   };
@@ -261,9 +281,41 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
                     className={`${inputClass} mt-2`}
                   />
                   <div className="mt-2 grid grid-cols-2 gap-2">
-                    <Button onClick={() => void reviewWork(w, "approve")} disabled={busy === w.id}><FiCheck size={12} /> Terbitkan</Button>
-                    <Button variant="danger" onClick={() => void reviewWork(w, "reject")} disabled={busy === w.id}><FiX size={12} /> Tolak</Button>
+                    <Button onClick={() => void reviewWork(w, "approve_series")} disabled={busy === w.id}><FiCheck size={12} /> ACC seri</Button>
+                    <Button variant="danger" onClick={() => void reviewWork(w, "reject_series")} disabled={busy === w.id}><FiX size={12} /> Tolak seri</Button>
                   </div>
+
+                  {(w.chapters?.length ?? 0) > 0 && (
+                    <div className="mt-3 rounded-md border border-white/[.06]">
+                      <p className="border-b border-white/[.05] px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white/35">
+                        Chapter ({w.pendingChapters?.length ?? 0} menunggu)
+                      </p>
+                      <ul className="divide-y divide-white/[.05]">
+                        {(w.chapters || []).map((c) => (
+                          <li key={c.id} className="px-2.5 py-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="min-w-0 truncate text-[11px] text-white/70">
+                                Ch. {c.chapter_number}{c.title ? ` · ${c.title}` : ""} · {c.pages} gambar
+                              </span>
+                              <span className={`shrink-0 text-[10px] font-bold ${c.is_published ? "text-emerald-300" : "text-amber-300"}`}>
+                                {c.is_published ? "Terbit" : "Menunggu"}
+                              </span>
+                            </div>
+                            {!c.is_published && (
+                              <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                                <Button onClick={() => void reviewWork(w, "approve_chapter", c.id)} disabled={busy === c.id}>
+                                  <FiCheck size={11} /> Terbitkan
+                                </Button>
+                                <Button variant="danger" onClick={() => void reviewWork(w, "reject_chapter", c.id)} disabled={busy === c.id}>
+                                  <FiX size={11} /> Tolak
+                                </Button>
+                              </div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

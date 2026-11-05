@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FiAlertTriangle, FiArrowRight, FiBookOpen, FiClock, FiEdit3, FiImage,
-  FiChevronDown, FiPlus, FiSave, FiSend, FiTrash2, FiUser, FiX,
+  FiChevronDown, FiChevronLeft, FiChevronRight, FiPlus, FiSave, FiSend, FiTrash2, FiUser, FiX,
 } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
 import { Button, Field, Panel, PanelHead, Row, Stat, StatusDot, Tabs, inputClass } from "@/components/scanlator/ui";
@@ -94,6 +94,8 @@ export default function ScanlatorStudio() {
   const [editAdult, setEditAdult] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [chapterDraft, setChapterDraft] = useState<Record<string, string>>({});
+  const [projectTab, setProjectTab] = useState<"detail" | "chapter">("detail");
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   const token = async () => (await getSession()).data.session?.access_token || "";
 
@@ -324,7 +326,7 @@ export default function ScanlatorStudio() {
 
   const openProject = async (slug: string) => {
     if (openSlug === slug) { setOpenSlug(null); return; }
-    setOpenSlug(slug); setDetailLoading(true); setChapters([]);
+    setOpenSlug(slug); setDetailLoading(true); setChapters([]); setProjectTab("detail");
     try {
       const t = await token();
       const res = await fetch(`/api/scanlator/series/${encodeURIComponent(slug)}`, { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" });
@@ -376,6 +378,16 @@ export default function ScanlatorStudio() {
       setOpenSlug(null);
       await load();
     } catch { setError("Gagal menghapus project."); }
+  };
+
+  const moveImage = (from: number, to: number) => {
+    setChapterImages((prev) => {
+      if (to < 0 || to >= prev.length || from === to) return prev;
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
   };
 
   const removeChapter = async (chapterId: string, number: number) => {
@@ -713,9 +725,17 @@ export default function ScanlatorStudio() {
                         <p className="mb-1.5 text-[11px] font-semibold text-white/55">Pratinjau urutan ({chapterImages.length})</p>
                         <div className="grid grid-cols-4 gap-1.5">
                           {chapterImages.map((url, i) => (
-                            <div key={url} className="relative overflow-hidden rounded-md border border-white/[.07]">
+                            <div
+                              key={`${url}-${i}`}
+                              draggable
+                              onDragStart={() => setDragIndex(i)}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={() => { if (dragIndex !== null) moveImage(dragIndex, i); setDragIndex(null); }}
+                              onDragEnd={() => setDragIndex(null)}
+                              className={`relative select-none overflow-hidden rounded-md border ${dragIndex === i ? "border-[var(--accent)]" : "border-white/[.07]"}`}
+                            >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={url} alt={`Halaman ${i + 1}`} loading="lazy" className="aspect-[3/4] w-full object-cover" />
+                              <img src={url} alt={`Halaman ${i + 1}`} loading="lazy" draggable={false} className="aspect-[3/4] w-full object-cover" />
                               <span className="absolute left-1 top-1 rounded bg-black/70 px-1 text-[9px] font-bold text-white/80">{i + 1}</span>
                               <button
                                 type="button"
@@ -725,9 +745,30 @@ export default function ScanlatorStudio() {
                               >
                                 <FiX size={11} />
                               </button>
+                              <div className="absolute inset-x-0 bottom-0 flex">
+                                <button
+                                  type="button"
+                                  onClick={() => moveImage(i, i - 1)}
+                                  disabled={i === 0}
+                                  aria-label={`Geser halaman ${i + 1} ke kiri`}
+                                  className="flex h-6 flex-1 items-center justify-center bg-black/60 text-white/70 disabled:opacity-25"
+                                >
+                                  <FiChevronLeft size={12} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveImage(i, i + 1)}
+                                  disabled={i === chapterImages.length - 1}
+                                  aria-label={`Geser halaman ${i + 1} ke kanan`}
+                                  className="flex h-6 flex-1 items-center justify-center bg-black/60 text-white/70 disabled:opacity-25"
+                                >
+                                  <FiChevronRight size={12} />
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
+                        <p className="mt-1 text-[10px] text-white/30">Tarik gambar untuk mengubah urutan, atau pakai tombol panah.</p>
                       </div>
                     )}
                   </div>
@@ -784,6 +825,21 @@ export default function ScanlatorStudio() {
                           <p className="py-4 text-center text-[11px] text-white/35">Memuat…</p>
                         ) : (
                           <div className="space-y-3">
+                            <div className="flex gap-1 rounded-lg border border-white/[.07] p-1">
+                              {(["detail", "chapter"] as const).map((pt) => (
+                                <button
+                                  key={pt}
+                                  type="button"
+                                  onClick={() => setProjectTab(pt)}
+                                  className={`min-h-[32px] flex-1 rounded-md text-[11px] font-bold capitalize transition-colors ${projectTab === pt ? "bg-white/[.08] text-white" : "text-white/40"}`}
+                                >
+                                  {pt === "detail" ? "Detail" : `Chapter (${chapters.length})`}
+                                </button>
+                              ))}
+                            </div>
+
+                            {projectTab === "detail" && (
+                            <div className="space-y-3">
                             <Field label="Judul project"><input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className={inputClass} /></Field>
                             <Field label="Deskripsi"><textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={3} className={inputClass} /></Field>
                             <div className="grid grid-cols-2 gap-2.5">
@@ -803,9 +859,11 @@ export default function ScanlatorStudio() {
                               <Button onClick={() => void saveProjectEdit()} disabled={savingEdit}><FiSave size={12} /> {savingEdit ? "Menyimpan…" : "Simpan"}</Button>
                               <Button variant="danger" onClick={() => void removeProject(w.slug, w.title)}><FiTrash2 size={12} /> Hapus</Button>
                             </div>
+                            </div>
+                            )}
 
+                            {projectTab === "chapter" && (
                             <div className="pt-1">
-                              <p className="text-[11px] font-bold text-white/60">Chapter ({chapters.length})</p>
                               <div className="mt-1.5 space-y-1.5">
                                 {chapters.map((c) => (
                                   <div key={c.id} className="rounded-md border border-white/[.06] bg-white/[.02] p-2">
@@ -834,6 +892,7 @@ export default function ScanlatorStudio() {
                                 {chapters.length === 0 && <p className="py-3 text-center text-[11px] text-white/30">Belum ada chapter.</p>}
                               </div>
                             </div>
+                            )}
                           </div>
                         )}
                       </div>

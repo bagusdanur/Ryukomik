@@ -233,7 +233,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
                 {data.type || "Manhua"}
               </span>
               <span className="text-white/60 truncate">
-                {data.Pengarang || data.author || "Nekoyashiki"}
+                {data.Pengarang || data.author || (source === "project" ? "Karya Scanlator" : "—")}
               </span>
             </div>
             <div className="flex gap-3 mt-1.5 text-xs font-medium">
@@ -250,24 +250,32 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
                 {statusLabel}
               </span>
             </div>
-            {/* Atribusi: nama user (profil publik) + nama grup (profil grup) */}
+            {/* Atribusi: user (profil) + grup (profil grup). Nama yang sama tidak diulang. */}
             {data.scanlator_handle && (
-              <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] leading-none">
-                <span className="text-white/35">Diunggah oleh</span>
-                {data.scanlator_user ? (
-                  <Link href={`/u/${encodeURIComponent(data.scanlator_user.username)}`} className="rounded-md bg-white/[.06] px-2 py-1 font-bold text-white/85 transition hover:bg-white/[.12]">
+              <div className="mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] leading-none">
+                <span className="text-white/30">oleh</span>
+                {data.scanlator_user && (
+                  <Link
+                    href={`/u/${encodeURIComponent(data.scanlator_user.username)}`}
+                    className="font-semibold text-white/80 underline-offset-2 transition-colors hover:text-white hover:underline"
+                  >
                     {data.scanlator_user.username}
                   </Link>
-                ) : (
-                  <span className="rounded-md bg-white/[.06] px-2 py-1 font-bold text-white/60">Scanlator</span>
                 )}
-                <span className="text-white/20">·</span>
-                <Link href={`/scanlator/${data.scanlator_handle}`} className="flex items-center gap-1 rounded-md bg-[var(--accent)]/15 px-2 py-1 font-bold text-[var(--accent-2)] transition hover:bg-[var(--accent)]/25">
-                  {data.scanlator_team || data.scanlator_handle}
-                </Link>
+                {data.scanlator_team && data.scanlator_team.toLowerCase() !== (data.scanlator_user?.username || "").toLowerCase() && (
+                  <>
+                    <span className="text-white/20">·</span>
+                    <Link
+                      href={`/scanlator/${data.scanlator_handle}`}
+                      className="font-semibold text-[var(--accent-2)] underline-offset-2 transition-colors hover:underline"
+                    >
+                      {data.scanlator_team}
+                    </Link>
+                  </>
+                )}
                 <Link
                   href={`/scanlator/lapor?slug=${encodeURIComponent(slug)}&handle=${encodeURIComponent(data.scanlator_handle)}`}
-                  className="ml-auto text-[10px] text-white/25 underline-offset-2 transition hover:text-white/50 hover:underline"
+                  className="ml-auto text-[10px] text-white/20 transition-colors hover:text-white/45"
                 >
                   Laporkan
                 </Link>
@@ -292,12 +300,14 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
         >
           {data.synopsis}
         </p>
-        <button
-          onClick={() => setExpand(!expand)}
-          className="mt-2 text-sm font-bold text-cyan-200"
-        >
-          {expand ? "Tutup" : "Lihat selengkapnya"}
-        </button>
+        {(data.synopsis?.length || 0) > 180 && (
+          <button
+            onClick={() => setExpand(!expand)}
+            className="mt-1.5 text-[12px] font-semibold text-[var(--accent-2)] transition-colors hover:text-white"
+          >
+            {expand ? "Tutup" : "Lihat selengkapnya"}
+          </button>
+        )}
         {/* Blok Dukung kami (Fase C — link donate eksternal Scanlator) */}
         {data.scanlator_donate && data.scanlator_donate.length > 0 && (
           <div className="rk-card-soft mt-4 rounded-2xl p-4">
