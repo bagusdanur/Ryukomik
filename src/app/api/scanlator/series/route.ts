@@ -40,7 +40,21 @@ export async function GET(request: Request) {
     const data = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
       `/admin/projects?limit=100&search=&page=1`,
     ).catch(() => ({ data: [] }));
-    const mine = (data.data || []).filter((m) => (m as { owner_user_id?: string }).owner_user_id === userId);
+    const mine = (data.data || [])
+      .filter((m) => (m as { owner_user_id?: string }).owner_user_id === userId)
+      .map((m) => {
+        const row = m as Record<string, unknown>;
+        return {
+          slug: row.slug,
+          title: row.title,
+          cover_url: row.cover_url,
+          type: row.type,
+          review_status: row.review_status,
+          review_note: row.review_note ?? null,
+          is_published: row.is_published,
+          is_adult: row.is_adult,
+        };
+      });
     return NextResponse.json({ success: true, profile, works: mine }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     const authResponse = authErrorResponse(error);

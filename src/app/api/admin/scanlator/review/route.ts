@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { adminErrorResponse, verifyAdminRequest } from "@/lib/adminApi";
 import { projectApiFetch } from "@/lib/projectApiServer";
+import { notifyScanlator } from "@/lib/scanlatorNotify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,7 +41,10 @@ export async function POST(request: Request) {
     const admin = await verifyAdminRequest(request);
     if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
-    const body = (await request.json().catch(() => null)) as { id?: string; slug?: string; action?: "approve" | "reject" } | null;
+    const body = (await request.json().catch(() => null)) as
+      | { id?: string; slug?: string; action?: "approve" | "reject"; note?: string }
+      | null;
+    const note = typeof body?.note === "string" ? body.note.trim().slice(0, 500) || null : null;
     if (!body?.id || !["approve", "reject"].includes(body.action || "")) {
       return NextResponse.json({ error: "Permintaan tidak valid." }, { status: 400 });
     }
@@ -52,18 +56,39 @@ export async function POST(request: Request) {
     }
 
     if (body.action === "reject") {
+      if (!note) {
+        return NextResponse.json({ error: "Alasan penolakan wajib diisi supaya Scanlator tahu yang harus diperbaiki." }, { status: 400 });
+      }
       await projectApiFetch(`/admin/projects/${body.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ review_status: "rejected", is_published: false }),
+        body: JSON.stringify({ review_status: "rejected", is_published: false, review_note: note }),
       });
+      const owner = manga.data.owner_user_id as string | undefined;
+      if (owner) {
+        await notifyScanlator(owner, {
+          type: "project_rejected",
+          title: `Project “${manga.data.title}” ditolak`,
+          body: note,
+          link: "/scanlator",
+        });
+      }
       return NextResponse.json({ success: true, status: "rejected" });
     }
 
     // Approve: seri terbit + chapter-chapter pending ikut terbit.
     await projectApiFetch(`/admin/projects/${body.id}`, {
       method: "PATCH",
-      body: JSON.stringify({ review_status: "approved", is_published: true }),
+      body: JSON.stringify({ review_status: "approved", is_published: true, review_note: null }),
     });
+    const ownerId = manga.data.owner_user_id as string | undefined;
+    if (ownerId) {
+      await notifyScanlator(ownerId, {
+        type: "project_approved",
+        title: `Project “${manga.data.title}” disetujui`,
+        body: "Project dan chapter-nya sudah terbit di Ryukomik.",
+        link: `/komik/project/${String(manga.data.slug || "")}`,
+      });
+    }
     const slug = (manga.data as { slug?: string }).slug;
     if (slug) {
       const chapters = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(

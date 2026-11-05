@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { adminErrorResponse, verifyAdminRequest } from "@/lib/adminApi";
 import { socialQuery, socialTransaction } from "@/lib/social/db";
+import { notifyScanlator } from "@/lib/scanlatorNotify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -155,6 +156,12 @@ async function moderate(
         [userId, reason, note, adminId],
       );
     });
+    await notifyScanlator(userId, {
+      type: "warn",
+      title: "Surat peringatan (SP)",
+      body: [reason, note].filter(Boolean).join(" — ") || "Kamu mendapat peringatan karena melanggar aturan.",
+      link: "/scanlator",
+    });
     return NextResponse.json({ success: true, status: "warned" });
   }
 
@@ -169,6 +176,12 @@ async function moderate(
         "insert into scanlator_moderation (user_id, action, reason, note, admin_id) values ($1, 'suspend', $2, $3, $4)",
         [userId, reason, note ? `${note} (${dur} hari)` : `${dur} hari`, adminId],
       );
+    });
+    await notifyScanlator(userId, {
+      type: "suspend",
+      title: `Akun disuspend ${dur} hari`,
+      body: [reason, note].filter(Boolean).join(" — ") || "Upload dibekukan sementara.",
+      link: "/scanlator",
     });
     return NextResponse.json({ success: true, status: "suspended", days: dur });
   }
@@ -185,6 +198,12 @@ async function moderate(
         [userId, reason, note, adminId],
       );
     });
+    await notifyScanlator(userId, {
+      type: "revoke",
+      title: "Akses Scanlator dicabut",
+      body: [reason, note].filter(Boolean).join(" — ") || "Akses scanlator dicabut karena pelanggaran.",
+      link: "/aturan/scanlator",
+    });
     return NextResponse.json({ success: true, status: "revoked" });
   }
 
@@ -199,6 +218,12 @@ async function moderate(
       "insert into scanlator_moderation (user_id, action, reason, note, admin_id) values ($1, 'restore', $2, $3, $4)",
       [userId, reason, note, adminId],
     );
+  });
+  await notifyScanlator(userId, {
+    type: "restore",
+    title: "Akses Scanlator dipulihkan",
+    body: note || "Kamu bisa upload dan mengelola project lagi.",
+    link: "/scanlator",
   });
   return NextResponse.json({ success: true, status: "active" });
 }

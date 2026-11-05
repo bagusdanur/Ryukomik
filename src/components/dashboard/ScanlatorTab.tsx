@@ -87,13 +87,18 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
   };
 
   const reviewWork = async (work: WorkReview, action: "approve" | "reject") => {
+    const note = (notes[work.id] || "").trim();
+    if (action === "reject" && !note) {
+      setNotice("Isi alasan penolakan dulu — Scanlator perlu tahu yang harus diperbaiki.");
+      return;
+    }
     setBusy(work.id);
     try {
       const token = await getAdminToken();
       const res = await fetch("/api/admin/scanlator/review", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ id: work.id, action }),
+        body: JSON.stringify({ id: work.id, action, note }),
       });
       const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
       if (!res.ok || !json?.success) { setNotice(json?.error || "Gagal."); return; }
@@ -211,6 +216,12 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
                       <p className="mt-0.5 truncate text-[10px] text-white/30">{w.scanlator_team || w.scanlator_handle} · {w.type || "—"}{w.is_adult ? " · 18+" : ""}</p>
                     </div>
                   </div>
+                  <input
+                    value={notes[w.id] || ""}
+                    onChange={(e) => setNotes((n) => ({ ...n, [w.id]: e.target.value }))}
+                    placeholder="Alasan (wajib saat menolak)…"
+                    className={`${inputClass} mt-2`}
+                  />
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <Button onClick={() => void reviewWork(w, "approve")} disabled={busy === w.id}><FiCheck size={12} /> Terbitkan</Button>
                     <Button variant="danger" onClick={() => void reviewWork(w, "reject")} disabled={busy === w.id}><FiX size={12} /> Tolak</Button>
