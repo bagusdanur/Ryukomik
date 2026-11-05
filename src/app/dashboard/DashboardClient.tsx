@@ -12,7 +12,6 @@ import {
   FiUsers,
   FiLogOut,
   FiBell,
-  FiActivity,
   FiShield,
   FiHome,
   FiMessageCircle,
@@ -1328,12 +1327,6 @@ export default function AdminDashboard() {
       ),
       label: "Request",
     },
-    {
-      id: "source-health",
-      icon: <FiActivity size={18} />,
-      label: "Health",
-    },
-
     {
       id: "project",
       icon: <FiBookOpen size={18} />,
