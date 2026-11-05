@@ -23,6 +23,10 @@ export async function projectApiFetch<T>(path: string, init?: RequestInit): Prom
   if (!url) throw new Error("PROJECT_API_URL is not configured");
   const headers = new Headers(init?.headers);
   headers.set("Accept", "application/json");
+  // Body JSON tanpa Content-Type tidak diparse Express di project-db.
+  if (typeof init?.body === "string" && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
   if (process.env.PROJECT_API_INTERNAL_TOKEN) headers.set("Authorization", `Bearer ${process.env.PROJECT_API_INTERNAL_TOKEN}`);
   const response = await fetch(url, { ...init, headers });
   if (!response.ok) {

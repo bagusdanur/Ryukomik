@@ -26,6 +26,9 @@ interface ComicDetail extends Series {
   thumbnail: string;
   title: string;
   author?: string;
+  scanlator_handle?: string;
+  scanlator_team?: string;
+  scanlator_donate?: Array<{ label: string; url: string }> | null;
   Pengarang?: string;
   Konsep?: string;
   chapters: Chapter[];
@@ -59,9 +62,31 @@ const getDetail = async (source: string, slug: string): Promise<ComicDetail | nu
       });
       if (!json.data) return null;
       const detail = json.data;
+      let scanlatorDonate: Array<{ label: string; url: string }> | null = null;
+      const scanHandle = typeof detail.scanlator_handle === "string" ? detail.scanlator_handle : "";
+      if (scanHandle) {
+        try {
+          const { socialQuery } = await import("@/lib/social/db");
+          const { rows } = await socialQuery<{
+            support_dana: string | null; support_trakteer: string | null; support_tako: string | null; support_url_lain: string | null;
+          }>("select support_dana, support_trakteer, support_tako, support_url_lain from scanlator_profiles where handle = $1 limit 1", [scanHandle]);
+          const row = rows[0];
+          if (row) {
+            scanlatorDonate = [
+              { label: "DANA / GoPay", url: row.support_dana || "" },
+              { label: "Trakteer", url: row.support_trakteer || "" },
+              { label: "Tako", url: row.support_tako || "" },
+              { label: "Donate lain", url: row.support_url_lain || "" },
+            ].filter((d) => d.url);
+          }
+        } catch {
+          scanlatorDonate = null;
+        }
+      }
       return normalizeDetail({ data: {
         ...detail,
         thumbnail: detail.thumbnail || detail.cover_url,
+        scanlator_donate: scanlatorDonate,
         synopsis: detail.synopsis || detail.description,
         chapters: Array.isArray(detail.chapters) ? detail.chapters.map((chapter: Dict) => ({
           ...chapter,

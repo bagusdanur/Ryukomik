@@ -22,6 +22,9 @@ type ComicDetail = Series & {
   thumbnail: string;
   title: string;
   author?: string;
+  scanlator_handle?: string;
+  scanlator_team?: string;
+  scanlator_donate?: Array<{ label: string; url: string }> | null;
   Pengarang?: string;
   Konsep?: string;
   chapters: Chapter[];
@@ -246,6 +249,12 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
                 {statusLabel}
               </span>
             </div>
+            {/* Atribusi Scanlator (Fase B/C) */}
+            {data.scanlator_handle && (
+              <Link href={`/scanlator/${data.scanlator_handle}`} className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/[.06] px-3 py-1.5 text-[11px] font-bold text-white/75 transition hover:bg-white/[.1]">
+                Diunggah oleh {data.scanlator_team || data.scanlator_handle}
+              </Link>
+            )}
             {/* TOMBOL SAVED/BOOKMARK */}
             <div className="mt-4">
               <BookmarkButton
@@ -271,6 +280,20 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
         >
           {expand ? "Tutup" : "Lihat selengkapnya"}
         </button>
+        {/* Blok Dukung kami (Fase C — link donate eksternal Scanlator) */}
+        {data.scanlator_donate && data.scanlator_donate.length > 0 && (
+          <div className="rk-card-soft mt-4 rounded-2xl p-4">
+            <p className="text-sm font-black text-white">Dukung {data.scanlator_team || "tim translate"}!</p>
+            <p className="mt-1 text-xs leading-relaxed text-white/45">Donasi langsung ke akun donate tim ini (keluar dari Ryukomik).</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {data.scanlator_donate.map((d) => (
+                <a key={d.label} href={d.url} target="_blank" rel="noreferrer noopener" className="rounded-xl bg-white/[.05] px-3 py-2.5 text-center text-xs font-bold text-white/80 transition hover:bg-white/[.09]">
+                  {d.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="rk-shell px-4 mt-4 flex gap-2 flex-wrap">

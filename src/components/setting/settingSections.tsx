@@ -223,6 +223,14 @@ export function AccountSection({
         </span>
       </button>
 
+      <Link
+        href="/scanlator"
+        className="w-full flex items-center justify-between px-4 py-4 hover:bg-white/[0.06] transition"
+      >
+        <RowLeft icon={<FaPen className="text-white/70" />} label="Studio Scanlator" />
+        <span className="text-white/40 text-sm">Beta</span>
+      </Link>
+
       <button
         onClick={onPremium}
         className="w-full flex items-center justify-between px-4 py-4 hover:bg-white/[0.06] transition"

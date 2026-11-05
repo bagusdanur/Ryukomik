@@ -3,6 +3,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { FiCheckCircle, FiClock, FiRefreshCw, FiXCircle } from "react-icons/fi";
 
+type WorkReview = {
+  id: string;
+  slug: string;
+  title: string;
+  cover_url: string | null;
+  type: string | null;
+  is_adult: boolean;
+  scanlator_handle: string | null;
+  scanlator_team: string | null;
+};
+
 type Application = {
   id: string;
   user_id: string;
@@ -31,6 +42,8 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
+  const [works, setWorks] = useState<WorkReview[]>([]);
+  const [busyWork, setBusyWork] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -40,6 +53,11 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
       if (res.ok) {
         const json = (await res.json()) as { applications?: Application[] };
         setApps(json.applications || []);
+      }
+      const wRes = await fetch("/api/admin/scanlator/review", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }).catch(() => null);
+      if (wRes?.ok) {
+        const wJson = (await wRes.json()) as { works?: WorkReview[] };
+        setWorks(wJson.works || []);
       }
     } catch {
       setApps([]);
@@ -71,6 +89,28 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
       await load();
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const reviewWork = async (work: WorkReview, action: "approve" | "reject") => {
+    setBusyWork(work.id);
+    setNotice("");
+    try {
+      const token = await getAdminToken();
+      const res = await fetch("/api/admin/scanlator/review", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: work.id, action }),
+      });
+      const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
+      if (!res.ok || !json?.success) {
+        setNotice(json?.error || "Gagal memproses karya.");
+        return;
+      }
+      setNotice(action === "approve" ? `“${work.title}” terbit.` : `“${work.title}” ditolak.`);
+      await load();
+    } finally {
+      setBusyWork(null);
     }
   };
 
@@ -131,6 +171,37 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
           </div>
         </div>
       ))}
+
+      {works.length > 0 && (
+        <div className="rk-card-soft rounded-3xl p-4">
+          <p className="text-[13px] font-bold text-white">Review Karya Scanlator ({works.length} menunggu)</p>
+          <p className="mt-0.5 text-[11px] text-white/40">ACC = seri + chapter-nya terbit. Tolak = tidak tampil di situs.</p>
+          <div className="mt-3 space-y-3">
+            {works.map((work) => (
+              <div key={work.id} className="flex items-center gap-3 rounded-2xl bg-white/[.03] p-3">
+                {work.cover_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={work.cover_url} alt="" className="h-16 w-12 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <div className="flex h-16 w-12 shrink-0 items-center justify-center rounded-lg bg-white/[.06]" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-black text-white">{work.title}</p>
+                  <p className="text-[11px] text-white/40">{work.scanlator_team || work.scanlator_handle} · {work.type || "—"}{work.is_adult ? " · 18+" : ""}</p>
+                </div>
+                <div className="flex shrink-0 gap-1.5">
+                  <button type="button" disabled={busyWork === work.id} onClick={() => void reviewWork(work, "approve")} className="flex items-center gap-1 rounded-lg bg-emerald-500/90 px-3 py-2 text-[11px] font-black text-white disabled:opacity-50">
+                    <FiCheckCircle size={12} /> Terbitkan
+                  </button>
+                  <button type="button" disabled={busyWork === work.id} onClick={() => void reviewWork(work, "reject")} className="flex items-center gap-1 rounded-lg border border-rose-400/30 px-3 py-2 text-[11px] font-bold text-rose-300 disabled:opacity-50">
+                    <FiXCircle size={12} /> Tolak
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {done.length > 0 && (
         <div className="rk-card-soft rounded-3xl p-4">
