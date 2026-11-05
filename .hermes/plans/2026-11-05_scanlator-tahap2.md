@@ -18,14 +18,14 @@ Masalah: sekarang hanya bisa kirim; salah judul/cover/chapter harus minta admin.
 - [ ] Verifikasi: user lain tidak bisa edit/hapus (403), admin tetap bisa.
 - [ ] Uji end-to-end + staging build + commit push.
 
-## Tahap 3 — Notifikasi & alasan penolakan
+## Tahap 3 — Notifikasi & alasan penolakan (SELESAI)
 Masalah: Scanlator tidak tahu project di-ACC/ditolak/kena SP.
-- [ ] Kolom `review_note` untuk project (`project_manga.review_note`).
-- [ ] Admin wajib isi alasan saat menolak project.
-- [ ] Notifikasi in-app: tabel `scanlator_notifications` + badge di tab Ringkasan studio.
-- [ ] Notifikasi Telegram ke Scanlator (kalau dia isi chat id) — opsional, fallback in-app.
-- [ ] Tampilkan alasan penolakan di kartu project + tombol "Kirim ulang setelah diperbaiki".
-- [ ] Uji: tolak project → notif muncul → edit → kirim ulang → ACC.
+- [x] Kolom `review_note` untuk project (`project_manga.review_note`).
+- [x] Admin wajib isi alasan saat menolak project.
+- [x] Notifikasi in-app: tabel `scanlator_notifications` + badge di tab Ringkasan studio.
+- [ ] (ditunda) Notifikasi Telegram ke Scanlator — butuh chat id; in-app sudah jalan.
+- [x] Tampilkan alasan penolakan di kartu project + tombol "Kirim ulang setelah diperbaiki".
+- [x] Uji: tolak project → notif muncul → edit → kirim ulang → ACC.
 
 ## Tahap 4 — Penegakan aturan & kuota
 Masalah: S&K menjanjikan 8 halaman/chapter dan kuota 2 GB, tapi belum ditegakkan.
