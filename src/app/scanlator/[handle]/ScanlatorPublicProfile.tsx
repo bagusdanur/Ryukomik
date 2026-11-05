@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FiArrowLeft, FiCalendar, FiExternalLink, FiHeart } from "react-icons/fi";
 import UserBadges from "@/components/UserBadges";
+import { getSession } from "@/lib/auth/getSession";
 
 type Profile = {
   handle: string; team_name: string; bio: string | null;
@@ -21,6 +22,7 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -31,6 +33,19 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
         ]);
         if (pRes.ok) setProfile(((await pRes.json()) as { profile: Profile }).profile);
         if (wRes.ok) setProjects(((await wRes.json()) as { works: Project[] }).works || []);
+        // Endpoint privat hanya mengembalikan profil milik sesi yang login (butuh Bearer).
+        const { data } = await getSession();
+        const token = data.session?.access_token;
+        if (token) {
+          const meRes = await fetch("/api/scanlator/profile", {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          }).catch(() => null);
+          if (meRes?.ok) {
+            const me = (await meRes.json()) as { profile?: { handle?: string } | null };
+            if (me.profile?.handle && me.profile.handle.toLowerCase() === handle.toLowerCase()) setIsOwner(true);
+          }
+        }
       } catch {
         setProfile(null);
       } finally {
@@ -107,6 +122,15 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
           </p>
         </div>
       </header>
+
+      {isOwner && (
+        <Link
+          href="/scanlator"
+          className="mb-4 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--accent)] text-[12px] font-bold text-white transition-colors hover:bg-[var(--accent)]/85"
+        >
+          Buka Studio Scanlator
+        </Link>
+      )}
 
       {profile.bio && <p className="pb-4 text-[12px] leading-relaxed text-white/55">{profile.bio}</p>}
 
