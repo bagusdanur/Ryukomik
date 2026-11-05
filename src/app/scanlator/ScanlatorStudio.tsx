@@ -7,7 +7,6 @@ import {
   FiChevronDown, FiPlus, FiSave, FiSend, FiTrash2, FiUser, FiX,
 } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
-import { compressImage, formatSize } from "@/utils/imageCompress";
 import { Button, Field, Panel, PanelHead, Row, Stat, StatusDot, Tabs, inputClass } from "@/components/scanlator/ui";
 
 type Profile = {
@@ -167,13 +166,45 @@ export default function ScanlatorStudio() {
     } finally { setSavingProfile(false); }
   };
 
-  const uploadImage = async (file: File, kind: "cover" | "chapter" | "avatar", slug: string, watermark: boolean) => {
+  /**
+   * Upload seperti dashboard Project: minta presigned URL, unggah langsung ke
+   * R2 dari browser. Kalau R2 menolak (CORS), baru lewat server sebagai cadangan.
+   */
+  const uploadImage = async (file: File, kind: "cover" | "chapter" | "avatar", slug: string, watermark = false) => {
+    const t = await token();
+
+    // Watermark digambar di server (bukan saat upload langsung), jadi halaman
+    // terakhir chapter tetap lewat jalur server.
+    try {
+      if (watermark) throw new Error("server-path");
+      const presignRes = await fetch("/api/scanlator/presign-upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, contentType: file.type || "image/webp", slug, kind, size: file.size }),
+      });
+      const presign = (await presignRes.json().catch(() => null)) as
+        | { presignedUrl?: string; publicUrl?: string; error?: string }
+        | null;
+      if (!presignRes.ok) throw new Error(presign?.error || `Gagal menyiapkan upload (${presignRes.status}).`);
+
+      if (presign?.presignedUrl && presign.publicUrl) {
+        const put = await fetch(presign.presignedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type || "image/webp" },
+          body: file,
+        }).catch(() => null);
+        if (put?.ok) return presign.publicUrl;
+      }
+    } catch (err) {
+      // Lanjut ke jalur server di bawah.
+      if (err instanceof Error && /Kuota storage habis/i.test(err.message)) throw err;
+    }
+
     const fd = new FormData();
     fd.append("file", file);
     fd.append("kind", kind);
     fd.append("slug", slug);
     if (watermark) fd.append("watermark", "true");
-    const t = await token();
     const res = await fetch("/api/scanlator/upload-image", { method: "POST", headers: { Authorization: `Bearer ${t}` }, body: fd });
     const json = (await res.json().catch(() => null)) as { success?: boolean; url?: string; error?: string } | null;
     if (!res.ok || !json?.success || !json.url) throw new Error(json?.error || "Upload gagal.");
@@ -205,7 +236,7 @@ export default function ScanlatorStudio() {
     const file = files?.[0];
     if (!file) return;
     setUploadingAvatar(true); setError("");
-    try { setAvatarUrl(await uploadImage(file, "avatar", profile?.handle || "group", false)); }
+    try { setAvatarUrl(await uploadImage(file, "avatar", profile?.handle || "group")); }
     catch (err) { setError(err instanceof Error ? err.message : "Upload foto grup gagal."); }
     finally { setUploadingAvatar(false); }
   };
@@ -214,7 +245,7 @@ export default function ScanlatorStudio() {
     const file = files?.[0];
     if (!file) return;
     setUploadingCover(true); setError("");
-    try { setCoverUrl(await uploadImage(file, "cover", profile?.handle || "cover", false)); }
+    try { setCoverUrl(await uploadImage(file, "cover", profile?.handle || "cover")); }
     catch (err) { setError(err instanceof Error ? err.message : "Upload cover gagal."); }
     finally { setUploadingCover(false); }
   };
@@ -224,23 +255,21 @@ export default function ScanlatorStudio() {
     void uploadBatch(Array.from(files));
   };
 
-  const uploadBatch = async (list: File[]) => {
-    if (!list.length) return;
+  const uploadBatch = async (input: File[]) => {
+    if (!input.length) return;
+    // Urutkan seperti dashboard Project: p1, p2, p10 — bukan p1, p10, p2.
+    const list = [...input].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
     setUploadingChapter(true); setError(""); setNotice("");
     const startedAt = Date.now();
     setProgress({ total: list.length, done: 0, failed: [], failedFiles: [], currentName: "", savedBytes: 0, startedAt });
 
-    let savedBytes = 0;
     for (let i = 0; i < list.length; i++) {
       const original = list[i];
       setProgress((p) => (p ? { ...p, currentName: original.name } : p));
       try {
-        // Kompres dulu: memotong waktu upload & pemakaian kuota.
-        const { file, finalBytes, originalBytes } = await compressImage(original);
-        savedBytes += Math.max(0, originalBytes - finalBytes);
-        const url = await uploadImage(file, "chapter", chapterSlug || profile?.handle || "chapter", i === list.length - 1);
+        const url = await uploadImage(original, "chapter", chapterSlug || profile?.handle || "chapter", i === list.length - 1);
         setChapterImages((prev) => [...prev, url]);
-        setProgress((p) => (p ? { ...p, done: p.done + 1, savedBytes } : p));
+        setProgress((p) => (p ? { ...p, done: p.done + 1 } : p));
       } catch (err) {
         const reason = err instanceof Error ? err.message : "Gagal upload";
         setProgress((p) => (p ? { ...p, failed: [...p.failed, { name: original.name, reason }], failedFiles: [...p.failedFiles, original] } : p));
@@ -250,6 +279,11 @@ export default function ScanlatorStudio() {
     }
     setUploadingChapter(false);
     setProgress((p) => (p ? { ...p, currentName: "" } : p));
+    // Angka kuota berubah setelah upload — ambil ulang.
+    void token().then((t) => fetch("/api/scanlator/quota", { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" }))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((q) => { if (q) setQuota(q); })
+      .catch(() => undefined);
   };
 
   const createChapter = async (e: React.FormEvent) => {
@@ -650,7 +684,7 @@ export default function ScanlatorStudio() {
                         <p className="mt-1.5 truncate text-[10px] text-white/35">
                           {uploadingChapter
                             ? progress.currentName || "menyiapkan…"
-                            : `${progress.done} berhasil${progress.failed.length ? ` · ${progress.failed.length} gagal` : ""}${progress.savedBytes > 0 ? ` · hemat ${formatSize(progress.savedBytes)}` : ""}`}
+                            : `${progress.done} berhasil${progress.failed.length ? ` · ${progress.failed.length} gagal` : ""}`}
                         </p>
                         {!uploadingChapter && progress.failedFiles.length > 0 && (
                           <button
