@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { authBaseUrl, consumeOAuthState, exchangeGoogleCode, googleConfigured } from "@/lib/auth/google";
 import { createSession, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/session";
+import { createHandoffCode } from "@/lib/auth/handoff";
 import { upsertAuthUserFromGoogle } from "@/lib/auth/userStore";
 import { socialQuery } from "@/lib/social/db";
 
@@ -56,6 +57,15 @@ export async function GET(request: Request) {
     userAgent: request.headers.get("user-agent"),
     ip,
   });
+
+  // Mode PWA: terbitkan kode sekali pakai supaya aplikasi bisa membuat sesinya
+  // sendiri (cookie OAuth tidak terbaca dari dalam aplikasi di Android).
+  if (pending.nextUrl.startsWith("pwa:")) {
+    const code = await createHandoffCode(user.id);
+    const handoffResponse = NextResponse.redirect(`${base}/auth/kode?c=${code}`);
+    handoffResponse.cookies.set(SESSION_COOKIE, refreshToken, sessionCookieOptions(expiresAt));
+    return handoffResponse;
+  }
 
   const target = pending.nextUrl.startsWith("/") && !pending.nextUrl.startsWith("//") ? pending.nextUrl : "/";
   const response = NextResponse.redirect(`${base}${target}`);

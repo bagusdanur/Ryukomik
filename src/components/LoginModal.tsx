@@ -17,7 +17,13 @@ export default function LoginModal({ close }: LoginModalProps) {
   const login = () => {
     // Auth lokal (Fase B): Google OAuth ditangani route sendiri.
     const next = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = `/api/auth/google/start?next=${next}`;
+    // Di aplikasi (standalone) cookie OAuth mendarat di jar browser, bukan
+    // jar aplikasi → minta kode serah-terima supaya login benar-benar masuk.
+    const standalone =
+      typeof window !== "undefined" &&
+      (window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as unknown as { standalone?: boolean }).standalone === true);
+    window.location.href = `/api/auth/google/start?next=${next}${standalone ? "&pwa=1" : ""}`;
   };
 
   return (
@@ -143,6 +149,12 @@ export default function LoginModal({ close }: LoginModalProps) {
           <span className="underline">Syarat & Kebijakan</span>
         </div>
       </div>
+      <p className="mt-3 text-center text-[11px] text-white/35">
+        Buka dari aplikasi?{" "}
+        <a href="/auth/kode" className="font-semibold text-[var(--accent-2)] underline underline-offset-2">
+          Masuk dengan kode
+        </a>
+      </p>
     </>
   );
 }
