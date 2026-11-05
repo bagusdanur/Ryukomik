@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FiAlertTriangle, FiArrowRight, FiBookOpen, FiClock, FiEdit3, FiImage,
-  FiChevronDown, FiPlus, FiSave, FiSend, FiTrash2, FiUser,
+  FiChevronDown, FiPlus, FiSave, FiSend, FiTrash2, FiUser, FiX,
 } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
 import { Button, Field, Panel, PanelHead, Row, Stat, StatusDot, Tabs, inputClass } from "@/components/scanlator/ui";
@@ -48,6 +48,7 @@ export default function ScanlatorStudio() {
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [unread, setUnread] = useState(0);
   const [quota, setQuota] = useState<{ usedLabel: string; limitLabel: string; percent: number; fileCount: number } | null>(null);
+  const [stats, setStats] = useState<{ totalViews: number; totalChapters: number; projects: Array<{ slug: string; title: string; views: number }> } | null>(null);
 
   const [teamName, setTeamName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -117,6 +118,8 @@ export default function ScanlatorStudio() {
         }
       }
       if (wRes.ok) setWorks(((await wRes.json()) as { works?: Work[] }).works || []);
+      const sRes = await fetch("/api/scanlator/stats", { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" }).catch(() => null);
+      if (sRes?.ok) setStats((await sRes.json()) as { totalViews: number; totalChapters: number; projects: Array<{ slug: string; title: string; views: number }> });
       const qRes = await fetch("/api/scanlator/quota", { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" }).catch(() => null);
       if (qRes?.ok) {
         const qj = (await qRes.json()) as { usedLabel: string; limitLabel: string; percent: number; fileCount: number };
@@ -416,8 +419,11 @@ export default function ScanlatorStudio() {
           <div className="text-[11px] leading-relaxed text-amber-100/80">
             <p className="font-bold">{profile.status === "revoked" ? "Akses dicabut" : "Akun disuspend"}</p>
             <p className="text-amber-100/50">
-              {profile.status === "revoked" ? "Tidak bisa upload. Hubungi admin untuk banding." : `Upload dibekukan${profile.suspended_until ? ` s.d. ${new Date(profile.suspended_until).toLocaleDateString("id-ID")}` : ""}.`}
+              {profile.status === "revoked" ? "Tidak bisa upload." : `Upload dibekukan${profile.suspended_until ? ` s.d. ${new Date(profile.suspended_until).toLocaleDateString("id-ID")}` : ""}.`}
             </p>
+            <Link href="/scanlator/lapor?kind=appeal" className="mt-2 inline-flex min-h-[30px] items-center rounded-md border border-amber-300/30 px-2.5 text-[11px] font-bold text-amber-200">
+              Ajukan banding
+            </Link>
           </div>
         </div>
       )}
@@ -430,6 +436,23 @@ export default function ScanlatorStudio() {
               <Stat label="Terbit" value={published} tone="ok" />
               <Stat label="Review" value={pendingWorks} tone="warn" />
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Stat label="Total tayangan" value={(stats?.totalViews ?? 0).toLocaleString("id-ID")} />
+              <Stat label="Total chapter" value={(stats?.totalChapters ?? 0).toLocaleString("id-ID")} />
+            </div>
+            {stats && stats.projects.length > 0 && (
+              <Panel>
+                <PanelHead title="Project terpopuler" desc="Berdasarkan jumlah tayangan." />
+                <ul className="divide-y divide-white/[.05]">
+                  {stats.projects.slice(0, 3).map((p) => (
+                    <li key={p.slug} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                      <span className="truncate text-[12px] text-white/75">{p.title}</span>
+                      <span className="shrink-0 text-[11px] font-semibold text-white/40">{p.views.toLocaleString("id-ID")} tayangan</span>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
 
             {notifs.length > 0 && (
               <Panel>
@@ -482,6 +505,10 @@ export default function ScanlatorStudio() {
               <Row className="flex items-center justify-between">
                 <span className="text-[12px] text-white/60">Aturan & sanksi</span>
                 <Link href="/aturan/scanlator" className="flex items-center gap-1 text-[11px] font-bold text-[var(--accent-2)]">Baca <FiArrowRight size={11} /></Link>
+              </Row>
+              <Row className="flex items-center justify-between">
+                <span className="text-[12px] text-white/60">Direktori semua tim</span>
+                <Link href="/scanlator/direktori" className="flex items-center gap-1 text-[11px] font-bold text-[var(--accent-2)]">Buka <FiArrowRight size={11} /></Link>
               </Row>
               <Row className="flex items-center justify-between">
                 <span className="text-[12px] text-white/60">Halaman publik tim</span>
@@ -576,6 +603,29 @@ export default function ScanlatorStudio() {
                     <Field label="Gambar" hint={uploadingChapter ? "mengunggah…" : `${chapterImages.length} file`}>
                       <input type="file" accept="image/*" multiple onChange={(e) => void onChapterFiles(e.target.files)} className="w-full text-[11px] text-white/45 file:mr-3 file:rounded-md file:border-0 file:bg-white/[.08] file:px-3 file:py-2 file:text-[11px] file:font-bold file:text-white/80" />
                     </Field>
+
+                    {chapterImages.length > 0 && (
+                      <div>
+                        <p className="mb-1.5 text-[11px] font-semibold text-white/55">Pratinjau urutan ({chapterImages.length})</p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {chapterImages.map((url, i) => (
+                            <div key={url} className="relative overflow-hidden rounded-md border border-white/[.07]">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={url} alt={`Halaman ${i + 1}`} loading="lazy" className="aspect-[3/4] w-full object-cover" />
+                              <span className="absolute left-1 top-1 rounded bg-black/70 px-1 text-[9px] font-bold text-white/80">{i + 1}</span>
+                              <button
+                                type="button"
+                                onClick={() => setChapterImages((prev) => prev.filter((_, idx) => idx !== i))}
+                                aria-label={`Hapus halaman ${i + 1}`}
+                                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded bg-black/70 text-rose-300"
+                              >
+                                <FiX size={11} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </Panel>
                 <Button type="submit" disabled={busyChapter || !chapterSlug || chapterImages.length === 0 || blocked} className="w-full">

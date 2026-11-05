@@ -35,23 +35,26 @@ Keputusan user: aturan minimal 8 halaman/chapter tidak dipakai; cukup kuota stor
 - [x] Indikator kuota di tab Upload (terpakai / 2 GB, bar warna, jumlah file).
 - [x] S&K: hapus butir "minimal 8 halaman", perbarui batas teknis (30 MB/gambar, 60 gambar/chapter, kuota 2 GB).
 
-## Tahap 5 — Statistik & direktori
-- [ ] `GET /api/scanlator/stats` — total views, chapter, pembaca per project (dari project-db).
-- [ ] Tab Ringkasan: kartu views + project terpopuler.
-- [ ] Halaman `/scanlator` (publik, bukan studio) → daftar semua grup: avatar, nama, jumlah project, terakhir update.
-- [ ] Link direktori dari menu/nav.
+## Tahap 5 — Statistik & direktori (SELESAI)
+- [x] `GET /api/scanlator/stats` — total tayangan, total chapter, versi project (dari project-db).
+- [x] Tab Ringkasan: kartu "Total tayangan" & "Total chapter" + panel "Project terpopuler".
+- [x] Halaman publik `/scanlator/direktori` — daftar semua grup: avatar, nama, jumlah project, update terakhir, pencarian.
+- [x] Link direktori di tab Ringkasan studio.
 
-## Tahap 6 — Anti-penyalahgunaan
-- [ ] Cek duplikat judul/slug saat buat seri (fuzzy match → tolak atau minta konfirmasi).
-- [ ] Deteksi re-upload: hash gambar pertama chapter, bandingkan dengan chapter tim lain.
-- [ ] Form Report → jalur takedown: tombol "Laporkan" di halaman seri, masuk antrean admin dengan SLA 1×24 jam.
-- [ ] Tombol "Ajukan banding" saat suspend/dicabut → tiket ke admin.
+## Tahap 6 — Anti-penyalahgunaan (SELESAI kecuali hash gambar)
+- [x] Cek duplikat judul saat buat seri (normalisasi; judul sama/mirip → 409 + saran).
+- [x] Slug unik otomatis: kalau slug pernah dipakai (termasuk project terhapus) diberi akhiran.
+- [ ] ~~Deteksi re-upload via hash gambar~~ → ditunda (butuh storage hash per gambar, volume besar).
+- [x] Form laporan/takedown `/scanlator/lapor` + tombol "Laporkan" di halaman seri.
+- [x] Antrean laporan di admin (tab Laporan) + aksi Selesaikan/Abaikan + catatan.
+- [x] Tombol "Ajukan banding" saat akun disuspend (tiket masuk antrean laporan, kind=appeal).
+- [x] Rate-limit 5 laporan/jam per user.
 
-## Tahap 7 — Rapikan sisa
-- [ ] Edit slug (sekali saja, dengan redirect 301 dari slug lama).
-- [ ] Preview urutan gambar chapter sebelum kirim + hapus gambar dari daftar.
-- [ ] Admin tab Scanlator: tampilkan daftar project per grup (tanpa pindah tab).
-- [ ] Dukungan multi-user per grup (kalau nanti dibutuhkan) — desain tabel `scanlator_members`.
+## Tahap 7 — Rapikan sisa (SELESAI kecuali slug edit & multi-user)
+- [ ] ~~Edit slug~~ → ditunda; slug otomatis unik, perubahan slug butuh redirect 301 yang belum ada.
+- [x] Pratinjau urutan gambar chapter sebelum kirim + tombol hapus per gambar.
+- [x] Admin tab Scanlator: tombol "Lihat project" per grup (judul, status, tayangan).
+- [ ] ~~Multi-user per grup~~ → ditunda; butuh tabel `scanlator_members` + UI undangan.
 
 ## Aturan kerja tiap tahap
 1. Migrasi DB dulu (idempoten, `add column if not exists`).

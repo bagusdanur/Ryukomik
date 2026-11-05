@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  FiAlertTriangle, FiCheck, FiClock, FiMessageCircle, FiRefreshCw, FiSlash, FiUserX, FiX,
+  FiAlertTriangle, FiBookOpen, FiCheck, FiClock, FiMessageCircle, FiRefreshCw, FiSlash, FiUserX, FiX,
 } from "react-icons/fi";
 import { Button, Panel, PanelHead, Tabs, inputClass } from "@/components/scanlator/ui";
 
@@ -21,15 +21,21 @@ type Scanlator = {
 };
 
 type ModerationRow = { id: string; user_id: string; action: string; reason: string | null; note: string | null; created_at: string; team_name: string | null };
+type ReportRow = {
+  id: string; kind: string; target_slug: string | null; target_handle: string | null;
+  reason: string; detail: string | null; status: string; admin_note: string | null;
+  created_at: string; reporter: string | null;
+};
 type WorkReview = { id: string; slug: string; title: string; cover_url: string | null; type: string | null; is_adult: boolean; scanlator_handle: string | null; scanlator_team: string | null };
 
-type TabId = "pengajuan" | "karya" | "scanlator" | "moderasi";
+type TabId = "pengajuan" | "karya" | "scanlator" | "moderasi" | "laporan";
 
 const TABS: Array<{ id: TabId; label: string }> = [
   { id: "pengajuan", label: "Pengajuan" },
   { id: "karya", label: "Project" },
   { id: "scanlator", label: "Scanlator" },
   { id: "moderasi", label: "Moderasi" },
+  { id: "laporan", label: "Laporan" },
 ];
 
 function timeAgo(iso: string) {
@@ -46,6 +52,9 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
   const [scanlators, setScanlators] = useState<Scanlator[]>([]);
   const [moderation, setModeration] = useState<ModerationRow[]>([]);
   const [works, setWorks] = useState<WorkReview[]>([]);
+  const [reports, setReports] = useState<ReportRow[]>([]);
+  const [openUser, setOpenUser] = useState<string | null>(null);
+  const [userWorks, setUserWorks] = useState<Record<string, Array<{ slug: string; title: string; review_status: string; is_published: boolean; view_count: number }>>>({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -64,6 +73,8 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
         setApps(j.applications || []); setScanlators(j.scanlators || []); setModeration(j.moderation || []);
       }
       if (wRes.ok) setWorks(((await wRes.json()) as { works?: WorkReview[] }).works || []);
+      const rRes = await fetch("/api/admin/scanlator/reports", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }).catch(() => null);
+      if (rRes?.ok) setReports(((await rRes.json()) as { reports?: ReportRow[] }).reports || []);
     } catch { setApps([]); }
     finally { setLoading(false); }
   }, [getAdminToken]);
@@ -104,6 +115,33 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
       if (!res.ok || !json?.success) { setNotice(json?.error || "Gagal."); return; }
       setNotice(action === "approve" ? `“${work.title}” terbit.` : `“${work.title}” ditolak.`);
       await load();
+    } finally { setBusy(null); }
+  };
+
+  const toggleUserProjects = async (userId: string) => {
+    if (openUser === userId) { setOpenUser(null); return; }
+    setOpenUser(userId);
+    if (userWorks[userId]) return;
+    try {
+      const token = await getAdminToken();
+      const res = await fetch(`/api/admin/scanlator/projects?user_id=${userId}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+      if (res.ok) {
+        const j = (await res.json()) as { works?: Array<{ slug: string; title: string; review_status: string; is_published: boolean; view_count: number }> };
+        setUserWorks((prev) => ({ ...prev, [userId]: j.works || [] }));
+      }
+    } catch { /* diamkan */ }
+  };
+
+  const resolveReport = async (id: string, action: "resolve" | "dismiss") => {
+    setBusy(id);
+    try {
+      const token = await getAdminToken();
+      const res = await fetch("/api/admin/scanlator/reports", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action, note: notes[id] || "" }),
+      });
+      if (res.ok) { setNotice("Laporan diproses."); await load(); }
     } finally { setBusy(null); }
   };
 
@@ -256,6 +294,27 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
               )}
               {s.moderation_note && <p className="px-4 pt-1 text-[10px] text-white/30">Catatan: {s.moderation_note}</p>}
 
+              <div className="px-4 pt-2">
+                <button type="button" onClick={() => void toggleUserProjects(s.user_id)} className="flex items-center gap-1 text-[11px] font-bold text-[var(--accent-2)]">
+                  <FiBookOpen size={11} /> {openUser === s.user_id ? "Sembunyikan project" : "Lihat project"}
+                </button>
+                {openUser === s.user_id && (
+                  <ul className="mt-1.5 divide-y divide-white/[.05] rounded-md border border-white/[.06]">
+                    {(userWorks[s.user_id] || []).map((w) => (
+                      <li key={w.slug} className="flex items-center justify-between gap-2 px-2.5 py-2">
+                        <span className="min-w-0 truncate text-[11px] text-white/70">{w.title}</span>
+                        <span className="shrink-0 text-[10px] text-white/35">
+                          {w.review_status === "approved" ? "Terbit" : w.review_status === "rejected" ? "Ditolak" : "Review"} · {w.view_count} tayangan
+                        </span>
+                      </li>
+                    ))}
+                    {(userWorks[s.user_id] || []).length === 0 && (
+                      <li className="px-2.5 py-2 text-[11px] text-white/30">Belum ada project.</li>
+                    )}
+                  </ul>
+                )}
+              </div>
+
               <div className="p-4 pt-3">
                 <input
                   value={notes[s.user_id] || ""}
@@ -285,6 +344,51 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
           ))}
           {!loading && scanlators.length === 0 && <p className="py-10 text-center text-[12px] text-white/30">Belum ada Scanlator.</p>}
         </>
+      )}
+
+      {tab === "laporan" && (
+        <Panel>
+          <PanelHead title="Laporan & banding" desc={`${reports.filter((r) => r.status === "open").length} menunggu tindakan`} />
+          {reports.length === 0 ? (
+            <p className="px-4 py-10 text-center text-[12px] text-white/30">Belum ada laporan.</p>
+          ) : (
+            <ul className="divide-y divide-white/[.05]">
+              {reports.map((r) => (
+                <li key={r.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-semibold text-white/85">
+                        {r.kind === "appeal" ? "Banding" : r.kind === "copyright" ? "Hak cipta" : "Lainnya"} · {r.reason}
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-white/35">
+                        {r.reporter || "user"} · {r.target_slug || r.target_handle || "—"} · {timeAgo(r.created_at)} lalu
+                      </p>
+                      {r.detail && <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-white/45">{r.detail}</p>}
+                    </div>
+                    <span className={`shrink-0 text-[10px] font-bold ${r.status === "open" ? "text-amber-300" : r.status === "resolved" ? "text-emerald-300" : "text-white/35"}`}>
+                      {r.status === "open" ? "Baru" : r.status === "resolved" ? "Selesai" : "Diabaikan"}
+                    </span>
+                  </div>
+                  {r.status === "open" && (
+                    <>
+                      <input
+                        value={notes[r.id] || ""}
+                        onChange={(e) => setNotes((n) => ({ ...n, [r.id]: e.target.value }))}
+                        placeholder="Catatan tindakan…"
+                        className={`${inputClass} mt-2`}
+                      />
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        <Button onClick={() => void resolveReport(r.id, "resolve")} disabled={busy === r.id}><FiCheck size={12} /> Selesaikan</Button>
+                        <Button variant="ghost" onClick={() => void resolveReport(r.id, "dismiss")} disabled={busy === r.id}><FiX size={12} /> Abaikan</Button>
+                      </div>
+                    </>
+                  )}
+                  {r.admin_note && <p className="mt-1 text-[10px] text-white/30">Catatan: {r.admin_note}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
       )}
 
       {tab === "moderasi" && (

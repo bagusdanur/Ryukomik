@@ -83,7 +83,29 @@ export async function POST(request: Request) {
     if (title.length < 2) return NextResponse.json({ error: "Judul wajib diisi." }, { status: 400 });
     if (!coverUrl.startsWith("https://")) return NextResponse.json({ error: "Cover wajib diunggah dulu (URL https dari upload)." }, { status: 400 });
 
-    const slug = slugify(`${profile.handle}-${title}`) || `scanlator-${Date.now()}`;
+    // Anti-duplikat: judul yang sama/mirip dengan project yang sudah ada ditolak.
+    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const existing = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
+      "/admin/projects?limit=100&page=1",
+    ).catch(() => ({ data: [] }));
+    const wanted = normalize(title);
+    const clash = (existing.data || []).find((row) => {
+      const t = normalize(String((row as { title?: string }).title || ""));
+      return t === wanted || (t.length > 8 && wanted.length > 8 && (t.includes(wanted) || wanted.includes(t)));
+    });
+    if (clash) {
+      return NextResponse.json(
+        { error: `Judul ini sudah ada di Project (“${String((clash as { title?: string }).title)}”). Gunakan judul lain atau hubungi admin bila kamu tim yang sama.` },
+        { status: 409 },
+      );
+    }
+
+    let slug = slugify(`${profile.handle}-${title}`) || `scanlator-${Date.now()}`;
+    // Slug pernah dipakai (termasuk project yang sudah dihapus) → beri akhiran unik.
+    const takenSlug = await projectApiFetch<{ exists?: boolean }>(`/admin/projects/slug-exists/${encodeURIComponent(slug)}`)
+      .then((r) => Boolean(r?.exists))
+      .catch(() => false);
+    if (takenSlug) slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
 
     const created = await projectApiFetch<{ data?: Record<string, unknown> }>("/admin/projects", {
       method: "POST",

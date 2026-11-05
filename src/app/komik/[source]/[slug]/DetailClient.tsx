@@ -265,6 +265,12 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
                 <Link href={`/scanlator/${data.scanlator_handle}`} className="flex items-center gap-1 rounded-md bg-[var(--accent)]/15 px-2 py-1 font-bold text-[var(--accent-2)] transition hover:bg-[var(--accent)]/25">
                   {data.scanlator_team || data.scanlator_handle}
                 </Link>
+                <Link
+                  href={`/scanlator/lapor?slug=${encodeURIComponent(slug)}&handle=${encodeURIComponent(data.scanlator_handle)}`}
+                  className="ml-auto text-[10px] text-white/25 underline-offset-2 transition hover:text-white/50 hover:underline"
+                >
+                  Laporkan
+                </Link>
               </div>
             )}
             {/* TOMBOL SAVED/BOOKMARK */}
