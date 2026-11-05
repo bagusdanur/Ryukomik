@@ -445,13 +445,6 @@ export function BackupCloudSection({
         <span className="text-white/40 text-sm">Sync</span>
       </button>
 
-      <Link
-        href="/statistik"
-        className="w-full flex items-center justify-between px-4 py-4 hover:bg-white/[0.06] transition"
-      >
-        <RowLeft icon={<FaChartBar className="text-white/70" />} label="Statistik Bacaan" />
-        <span className="text-white/40 text-sm">Lihat</span>
-      </Link>
     </Section>
   );
 }

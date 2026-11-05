@@ -6,13 +6,13 @@ import dynamicImport from "next/dynamic";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { FiBookOpen, FiClock, FiFolder, FiHeart, FiSearch, FiUsers } from "react-icons/fi";
+import { FiBookOpen, FiClock, FiFolder, FiHeart, FiSearch, FiTrendingUp, FiUsers } from "react-icons/fi";
 import { FaCrown } from "react-icons/fa";
 import CommunityNotifications from "@/components/social/CommunityNotifications";
 import { socialFetch } from "@/lib/social/client";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 
-type FilesTab = "timeline" | "favorite" | "history" | "collections";
+type FilesTab = "timeline" | "favorite" | "history" | "collections" | "stats";
 type MiniProfile = { id: string; username: string; avatar_url?: string | null;
   avatar_border?: string | null; level?: number };
 
@@ -35,10 +35,11 @@ const CollectionTab = dynamicImport(() => import("./CollectionTab"), {
   ssr: false,
 });
 const SocialTimeline = dynamicImport(() => import("@/components/social/SocialTimeline"), { loading: TabLoading, ssr: false });
+const StatsPanel = dynamicImport(() => import("@/components/stats/StatsPanel"), { loading: TabLoading, ssr: false });
 
 function normalizeTab(value: string | null): FilesTab {
   if (value === "download") return "collections";
-  if (value === "timeline" || value === "favorite" || value === "history" || value === "collections") {
+  if (value === "timeline" || value === "favorite" || value === "history" || value === "collections" || value === "stats") {
     return value;
   }
   return "timeline";
@@ -93,12 +94,13 @@ export default function FilesClient() {
           </div>
         </div>
         {/* TAB HEADER */}
-        <div className="rk-card-soft mb-5 grid grid-cols-4 gap-1 overflow-hidden rounded-2xl p-1.5 text-[10px] font-semibold shadow-[0_10px_35px_rgba(0,0,0,.12)] sm:text-xs">
+        <div className="rk-card-soft mb-5 grid grid-cols-5 gap-1 overflow-hidden rounded-2xl p-1.5 text-[10px] font-semibold shadow-[0_10px_35px_rgba(0,0,0,.12)] sm:text-xs">
           {[
             { id: "timeline", label: "Timeline", icon: FiBookOpen },
             { id: "favorite", label: "Favorit", icon: FiHeart },
             { id: "history", label: "Riwayat", icon: FiClock },
             { id: "collections", label: "Koleksi", icon: FiFolder },
+            { id: "stats", label: "Statistik", icon: FiTrendingUp },
           ].map((t) => {
             const Icon = t.icon;
             return (
@@ -135,6 +137,7 @@ export default function FilesClient() {
         {tab === "favorite" && <FavoriteTab search={search} />}
         {tab === "history" && <HistoryTab search={search} />}
         {tab === "collections" && <CollectionTab search={search} />}
+        {tab === "stats" && <StatsPanel />}
       </div>
     </div>
   );
