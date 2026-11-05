@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import { logoutEverywhere } from "@/lib/auth/logout";
 
 export type AuthUser = {
   id: string;
@@ -53,18 +54,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    } catch {
-      // offline: state lokal tetap dibersihkan
-    }
+    await logoutEverywhere();
     setUser(null);
     setBanned(false);
-    try {
-      localStorage.removeItem("rk_access");
-    } catch {
-      // storage bisa diblokir
-    }
   }, []);
 
   useEffect(() => {

@@ -44,6 +44,7 @@ import {
 } from "@/components/setting/settingModals";
 import { Toast } from "@/components/setting/settingUi";
 import { getSession } from "@/lib/auth/getSession";
+import { logoutEverywhere } from "@/lib/auth/logout";
 
 const initialStats = { total_comments: 0, level: 1, xp: 0, username: "", avatar_url: "" };
 const initialProfileForm = { username: "", avatar_url: "" };
@@ -412,14 +413,14 @@ export default function SettingsClient() {
   async function handleBackupLogout() {
     setLoadingLogout(true);
     await createBackup(user?.id);
-    await supabase.auth.signOut();
-    window.location.reload();
+    await logoutEverywhere();
+    window.location.href = "/";
   }
 
   async function handleLogout() {
     setLoadingLogout(true);
-    await supabase.auth.signOut();
-    window.location.reload();
+    await logoutEverywhere();
+    window.location.href = "/";
   }
 
   return (

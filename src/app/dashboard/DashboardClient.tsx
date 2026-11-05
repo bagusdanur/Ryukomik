@@ -39,6 +39,7 @@ import BackupTab from "@/components/dashboard/BackupTab";
 import AnnouncementsTab from "@/components/dashboard/AnnouncementsTab";
 import { FiBookOpen } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
+import { logoutEverywhere } from "@/lib/auth/logout";
 
 
 // ── constants ──────────────────────────────────────────────────────────────
@@ -1370,7 +1371,7 @@ export default function AdminDashboard() {
             )}
           </button>
           <button
-            onClick={() => supabase.auth.signOut()}
+            onClick={() => void logoutEverywhere().then(() => window.location.reload())}
             className="w-8 h-8 rounded-lg bg-white/[.05] border border-white/[.08] flex items-center justify-center text-white/50 hover:text-red-400 transition-colors"
           >
             <FiLogOut size={13} />

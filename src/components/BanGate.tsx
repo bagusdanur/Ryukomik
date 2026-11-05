@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import BanNoticeCard, { type BanInfo } from "@/components/ban/BanNoticeCard";
 import { getSession } from "@/lib/auth/getSession";
+import { logoutEverywhere } from "@/lib/auth/logout";
 
 type BanState = BanInfo & { banned: boolean };
 
@@ -148,7 +149,7 @@ export default function BanGate() {
 
   async function logout() {
     setLeaving(true);
-    await supabase.auth.signOut().catch(() => undefined);
+    await logoutEverywhere();
     window.location.href = "/";
   }
 
