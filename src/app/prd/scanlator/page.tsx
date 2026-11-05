@@ -86,7 +86,8 @@ export default function PrdScanlatorPage() {
               head={["Peran", "Cara dapat", "Hak"]}
               rows={[
                 ["User biasa", "Default (login)", "Baca, bookmark, komentar"],
-                ["Scanlator", "Apply → admin setujui", "Upload seri/chapter (status review), atur tautan donate, lihat statistik karya"],
+                ["Akun Translation", "Apply Request → admin setujui", "Prasyarat wajib sebelum bisa jadi Scanlator; belum bisa upload sebelum aktif"],
+                ["Scanlator", "Punya Akun Translation aktif", "Upload seri/chapter (status review), atur tautan donate, lihat statistik karya"],
                 ["Admin", "Existing", "Review semua upload, edit/hapus paksa, flag 18+, cabut akses Scanlator"],
               ]}
             />
@@ -97,7 +98,9 @@ export default function PrdScanlatorPage() {
         <section className={sectionClass}>
           <h2 className={h2Class}><FiUploadCloud className="text-[var(--accent-2)]" /> 3. Alur Kerja</h2>
           <ol className="mt-3 space-y-2">
-            <Li><strong className="text-white">Apply</strong> — form nama tim/handle, deskripsi, contoh hasil TL, pernyataan orisinalitas.</Li>
+            <Li><strong className="text-white">Tahap 0 — Buat Akun Translation dulu</strong> — user wajib mengajukan <strong className="text-white">Apply Request Akun Translation</strong> (nama tim/handle, deskripsi, contoh hasil TL, pernyataan orisinalitas). Tanpa akun Translation yang disetujui, tidak ada akses upload — tidak sembarangan user.</Li>
+            <Li><strong className="text-white">ACC Translation</strong> — admin menyetujui/menolak pengajuan di dashboard. Yang ditolak tidak bisa upload apa pun.</Li>
+            <Li><strong className="text-white">Jadi Scanlator</strong> — setelah Akun Translation aktif, Scanlator bisa upload seri & chapter (tetap lewat review per upload).</Li>
             <Li><strong className="text-white">Review apply</strong> — admin ACC/Tolak di dashboard; notifikasi Telegram ke admin dan ke user.</Li>
             <Li><strong className="text-white">Upload seri</strong> — judul, cover, deskripsi, genre, type, status, toggle 18+ (satu-satunya penentu filter).</Li>
             <Li><strong className="text-white">Upload chapter</strong> — nomor, judul bebas, gambar (maks 30 MB/chapter, kuota 2 GB/Scanlator), kompresi otomatis + watermark.</Li>
@@ -131,7 +134,7 @@ export default function PrdScanlatorPage() {
             <Table
               head={["Fase", "Isi", "Hasil"]}
               rows={[
-                ["A", "Role scanlator, apply, antrean ACC, badge profil", "User bisa jadi Scanlator"],
+                ["A", "Akun Translation (apply request + ACC admin), role scanlator, badge profil", "Hanya Translation terverifikasi yang bisa jadi Scanlator"],
                 ["B", "Upload seri/chapter, review, atribusi publik, watermark", "Karya terbit dengan atribusi"],
                 ["C", "Link donate eksternal di profil + detail", "Monetisasi pertama (tanpa pegang uang)"],
                 ["Later", "Saldo, tips, share premium 70/30, pencairan", "Backlog — jangan dibangun sekarang"],
@@ -149,7 +152,7 @@ export default function PrdScanlatorPage() {
         <section className={sectionClass}>
           <h2 className={h2Class}><FiCreditCard className="text-[var(--accent-2)]" /> 7. Definisi Selesai (MVP)</h2>
           <ul className="mt-3 space-y-2">
-            <Li>Apply → ACC → upload → review → terbit berjalan end-to-end (staging build terpisah, commit + push).</Li>
+            <Li>Apply Request Akun Translation → ACC admin → upload → review → terbit berjalan end-to-end (staging build terpisah, commit + push). User tanpa Akun Translation tidak bisa upload.</Li>
             <Li>Atribusi Scanlator tampil di kartu, detail, dan tiap chapter; klik membuka profil Scanlator.</Li>
             <Li>Tautan donate bisa diklik dan hanya https + host terdaftar yang diterima.</Li>
             <Li>Tidak ada regresi: source lain, premium, filter 18+ tetap jalan seperti sekarang.</Li>

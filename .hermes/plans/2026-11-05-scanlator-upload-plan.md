@@ -57,11 +57,15 @@ Role disimpan di `social_profiles.role = 'scanlator'` (nilai baru, bersama
 
 ## 4. Alur kerja (flow)
 
-### 4.1 Apply jadi Scanlator
-- Halaman `/scanlator/daftar`: nama tim/handle, deskripsi, 1–3 contoh hasil TL (link/unggah),
-  pernyataan orisinalitas + persetujuan aturan.
-- Masuk antrean dashboard admin. Admin setujui → role jadi `scanlator`,
-  notifikasi Telegram ke admin + pesan ke user.
+### 4.1 Akun Translation dulu (wajib, anti sembarangan)
+- **Tahap 0:** user mengajukan **Apply Request Akun Translation** di `/scanlator/daftar`:
+  nama tim/handle, deskripsi, 1–3 contoh hasil TL (link/unggah), pernyataan
+  orisinalitas + persetujuan aturan.
+- Masuk antrean dashboard admin. Admin setujui → **Akun Translation aktif**
+  (role `scanlator` mulai berlaku), notifikasi Telegram ke admin + pesan ke user.
+- Tanpa Akun Translation aktif: **tidak ada akses upload sama sekali**.
+  User biasa tetap hanya membaca seperti sekarang.
+- Setelah itu, setiap upload seri/chapter tetap lewat review per-item (Fase B).
 
 ### 4.2 Upload seri
 - Form: judul, slug otomatis, cover, deskripsi, genre, type (manhwa/manga/manhua/novel),
