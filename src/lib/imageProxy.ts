@@ -6,6 +6,9 @@ const PUBLIC_PROXY_IMAGE_HOSTS = new Set(["desu.photos"]);
 const DOUJINDESU_IMAGE_WORKER = "/api/image-proxy";
 const DOUJINDESU_BACKEND_HOST = "api.ryukomik.web.id";
 const DOUJINDESU_BACKEND_IMAGE_PATH = "/doujindesu/image";
+// Proxy gambar backend untuk Kiryuu: dipakai sebagai kandidat CADANGAN saat
+// direct ke v7.kiryuu.to gagal (403 di browser/WebView tertentu).
+const KIRYUU_BACKEND_IMAGE_PATH = "/kiryuu/image";
 
 function isDoujindesuBackendImageUrl(url: string): boolean {
   try {
@@ -131,6 +134,19 @@ export function getProxiedThumbnailUrl(url?: string, source?: string): string {
 
   if (shouldProxy) {
     return toDoujindesuWorkerImageUrl(originalUrl);
+  }
+
+  // Kiryuu: direct ke v7.kiryuu.to bisa 403 (Cloudflare) di sebagian browser.
+  // Sediakan proxy backend sebagai kandidat fallback; SeriesCard menaruhnya
+  // setelah direct supaya egress VPS hanya terpakai saat direct gagal.
+  if (source === "kiryuu") {
+    try {
+      const parsed = new URL(originalUrl);
+      const host = parsed.hostname.toLowerCase();
+      if (host === "kiryuu.to" || host.endsWith(".kiryuu.to") || host === "kiryuu.org" || host.endsWith(".kiryuu.org")) {
+        return `${DOUJINDESU_BACKEND_HOST ? "https://" : ""}${DOUJINDESU_BACKEND_HOST}${KIRYUU_BACKEND_IMAGE_PATH}?url=${encodeURIComponent(originalUrl)}`;
+      }
+    } catch {}
   }
 
   return originalUrl;

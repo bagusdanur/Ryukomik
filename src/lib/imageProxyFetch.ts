@@ -39,9 +39,13 @@ export async function fetchProxyImage(input: URL, deadline = Date.now() + 15000,
       hostname: address.address, family: address.family, servername: url.hostname,
       port: 443, path: `${url.pathname}${url.search}`, method: 'GET',
       rejectUnauthorized: process.env.IMAGE_PROXY_STRICT_TLS === '1',
-      headers: {Host: url.host, 'User-Agent': 'Mozilla/5.0',
-        Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-        'Accept-Encoding': 'identity', Referer: getImageProxyReferer(url)},
+      headers: (() => {
+        // Referer kosong = jangan kirim header sama sekali (kiryuu 403 bila ada).
+        const base: Record<string, string> = { Host: url.host, 'User-Agent': 'Mozilla/5.0', Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8', 'Accept-Encoding': 'identity' };
+        const referer = getImageProxyReferer(url);
+        if (referer) base.Referer = referer;
+        return base;
+      })(),
     }, res => {
       const status = res.statusCode || 502;
       const headers = Object.fromEntries(Object.entries(res.headers).map(([k,v]) => [k,Array.isArray(v) ? v.join(',') : String(v ?? '')]));

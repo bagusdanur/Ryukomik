@@ -38,10 +38,14 @@ export default function FallbackImage({
 }: FallbackImageProps) {
   const urls = useMemo(() => uniqueUrls([...(candidates || []), src]), [candidates, src]);
   const urlsKey = urls.join("\n");
-  const [status, setStatus] = useState({ key: urlsKey, index: 0, failed: false });
+  const [status, setStatus] = useState({ key: urlsKey, index: 0, failed: false, retried: false });
   const index = status.key === urlsKey ? status.index : 0;
   const failed = status.key === urlsKey ? status.failed : false;
-  const activeSrc = urls[index] || "";
+  const retried = status.key === urlsKey ? status.retried : false;
+  const baseSrc = urls[index] || "";
+  // Gagal sekali kadang cuma transient (403/429 sesaat, koneksi goyang).
+  // Coba sekali lagi dengan cache-bust sebelum pindah kandidat / menyerah.
+  const activeSrc = baseSrc && retried ? `${baseSrc}${baseSrc.includes("?") ? "&" : "?"}rk_retry=1` : baseSrc;
 
   if (!activeSrc || failed) {
     return (
@@ -79,9 +83,11 @@ export default function FallbackImage({
       onError={() => {
         setStatus((current) => {
           const currentIndex = current.key === urlsKey ? current.index : 0;
+          const currentRetried = current.key === urlsKey ? current.retried : false;
+          if (!currentRetried) return { key: urlsKey, index: currentIndex, failed: false, retried: true };
           const next = currentIndex + 1;
-          if (next < urls.length) return { key: urlsKey, index: next, failed: false };
-          return { key: urlsKey, index: currentIndex, failed: true };
+          if (next < urls.length) return { key: urlsKey, index: next, failed: false, retried: false };
+          return { key: urlsKey, index: currentIndex, failed: true, retried: true };
         });
       }}
     />

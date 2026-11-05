@@ -36,7 +36,9 @@ export function parseProxyImageUrl(value: string): URL | null {
 
 export function getImageProxyReferer(url: URL) {
   const host = url.hostname.toLowerCase().replace(/\.$/, '');
-  if (isHostnameOrSubdomain(host, 'kiryuu.org') || isHostnameOrSubdomain(host, 'kiryuu.to')) return 'https://kiryuu.org/';
+  // v7.kiryuu.to membalas 403 untuk SEMUA request ber-Referer (termasuk
+  // kiryuu.org sendiri), jadi proxy kiryuu wajib TANPA Referer.
+  if (isHostnameOrSubdomain(host, 'kiryuu.org') || isHostnameOrSubdomain(host, 'kiryuu.to')) return '';
   if (host === 'sektedoujin.cc' || isHostnameOrSubdomain(host, 'sektedoujin.com') || SEKTE_CDN_HOSTS.has(host)) return 'https://sektedoujin.cc/';
   if (host === 'pic.desu.xxx' || host === 'doujin.desu.xxx' || host === 'cdn.doujindesu.dev' ||
       ['desu.pics', 'desu.photos', 'doujindesu.tv', 'doujindesu.com'].some(domain => isHostnameOrSubdomain(host, domain))) return 'https://doujin.desu.xxx/';

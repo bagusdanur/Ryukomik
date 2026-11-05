@@ -49,7 +49,9 @@ export default function SeriesCard({
     if (image) {
       const proxied = getProxiedThumbnailUrl(image, detectedSource);
       if (proxied !== image) {
-        return [proxied, image];
+        // Kiryuu: direct dulu (hemat egress), proxy backend cadangan.
+        // Sumber proxy-first (adult/doujindesu) tetap proxy lebih dulu.
+        return detectedSource === "kiryuu" ? [image, proxied] : [proxied, image];
       }
     }
     return [];
