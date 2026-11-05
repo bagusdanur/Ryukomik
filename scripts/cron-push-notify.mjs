@@ -40,8 +40,9 @@ const PROJECT_CACHE_PATH = process.env.PUSH_NOTIFY_PROJECT_CACHE_PATH
 // Mencakup semua source aktif di src/config/sources.ts.
 // Project memakai aplikasi lokal agar cron tidak menambah egress eksternal.
 const SOURCES = [
-  { id: "ikiru", apiUrl: `${CONTENT_API_URL}/ikiru/pustaka?page=1`, path: "comic" },
   { id: "komikid", apiUrl: `${CONTENT_API_URL}/komikid/pustaka?page=1`, path: "comic" },
+  { id: "josei", apiUrl: `${CONTENT_API_URL}/josei/pustaka?page=1`, path: "comic" },
+  { id: "vt", apiUrl: `${CONTENT_API_URL}/vt/pustaka?page=1`, path: "comic" },
   { id: "luvyaa", apiUrl: `${CONTENT_API_URL}/luvyaa/pustaka?page=1`, path: "comic" },
   { id: "komiku", apiUrl: `${CONTENT_API_URL}/komiku/pustaka?page=1`, path: "comic" },
   { id: "kiryuu", apiUrl: `${CONTENT_API_URL}/kiryuu/pustaka?page=1`, path: "comic" },
@@ -50,6 +51,42 @@ const SOURCES = [
   { id: "meionovels", apiUrl: `${CONTENT_API_URL}/meionovels/pustaka?page=1`, path: "novel" },
   { id: "project", apiUrl: `${LOCAL_APP_URL}/api/project/pustaka?limit=50`, path: "project" },
 ];
+
+// Source hanya dicek kalau ada user yang bookmark ATAU pernah membaca seri
+// dari source itu (history_sync). Source tanpa peminat = tidak di-fetch sama
+// sekali, menghemat request jaringan + query DB tiap siklus.
+async function fetchWantedSources() {
+  const { rows } = await socialDb.query(
+    `select distinct source from (
+       select source from bookmark_sync where source is not null
+       union
+       select source from history_sync where source is not null
+     ) s`,
+  );
+  return new Set(rows.map((r) => r.source).filter(Boolean));
+}
+
+// Penerima = bookmark ATAU riwayat (pernah baca seri itu). Query batch sama,
+// jadi biaya DB tidak naik, tapi relevansi naik (user yang baca aktif dapat juga).
+async function fetchRecipientsBySlugSource(slugs, sourceIds) {
+  const map = new Map();
+  for (const slugsChunk of chunked(slugs, 100)) {
+    const { rows } = await socialDb.query(
+      `select user_id, comic_slug, source from bookmark_sync where comic_slug = any($1::text[])
+       union
+       select user_id, comic_slug, source from history_sync where comic_slug = any($1::text[])`,
+      [slugsChunk],
+    );
+    for (const row of rows) {
+      if (!sourceIds.has(row.source)) continue;
+      const key = `${row.comic_slug}${SEP}${row.source}`;
+      const list = map.get(key);
+      if (list) list.push(row.user_id);
+      else map.set(key, [row.user_id]);
+    }
+  }
+  return map;
+}
 
 function getList(json) {
   if (Array.isArray(json)) return json;
@@ -242,9 +279,20 @@ async function runCron() {
   console.log(`[${new Date().toISOString()}] Memulai pengecekan chapter terbaru...`);
   let notifSentCount = 0;
 
-  // Phase 1 — kumpulkan kandidat dari semua source (hanya fetch jaringan).
+  // Phase 1 — kumpulkan kandidat (hanya source yang punya peminat).
+  const wantedSources = await fetchWantedSources();
+  const activeSources = SOURCES.filter((s) => wantedSources.has(s.id));
+  console.log(`Source aktif dicek: ${activeSources.map((s) => s.id).join(", ") || "(tidak ada)"}`);
+
+  // Skip source yang daftarnya tidak berubah sejak siklus lalu: simpan hash
+  // daftar (slug+chapter) per source di data/push-notify-hashes.json.
+  const HASH_PATH = path.join(process.cwd(), "data", "push-notify-hashes.json");
+  let sourceHashes = {};
+  try { sourceHashes = JSON.parse(await readFile(HASH_PATH, "utf8")); } catch { /* pertama kali */ }
+  const newHashes = { ...sourceHashes };
+
   const candidates = [];
-  for (const source of SOURCES) {
+  for (const source of activeSources) {
     try {
       console.log(`Memeriksa source: ${source.id}`);
       const list = getList(await getSourcePayload(source));
@@ -252,6 +300,15 @@ async function runCron() {
         console.log(`Tidak ada data pustaka dari ${source.id}.`);
         continue;
       }
+
+      // Daftar identik dengan siklus lalu -> tidak ada chapter baru, lewati
+      // seluruh pemrosesan source ini (hemat query + penanda).
+      const hash = list.map((i) => `${getSlug(i, source) || i.slug || ""}:${i.chapter_terbaru || ""}`).join("|");
+      if (sourceHashes[source.id] === hash) {
+        console.log(`Daftar ${source.id} tidak berubah — dilewati.`);
+        continue;
+      }
+      newHashes[source.id] = hash;
 
       for (const item of list) {
         if (!item.chapter_terbaru || (!item.slug && !item.link && !item.detail_link)) continue;
@@ -298,7 +355,7 @@ async function runCron() {
   }
 
   const sourceIds = new Set(pending.map((c) => c.source.id));
-  const bookmarksBySlugSource = await fetchBookmarksBySlugSource(
+  const bookmarksBySlugSource = await fetchRecipientsBySlugSource(
     [...new Set(pending.map((c) => c.slug))],
     sourceIds,
   );
@@ -323,8 +380,11 @@ async function runCron() {
   // Phase 3 — kirim push, kumpulkan semua baris untuk satu insert penanda.
   const toMark = [];
   const queue = toNotify.slice(0, MAX_PER_RUN);
-  if (toNotify.length > queue.length) {
-    console.log(`${toNotify.length - queue.length} chapter ditunda ke siklus berikutnya (batas ${MAX_PER_RUN}/siklus).`);
+  const deferredCount = Math.max(0, toNotify.length - queue.length);
+  if (deferredCount > 0) {
+    console.log(`${deferredCount} chapter ditunda ke siklus berikutnya (batas ${MAX_PER_RUN}/siklus).`);
+    // Chapter tertunda belum terkirim: hash TIDAK disimpan (lihat bawah),
+    // supaya siklus berikut memproses ulang daftar yang sama.
   }
   for (const c of queue) {
     toMark.push({ comic_slug: c.notificationKey, chapter: c.chapter });
@@ -389,6 +449,18 @@ async function runCron() {
     } catch (error) {
       console.error("Gagal menandai chapter sebagai terkirim:", error?.message || error);
     }
+  }
+
+  // Simpan hash daftar per source + prune penanda > 90 hari (tabel tumbuh terus).
+  // Dry-run TIDAK boleh menulis hash: kalau ditulis, siklus nyata berikutnya
+  // mengira daftar tidak berubah dan melewatkan push yang baru ditemukan.
+  if (!DRY_RUN) {
+    const hashesToSave = deferredCount > 0 ? sourceHashes : newHashes;
+    try {
+      await mkdir(path.dirname(HASH_PATH), { recursive: true });
+      await writeFile(HASH_PATH, JSON.stringify(hashesToSave), "utf8");
+    } catch (e) { console.warn("Gagal simpan hash source:", e.message); }
+    await socialDb.query("delete from notified_chapters where notified_at < now() - interval '90 days'").catch(() => {});
   }
 
   console.log(`[${new Date().toISOString()}] Selesai. Total push terkirim: ${notifSentCount}`);

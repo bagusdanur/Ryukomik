@@ -1,0 +1,100 @@
+"use client";
+
+import { getSession } from "@/lib/auth/getSession";
+import { useHistoryStore } from "@/store/historyStore";
+import type { ReadHistoryItem } from "@/types/user";
+
+type ServerHistoryRow = {
+  comic_slug: string;
+  last_chapter_slug: string | null;
+  last_chapter: string | null;
+  title: string | null;
+  source: string | null;
+  thumbnail: string | null;
+  read_at: string;
+};
+
+async function authHeaders() {
+  const { data } = await getSession();
+  const token = data.session?.access_token;
+  return token ? { "content-type": "application/json", authorization: `Bearer ${token}` } : null;
+}
+
+function toServerRows(items: ReadHistoryItem[]) {
+  return items.map((item) => ({
+    comic_slug: item.comicSlug,
+    last_chapter_slug: item.lastChapterSlug || null,
+    last_chapter: item.lastChapter || null,
+    title: item.title || null,
+    source: item.source || null,
+    thumbnail: item.thumbnail || null,
+    read_at: new Date(item.updatedAt).toISOString(),
+  }));
+}
+
+function fromServerRows(rows: ServerHistoryRow[]): ReadHistoryItem[] {
+  return rows
+    .filter((row) => row.comic_slug)
+    .map((row) => ({
+      comicSlug: row.comic_slug,
+      lastChapterSlug: row.last_chapter_slug || "",
+      lastChapter: row.last_chapter || undefined,
+      title: row.title || undefined,
+      source: row.source || undefined,
+      thumbnail: row.thumbnail || undefined,
+      updatedAt: Date.parse(row.read_at) || Date.now(),
+    }));
+}
+
+/** Full-replace sync: server = persis localStorage (meniru bookmark_sync). */
+export async function syncHistory(): Promise<boolean> {
+  try {
+    const headers = await authHeaders();
+    if (!headers) return false;
+    const items = useHistoryStore.getState().history;
+    const res = await fetch("/api/history/sync", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ history: toServerRows(items) }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error("Gagal sync riwayat:", err);
+    return false;
+  }
+}
+
+/**
+ * Tarik riwayat server lalu merge per comicSlug (updatedAt terbaru menang),
+ * simpan ke store lokal, lalu push hasil merge. Dipakai saat login supaya
+ * perangkat baru langsung dapat riwayat lama tanpa menimpa yang di server.
+ */
+export async function pullAndMergeHistory(): Promise<boolean> {
+  try {
+    const headers = await authHeaders();
+    if (!headers) return false;
+    const res = await fetch("/api/history/sync", { headers, cache: "no-store" });
+    if (!res.ok) return false;
+    const json = (await res.json()) as { history?: ServerHistoryRow[] };
+    const serverItems = fromServerRows(json.history || []);
+    if (serverItems.length) {
+      useHistoryStore.getState().mergeHistory(serverItems);
+    }
+    await syncHistory();
+    return true;
+  } catch (err) {
+    console.error("Gagal tarik riwayat:", err);
+    return false;
+  }
+}
+
+const SYNC_DEBOUNCE_MS = 3000;
+let pendingTimer: number | null = null;
+
+export function scheduleHistorySync(): void {
+  if (pendingTimer) window.clearTimeout(pendingTimer);
+  pendingTimer = window.setTimeout(() => {
+    pendingTimer = null;
+    syncHistory().catch(console.error);
+  }, SYNC_DEBOUNCE_MS);
+}

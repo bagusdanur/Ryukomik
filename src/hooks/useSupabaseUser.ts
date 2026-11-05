@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import { getSession } from "@/lib/auth/getSession";
+import { pullAndMergeHistory } from "@/utils/historySync";
 
 type Listener = (user: User | null) => void;
 
 let currentUser: User | null = null;
+const pulledHistoryFor = new Set<string>();
 let initialized = false;
 let initPromise: Promise<User | null> | null = null;
 const listeners = new Set<Listener>();
@@ -25,6 +27,11 @@ export function initSupabaseUser() {
     .then(({ data }) => {
       const user = (data?.session?.user as User | undefined) || null;
       emit(user);
+      // Setelah login: tarik riwayat server + merge ke perangkat ini (sekali per user).
+      if (user && !pulledHistoryFor.has(user.id)) {
+        pulledHistoryFor.add(user.id);
+        void pullAndMergeHistory();
+      }
 
       if (!initialized) {
         initialized = true;

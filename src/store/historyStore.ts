@@ -5,6 +5,8 @@ import type { ReadHistoryItem } from "@/types/user";
 interface HistoryState {
   history: ReadHistoryItem[];
   addHistory: (item: ReadHistoryItem) => void;
+  /** Merge hasil tarikan server: per comicSlug, updatedAt terbaru menang. */
+  mergeHistory: (items: ReadHistoryItem[]) => void;
   removeHistory: (comicSlug: string) => void;
   clearHistory: () => void;
   /** Isi thumbnail untuk beberapa riwayat sekaligus (backfill, satu kali tulis). */
@@ -51,6 +53,24 @@ export const useHistoryStore = create<HistoryState>()(
           );
           filtered.unshift(item);
           return { history: filtered.slice(0, MAX_HISTORY) };
+        }),
+      mergeHistory: (items) =>
+        set((state) => {
+          const map = new Map<string, ReadHistoryItem>();
+          for (const item of state.history) map.set(item.comicSlug, item);
+          for (const item of items) {
+            const existing = map.get(item.comicSlug);
+            if (!existing || item.updatedAt > existing.updatedAt) {
+              // Thumbnail lokal dipertahankan kalau versi server tidak punya.
+              map.set(item.comicSlug, {
+                ...item,
+                thumbnail: item.thumbnail || existing?.thumbnail,
+                title: item.title || existing?.title,
+              });
+            }
+          }
+          const merged = [...map.values()].sort((a, b) => b.updatedAt - a.updatedAt);
+          return { history: merged.slice(0, MAX_HISTORY) };
         }),
       removeHistory: (comicSlug) =>
         set((state) => ({

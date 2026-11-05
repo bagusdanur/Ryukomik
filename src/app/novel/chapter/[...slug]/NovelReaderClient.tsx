@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useHistoryStore } from "@/store/historyStore";
+import { scheduleHistorySync } from "@/utils/historySync";
 import CommentsSupabase from "@/components/CommentsSupabase";
 import { FiMessageCircle, FiX } from "react-icons/fi";
 
@@ -91,6 +92,7 @@ export default function NovelReaderClient({ data, slugStr }: NovelReaderClientPr
       updatedAt: Date.now(),
     };
     addHistory(newEntry);
+    scheduleHistorySync();
   }, [data, slugStr, addHistory]);
 
   const cleanHtml = (html?: string) => {

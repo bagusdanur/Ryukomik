@@ -10,6 +10,7 @@ import { useReaderStore } from "@/store/readerStore";
 import { useAutoScroll } from "@/components/reader/hooks/useAutoScroll";
 import { useHistoryStore } from "@/store/historyStore";
 import { fetchSeriesThumbnail } from "@/utils/historyThumbnail";
+import { scheduleHistorySync } from "@/utils/historySync";
 import { isStorageHost } from "@/lib/storageHosts";
 import { useScrollBehavior } from "@/components/reader/hooks/useScrollBehavior";
 import { useTapScroll } from "@/components/reader/hooks/useTapScroll";
@@ -137,6 +138,8 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
       thumbnail: data.thumbnail,
     };
     addHistory(entry);
+    // Sinkron riwayat ke server (debounce) supaya antar-perangkat nyambung.
+    scheduleHistorySync();
 
     // Thumbnail tidak selalu ikut di data chapter — ambil sekali lalu simpan,
     // supaya riwayat & "Lanjut Baca" punya gambar tanpa request berulang.
