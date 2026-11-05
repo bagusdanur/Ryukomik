@@ -10,7 +10,7 @@ type StatsData = {
   reads: { total: number; today: number; week: number };
   streakDays: number;
   last7Days: Array<{ day: string; count: number }>;
-  recent: Array<{ slug: string; title: string | null; source: string | null; lastChapter: string | null; readAt: string }>;
+  recent: Array<{ slug: string; title: string | null; source: string | null; lastChapter: string | null; thumbnail: string | null; readAt: string }>;
   bookmarks: number;
   comments: number;
 };
@@ -136,22 +136,43 @@ export default function StatsPanel() {
       {data.recent.length > 0 && (
         <div className="rk-card-soft overflow-hidden rounded-2xl p-4">
           <p className="text-[13px] font-bold text-white">Terakhir dibaca</p>
-          <div className="mt-1 divide-y divide-white/[.04]">
+          <ul className="mt-2 space-y-1">
             {data.recent.map((item) => (
-              <Link
-                key={`${item.source || ""}:${item.slug}`}
-                href={item.source ? `/komik/${item.source}/${item.slug}` : "/"}
-                className="flex min-w-0 items-center justify-between gap-3 py-2.5"
-              >
-                <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white/85" title={item.title || item.slug}>
-                  {item.title || item.slug}
-                </span>
-                {item.lastChapter && (
-                  <span className="rk-chip shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">{item.lastChapter}</span>
-                )}
-              </Link>
+              <li key={`${item.source || ""}:${item.slug}`}>
+                <Link
+                  href={item.source ? `/komik/${item.source}/${item.slug}` : "/"}
+                  className="flex min-w-0 items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-white/[.04]"
+                >
+                  {item.thumbnail ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.thumbnail}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
+                      className="h-12 w-9 shrink-0 rounded-md object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-12 w-9 shrink-0 items-center justify-center rounded-md" style={{ background: "var(--surface-3)" }}>
+                      <FiBookOpen size={14} style={{ color: "var(--muted)" }} />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-semibold text-white/85" title={item.title || item.slug}>
+                      {item.title || item.slug}
+                    </span>
+                    <span className="block truncate text-[10px] capitalize" style={{ color: "var(--muted)" }}>
+                      {item.source || "—"}
+                    </span>
+                  </span>
+                  {item.lastChapter && (
+                    <span className="rk-chip shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">{item.lastChapter.replace(/^Chapter\s*/i, "Ch. ")}</span>
+                  )}
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
     </div>

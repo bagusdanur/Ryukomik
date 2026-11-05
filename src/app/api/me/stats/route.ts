@@ -50,13 +50,16 @@ export async function GET(request: Request) {
          ) s`,
         [userId],
       ),
-      socialQuery<{ comic_slug: string; title: string | null; source: string | null; last_chapter: string | null; read_at: string }>(
-        `select comic_slug, title, source, last_chapter, read_at
+      socialQuery<{ comic_slug: string; title: string | null; source: string | null; last_chapter: string | null; thumbnail: string | null; read_at: string }>(
+        `select comic_slug, title, source, last_chapter, thumbnail, read_at
            from history_sync where user_id = $1 order by read_at desc limit 8`,
         [userId],
       ),
       socialQuery<{ n: string }>("select count(*)::text as n from bookmark_sync where user_id = $1", [userId]),
-      socialQuery<{ n: string }>("select count(*)::text as n from comments where user_id = $1", [userId]),
+      socialQuery<{ n: string }>(
+        "select count(*)::text as n from comments where user_id = $1 and parent_id is null and deleted_at is null",
+        [userId],
+      ),
     ]);
 
     const profile = profileResult.rows[0];
@@ -78,6 +81,7 @@ export async function GET(request: Request) {
           title: r.title,
           source: r.source,
           lastChapter: r.last_chapter,
+          thumbnail: r.thumbnail,
           readAt: r.read_at,
         })),
         bookmarks: Number(bookmarkResult.rows[0]?.n || 0),
