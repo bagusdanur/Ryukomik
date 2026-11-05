@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { FiBookOpen, FiClock, FiEdit3, FiHeart, FiImage, FiLink, FiSave, FiSend, FiUser } from "react-icons/fi";
+import { FiBookOpen, FiClock, FiEdit3, FiHeart, FiImage, FiSave, FiSend, FiUser } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
 
 const inputCls = "rk-input w-full rounded-2xl px-4 py-3 text-sm";
@@ -17,7 +17,10 @@ type Work = {
   review_status: string | null; is_published: boolean; is_adult: boolean;
 };
 
-/** Studio Scanlator (BETA): profil + link donate + upload karya + daftar karya. */
+/**
+ * Studio Scanlator (BETA) — profil, link donate, upload karya, daftar karya.
+ * Desain mengikuti globals.css (rk-card / rk-card-soft / rk-chip).
+ */
 export default function ScanlatorStudio() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [works, setWorks] = useState<Work[]>([]);
@@ -27,7 +30,6 @@ export default function ScanlatorStudio() {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
-  // form profil/donate
   const [bio, setBio] = useState("");
   const [dana, setDana] = useState("");
   const [trakteer, setTrakteer] = useState("");
@@ -35,7 +37,6 @@ export default function ScanlatorStudio() {
   const [lain, setLain] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // form seri
   const [title, setTitle] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [description, setDescription] = useState("");
@@ -45,7 +46,6 @@ export default function ScanlatorStudio() {
   const [busySeries, setBusySeries] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
 
-  // form chapter
   const [chapterSlug, setChapterSlug] = useState("");
   const [chapterNumber, setChapterNumber] = useState("");
   const [chapterTitle, setChapterTitle] = useState("");
@@ -157,7 +157,6 @@ export default function ScanlatorStudio() {
     try {
       const urls: string[] = [];
       for (let i = 0; i < list.length; i++) {
-        // Halaman terakhir diberi watermark nama tim (S&K 8.3).
         urls.push(await uploadImage(list[i], "chapter", chapterSlug || profile?.handle || "chapter", i === list.length - 1));
       }
       setChapterImages((prev) => [...prev, ...urls]);
@@ -183,148 +182,195 @@ export default function ScanlatorStudio() {
     } finally { setBusyChapter(false); }
   };
 
-  if (loading) return <main className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white"><p className="py-16 text-center text-sm" style={{ color: "var(--muted)" }}>Memuat studio…</p></main>;
+  if (loading) {
+    return (
+      <main className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
+        <p className="py-16 text-center text-sm" style={{ color: "var(--muted)" }}>Memuat studio…</p>
+      </main>
+    );
+  }
 
-  if (needLogin) return (
-    <main className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
-      <div className="rk-state mx-auto max-w-md rounded-3xl px-5 py-12 text-center">
-        <p className="text-sm" style={{ color: "var(--muted)" }}>Login dulu untuk membuka Studio Scanlator.</p>
-        <Link href="/" className="rk-btn-primary mt-4 inline-block rounded-full px-5 py-2 text-sm font-bold">Ke Beranda</Link>
-      </div>
-    </main>
-  );
+  if (needLogin) {
+    return (
+      <main className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
+        <div className="rk-state mx-auto max-w-md rounded-3xl px-5 py-12 text-center">
+          <p className="text-sm text-white/60">Login dulu untuk membuka Studio Scanlator.</p>
+          <Link href="/" className="rk-btn-primary mt-4 inline-block rounded-full px-5 py-2 text-sm font-bold">Ke Beranda</Link>
+        </div>
+      </main>
+    );
+  }
 
-  if (notScanlator || !profile) return (
-    <main className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
-      <div className="rk-card mx-auto max-w-md rounded-3xl p-6 text-center">
-        <span className="rk-chip rounded-full px-3 py-1 text-[11px] font-black">BETA</span>
-        <h1 className="mt-3 text-xl font-black">Belum jadi Scanlator</h1>
-        <p className="mt-2 text-sm leading-relaxed text-white/55">Studio ini hanya untuk akun yang sudah ACC. Ajukan Akun Translation dulu — setiap pengajuan diperiksa admin manual.</p>
-        <Link href="/scanlator/daftar" className="rk-btn-primary mt-5 inline-block rounded-full px-5 py-2.5 text-sm font-bold">Ajukan Akun Translation</Link>
-      </div>
-    </main>
-  );
+  if (notScanlator || !profile) {
+    return (
+      <main className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
+        <div className="rk-card mx-auto max-w-md rounded-3xl p-6 text-center">
+          <span className="rk-chip rounded-full px-3 py-1 text-[11px] font-black">BETA</span>
+          <h1 className="mt-3 text-xl font-black">Belum jadi Scanlator</h1>
+          <p className="mt-2 text-sm leading-relaxed text-white/55">
+            Studio ini hanya untuk akun yang sudah ACC. Ajukan Akun Translation dulu — setiap pengajuan diperiksa admin manual.
+          </p>
+          <Link href="/scanlator/daftar" className="rk-btn-primary mt-5 inline-block rounded-full px-5 py-2.5 text-sm font-bold">Ajukan Akun Translation</Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
-      <div className="mx-auto max-w-2xl space-y-4">
-        <header className="rk-card rounded-3xl p-5 sm:p-6">
+      <div className="mx-auto max-w-2xl">
+        <header className="rk-card rounded-3xl p-6">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rk-chip rounded-full px-3 py-1 text-[11px] font-black">STUDIO SCANLATOR</span>
             <span className="rk-chip rounded-full px-3 py-1 text-[11px] font-black">BETA</span>
           </div>
-          <h1 className="mt-3 text-2xl font-black">{profile.team_name} <span className="text-base font-semibold text-white/40">@{profile.handle}</span></h1>
+          <h1 className="mt-3 text-2xl font-black">
+            {profile.team_name} <span className="text-base font-semibold text-white/40">@{profile.handle}</span>
+          </h1>
           <p className="mt-1 text-sm text-white/55">Kelola profil, tautan donate, dan karya TL-mu. Karya baru menunggu ACC admin sebelum terbit.</p>
         </header>
 
         {(notice || error) && (
-          <p className={`rounded-2xl px-4 py-3 text-xs font-semibold ${error ? "bg-rose-500/10 text-rose-200" : "bg-emerald-500/10 text-emerald-200"}`}>{error || notice}</p>
+          <p className={`mt-4 rounded-2xl px-4 py-3 text-xs font-semibold ${error ? "bg-rose-500/10 text-rose-200" : "bg-emerald-500/10 text-emerald-200"}`}>
+            {error || notice}
+          </p>
         )}
 
-        {/* Profil + donate */}
-        <form onSubmit={saveProfile} className="rk-card-soft space-y-3 rounded-3xl p-5">
-          <p className="flex items-center gap-2 text-sm font-black"><FiUser size={15} className="text-[var(--accent-2)]" /> Profil & Tautan Donate</p>
-          <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} maxLength={1000} placeholder="Bio tim kamu…" className={inputCls} />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <DonateField label="DANA / GoPay" value={dana} setValue={setDana} placeholder="https://dana.link/…" />
-            <DonateField label="Trakteer" value={trakteer} setValue={setTrakteer} placeholder="https://trakteer.id/…" />
-            <DonateField label="Tako" value={tako} setValue={setTako} placeholder="https://tako.id/…" />
-            <DonateField label="Link lain" value={lain} setValue={setLain} placeholder="https://…" />
-          </div>
-          <p className="flex items-start gap-2 text-[11px] leading-relaxed text-white/40">
-            <FiHeart size={13} className="mt-0.5 shrink-0" />
-            Tautan ini tampil di blok “Dukung kami!” pada halaman detail karyamu. Uang langsung masuk ke akunmu — Ryukomik tidak pegang dana.
-          </p>
-          <button type="submit" disabled={savingProfile} className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold disabled:opacity-50">
-            <FiSave size={14} /> {savingProfile ? "Menyimpan…" : "Simpan Profil"}
-          </button>
-        </form>
-
-        {/* Upload seri */}
-        <form onSubmit={createSeries} className="rk-card-soft space-y-3 rounded-3xl p-5">
-          <p className="flex items-center gap-2 text-sm font-black"><FiBookOpen size={15} className="text-[var(--accent-2)]" /> Upload Seri Baru</p>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Judul seri" maxLength={200} required className={inputCls} />
-          <div>
-            <label className="mb-1.5 flex items-center gap-2 text-xs font-bold text-white/70"><FiImage size={13} /> Cover {uploadingCover && "(mengunggah…)"}</label>
-            <input type="file" accept="image/*" onChange={(e) => void onCoverFile(e.target.files)} className="w-full text-xs text-white/60" />
-            {coverUrl && <p className="mt-1 truncate text-[11px] text-emerald-300">Cover terunggah ✓</p>}
-          </div>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={3000} placeholder="Deskripsi seri…" className={inputCls} />
-          <div className="grid grid-cols-2 gap-3">
-            <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>
-              {["Manhwa", "Manhua", "Manga", "Novel"].map((t) => <option key={t} value={t} className="bg-[#14121c]">{t}</option>)}
-            </select>
-            <input value={genres} onChange={(e) => setGenres(e.target.value)} placeholder="Genre, pisahkan koma" className={inputCls} />
-          </div>
-          <label className="flex cursor-pointer items-center gap-2.5 text-xs text-white/60">
-            <input type="checkbox" checked={isAdult} onChange={(e) => setIsAdult(e.target.checked)} className="h-4 w-4 accent-[#8b5cf6]" />
-            Konten 18+ (satu-satunya penentu filter — genre tidak berpengaruh)
-          </label>
-          <button type="submit" disabled={busySeries || !coverUrl} className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold disabled:opacity-50">
-            <FiSend size={14} /> {busySeries ? "Mengirim…" : "Kirim untuk Direview"}
-          </button>
-        </form>
-
-        {/* Upload chapter */}
-        <form onSubmit={createChapter} className="rk-card-soft space-y-3 rounded-3xl p-5">
-          <p className="flex items-center gap-2 text-sm font-black"><FiBookOpen size={15} className="text-[var(--accent-2)]" /> Upload Chapter</p>
-          <select value={chapterSlug} onChange={(e) => setChapterSlug(e.target.value)} required className={inputCls}>
-            <option value="" className="bg-[#14121c]">Pilih seri kamu…</option>
-            {works.map((w) => <option key={w.slug} value={w.slug} className="bg-[#14121c]">{w.title}</option>)}
-          </select>
-          <div className="grid grid-cols-2 gap-3">
-            <input value={chapterNumber} onChange={(e) => setChapterNumber(e.target.value)} placeholder="Nomor (mis. 12 / 12.5)" inputMode="decimal" required className={inputCls} />
-            <input value={chapterTitle} onChange={(e) => setChapterTitle(e.target.value)} placeholder="Judul chapter (bebas)" className={inputCls} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-bold text-white/70">Gambar chapter (bisa banyak sekaligus) {uploadingChapter && "— mengunggah…"}</label>
-            <input type="file" accept="image/*" multiple onChange={(e) => void onChapterFiles(e.target.files)} className="w-full text-xs text-white/60" />
-            <p className="mt-1 text-[11px] leading-relaxed text-white/40">
-              {chapterImages.length} gambar terunggah · halaman terakhir otomatis diberi watermark nama tim · maks 30 MB/gambar, maks 60 gambar/chapter.
+        <div className="mt-4 space-y-4">
+          <form onSubmit={saveProfile} className="rk-card-soft space-y-4 rounded-3xl p-5 sm:p-6">
+            <SectionTitle icon={<FiUser size={15} />} text="Profil & tautan donate" />
+            <Field label="Bio tim">
+              <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} maxLength={1000} placeholder="Bio tim kamu…" className={inputCls} />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <DonateField label="DANA / GoPay" value={dana} setValue={setDana} placeholder="https://dana.link/…" />
+              <DonateField label="Trakteer" value={trakteer} setValue={setTrakteer} placeholder="https://trakteer.id/…" />
+              <DonateField label="Tako" value={tako} setValue={setTako} placeholder="https://tako.id/…" />
+              <DonateField label="Link lain" value={lain} setValue={setLain} placeholder="https://…" />
+            </div>
+            <p className="flex items-start gap-2 text-[11px] leading-relaxed text-white/40">
+              <FiHeart size={13} className="mt-0.5 shrink-0" />
+              Tautan ini tampil di blok “Dukung kami!” pada halaman detail karyamu. Uang langsung masuk ke akunmu — Ryukomik tidak pegang dana.
             </p>
-          </div>
-          <button type="submit" disabled={busyChapter || !chapterSlug || chapterImages.length === 0} className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold disabled:opacity-50">
-            <FiSend size={14} /> {busyChapter ? "Mengirim…" : "Kirim Chapter"}
-          </button>
-        </form>
+            <button type="submit" disabled={savingProfile} className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold disabled:opacity-50">
+              <FiSave size={14} /> {savingProfile ? "Menyimpan…" : "Simpan profil"}
+            </button>
+          </form>
 
-        {/* Karya saya */}
-        <section className="rk-card-soft rounded-3xl p-5">
-          <p className="flex items-center gap-2 text-sm font-black"><FiEdit3 size={15} className="text-[var(--accent-2)]" /> Karya Saya ({works.length})</p>
-          <div className="mt-3 space-y-2">
-            {works.map((w) => (
-              <div key={w.slug} className="flex items-center gap-3 rounded-2xl bg-white/[.03] p-3">
-                {w.cover_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={w.cover_url} alt="" className="h-14 w-10 shrink-0 rounded-lg object-cover" />
-                ) : (
-                  <div className="flex h-14 w-10 shrink-0 items-center justify-center rounded-lg bg-white/[.06] text-white/30"><FiBookOpen size={14} /></div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-white">{w.title}</p>
-                  <p className="text-[11px] text-white/40">{w.type || "—"}{w.is_adult ? " · 18+" : ""}</p>
+          <form onSubmit={createSeries} className="rk-card-soft space-y-4 rounded-3xl p-5 sm:p-6">
+            <SectionTitle icon={<FiBookOpen size={15} />} text="Upload seri baru" />
+            <Field label="Judul seri">
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Judul seri" maxLength={200} required className={inputCls} />
+            </Field>
+            <Field label={`Cover ${uploadingCover ? "(mengunggah…)" : ""}`}>
+              <input type="file" accept="image/*" onChange={(e) => void onCoverFile(e.target.files)} className="w-full text-xs text-white/60" />
+              {coverUrl && <p className="mt-1.5 text-[11px] font-semibold text-emerald-300">Cover terunggah ✓</p>}
+            </Field>
+            <Field label="Deskripsi">
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={3000} placeholder="Deskripsi seri…" className={inputCls} />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Type">
+                <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>
+                  {["Manhwa", "Manhua", "Manga", "Novel"].map((t) => <option key={t} value={t} className="bg-[#14121c]">{t}</option>)}
+                </select>
+              </Field>
+              <Field label="Genre">
+                <input value={genres} onChange={(e) => setGenres(e.target.value)} placeholder="Aksi, Fantasi" className={inputCls} />
+              </Field>
+            </div>
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-2xl bg-white/[.03] px-4 py-3 text-xs text-white/60">
+              <input type="checkbox" checked={isAdult} onChange={(e) => setIsAdult(e.target.checked)} className="h-4 w-4 shrink-0 accent-[#8b5cf6]" />
+              Konten 18+ — satu-satunya penentu filter (genre tidak berpengaruh)
+            </label>
+            <button type="submit" disabled={busySeries || !coverUrl} className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold disabled:opacity-50">
+              <FiSend size={14} /> {busySeries ? "Mengirim…" : "Kirim untuk direview"}
+            </button>
+          </form>
+
+          <form onSubmit={createChapter} className="rk-card-soft space-y-4 rounded-3xl p-5 sm:p-6">
+            <SectionTitle icon={<FiBookOpen size={15} />} text="Upload chapter" />
+            <Field label="Seri">
+              <select value={chapterSlug} onChange={(e) => setChapterSlug(e.target.value)} required className={inputCls}>
+                <option value="" className="bg-[#14121c]">Pilih seri kamu…</option>
+                {works.map((w) => <option key={w.slug} value={w.slug} className="bg-[#14121c]">{w.title}</option>)}
+              </select>
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Nomor chapter">
+                <input value={chapterNumber} onChange={(e) => setChapterNumber(e.target.value)} placeholder="12 / 12.5" inputMode="decimal" required className={inputCls} />
+              </Field>
+              <Field label="Judul chapter">
+                <input value={chapterTitle} onChange={(e) => setChapterTitle(e.target.value)} placeholder="Bebas" className={inputCls} />
+              </Field>
+            </div>
+            <Field label={`Gambar chapter ${uploadingChapter ? "(mengunggah…)" : ""}`} hint="bisa banyak sekaligus">
+              <input type="file" accept="image/*" multiple onChange={(e) => void onChapterFiles(e.target.files)} className="w-full text-xs text-white/60" />
+              <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+                {chapterImages.length} gambar terunggah · halaman terakhir otomatis diberi watermark nama tim · maks 30 MB/gambar, maks 60 gambar/chapter.
+              </p>
+            </Field>
+            <button type="submit" disabled={busyChapter || !chapterSlug || chapterImages.length === 0} className="rk-btn-primary flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold disabled:opacity-50">
+              <FiSend size={14} /> {busyChapter ? "Mengirim…" : "Kirim chapter"}
+            </button>
+          </form>
+
+          <section className="rk-card-soft rounded-3xl p-5 sm:p-6">
+            <SectionTitle icon={<FiEdit3 size={15} />} text={`Karya saya (${works.length})`} />
+            <div className="mt-3 space-y-2">
+              {works.map((w) => (
+                <div key={w.slug} className="flex items-center gap-3 rounded-2xl bg-white/[.03] p-3">
+                  {w.cover_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={w.cover_url} alt="" className="h-14 w-10 shrink-0 rounded-lg object-cover" />
+                  ) : (
+                    <div className="flex h-14 w-10 shrink-0 items-center justify-center rounded-lg bg-white/[.06] text-white/30"><FiBookOpen size={14} /></div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-white">{w.title}</p>
+                    <p className="text-[11px] text-white/40">{w.type || "—"}{w.is_adult ? " · 18+" : ""}</p>
+                  </div>
+                  <span className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${w.review_status === "approved" ? "bg-emerald-500/10 text-emerald-300" : w.review_status === "rejected" ? "bg-rose-500/10 text-rose-300" : "bg-amber-500/10 text-amber-300"}`}>
+                    <FiClock size={10} /> {w.review_status === "approved" ? "Terbit" : w.review_status === "rejected" ? "Ditolak" : "Review"}
+                  </span>
                 </div>
-                <span className={`flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${w.review_status === "approved" ? "bg-emerald-500/10 text-emerald-300" : w.review_status === "rejected" ? "bg-rose-500/10 text-rose-300" : "bg-amber-500/10 text-amber-300"}`}>
-                  <FiClock size={10} /> {w.review_status === "approved" ? "Terbit" : w.review_status === "rejected" ? "Ditolak" : "Review"}
-                </span>
-              </div>
-            ))}
-            {works.length === 0 && <p className="py-6 text-center text-xs text-white/40">Belum ada karya. Upload seri pertamamu di atas.</p>}
-          </div>
-          <Link href={`/scanlator/${profile.handle}`} className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-white/10 py-2.5 text-xs font-bold text-white/70 transition hover:text-white">
-            <FiLink size={13} /> Lihat halaman publik tim kamu
-          </Link>
-        </section>
+              ))}
+              {works.length === 0 && <p className="py-6 text-center text-xs text-white/40">Belum ada karya. Upload seri pertamamu di atas.</p>}
+            </div>
+            <Link href={`/scanlator/${profile.handle}`} className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-white/10 py-2.5 text-xs font-bold text-white/70 transition hover:text-white">
+              <FiImage size={13} /> Lihat halaman publik tim kamu
+            </Link>
+          </section>
+        </div>
       </div>
     </main>
   );
 }
 
-function DonateField({ label, value, setValue, placeholder }: { label: string; value: string; setValue: (v: string) => void; placeholder: string }) {
+function SectionTitle({ icon, text }: { icon: React.ReactNode; text: string }) {
+  return (
+    <p className="flex items-center gap-2 text-sm font-black text-white">
+      <span className="text-[var(--accent-2)]">{icon}</span> {text}
+    </p>
+  );
+}
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-bold text-white/70">{label}</label>
-      <input value={value} onChange={(e) => setValue(e.target.value)} placeholder={placeholder} className={inputCls} />
+      <label className="mb-1.5 block text-xs font-bold text-white/70">
+        {label}
+        {hint && <span className="ml-2 font-medium text-white/35">{hint}</span>}
+      </label>
+      {children}
     </div>
+  );
+}
+
+function DonateField({ label, value, setValue, placeholder }: { label: string; value: string; setValue: (v: string) => void; placeholder: string }) {
+  return (
+    <Field label={label}>
+      <input value={value} onChange={(e) => setValue(e.target.value)} placeholder={placeholder} className={inputCls} />
+    </Field>
   );
 }

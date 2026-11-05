@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { FiBookOpen, FiCheckCircle, FiCreditCard, FiFileText, FiHeart, FiShield, FiUploadCloud, FiUsers } from "react-icons/fi";
 
 export const metadata: Metadata = {
@@ -119,117 +120,13 @@ export default function PrdScanlatorPage() {
         </section>
 
         <section className={sectionClass}>
-          <h2 className={h2Class}><FiShield className="text-[var(--accent-2)]" /> 5. Keamanan & Anti-Penyalahgunaan</h2>
-          <ul className="mt-3 space-y-2">
-            <Li>Hak cipta: pernyataan orisinalitas saat apply + form Report sebagai jalur takedown (hapus &lt; 24 jam).</Li>
-            <Li>Upload: validasi magic bytes gambar, tolak SVG/script, presigned URL 15 menit, simpan di prefix <code className="text-white/80">scanlator/&lt;user_id&gt;/</code>.</Li>
-            <Li>Anti bajakan: cek duplikat slug/judul mirip, rate-limit 5 chapter/jam, chapter terbit tidak bisa diganti isinya.</Li>
-            <Li>Admin bisa mencabut akses Scanlator tanpa menghapus karyanya.</Li>
-          </ul>
-        </section>
-
-        <section className={sectionClass}>
-          <h2 className={h2Class}><FiBookOpen className="text-[var(--accent-2)]" /> 6. Data & Fase Pengerjaan</h2>
-          <div className="mt-3">
-            <Table
-              head={["Fase", "Isi", "Hasil"]}
-              rows={[
-                ["A", "Akun Translation (apply request + ACC admin), role scanlator, badge profil", "Hanya Translation terverifikasi yang bisa jadi Scanlator"],
-                ["B", "Upload seri/chapter, review, atribusi publik, watermark", "Karya terbit dengan atribusi"],
-                ["C", "Link donate eksternal di profil + detail", "Monetisasi pertama (tanpa pegang uang)"],
-                ["Later", "Saldo, tips, share premium 70/30, pencairan", "Backlog — jangan dibangun sekarang"],
-                ["F", "Kuota, anti-duplikat, takedown, audit log", "Pengerasan"],
-              ]}
-            />
-          </div>
-          <p className={`${muted} mt-3`}>
-            Tabel baru: <code className="text-white/80">scanlator_applications</code>, <code className="text-white/80">scanlator_profiles</code>,
-            kolom <code className="text-white/80">owner_user_id</code> + <code className="text-white/80">review_status</code> di project.
-            Tabel saldo/transaksi adalah backlog Fase Later.
-          </p>
-        </section>
-
-        <section className={sectionClass}>
-          <h2 className={h2Class}><FiCreditCard className="text-[var(--accent-2)]" /> 7. Definisi Selesai (MVP)</h2>
-          <ul className="mt-3 space-y-2">
-            <Li>Apply Request Akun Translation → ACC admin → upload → review → terbit berjalan end-to-end (staging build terpisah, commit + push). User tanpa Akun Translation tidak bisa upload.</Li>
-            <Li>Atribusi Scanlator tampil di kartu, detail, dan tiap chapter; klik membuka profil Scanlator.</Li>
-            <Li>Tautan donate bisa diklik dan hanya https + host terdaftar yang diterima.</Li>
-            <Li>Tidak ada regresi: source lain, premium, filter 18+ tetap jalan seperti sekarang.</Li>
-          </ul>
-        </section>
-
-        <section className={sectionClass}>
-          <h2 className={h2Class}><FiShield className="text-[var(--accent-2)]" /> 8. Syarat & Ketentuan Scanlator (S&K)</h2>
+          <h2 className={h2Class}><FiShield className="text-[var(--accent-2)]" /> 8. S&K (halaman publik terpisah)</h2>
           <p className={muted + " mt-2"}>
-            Catatan: HoloToon tidak mempublikasikan S&K (sudah dicek: footer, /terms, /rules — tidak ada).
-            S&K berikut ditulis sendiri untuk Ryukomik mengikuti norma komunitas scanlation Indonesia.
-            Teks ini wajib disetujui saat Apply Request Akun Translation.
+            Seluruh Syarat &amp; Ketentuan Scanlator dipublikasikan di halaman publik
+            <Link href="/aturan/scanlator" className="font-semibold text-[var(--accent-2)] underline underline-offset-2"> /aturan/scanlator</Link> —
+            bukan di dokumen PRD internal ini. Isi PRD tidak lagi memuat aturan untuk menjaga privasi internal.
           </p>
-
-          <h3 className="mt-4 text-sm font-black text-white">8.1 Akun & Identitas</h3>
-          <ul className="mt-2 space-y-2">
-            <Li>Satu orang/tim = satu akun Translation. Dilarang membuat akun ganda untuk menghindari sanksi.</Li>
-            <Li>Dilarang menjual, menyewakan, atau memindahtangankan akun Translation.</Li>
-            <Li>Nama tim/handle harus unik dan tidak meniru tim lain (termasuk tidak memakai nama &quot;Ryukomik&quot; atau nama tim resmi).</Li>
-            <Li>Akun Translation bisa dicabut kapan saja oleh admin bila melanggar S&K ini.</Li>
-          </ul>
-
-          <h3 className="mt-4 text-sm font-black text-white">8.2 Hak Cipta & Orisinalitas (paling penting)</h3>
-          <ul className="mt-2 space-y-2">
-            <Li>Scanlator hanya boleh mengunggah karya yang <strong className="text-white">berhak diunggah</strong>: terjemahan dari sumber yang sah, karya orisinal, atau atas izin pemilik hak.</Li>
-            <Li>Dilarang mengunggah ulang (re-upload) hasil TL tim lain, mentahan bajakan tanpa proses TL, atau chapter yang sudah ada di Ryukomik dari Scanlator lain.</Li>
-            <Li>Scanlator bertanggung jawab penuh atas legalitas kontennya. Ryukomik bertindak sebagai platform penyalur, bukan pemilik konten.</Li>
-            <Li>Setiap orang berhak mengajukan takedown lewat form Report (sertakan bukti kepemilikan). Konten dilaporkan akan diturunkan <strong className="text-white">maksimal 1×24 jam</strong> untuk diverifikasi, dan dihapus permanen bila terbukti melanggar.</Li>
-            <Li>Pelanggaran hak cipta berulang = pencabutan akses permanen, tanpa peringatan.</Li>
-          </ul>
-
-          <h3 className="mt-4 text-sm font-black text-white">8.3 Kualitas & Tata Cara Upload</h3>
-          <ul className="mt-2 space-y-2">
-            <Li>Minimal 8 halaman per chapter; dilarang chapter kosong, spam chapter, atau upload bertahap untuk menaikkan angka.</Li>
-            <Li>Gambar harus terbaca (resolusi wajar, tidak buram), urutan halaman benar, tidak ada halaman duplikat/ganda.</Li>
-            <Li>Judul chapter sopan dan jelas — dilarang judul spam/promosi akun lain.</Li>
-            <Li>Watermark nama tim wajib di halaman terakhir; dilarang watermark menyesatkan (mis. “Ryukomik Official”) bila bukan tim resmi.</Li>
-            <Li>Chapter yang sudah terbit tidak boleh diganti isinya. Koreksi hanya lewat admin.</Li>
-          </ul>
-
-          <h3 className="mt-4 text-sm font-black text-white">8.4 Konten Terlarang</h3>
-          <ul className="mt-2 space-y-2">
-            <Li>Dilarang: konten ilegal, SARA, ujaran kebencian, malware/phishing di file, spam iklan, dan ajakan pindah platform secara kasar.</Li>
-            <Li>Dilarang: drama antar-tim di komentar (provokasi, doxxing, sebar data pribadi siapa pun).</Li>
-            <Li>Dilarang: meminta transfer/donasi di kolom komentar — dukungan hanya lewat tautan donate di profil.</Li>
-          </ul>
-
-          <h3 className="mt-4 text-sm font-black text-white">8.5 Konten 18+</h3>
-          <ul className="mt-2 space-y-2">
-            <Li>Konten dewasa <strong className="text-white">wajib</strong> ditandai lewat toggle 18+ di form seri (satu-satunya penentu filter — genre tidak berpengaruh).</Li>
-            <Li>Konten 18+ hanya tampil untuk user yang toggle filter 18+-nya aktif dan sudah lewat gate umur.</Li>
-            <Li>Salah tandai (dewasa dibiarkan non-18+) = sanksi langsung, karena membahayakan pembaca di bawah umur.</Li>
-          </ul>
-
-          <h3 className="mt-4 text-sm font-black text-white">8.6 Review, Sanksi & Pencabutan</h3>
-          <ul className="mt-2 space-y-2">
-            <Li>Semua upload melewati review admin sebelum terbit. Admin boleh menolak dengan catatan; Scanlator boleh perbaiki & ajukan ulang.</Li>
-            <Li>Sanksi bertingkat: peringatan → penangguhan upload 7 hari → pencabutan akses. Pelanggaran hak cipta/SARA/keamanan langsung ke pencabutan.</Li>
-            <Li>Pencabutan akses tidak otomatis menghapus karya yang sudah terbit; admin memutuskan per kasus.</Li>
-          </ul>
-
-          <h3 className="mt-4 text-sm font-black text-white">8.7 Donate & Keuangan</h3>
-          <ul className="mt-2 space-y-2">
-            <Li>Di MVP, dukungan finansial hanya lewat tautan donate eksternal milik Scanlator sendiri (DANA/GOPAY, Trakteer, Tako). Ryukomik tidak memungut, tidak menyimpan, dan tidak bertanggung jawab atas transaksi di luar platform.</Li>
-            <Li>Tautan donate wajib milik tim yang bersangkutan dan valid. Akun donate palsu/menyesatkan = pencabutan akses.</Li>
-            <Li>Dilarang menjanjikan imbalan yang tidak bisa dipenuhi (mis. “donate untuk dapat chapter eksklusif”) bila tidak ditepati.</Li>
-          </ul>
-
-          <h3 className="mt-4 text-sm font-black text-white">8.8 Data, Privasi & Perubahan</h3>
-          <ul className="mt-2 space-y-2">
-            <Li>Data yang dicatat: email akun, file yang diunggah, alamat IP saat upload, dan riwayat review. Dipakai hanya untuk keamanan & anti-penyalahgunaan.</Li>
-            <Li>Dilarang menyebar data pribadi Scanlator lain yang kamu ketahui dari proses upload.</Li>
-            <Li>S&K dapat berubah; perubahan penting diumumkan di halaman ini. Terus mengunggah setelah perubahan = menyetujui S&K terbaru.</Li>
-            <Li>Kontak: lewat form Report di situs, atau Telegram admin.</Li>
-          </ul>
         </section>
-
 
         <section className={sectionClass}>
           <h2 className={h2Class}><FiCheckCircle className="text-[var(--accent-2)]" /> 9. Task List (urutan kerjakan)</h2>
