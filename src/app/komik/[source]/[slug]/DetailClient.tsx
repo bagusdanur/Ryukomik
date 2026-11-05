@@ -25,6 +25,7 @@ type ComicDetail = Series & {
   scanlator_handle?: string;
   scanlator_team?: string;
   scanlator_donate?: Array<{ label: string; url: string }> | null;
+  scanlator_user?: { username: string; user_id: string } | null;
   Pengarang?: string;
   Konsep?: string;
   chapters: Chapter[];
@@ -249,11 +250,22 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
                 {statusLabel}
               </span>
             </div>
-            {/* Atribusi Scanlator (Fase B/C) */}
+            {/* Atribusi: nama user (profil publik) + nama grup (profil grup) */}
             {data.scanlator_handle && (
-              <Link href={`/scanlator/${data.scanlator_handle}`} className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/[.06] px-3 py-1.5 text-[11px] font-bold text-white/75 transition hover:bg-white/[.1]">
-                Diunggah oleh {data.scanlator_team || data.scanlator_handle}
-              </Link>
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] leading-none">
+                <span className="text-white/35">Diunggah oleh</span>
+                {data.scanlator_user ? (
+                  <Link href={`/u/${encodeURIComponent(data.scanlator_user.username)}`} className="rounded-md bg-white/[.06] px-2 py-1 font-bold text-white/85 transition hover:bg-white/[.12]">
+                    {data.scanlator_user.username}
+                  </Link>
+                ) : (
+                  <span className="rounded-md bg-white/[.06] px-2 py-1 font-bold text-white/60">Scanlator</span>
+                )}
+                <span className="text-white/20">·</span>
+                <Link href={`/scanlator/${data.scanlator_handle}`} className="flex items-center gap-1 rounded-md bg-[var(--accent)]/15 px-2 py-1 font-bold text-[var(--accent-2)] transition hover:bg-[var(--accent)]/25">
+                  {data.scanlator_team || data.scanlator_handle}
+                </Link>
+              </div>
             )}
             {/* TOMBOL SAVED/BOOKMARK */}
             <div className="mt-4">

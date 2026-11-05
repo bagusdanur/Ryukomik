@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import XPublicProfileHeader from "@/components/social/XPublicProfileHeader";
 import PublicProfilePosts from "@/components/social/PublicProfilePosts";
 import PublicProfileSections from "@/components/social/PublicProfileSections";
+import ScanlatorGroupCard from "@/components/social/ScanlatorGroupCard";
 import { getSession } from "@/lib/auth/getSession";
 
 export type ProfileTab = "posts" | "collections" | "activity";
@@ -29,6 +30,7 @@ export default function PublicProfileView({ username }: { username: string }) {
   return (
     <>
       <XPublicProfileHeader username={username} activeTab={tab} onTabChange={setTab} />
+      <ScanlatorGroupCard username={username} />
       {tab === "posts" && <PublicProfilePosts username={username} />}
       {tab === "collections" && <PublicProfileSections username={username} section="collections" />}
       {tab === "activity" && <PublicProfileSections username={username} section="activity" viewerId={viewerId} />}

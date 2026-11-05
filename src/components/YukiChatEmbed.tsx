@@ -20,7 +20,14 @@ export default function YukiChatEmbed() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [open]);
 
-  if (pathname.startsWith("/chapter") || pathname.startsWith("/novel/chapter")) {
+  // Sembunyikan di halaman baca dan semua halaman Scanlator/aturan —
+  // widget menutupi tombol simpan & tab di layar kecil.
+  if (
+    pathname.startsWith("/chapter") ||
+    pathname.startsWith("/novel/chapter") ||
+    pathname.startsWith("/scanlator") ||
+    pathname.startsWith("/aturan")
+  ) {
     return null;
   }
 
