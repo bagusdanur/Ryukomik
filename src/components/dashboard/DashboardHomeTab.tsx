@@ -13,6 +13,7 @@ import {
   FiSmartphone,
   FiVolume2,
   FiZap,
+  FiDatabase,
 } from "react-icons/fi";
 import { RiVipCrownLine } from "react-icons/ri";
 import { HiOutlineSparkles } from "react-icons/hi2";
@@ -556,6 +557,21 @@ export default function DashboardHomeTab({
                 Setting APK
               </p>
               <p className="text-[10px] text-white/30">URL, versi & log</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setPage("backup")}
+            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-[#7c5cfc]/30 hover:bg-[#7c5cfc]/[.04] transition-all text-left"
+          >
+            <div className="w-9 h-9 rounded-xl bg-[#7c5cfc]/10 flex items-center justify-center">
+              <FiDatabase size={16} className="text-[#a997ff]" />
+            </div>
+            <div>
+              <p className="text-[12px] font-semibold text-white/70">
+                Backup
+              </p>
+              <p className="text-[10px] text-white/30">Status, unduh & offsite</p>
             </div>
           </button>
 
