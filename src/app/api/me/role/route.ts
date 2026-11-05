@@ -16,7 +16,8 @@ export async function GET(request: Request) {
       role: role.role,
       isAdmin: role.isAdmin,
     });
-    response.headers.set("Cache-Control", `private, max-age=${ROLE_CACHE_SECONDS}`);
+    // no-store: cache browser sempat menyimpan isAdmin=false setelah ganti akun.
+    response.headers.set("Cache-Control", "no-store");
     return response;
   } catch {
     return NextResponse.json({ error: "Sesi login tidak valid." }, { status: 401 });

@@ -7,6 +7,7 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { loadCachedRole } from "@/utils/roleCache";
+import { clearLocalSessionCache } from "@/lib/auth/getSession";
 import { clearCachedProfile } from "@/utils/profileCache";
 import {
   FiUsers,
@@ -304,21 +305,27 @@ export default function AdminDashboard() {
   // ── init ──────────────────────────────────────────────────────────────
   const init = useCallback(async () => {
     if (authLoading) return;
-    if (!authUser) return setLoading(false);
 
-    const role = await loadCachedRole(authUser.id).catch(() => null);
+    // Ambil sesi TERBARU dari server. Cache 4 menit bisa menyimpan akun lama
+    // setelah logout/ganti akun — itu yang membuat admin tetap ditolak.
+    clearLocalSessionCache();
+    const { data: freshSession } = await getSession().catch(() => ({ data: { session: null } }));
+    const currentUser = freshSession.session?.user ?? authUser;
+    if (!currentUser) return setLoading(false);
+
+    const role = await loadCachedRole(currentUser.id, { force: true }).catch(() => null);
     if (!role?.isAdmin) return setLoading(false);
 
     setAdminUser({
-      ...authUser,
+      ...currentUser,
       role: role.role,
       username:
-        authUser.user_metadata?.username ||
-        authUser.user_metadata?.full_name ||
-        authUser.user_metadata?.name ||
-        authUser.email ||
+        currentUser.user_metadata?.username ||
+        currentUser.user_metadata?.full_name ||
+        currentUser.user_metadata?.name ||
+        currentUser.email ||
         "Admin",
-      avatar_url: authUser.user_metadata?.avatar_url || null,
+      avatar_url: currentUser.user_metadata?.avatar_url || null,
     });
     setAuthed(true);
     await fetchDashboardSummary();
@@ -1286,6 +1293,25 @@ export default function AdminDashboard() {
           <p className="text-white/40 text-sm mt-1">
             Halaman ini hanya untuk admin.
           </p>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                clearLocalSessionCache();
+                window.location.reload();
+              }}
+              className="rounded-lg border border-white/15 px-4 py-2 text-xs font-bold text-white/70 transition-colors hover:text-white"
+            >
+              Muat ulang
+            </button>
+            <button
+              type="button"
+              onClick={() => void logoutEverywhere().then(() => { window.location.href = "/"; })}
+              className="rounded-lg bg-[#7c5cfc] px-4 py-2 text-xs font-bold text-white"
+            >
+              Ganti akun
+            </button>
+          </div>
         </div>
       </div>
     );

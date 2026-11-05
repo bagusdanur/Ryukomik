@@ -48,6 +48,23 @@ function writeSessionCache(userId: string, data: CachedRole) {
   }
 }
 
+/** Hapus seluruh cache role (dipakai saat logout / ganti akun). */
+export function clearAllCachedRoles() {
+  memoryCache.clear();
+  pendingRequests.clear();
+  if (typeof window === "undefined") return;
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i += 1) {
+      const key = sessionStorage.key(i);
+      if (key && key.startsWith("rk-role-cache:")) keys.push(key);
+    }
+    keys.forEach((key) => sessionStorage.removeItem(key));
+  } catch {
+    // storage bisa diblokir
+  }
+}
+
 export function clearCachedRole(userId?: string | null) {
   if (!userId) return;
   memoryCache.delete(userId);
@@ -83,6 +100,8 @@ export async function loadCachedRole(
 
       const res = await fetch("/api/me/role", {
         headers: { Authorization: `Bearer ${token}` },
+        // Jangan pernah pakai cache browser: role bisa berubah / akun berganti.
+        cache: "no-store",
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error || "Gagal memuat role.");

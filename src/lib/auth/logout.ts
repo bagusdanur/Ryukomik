@@ -7,6 +7,21 @@
  * sehingga user tetap terlogin.
  */
 export async function logoutEverywhere(): Promise<void> {
+  // Cache sesi lokal berumur 4 menit: tanpa dibersihkan, akun berikutnya
+  // yang login masih dianggap user lama (penyebab "admin tetap ditolak").
+  try {
+    const { clearLocalSessionCache } = await import("@/lib/auth/getSession");
+    clearLocalSessionCache();
+  } catch {
+    // modul sesi tidak tersedia — lanjut
+  }
+  try {
+    const { clearAllCachedRoles } = await import("@/utils/roleCache");
+    clearAllCachedRoles();
+  } catch {
+    // cache role best-effort
+  }
+
   try {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
   } catch {

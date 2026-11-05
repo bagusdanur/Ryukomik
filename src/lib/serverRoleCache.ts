@@ -4,7 +4,6 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { verifyAccessToken } from "@/lib/auth/jwt";
 
-import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { socialQuery } from "@/lib/social/db";
 import { isAdminAllowed, parseAdminAllowlist } from "@/lib/requestAuthPolicy";
@@ -12,7 +11,7 @@ import { evaluateBan } from "@/lib/banPolicy";
 
 // Tag "profile-role" di-invalidasi admin saat role diubah (admin/users), jadi
 // TTL panjang aman: perubahan role tetap langsung, query profiles turun 6x.
-export const ROLE_CACHE_SECONDS = 60 * 60;
+export const ROLE_CACHE_SECONDS = 30;
 
 type RoleRow = {
   role?: string | null;
@@ -117,25 +116,37 @@ export async function getVerifiedUserId(token: string): Promise<string> {
   return userId;
 }
 
-const getCachedRoleByUserId = unstable_cache(
-  async (userId: string): Promise<RoleRow> => {
-    // Sumber lokal (social_profiles): nol query Supabase per user per jam.
-    const { rows } = await socialQuery<{
-      role: string | null;
-      is_banned: boolean | null;
-      banned_until: string | null;
-    }>("select role, is_banned, banned_until from social_profiles where user_id = $1", [userId]);
+/**
+ * Cache role di memori proses: 30 detik.
+ *
+ * Dulu memakai unstable_cache dengan revalidate 1 jam. Akibatnya perubahan
+ * role (atau ganti akun) bisa tertahan sampai satu jam — admin tetap ditolak
+ * walau role di DB sudah benar. Sumbernya sekarang Postgres lokal, jadi query
+ * murah; 30 detik cukup untuk meredam lonjakan request tanpa menyimpan data basi.
+ */
+const ROLE_MEMORY_TTL_MS = 30 * 1000;
+const roleMemory = new Map<string, { at: number; row: RoleRow }>();
 
-    const row = rows[0];
-    if (!row) return {};
-    return { role: row.role, is_banned: row.is_banned, banned_until: row.banned_until };
-  },
-  ["profile-role-v3"],
-  {
-    revalidate: ROLE_CACHE_SECONDS,
-    tags: ["profile-role"],
-  },
-);
+export function clearServerRoleCache(userId?: string) {
+  if (userId) roleMemory.delete(userId);
+  else roleMemory.clear();
+}
+
+const getCachedRoleByUserId = async (userId: string): Promise<RoleRow> => {
+  const now = Date.now();
+  const hit = roleMemory.get(userId);
+  if (hit && now - hit.at < ROLE_MEMORY_TTL_MS) return hit.row;
+
+  const { rows } = await socialQuery<{
+    role: string | null;
+    is_banned: boolean | null;
+    banned_until: string | null;
+  }>("select role, is_banned, banned_until from social_profiles where user_id = $1", [userId]);
+
+  const normalized: RoleRow = rows[0] ?? {};
+  roleMemory.set(userId, { at: now, row: normalized });
+  return normalized;
+};
 
 export async function getCachedRole(userId: string): Promise<CachedRole> {
   const row = await getCachedRoleByUserId(userId);
