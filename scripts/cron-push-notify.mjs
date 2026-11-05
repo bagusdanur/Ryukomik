@@ -66,15 +66,15 @@ async function fetchWantedSources() {
   return new Set(rows.map((r) => r.source).filter(Boolean));
 }
 
-// Penerima = bookmark ATAU riwayat (pernah baca seri itu). Query batch sama,
-// jadi biaya DB tidak naik, tapi relevansi naik (user yang baca aktif dapat juga).
+// Penerima push = HANYA yang bookmark seri itu (keputusan user).
+// Riwayat baca TIDAK menerima push: sekali baca tidak berarti mau dapat
+// notifikasi tiap chapter baru. (Riwayat tetap dipakai untuk menentukan
+// source mana yang dicek — lihat fetchWantedSources.)
 async function fetchRecipientsBySlugSource(slugs, sourceIds) {
   const map = new Map();
   for (const slugsChunk of chunked(slugs, 100)) {
     const { rows } = await socialDb.query(
-      `select user_id, comic_slug, source from bookmark_sync where comic_slug = any($1::text[])
-       union
-       select user_id, comic_slug, source from history_sync where comic_slug = any($1::text[])`,
+      "select user_id, comic_slug, source from bookmark_sync where comic_slug = any($1::text[])",
       [slugsChunk],
     );
     for (const row of rows) {
