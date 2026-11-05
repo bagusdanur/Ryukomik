@@ -137,6 +137,7 @@ async function fetchComments(
         username,
         avatar_url: avatar,
         role: person?.role ?? null,
+        is_scanlator: person?.is_scanlator ?? false,
         is_premium: person?.is_premium ?? false,
         total_reads: person?.total_reads ?? 0,
         avatar_border: person?.avatar_border ?? null,

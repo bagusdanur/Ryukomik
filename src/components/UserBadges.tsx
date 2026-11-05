@@ -6,6 +6,7 @@ import BadgeList from "@/components/BadgeList";
  */
 export default function UserBadges({
   role,
+  isScanlator,
   isPremium,
   titleRushRank,
   xpRank,
@@ -15,6 +16,7 @@ export default function UserBadges({
   className = "",
 }: {
   role?: string | null;
+  isScanlator?: boolean | null;
   isPremium?: boolean | null;
   titleRushRank?: number | null;
   xpRank?: number | null;
@@ -25,7 +27,7 @@ export default function UserBadges({
 }) {
   return (
     <BadgeList
-      ctx={{ role, isPremium, titleRushRank, xpRank, totalReads, marathon }}
+      ctx={{ role, isScanlator, isPremium, titleRushRank, xpRank, totalReads, marathon }}
       max={max}
       className={className}
     />

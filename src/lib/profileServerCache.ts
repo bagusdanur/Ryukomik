@@ -10,6 +10,7 @@ export type PublicProfileRow = {
   level?: number | null;
   xp?: number | null;
   role?: string | null;
+  is_scanlator?: boolean | null;
   is_premium?: boolean | null;
   created_at?: string | null;
   total_comments?: number | null;
@@ -26,17 +27,21 @@ export const getPublicProfileByUsernameCached = unstable_cache(
   async (username: string): Promise<PublicProfileRow | null> => {
     // Sumber lokal (social_profiles): nol egress Supabase.
     const { rows } = await socialQuery<PublicProfileRow>(
-      `select user_id as id, username, avatar_url, level, xp, role, is_premium,
-              created_at, total_comments, show_public_reads, show_public_comments,
-              show_public_join_date
-         from social_profiles
-        where lower(username) = lower($1)
+      `select p.user_id as id, p.username, p.avatar_url, p.level, p.xp, p.role, p.is_premium,
+              p.created_at, p.total_comments, p.show_public_reads, p.show_public_comments,
+              p.show_public_join_date,
+              exists (
+                select 1 from scanlator_profiles s
+                 where s.user_id = p.user_id and s.status <> 'revoked'
+              ) as is_scanlator
+         from social_profiles p
+        where lower(p.username) = lower($1)
         limit 1`,
       [username],
     );
     return rows[0] || null;
   },
-  ["public-profile-by-username-v2"],
+  ["public-profile-by-username-v3"],
   // Tag di-invalidate saat admin mengubah profil/user; TTL 1 jam (dari 5 menit)
   // memangkas query profiles dari halaman /u/ yang ramai.
   { revalidate: 3600, tags: ["public-profile"] },

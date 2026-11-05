@@ -17,6 +17,7 @@ export type SocialProfileLite = {
   level: number;
   xp: number;
   role: string | null;
+  is_scanlator?: boolean | null;
   is_premium: boolean;
   total_reads: number;
   avatar_border: string | null;
@@ -30,10 +31,14 @@ export async function getSocialProfiles(
 
   try {
     const { rows } = await socialQuery<SocialProfileLite>(
-      `select user_id, username, avatar_url, level, coalesce(xp, 0) as xp, role, is_premium,
-              coalesce(total_reads, 0) as total_reads, avatar_border
-         from social_profiles
-        where user_id = any($1::uuid[])`,
+      `select p.user_id, p.username, p.avatar_url, p.level, coalesce(p.xp, 0) as xp, p.role, p.is_premium,
+              coalesce(p.total_reads, 0) as total_reads, p.avatar_border,
+              exists (
+                select 1 from scanlator_profiles s
+                 where s.user_id = p.user_id and s.status <> 'revoked'
+              ) as is_scanlator
+         from social_profiles p
+        where p.user_id = any($1::uuid[])`,
       [ids],
     );
     return new Map(rows.map((row) => [String(row.user_id), row]));

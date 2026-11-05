@@ -90,6 +90,7 @@ type CommentAvatarProps = {
 
 type CommentBadgeProps = {
   role?: string | null;
+  isScanlator?: boolean | null;
   isPremium?: boolean | null;
   titleRushRank?: number | null;
   xpRank?: number | null;
@@ -324,10 +325,11 @@ const AccentBar = memo(({ type }: { type: CommentType }) => (
 ));
 AccentBar.displayName = "AccentBar";
 
-const CommentBadge = memo(({ role, isPremium, titleRushRank, xpRank, totalReads }: CommentBadgeProps) => {
+const CommentBadge = memo(({ role, isScanlator, isPremium, titleRushRank, xpRank, totalReads }: CommentBadgeProps) => {
   return (
     <UserBadges
       role={role}
+      isScanlator={isScanlator}
       isPremium={isPremium}
       titleRushRank={titleRushRank}
       xpRank={xpRank}
@@ -479,6 +481,7 @@ const CommentItem = memo(({
                 )}
                 <CommentBadge
                   role={profile.role}
+                  isScanlator={(profile as { is_scanlator?: boolean }).is_scanlator}
                   isPremium={profile.is_premium}
                   titleRushRank={titleRushRank}
                   xpRank={xpRank}
