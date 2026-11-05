@@ -10,6 +10,7 @@ import ContinueReading from "@/components/ContinueReading";
 import RyukomikDiscordBanner from "@/components/RyukomikDiscordBanner";
 import LatestComments from "@/components/LatestComments";
 import TitleRushNotice from "@/components/TitleRushNotice";
+import LoginNotice from "@/components/LoginNotice";
 import { getTitleRushEventStatus } from "@/lib/titleRushEvent";
 import ProjectUpdateList from "@/components/ProjectUpdateList";
 import { getProjectUpdates } from "@/lib/projectUpdates";
@@ -30,6 +31,7 @@ export default async function Home() {
 
   return (
     <main className="rk-page rk-app-surface text-white">
+      <LoginNotice />
       <div className="rk-shell min-h-screen pb-24 text-white md:px-6">
         <h1 className="sr-only">Ryukomik - Baca Manga, Manhwa, dan Manhua Bahasa Indonesia Terbaru</h1>
         <Suspense fallback={<div className="mx-3 mt-16 h-56 rounded-2xl rk-card" />}>

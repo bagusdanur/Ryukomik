@@ -17,13 +17,13 @@ function readCookie(request: Request, name: string): string {
 
 export async function GET(request: Request) {
   const token = readCookie(request, SESSION_COOKIE);
-  if (!token) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!token) return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: { "Cache-Control": "private, no-store" } });
 
   const session = await resolveSession(token);
-  if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: { "Cache-Control": "private, no-store" } });
 
   const user = await findAuthUserById(session.userId);
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401, headers: { "Cache-Control": "private, no-store" } });
 
   // Access token berumur pendek, hanya untuk dipakai di memori klien.
   const accessToken = process.env.AUTH_JWT_SECRET

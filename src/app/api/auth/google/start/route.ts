@@ -6,7 +6,9 @@ export const dynamic = "force-dynamic";
 
 // Batasi pembuatan state per IP: mencegah pengisian tabel / spam redirect.
 const WINDOW_MS = 60_000;
-const MAX_PER_WINDOW = 10;
+// CGNAT: banyak pengguna bisa berbagi satu IP. 10/menit terlalu ketat dan
+// membuat login "diam-diam" gagal (429 JSON).
+const MAX_PER_WINDOW = 40;
 const hits = new Map<string, { count: number; resetAt: number }>();
 
 function rateLimited(ip: string): boolean {
@@ -34,7 +36,9 @@ export async function GET(request: Request) {
     request.headers.get("x-real-ip") ||
     "unknown";
   if (rateLimited(ip)) {
-    return NextResponse.json({ error: "too_many_requests" }, { status: 429 });
+    const url = new URL(request.url);
+    // Kembali ke halaman asal dengan pesan, bukan JSON mentah.
+    return NextResponse.redirect(new URL("/?login=busy", url.origin));
   }
 
   const url = new URL(request.url);

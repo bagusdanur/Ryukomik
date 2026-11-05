@@ -75,6 +75,19 @@ export function useSupabaseUser() {
   useEffect(() => {
     listeners.add(setUser);
 
+    // Sesi bisa baru terpasang setelah OAuth (cookie diset server). Kalau tab
+    // kembali aktif atau ada fokus, cek ulang sekali — jangan biarkan UI
+    // menampilkan "Guest" padahal cookie sudah valid.
+    const recheck = () => {
+      void getSession().then(({ data }) => {
+        const next = (data?.session?.user as User | undefined) || null;
+        if (next && next.id !== currentUser?.id) emit(next);
+      }).catch(() => undefined);
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") recheck(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", recheck);
+
     initSupabaseUser()
       .then((nextUser) => setUser(nextUser))
       .catch((error) => {
@@ -85,6 +98,8 @@ export function useSupabaseUser() {
 
     return () => {
       listeners.delete(setUser);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", recheck);
     };
   }, []);
 
