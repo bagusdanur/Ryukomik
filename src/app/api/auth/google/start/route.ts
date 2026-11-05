@@ -45,11 +45,7 @@ export async function GET(request: Request) {
   const requested = url.searchParams.get("next") || "/";
   // Cegah open redirect: hanya path relatif.
   const next = requested.startsWith("/") && !requested.startsWith("//") ? requested : "/";
-  // Aplikasi (PWA) meminta kode serah-terima karena cookie OAuth masuk ke
-  // jar browser, bukan jar aplikasi.
-  const wantsHandoff = url.searchParams.get("pwa") === "1";
-  const nextForState = wantsHandoff ? `pwa:${next}` : next;
 
-  const { state, challenge } = await createOAuthState(nextForState);
+  const { state, challenge } = await createOAuthState(next);
   return NextResponse.redirect(buildGoogleAuthUrl(state, challenge));
 }
