@@ -230,6 +230,60 @@ export default function PrdScanlatorPage() {
           </ul>
         </section>
 
+
+        <section className={sectionClass}>
+          <h2 className={h2Class}><FiCheckCircle className="text-[var(--accent-2)]" /> 9. Task List (urutan kerjakan)</h2>
+          <div className="mt-3 space-y-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-white/50">Fase A — Identitas & Akun Translation</p>
+              <ul className="mt-2 space-y-1.5">
+                <Li>A1. Migrasi DB: tabel apply request + kolom review/owner di project</Li>
+                <Li>A2. Halaman Apply Request Akun Translation (handle, contoh TL, checkbox S&K)</Li>
+                <Li>A3. API apply + validasi anti-duplikat handle + rate-limit</Li>
+                <Li>A4. Antrean ACC di dashboard admin + notifikasi Telegram</Li>
+                <Li>A5. Role scanlator aktif setelah ACC; badge di profil; tanpa itu tidak bisa upload</Li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-white/50">Fase B — Upload + Review</p>
+              <ul className="mt-2 space-y-1.5">
+                <Li>B1. Form upload seri (judul, cover, deskripsi, genre, toggle 18+)</Li>
+                <Li>B2. Form upload chapter (nomor, judul bebas, gambar, maks 30 MB, kuota 2 GB)</Li>
+                <Li>B3. Kompresi otomatis + watermark nama tim di halaman terakhir</Li>
+                <Li>B4. Status review per seri/chapter + catatan admin</Li>
+                <Li>B5. Atribusi “Diunggah oleh” di kartu, detail, tiap chapter</Li>
+                <Li>B6. Halaman profil Scanlator (karya, views, rating)</Li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-white/50">Fase C — Link Donate (monetisasi MVP)</p>
+              <ul className="mt-2 space-y-1.5">
+                <Li>C1. Field tautan donate di profil Scanlator + validasi https/host</Li>
+                <Li>C2. Blok “Dukung kami!” di halaman detail seri</Li>
+                <Li>C3. Uji end-to-end: apply → ACC → upload → review → terbit → klik donate</Li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-white/50">Fase F — Pengerasan (setelah MVP)</p>
+              <ul className="mt-2 space-y-1.5">
+                <Li>F1. Kuota storage & rate-limit upload</Li>
+                <Li>F2. Anti-duplikat slug/judul + anti re-upload</Li>
+                <Li>F3. Jalur takedown/DMCA (turunkan &lt; 1×24 jam)</Li>
+                <Li>F4. Audit log upload/review</Li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-white/50">Fase Later — Backlog (jangan dibangun sebelum MVP)</p>
+              <ul className="mt-2 space-y-1.5">
+                <Li>L1. Saldo Scanlator + tabel transaksi</Li>
+                <Li>L2. Tombol tips di platform + ACC bukti TF</Li>
+                <Li>L3. Revenue share premium 70/30 + laporan per seri</Li>
+                <Li>L4. Pencairan saldo manual</Li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
       </div>
     </main>
   );

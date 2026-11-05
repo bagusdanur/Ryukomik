@@ -180,3 +180,40 @@ ditulis sendiri mengikuti norma scanlation Indonesia:
 6. Sanksi bertingkat: peringatan -> suspend 7 hari -> cabut akses.
 7. Donate: hanya tautan eksternal milik sendiri; Ryukomik tidak pegang uang (MVP).
 8. Data: email, file, IP upload dicatat untuk keamanan; S&K bisa berubah.
+
+
+## 11. Task list (breakdown PRD — urutan kerjakan)
+
+Fase A — Identitas & Akun Translation
+- [ ] A1. Migrasi DB: `scanlator_applications` (apply request) + kolom `review_status`/`owner_user_id` di project
+- [ ] A2. Halaman Apply Request Akun Translation (`/scanlator/daftar`): handle, deskripsi, contoh TL, checkbox S&K
+- [ ] A3. API apply (POST) + validasi anti-duplikat handle + rate-limit
+- [ ] A4. Antrean ACC di dashboard admin (setujui/tolak + catatan) + notifikasi Telegram
+- [ ] A5. Role `scanlator` aktif setelah ACC; badge Scanlator di profil; user tanpa itu tidak bisa upload
+
+Fase B — Upload + Review
+- [ ] B1. Form upload seri Scanlator (judul, cover, deskripsi, genre, type, status, toggle 18+)
+- [ ] B2. Form upload chapter (nomor, judul bebas, gambar, maks 30 MB, kuota 2 GB)
+- [ ] B3. Kompresi otomatis (sharp) + watermark nama tim di halaman terakhir
+- [ ] B4. Status review per seri/chapter (pending/approved/rejected) + catatan admin
+- [ ] B5. Atribusi "Diunggah oleh" di kartu, detail, tiap chapter (link ke profil)
+- [ ] B6. Halaman profil Scanlator (`/scanlator/<handle>`): karya, views, rating
+
+Fase C — Link Donate (satu-satunya monetisasi MVP)
+- [ ] C1. Field tautan donate di profil Scanlator (DANA/GOPAY, Trakteer, Tako, URL lain) + validasi https/host
+- [ ] C2. Blok "Dukung kami!" di halaman detail seri (klik keluar ke link Scanlator)
+- [ ] C3. Uji end-to-end: apply → ACC → upload → review → terbit → klik donate
+
+Fase F — Pengerasan (setelah MVP jalan)
+- [ ] F1. Kuota storage & rate-limit upload
+- [ ] F2. Anti-duplikat slug/judul + anti re-upload
+- [ ] F3. Jalur takedown/DMCA (form Report → turunkan < 1x24 jam)
+- [ ] F4. Audit log upload/review
+
+Fase Later (BACKLOG — jangan dikerjakan sebelum MVP)
+- [ ] L1. Saldo Scanlator + tabel transaksi
+- [ ] L2. Tombol tips di platform + ACC bukti TF
+- [ ] L3. Revenue share premium 70/30 + laporan per seri
+- [ ] L4. Pencairan saldo manual
+
+Aturan tetap tiap task: staging build terpisah, deploy, uji end-to-end, commit + push.
