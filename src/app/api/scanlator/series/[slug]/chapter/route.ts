@@ -22,11 +22,16 @@ export async function POST(
     const userId = await requireUserId(request);
     const { slug } = await context.params;
 
-    const profile = await socialQuery<{ handle: string }>(
-      "select handle from scanlator_profiles where user_id = $1 limit 1",
+    const profile = await socialQuery<{ handle: string; status: string }>(
+      "select handle, status from scanlator_profiles where user_id = $1 limit 1",
       [userId],
     );
-    if (!profile.rows[0]) return NextResponse.json({ error: "Kamu belum Scanlator aktif." }, { status: 403 });
+    if (!profile.rows[0] || profile.rows[0].status === "revoked") {
+      return NextResponse.json({ error: "Kamu belum Scanlator aktif." }, { status: 403 });
+    }
+    if (profile.rows[0].status === "suspended") {
+      return NextResponse.json({ error: "Akun Scanlator kamu sedang disuspend. Hubungi admin." }, { status: 403 });
+    }
 
     // Pastikan seri ini milik user ini.
     const manga = await projectApiFetch<{ data?: Record<string, unknown> }>(

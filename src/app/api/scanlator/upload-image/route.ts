@@ -27,12 +27,13 @@ export async function POST(request: Request) {
     return authErrorResponse(error) ?? NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
   }
 
-  const profile = await socialQuery<{ handle: string; team_name: string }>(
-    "select handle, team_name from scanlator_profiles where user_id = $1 limit 1",
+  const profile = await socialQuery<{ handle: string; team_name: string; status: string }>(
+    "select handle, team_name, status from scanlator_profiles where user_id = $1 limit 1",
     [userId],
   );
   const me = profile.rows[0];
-  if (!me) return NextResponse.json({ error: "Kamu belum Scanlator aktif." }, { status: 403 });
+  if (!me || me.status === "revoked") return NextResponse.json({ error: "Kamu belum Scanlator aktif." }, { status: 403 });
+  if (me.status === "suspended") return NextResponse.json({ error: "Akun Scanlator kamu sedang disuspend." }, { status: 403 });
 
   const formData = await request.formData().catch(() => null);
   const file = formData?.get("file") as File | null;

@@ -13,11 +13,18 @@ function slugify(input: string): string {
 }
 
 async function requireScanlator(userId: string) {
-  const { rows } = await socialQuery<{ handle: string; team_name: string }>(
-    "select handle, team_name from scanlator_profiles where user_id = $1 limit 1",
+  const { rows } = await socialQuery<{ handle: string; team_name: string; status: string }>(
+    "select handle, team_name, status from scanlator_profiles where user_id = $1 limit 1",
     [userId],
   );
-  return rows[0] || null;
+  const me = rows[0];
+  if (!me || me.status === "revoked") return null;
+  return me;
+}
+
+function blockedMessage(status: string): string | null {
+  if (status === "suspended") return "Akun Scanlator kamu sedang disuspend. Hubungi admin.";
+  return null;
 }
 
 /**
@@ -47,6 +54,8 @@ export async function POST(request: Request) {
     const userId = await requireUserId(request);
     const profile = await requireScanlator(userId);
     if (!profile) return NextResponse.json({ error: "Kamu belum Scanlator aktif. Ajukan dulu di /scanlator/daftar." }, { status: 403 });
+    const blocked = blockedMessage(profile.status);
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 403 });
 
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     const title = typeof body?.title === "string" ? body.title.trim().slice(0, 200) : "";

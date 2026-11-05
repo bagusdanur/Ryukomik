@@ -25,13 +25,27 @@ function validSample(value: unknown): boolean {
       return false;
     }
   }
-  // boleh juga berupa teks deskripsi contoh (bukan URL)
   return v.length >= 10;
 }
 
+/** Nomor WA: hanya digit, 9–15 angka. */
+function phoneOf(value: unknown): string | null {
+  const v = typeof value === "string" ? value.replace(/[^\d+]/g, "") : "";
+  const digits = v.replace(/\+/g, "");
+  if (digits.length < 9 || digits.length > 15) return null;
+  return digits;
+}
+
+/** Telegram/Discord: username tanpa spasi, 2–40 karakter. */
+function usernameOf(value: unknown): string | null {
+  const v = typeof value === "string" ? value.trim().replace(/^@/, "") : "";
+  if (!/^[A-Za-z0-9._-]{2,40}$/.test(v)) return null;
+  return v;
+}
+
 /**
- * Apply Request Akun Translation (Fase A Scanlator, BETA).
- * POST: ajukan (satu pengajuan aktif per user). GET: status pengajuan saya.
+ * Apply Request Akun Translation (Scanlator). Wajib kontak WA/Telegram/Discord
+ * supaya admin bisa menghubungi tim untuk review & pembinaan.
  */
 export async function POST(request: Request) {
   try {
@@ -44,14 +58,20 @@ export async function POST(request: Request) {
     const samples = Array.isArray(body?.samples) ? body.samples.filter(validSample).slice(0, 3) : [];
     const agreeTerms = body?.agree_terms === true;
 
+    const wa = phoneOf(body?.contact_wa);
+    const telegram = usernameOf(body?.contact_telegram);
+    const discord = usernameOf(body?.contact_discord);
+
     if (!HANDLE_RE.test(handle)) {
-      return NextResponse.json({ error: "Handle harus 3–30 karakter: huruf kecil, angka, dan strip. Diawali huruf/angka." }, { status: 400 });
+      return NextResponse.json({ error: "Handle harus 3–30 karakter: huruf kecil, angka, dan strip." }, { status: 400 });
     }
     if (teamName.length < 2) return NextResponse.json({ error: "Nama tim wajib diisi." }, { status: 400 });
-    if (samples.length === 0) return NextResponse.json({ error: "Sertakan minimal 1 contoh hasil TL (link atau deskripsi)." }, { status: 400 });
+    if (samples.length === 0) return NextResponse.json({ error: "Sertakan minimal 1 contoh hasil TL." }, { status: 400 });
     if (!agreeTerms) return NextResponse.json({ error: "Kamu wajib menyetujui Syarat & Ketentuan Scanlator." }, { status: 400 });
+    if (!wa && !telegram && !discord) {
+      return NextResponse.json({ error: "Isi minimal satu kontak: WhatsApp, Telegram, atau Discord." }, { status: 400 });
+    }
 
-    // Sudah Scanlator aktif?
     const me = await socialQuery<{ role: string | null }>("select role from social_profiles where user_id = $1", [userId]);
     if (me.rows[0]?.role === "scanlator") {
       return NextResponse.json({ error: "Akun kamu sudah Scanlator aktif." }, { status: 409 });
@@ -63,24 +83,23 @@ export async function POST(request: Request) {
     );
     if (existing.rows[0]) {
       return NextResponse.json(
-        { error: existing.rows[0].status === "approved" ? "Pengajuanmu sudah disetujui. Selamat, kamu Scanlator." : "Pengajuanmu sedang menunggu review admin." },
+        { error: existing.rows[0].status === "approved" ? "Pengajuanmu sudah disetujui." : "Pengajuanmu sedang menunggu review admin." },
         { status: 409 },
       );
     }
 
     const handleTaken = await socialQuery<{ id: string }>("select id::text as id from scanlator_applications where handle = $1 limit 1", [handle]);
     if (handleTaken.rows[0]) {
-      return NextResponse.json({ error: "Handle sudah dipakai tim lain. Pilih handle lain." }, { status: 409 });
+      return NextResponse.json({ error: "Handle sudah dipakai tim lain." }, { status: 409 });
     }
 
     const { rows } = await socialQuery<{ id: string }>(
-      `insert into scanlator_applications (user_id, handle, team_name, description, samples, agree_terms)
-       values ($1, $2, $3, $4, $5, true) returning id::text as id`,
-      [userId, handle, teamName, description || null, samples],
+      `insert into scanlator_applications (user_id, handle, team_name, description, samples, agree_terms, contact_wa, contact_telegram, contact_discord)
+       values ($1, $2, $3, $4, $5, true, $6, $7, $8) returning id::text as id`,
+      [userId, handle, teamName, description || null, samples, wa, telegram, discord],
     );
 
-    // Kabari admin lewat Telegram (best-effort, tidak menggagalkan pengajuan).
-    void notifyScanlatorApplication(handle, teamName).catch(() => undefined);
+    void notifyScanlatorApplication(handle, teamName, wa, telegram, discord).catch(() => undefined);
 
     return NextResponse.json({ success: true, id: rows[0].id, status: "pending" });
   } catch (error) {
@@ -95,14 +114,10 @@ export async function GET(request: Request) {
   try {
     const userId = await requireUserId(request);
     const { rows } = await socialQuery<{
-      id: string;
-      handle: string;
-      team_name: string;
-      status: string;
-      review_note: string | null;
-      created_at: string;
+      id: string; handle: string; team_name: string; status: string; review_note: string | null; created_at: string;
     }>(
-      "select id::text as id, handle, team_name, status, review_note, created_at from scanlator_applications where user_id = $1 order by created_at desc limit 1",
+      `select id::text as id, handle, team_name, status, review_note, created_at
+         from scanlator_applications where user_id = $1 order by created_at desc limit 1`,
       [userId],
     );
     return NextResponse.json({ success: true, application: rows[0] || null }, { headers: { "Cache-Control": "private, no-store" } });
@@ -113,16 +128,21 @@ export async function GET(request: Request) {
   }
 }
 
-async function notifyScanlatorApplication(handle: string, teamName: string) {
+async function notifyScanlatorApplication(handle: string, teamName: string, wa: string | null, telegram: string | null, discord: string | null) {
   const botToken = process.env.TELEGRAM_PREMIUM_BOT_TOKEN || "";
   const target = process.env.TELEGRAM_PREMIUM_CHAT_ID || "";
   if (!botToken || !target) return;
+  const contacts = [
+    wa ? `WA: ${wa}` : "",
+    telegram ? `Telegram: @${telegram}` : "",
+    discord ? `Discord: ${discord}` : "",
+  ].filter(Boolean).join("\n");
   await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: target,
-      text: `Pengajuan Scanlator baru (BETA)\n\nTim: ${teamName}\nHandle: ${handle}\n\nCek di dashboard admin → tab Scanlator.`,
+      text: `Pengajuan Scanlator baru (BETA)\n\nTim: ${teamName}\nHandle: ${handle}\n\nKontak:\n${contacts}\n\nCek dashboard admin → tab Scanlator.`,
       reply_markup: { inline_keyboard: [[{ text: "Buka Dashboard Scanlator", url: "https://ryukomik.my.id/dashboard?page=scanlator" }]] },
     }),
     signal: AbortSignal.timeout(15_000),

@@ -22,33 +22,36 @@ function cleanLink(value: unknown): string | null {
   return url;
 }
 
-/**
- * Profil Scanlator: GET milik sendiri (atau publik via ?handle=).
- * PATCH: simpan tautan donate + bio (Fase C — satu-satunya monetisasi MVP).
- */
+function phoneOf(value: unknown): string | null {
+  const digits = typeof value === "string" ? value.replace(/[^\d]/g, "") : "";
+  if (digits.length < 9 || digits.length > 15) return null;
+  return digits;
+}
+
+function usernameOf(value: unknown): string | null {
+  const v = typeof value === "string" ? value.trim().replace(/^@/, "") : "";
+  return /^[A-Za-z0-9._-]{2,40}$/.test(v) ? v : null;
+}
+
+const PROFILE_FIELDS = `handle, team_name, bio, support_dana, support_trakteer, support_tako, support_url_lain,
+  contact_wa, contact_telegram, contact_discord, status, warnings, suspended_until, moderation_note, created_at`;
+
+/** GET: profil saya (login) atau publik via ?handle=. PATCH: simpan profil & tautan. */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const handle = (searchParams.get("handle") || "").toLowerCase();
   try {
     if (handle) {
-      const { rows } = await socialQuery<{
-        handle: string; team_name: string; bio: string | null;
-        support_dana: string | null; support_trakteer: string | null; support_tako: string | null; support_url_lain: string | null;
-        created_at: string;
-      }>(
-        `select handle, team_name, bio, support_dana, support_trakteer, support_tako, support_url_lain, created_at
-           from scanlator_profiles where handle = $1 limit 1`,
+      const { rows } = await socialQuery(
+        `select handle, team_name, bio, support_dana, support_trakteer, support_tako, support_url_lain, status, created_at
+           from scanlator_profiles where handle = $1 and status <> 'revoked' limit 1`,
         [handle],
       );
       if (!rows[0]) return NextResponse.json({ error: "Profil tidak ditemukan." }, { status: 404 });
       return NextResponse.json({ success: true, profile: rows[0] }, { headers: { "Cache-Control": "public, max-age=60" } });
     }
     const userId = await requireUserId(request);
-    const { rows } = await socialQuery(
-      `select handle, team_name, bio, support_dana, support_trakteer, support_tako, support_url_lain, created_at
-         from scanlator_profiles where user_id = $1 limit 1`,
-      [userId],
-    );
+    const { rows } = await socialQuery(`select ${PROFILE_FIELDS} from scanlator_profiles where user_id = $1 limit 1`, [userId]);
     return NextResponse.json({ success: true, profile: rows[0] || null }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     const authResponse = authErrorResponse(error);
@@ -60,8 +63,15 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const userId = await requireUserId(request);
+    const current = await socialQuery<{ status: string }>("select status from scanlator_profiles where user_id = $1 limit 1", [userId]);
+    const me = current.rows[0];
+    if (!me) return NextResponse.json({ error: "Kamu belum Scanlator aktif." }, { status: 403 });
+    if (me.status === "revoked") return NextResponse.json({ error: "Akses Scanlator kamu sudah dicabut." }, { status: 403 });
+
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     const bio = typeof body?.bio === "string" ? body.bio.trim().slice(0, 1000) : null;
+    const teamName = typeof body?.team_name === "string" ? body.team_name.trim().slice(0, 80) : "";
+    if (teamName && teamName.length < 2) return NextResponse.json({ error: "Nama tim minimal 2 karakter." }, { status: 400 });
 
     const dana = cleanLink(body?.support_dana);
     const trakteer = cleanLink(body?.support_trakteer);
@@ -80,13 +90,25 @@ export async function PATCH(request: Request) {
       }
     }
 
-    const { rows } = await socialQuery(
-      `update scanlator_profiles
-          set bio = coalesce($1, bio), support_dana = $2, support_trakteer = $3, support_tako = $4, support_url_lain = $5, updated_at = now()
-        where user_id = $6 returning handle`,
-      [bio, dana, trakteer, tako, lain, userId],
+    const wa = phoneOf(body?.contact_wa);
+    const telegram = usernameOf(body?.contact_telegram);
+    const discord = usernameOf(body?.contact_discord);
+
+    await socialQuery(
+      `update scanlator_profiles set
+         bio = coalesce($1, bio),
+         team_name = case when $2 = '' then team_name else $2 end,
+         support_dana = $3, support_trakteer = $4, support_tako = $5, support_url_lain = $6,
+         contact_wa = coalesce($7, contact_wa),
+         contact_telegram = coalesce($8, contact_telegram),
+         contact_discord = coalesce($9, contact_discord),
+         updated_at = now()
+       where user_id = $10`,
+      [bio, teamName, dana, trakteer, tako, lain, wa, telegram, discord, userId],
     );
-    if (!rows[0]) return NextResponse.json({ error: "Kamu belum Scanlator aktif." }, { status: 403 });
+    if (teamName) {
+      await socialQuery("update social_profiles set username = $1, updated_at = now() where user_id = $2", [teamName, userId]);
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     const authResponse = authErrorResponse(error);
