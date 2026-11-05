@@ -16,6 +16,7 @@ import {
   FiShield,
   FiHome,
   FiMessageCircle,
+  FiDatabase,
 } from "react-icons/fi";
 import DashboardHomeTab from "@/components/dashboard/DashboardHomeTab";
 import SourceHealthTab from "@/components/dashboard/SourceHealthTab";
@@ -35,6 +36,7 @@ import QuickAdsTab, {
 } from "@/components/dashboard/QuickAdsTab";
 import ProjectTab from "@/components/dashboard/ProjectTab";
 import ProjectDbTab from "@/components/dashboard/ProjectDbTab";
+import BackupTab from "@/components/dashboard/BackupTab";
 import AnnouncementsTab from "@/components/dashboard/AnnouncementsTab";
 import { FiBookOpen } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
@@ -56,9 +58,10 @@ type DashboardPage =
   | "project"
   | "announcements"
   | "marathon"
-  | "project-db";
+  | "project-db"
+  | "backup";
 
-const DASHBOARD_PAGES: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "announcements", "marathon", "project-db"];
+const DASHBOARD_PAGES: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "announcements", "marathon", "project-db", "backup"];
 
 
 type AdminUser = User & {
@@ -1334,6 +1337,11 @@ export default function AdminDashboard() {
       icon: <FiBookOpen size={18} />,
       label: "Project",
     },
+    {
+      id: "backup",
+      icon: <FiDatabase size={18} />,
+      label: "Backup",
+    },
   ];
 
   // ── render ─────────────────────────────────────────────────────────────
@@ -1420,6 +1428,7 @@ export default function AdminDashboard() {
         )}
         {page === "announcements" && <AnnouncementsTab getAdminToken={getAdminToken} />}
         {page === "project-db" && <ProjectDbTab getAdminToken={getAdminToken} />}
+        {page === "backup" && <BackupTab getAdminToken={getAdminToken} />}
         {page === "users" && (
           <UsersTab
             users={users}
