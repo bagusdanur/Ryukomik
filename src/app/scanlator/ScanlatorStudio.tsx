@@ -7,6 +7,7 @@ import {
   FiChevronDown, FiPlus, FiSave, FiSend, FiTrash2, FiUser, FiX,
 } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
+import { compressImage, formatSize } from "@/utils/imageCompress";
 import { Button, Field, Panel, PanelHead, Row, Stat, StatusDot, Tabs, inputClass } from "@/components/scanlator/ui";
 
 type Profile = {
@@ -75,6 +76,11 @@ export default function ScanlatorStudio() {
   const [chapterTitle, setChapterTitle] = useState("");
   const [chapterImages, setChapterImages] = useState<string[]>([]);
   const [uploadingChapter, setUploadingChapter] = useState(false);
+  const [progress, setProgress] = useState<{
+    total: number; done: number; failed: Array<{ name: string; reason: string }>;
+    failedFiles: File[];
+    currentName: string; savedBytes: number; startedAt: number;
+  } | null>(null);
   const [busyChapter, setBusyChapter] = useState(false);
   const [mode, setMode] = useState<"seri" | "chapter">("seri");
 
@@ -213,18 +219,37 @@ export default function ScanlatorStudio() {
     finally { setUploadingCover(false); }
   };
 
-  const onChapterFiles = async (files: FileList | null) => {
+  const onChapterFiles = (files: FileList | null) => {
     if (!files?.length) return;
-    const list = Array.from(files);
-    setUploadingChapter(true); setError("");
-    try {
-      const urls: string[] = [];
-      for (let i = 0; i < list.length; i++) {
-        urls.push(await uploadImage(list[i], "chapter", chapterSlug || profile?.handle || "chapter", i === list.length - 1));
+    void uploadBatch(Array.from(files));
+  };
+
+  const uploadBatch = async (list: File[]) => {
+    if (!list.length) return;
+    setUploadingChapter(true); setError(""); setNotice("");
+    const startedAt = Date.now();
+    setProgress({ total: list.length, done: 0, failed: [], failedFiles: [], currentName: "", savedBytes: 0, startedAt });
+
+    let savedBytes = 0;
+    for (let i = 0; i < list.length; i++) {
+      const original = list[i];
+      setProgress((p) => (p ? { ...p, currentName: original.name } : p));
+      try {
+        // Kompres dulu: memotong waktu upload & pemakaian kuota.
+        const { file, finalBytes, originalBytes } = await compressImage(original);
+        savedBytes += Math.max(0, originalBytes - finalBytes);
+        const url = await uploadImage(file, "chapter", chapterSlug || profile?.handle || "chapter", i === list.length - 1);
+        setChapterImages((prev) => [...prev, url]);
+        setProgress((p) => (p ? { ...p, done: p.done + 1, savedBytes } : p));
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : "Gagal upload";
+        setProgress((p) => (p ? { ...p, failed: [...p.failed, { name: original.name, reason }], failedFiles: [...p.failedFiles, original] } : p));
+        // Kuota habis: hentikan sisa antrean, tidak ada gunanya lanjut.
+        if (/kuota/i.test(reason)) break;
       }
-      setChapterImages((prev) => [...prev, ...urls]);
-    } catch (err) { setError(err instanceof Error ? err.message : "Upload chapter gagal."); }
-    finally { setUploadingChapter(false); }
+    }
+    setUploadingChapter(false);
+    setProgress((p) => (p ? { ...p, currentName: "" } : p));
   };
 
   const createChapter = async (e: React.FormEvent) => {
@@ -600,9 +625,54 @@ export default function ScanlatorStudio() {
                         <input value={chapterTitle} onChange={(e) => setChapterTitle(e.target.value)} placeholder="Opsional" className={inputClass} />
                       </Field>
                     </div>
-                    <Field label="Gambar" hint={uploadingChapter ? "mengunggah…" : `${chapterImages.length} file`}>
+                    <Field label="Gambar" hint={`${chapterImages.length} siap · maks 60`}>
                       <input type="file" accept="image/*" multiple onChange={(e) => void onChapterFiles(e.target.files)} className="w-full text-[11px] text-white/45 file:mr-3 file:rounded-md file:border-0 file:bg-white/[.08] file:px-3 file:py-2 file:text-[11px] file:font-bold file:text-white/80" />
                     </Field>
+
+                    {progress && (
+                      <div className="rounded-lg border border-white/[.07] bg-white/[.02] p-3">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-semibold text-white/70">
+                            {uploadingChapter
+                              ? `Mengunggah ${progress.done + progress.failed.length + 1}/${progress.total}`
+                              : `Selesai ${progress.done}/${progress.total}`}
+                          </span>
+                          <span className="text-white/35">
+                            {Math.round(((progress.done + progress.failed.length) / Math.max(1, progress.total)) * 100)}%
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/[.07]">
+                          <div
+                            className={`h-full rounded-full transition-[width] ${progress.failed.length > 0 ? "bg-amber-400" : "bg-[var(--accent)]"}`}
+                            style={{ width: `${Math.max(2, ((progress.done + progress.failed.length) / Math.max(1, progress.total)) * 100)}%` }}
+                          />
+                        </div>
+                        <p className="mt-1.5 truncate text-[10px] text-white/35">
+                          {uploadingChapter
+                            ? progress.currentName || "menyiapkan…"
+                            : `${progress.done} berhasil${progress.failed.length ? ` · ${progress.failed.length} gagal` : ""}${progress.savedBytes > 0 ? ` · hemat ${formatSize(progress.savedBytes)}` : ""}`}
+                        </p>
+                        {!uploadingChapter && progress.failedFiles.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => void uploadBatch(progress.failedFiles)}
+                            className="mt-2 flex min-h-[32px] w-full items-center justify-center rounded-md border border-amber-300/30 text-[11px] font-bold text-amber-200"
+                          >
+                            Ulangi {progress.failedFiles.length} gambar yang gagal
+                          </button>
+                        )}
+                        {progress.failed.length > 0 && (
+                          <ul className="mt-2 space-y-1">
+                            {progress.failed.slice(0, 5).map((f, i) => (
+                              <li key={`${f.name}-${i}`} className="truncate rounded bg-rose-500/10 px-2 py-1 text-[10px] text-rose-200">
+                                {f.name}: {f.reason}
+                              </li>
+                            ))}
+                            {progress.failed.length > 5 && <li className="text-[10px] text-white/35">+{progress.failed.length - 5} lainnya</li>}
+                          </ul>
+                        )}
+                      </div>
+                    )}
 
                     {chapterImages.length > 0 && (
                       <div>
