@@ -164,3 +164,19 @@ Setiap fase: staging build + deploy terpisah, commit + push (aturan tetap), uji 
   Riwayat baca TIDAK menerima push (sekali baca ≠ mau dapat notifikasi).
   (Sebelumnya sempat digabung bookmark+riwayat — sudah dikembalikan ke bookmark-only.)
 - Filter 18+ Project: hanya flag `is_adult` dari toggle dashboard Project yang menentukan.
+
+
+## Lampiran: S&K Scanlator (ringkas, teks penuh di PRD web /prd/scanlator bagian 8)
+Catatan riset 2026-11-05: HoloToon TIDAK mempublikasikan S&K (footer hanya
+Browse/Community/Dashboard/Kontak/Support; /terms & /rules 404). S&K Ryukomik
+ditulis sendiri mengikuti norma scanlation Indonesia:
+1. Satu tim = satu akun; larang jual-beli/pindah akun; nama tim unik.
+2. Hak cipta: hanya konten berhak-unggah; larang re-upload TL tim lain;
+   takedown maks 1x24 jam via form Report; pelanggaran berulang = cabut permanen.
+3. Kualitas: min 8 halaman/chapter, gambar terbaca, watermark tim di halaman
+   terakhir, chapter terbit tidak bisa diganti isinya.
+4. Larangan: ilegal/SARA/malware/spam, drama antar-tim, minta transfer di komentar.
+5. 18+: wajib toggle is_adult (satu-satunya penentu filter); salah tandai = sanksi.
+6. Sanksi bertingkat: peringatan -> suspend 7 hari -> cabut akses.
+7. Donate: hanya tautan eksternal milik sendiri; Ryukomik tidak pegang uang (MVP).
+8. Data: email, file, IP upload dicatat untuk keamanan; S&K bisa berubah.
