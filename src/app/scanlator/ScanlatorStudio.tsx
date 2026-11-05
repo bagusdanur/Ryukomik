@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FiAlertTriangle, FiArrowRight, FiBookOpen, FiClock, FiEdit3, FiImage,
-  FiPlus, FiSend, FiUser,
+  FiChevronDown, FiPlus, FiSave, FiSend, FiTrash2, FiUser,
 } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
 import { Button, Field, Panel, PanelHead, Row, Stat, StatusDot, Tabs, inputClass } from "@/components/scanlator/ui";
@@ -68,6 +68,18 @@ export default function ScanlatorStudio() {
   const [uploadingChapter, setUploadingChapter] = useState(false);
   const [busyChapter, setBusyChapter] = useState(false);
   const [mode, setMode] = useState<"seri" | "chapter">("seri");
+
+  // Kelola project (Tahap 2): buka detail, edit, hapus
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [chapters, setChapters] = useState<Array<{ id: string; chapter_number: number; title: string | null; is_published: boolean; pages: number }>>([]);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editType, setEditType] = useState("Manhwa");
+  const [editGenres, setEditGenres] = useState("");
+  const [editAdult, setEditAdult] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [chapterDraft, setChapterDraft] = useState<Record<string, string>>({});
 
   const token = async () => (await getSession()).data.session?.access_token || "";
 
@@ -215,6 +227,96 @@ export default function ScanlatorStudio() {
       <div className="mx-auto w-full max-w-2xl">{children}</div>
     </main>
   );
+
+  const openProject = async (slug: string) => {
+    if (openSlug === slug) { setOpenSlug(null); return; }
+    setOpenSlug(slug); setDetailLoading(true); setChapters([]);
+    try {
+      const t = await token();
+      const res = await fetch(`/api/scanlator/series/${encodeURIComponent(slug)}`, { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" });
+      if (res.ok) {
+        const json = (await res.json()) as {
+          project: { title: string; description: string | null; type: string | null; genres: unknown; is_adult: boolean };
+          chapters: Array<{ id: string; chapter_number: number; title: string | null; is_published: boolean; pages: number }>;
+        };
+        setEditTitle(json.project.title || "");
+        setEditDesc(json.project.description || "");
+        setEditType(json.project.type || "Manhwa");
+        setEditGenres(Array.isArray(json.project.genres) ? (json.project.genres as string[]).join(", ") : "");
+        setEditAdult(Boolean(json.project.is_adult));
+        setChapters(json.chapters || []);
+      }
+    } catch { setError("Gagal memuat detail project."); }
+    finally { setDetailLoading(false); }
+  };
+
+  const saveProjectEdit = async () => {
+    if (!openSlug) return;
+    setSavingEdit(true); setError(""); setNotice("");
+    try {
+      const t = await token();
+      const res = await fetch(`/api/scanlator/series/${encodeURIComponent(openSlug)}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle, description: editDesc, type: editType, is_adult: editAdult,
+          genres: editGenres.split(",").map((g) => g.trim()).filter(Boolean),
+        }),
+      });
+      const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
+      if (!res.ok || !json?.success) { setError(json?.error || "Gagal menyimpan."); return; }
+      setNotice("Perubahan tersimpan — project masuk review admin lagi.");
+      await load();
+    } finally { setSavingEdit(false); }
+  };
+
+  const removeProject = async (slug: string, title: string) => {
+    if (!window.confirm(`Hapus project "${title}"? Project akan diturunkan dari situs.`)) return;
+    setError(""); setNotice("");
+    try {
+      const t = await token();
+      const res = await fetch(`/api/scanlator/series/${encodeURIComponent(slug)}`, { method: "DELETE", headers: { Authorization: `Bearer ${t}` } });
+      const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
+      if (!res.ok || !json?.success) { setError(json?.error || "Gagal menghapus."); return; }
+      setNotice("Project dihapus.");
+      setOpenSlug(null);
+      await load();
+    } catch { setError("Gagal menghapus project."); }
+  };
+
+  const removeChapter = async (chapterId: string, number: number) => {
+    if (!openSlug) return;
+    if (!window.confirm(`Hapus chapter ${number}?`)) return;
+    setError(""); setNotice("");
+    try {
+      const t = await token();
+      const res = await fetch(`/api/scanlator/series/${encodeURIComponent(openSlug)}/chapter/${chapterId}`, { method: "DELETE", headers: { Authorization: `Bearer ${t}` } });
+      const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
+      if (!res.ok || !json?.success) { setError(json?.error || "Gagal menghapus chapter."); return; }
+      setChapters((prev) => prev.filter((c) => c.id !== chapterId));
+      setNotice(`Chapter ${number} dihapus.`);
+    } catch { setError("Gagal menghapus chapter."); }
+  };
+
+  const saveChapterTitle = async (chapterId: string) => {
+    if (!openSlug) return;
+    const title = (chapterDraft[chapterId] || "").trim();
+    if (!title) return;
+    setError(""); setNotice("");
+    try {
+      const t = await token();
+      const res = await fetch(`/api/scanlator/series/${encodeURIComponent(openSlug)}/chapter/${chapterId}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
+      if (!res.ok || !json?.success) { setError(json?.error || "Gagal menyimpan chapter."); return; }
+      setChapters((prev) => prev.map((c) => (c.id === chapterId ? { ...c, title } : c)));
+      setChapterDraft((d) => ({ ...d, [chapterId]: "" }));
+      setNotice("Judul chapter tersimpan.");
+    } catch { setError("Gagal menyimpan chapter."); }
+  };
 
   if (loading) return shell(<p className="py-20 text-center text-[13px] text-white/40">Memuat…</p>);
 
@@ -409,10 +511,11 @@ export default function ScanlatorStudio() {
         )}
 
         {tab === "karya" && (
+          <div className="space-y-3">
           <Panel>
             <PanelHead
               title={`Project (${works.length})`}
-              desc={pendingWorks > 0 ? `${pendingWorks} menunggu review` : undefined}
+              desc={pendingWorks > 0 ? `${pendingWorks} menunggu review` : "Ketuk project untuk edit atau hapus"}
               right={works.length > 0 ? <Button variant="ghost" onClick={() => { setTab("upload"); setMode("seri"); }}><FiPlus size={12} /> Seri</Button> : undefined}
             />
             {works.length === 0 ? (
@@ -424,25 +527,90 @@ export default function ScanlatorStudio() {
             ) : (
               <ul className="divide-y divide-white/[.05]">
                 {works.map((w) => (
-                  <li key={w.slug} className="flex items-center gap-3 px-4 py-2.5">
-                    {w.cover_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={w.cover_url} alt="" loading="lazy" className="h-13 w-9 shrink-0 rounded-[4px] object-cover" style={{ height: 52, width: 36 }} />
-                    ) : (
-                      <div className="flex shrink-0 items-center justify-center rounded-[4px] bg-white/[.05] text-white/20" style={{ height: 52, width: 36 }}><FiBookOpen size={12} /></div>
+                  <li key={w.slug} className="border-b border-white/[.05] last:border-0">
+                    <button type="button" onClick={() => void openProject(w.slug)} className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-white/[.03]">
+                      {w.cover_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={w.cover_url} alt="" loading="lazy" className="shrink-0 rounded-[4px] object-cover" style={{ height: 52, width: 36 }} />
+                      ) : (
+                        <div className="flex shrink-0 items-center justify-center rounded-[4px] bg-white/[.05] text-white/20" style={{ height: 52, width: 36 }}><FiBookOpen size={12} /></div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[12px] font-semibold text-white/90">{w.title}</p>
+                        <p className="mt-0.5 text-[10px] text-white/30">{w.type || "—"}{w.is_adult ? " · 18+" : ""}</p>
+                      </div>
+                      <span className={`shrink-0 text-[10px] font-bold ${w.review_status === "approved" ? "text-emerald-300" : w.review_status === "rejected" ? "text-rose-300" : "text-amber-300"}`}>
+                        {w.review_status === "approved" ? "Terbit" : w.review_status === "rejected" ? "Ditolak" : "Review"}
+                      </span>
+                      <FiChevronDown size={13} className={`shrink-0 text-white/25 transition-transform ${openSlug === w.slug ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {openSlug === w.slug && (
+                      <div className="border-t border-white/[.05] bg-white/[.015] px-4 py-3">
+                        {detailLoading ? (
+                          <p className="py-4 text-center text-[11px] text-white/35">Memuat…</p>
+                        ) : (
+                          <div className="space-y-3">
+                            <Field label="Judul project"><input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className={inputClass} /></Field>
+                            <Field label="Deskripsi"><textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={3} className={inputClass} /></Field>
+                            <div className="grid grid-cols-2 gap-2.5">
+                              <Field label="Tipe">
+                                <select value={editType} onChange={(e) => setEditType(e.target.value)} className={inputClass}>
+                                  {["Manhwa", "Manhua", "Manga", "Novel"].map((t) => <option key={t} value={t} className="bg-[#14121c]">{t}</option>)}
+                                </select>
+                              </Field>
+                              <Field label="Genre"><input value={editGenres} onChange={(e) => setEditGenres(e.target.value)} className={inputClass} /></Field>
+                            </div>
+                            <label className="flex items-center gap-2 text-[11px] text-white/55">
+                              <input type="checkbox" checked={editAdult} onChange={(e) => setEditAdult(e.target.checked)} className="h-4 w-4 accent-[#8b5cf6]" />
+                              Konten 18+
+                            </label>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button onClick={() => void saveProjectEdit()} disabled={savingEdit}><FiSave size={12} /> {savingEdit ? "Menyimpan…" : "Simpan"}</Button>
+                              <Button variant="danger" onClick={() => void removeProject(w.slug, w.title)}><FiTrash2 size={12} /> Hapus</Button>
+                            </div>
+
+                            <div className="pt-1">
+                              <p className="text-[11px] font-bold text-white/60">Chapter ({chapters.length})</p>
+                              <div className="mt-1.5 space-y-1.5">
+                                {chapters.map((c) => (
+                                  <div key={c.id} className="rounded-md border border-white/[.06] bg-white/[.02] p-2">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <p className="min-w-0 truncate text-[11px] text-white/70">
+                                        Ch. {c.chapter_number} · {c.title || "Tanpa judul"} · {c.pages} gambar
+                                        {!c.is_published && <span className="ml-1 text-[10px] text-amber-300">(belum terbit)</span>}
+                                      </p>
+                                      <button type="button" onClick={() => void removeChapter(c.id, c.chapter_number)} aria-label={`Hapus chapter ${c.chapter_number}`} className="shrink-0 rounded p-1 text-rose-300/70 transition-colors hover:text-rose-300">
+                                        <FiTrash2 size={12} />
+                                      </button>
+                                    </div>
+                                    <div className="mt-1.5 flex gap-1.5">
+                                      <input
+                                        value={chapterDraft[c.id] ?? ""}
+                                        onChange={(e) => setChapterDraft((d) => ({ ...d, [c.id]: e.target.value }))}
+                                        placeholder="Ubah judul chapter…"
+                                        className="min-w-0 flex-1 rounded-md border border-white/[.08] bg-white/[.03] px-2 py-1.5 text-[11px] text-white placeholder:text-white/25 outline-none focus:border-[var(--accent)]/60"
+                                      />
+                                      <button type="button" onClick={() => void saveChapterTitle(c.id)} className="shrink-0 rounded-md border border-white/[.1] px-2.5 text-[11px] font-bold text-white/70 transition-colors hover:text-white">
+                                        Simpan
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                                {chapters.length === 0 && <p className="py-3 text-center text-[11px] text-white/30">Belum ada chapter.</p>}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[12px] font-semibold text-white/90">{w.title}</p>
-                      <p className="mt-0.5 text-[10px] text-white/30">{w.type || "—"}{w.is_adult ? " · 18+" : ""}</p>
-                    </div>
-                    <span className={`shrink-0 text-[10px] font-bold ${w.review_status === "approved" ? "text-emerald-300" : w.review_status === "rejected" ? "text-rose-300" : "text-amber-300"}`}>
-                      {w.review_status === "approved" ? "Terbit" : w.review_status === "rejected" ? "Ditolak" : "Review"}
-                    </span>
                   </li>
                 ))}
               </ul>
             )}
           </Panel>
+          </div>
         )}
 
         {tab === "profil" && (
