@@ -30,12 +30,12 @@ const SECTIONS: Array<{ title: string; items: React.ReactNode[] }> = [
   {
     title: "Kualitas upload",
     items: [
-      <>Minimal <b>8 halaman</b> per chapter, gambar terbaca, utuh, dan berurutan.</>,
+      <>Gambar harus terbaca, utuh, dan berurutan.</>,
       <>Tanpa watermark situs lain, iklan, atau banner pihak ketiga.</>,
       <>Halaman terakhir wajib memuat <b>watermark nama tim</b> (dibuat otomatis).</>,
       <>Judul chapter sopan, tanpa kata kasar atau spam.</>,
       <>Chapter terbit tidak bisa diganti isinya.</>,
-      <>Batas teknis: 30 MB/gambar, 60 gambar/chapter.</>,
+      <>Batas teknis: maks 30 MB per gambar, maks 60 gambar per chapter, kuota storage 2 GB per tim.</>,
     ],
   },
   {

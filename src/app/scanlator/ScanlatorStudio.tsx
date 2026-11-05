@@ -47,6 +47,7 @@ export default function ScanlatorStudio() {
   const [error, setError] = useState("");
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [unread, setUnread] = useState(0);
+  const [quota, setQuota] = useState<{ usedLabel: string; limitLabel: string; percent: number; fileCount: number } | null>(null);
 
   const [teamName, setTeamName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -116,6 +117,11 @@ export default function ScanlatorStudio() {
         }
       }
       if (wRes.ok) setWorks(((await wRes.json()) as { works?: Work[] }).works || []);
+      const qRes = await fetch("/api/scanlator/quota", { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" }).catch(() => null);
+      if (qRes?.ok) {
+        const qj = (await qRes.json()) as { usedLabel: string; limitLabel: string; percent: number; fileCount: number };
+        setQuota(qj);
+      }
       const nRes = await fetch("/api/scanlator/notifications", { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" }).catch(() => null);
       if (nRes?.ok) {
         const nj = (await nRes.json()) as { notifications?: Notif[]; unread?: number };
@@ -487,6 +493,24 @@ export default function ScanlatorStudio() {
 
         {tab === "upload" && (
           <div className="space-y-3">
+            {quota && (
+              <div className="rounded-lg border border-white/[.07] bg-white/[.02] px-3 py-2.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-white/45">Kuota storage</span>
+                  <span className={`font-semibold ${quota.percent >= 90 ? "text-rose-300" : quota.percent >= 70 ? "text-amber-300" : "text-white/70"}`}>
+                    {quota.usedLabel} / {quota.limitLabel}
+                  </span>
+                </div>
+                <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-white/[.07]">
+                  <div
+                    className={`h-full rounded-full ${quota.percent >= 90 ? "bg-rose-400" : quota.percent >= 70 ? "bg-amber-400" : "bg-[var(--accent)]"}`}
+                    style={{ width: `${Math.max(2, Math.min(100, quota.percent))}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-white/30">{quota.fileCount} file terpakai · hapus chapter lama kalau penuh</p>
+              </div>
+            )}
+
             <div className="flex gap-1 rounded-lg border border-white/[.07] p-1">
               {(["seri", "chapter"] as const).map((m) => (
                 <button key={m} type="button" onClick={() => setMode(m)}

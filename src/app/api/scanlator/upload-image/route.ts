@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { randomUUID } from "node:crypto";
 
 import { targetById } from "@/lib/r2Targets";
+import { getScanlatorUsage, SCANLATOR_QUOTA_BYTES, formatBytes } from "@/lib/scanlatorQuota";
 import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
@@ -47,6 +48,20 @@ export async function POST(request: Request) {
   if (file.size > MAX_BYTES) return NextResponse.json({ error: "Maksimal 30 MB per gambar." }, { status: 400 });
 
   const slug = slugRaw.replace(/[\\/]+/g, "-").replace(/\.\.+/g, ".").replace(/[^\w.\- ]+/g, "").trim().slice(0, 80) || me.handle;
+
+  // Kuota 2 GB per Scanlator (dihitung dari prefix R2 miliknya).
+  const usage = await getScanlatorUsage(me.handle);
+  if (usage.usedBytes + file.size > SCANLATOR_QUOTA_BYTES) {
+    const sisa = Math.max(0, SCANLATOR_QUOTA_BYTES - usage.usedBytes);
+    return NextResponse.json(
+      {
+        error: `Kuota storage habis. Terpakai ${formatBytes(usage.usedBytes)} dari ${formatBytes(SCANLATOR_QUOTA_BYTES)}, sisa ${formatBytes(sisa)}. Hapus chapter lama untuk mengosongkan.`,
+        usedBytes: usage.usedBytes,
+        limitBytes: SCANLATOR_QUOTA_BYTES,
+      },
+      { status: 413 },
+    );
+  }
 
   const target = targetById(undefined);
 

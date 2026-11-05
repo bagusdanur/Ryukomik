@@ -27,13 +27,13 @@ Masalah: Scanlator tidak tahu project di-ACC/ditolak/kena SP.
 - [x] Tampilkan alasan penolakan di kartu project + tombol "Kirim ulang setelah diperbaiki".
 - [x] Uji: tolak project → notif muncul → edit → kirim ulang → ACC.
 
-## Tahap 4 — Penegakan aturan & kuota
-Masalah: S&K menjanjikan 8 halaman/chapter dan kuota 2 GB, tapi belum ditegakkan.
-- [ ] Validasi minimal 8 gambar per chapter (kecuali chapter terakhir seri — beri penanda).
-- [ ] Hitung storage per Scanlator (sum ukuran file di R2 prefix `scanlator/<handle>/`) + tolak kalau > 2 GB.
-- [ ] Rate limit upload (mis. 30 gambar/menit per user).
-- [ ] Tampilkan pemakaian kuota di tab Upload.
-- [ ] Uji: upload 1 gambar → 400; upload lewat kuota → 413 dengan pesan jelas.
+## Tahap 4 — Kuota storage (SELESAI; aturan minimal halaman DIBATALKAN)
+Keputusan user: aturan minimal 8 halaman/chapter tidak dipakai; cukup kuota storage.
+- [x] ~~Validasi minimal 8 gambar per chapter~~ → dibatalkan, hapus juga dari S&K.
+- [x] Hitung storage per Scanlator (prefix R2 `scanlator/<handle>/`) → tolak kalau > 2 GB (HTTP 413).
+- [x] ~~Rate limit upload~~ → tidak dipakai (kuota sudah membatasi).
+- [x] Indikator kuota di tab Upload (terpakai / 2 GB, bar warna, jumlah file).
+- [x] S&K: hapus butir "minimal 8 halaman", perbarui batas teknis (30 MB/gambar, 60 gambar/chapter, kuota 2 GB).
 
 ## Tahap 5 — Statistik & direktori
 - [ ] `GET /api/scanlator/stats` — total views, chapter, pembaca per project (dari project-db).
