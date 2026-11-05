@@ -33,7 +33,7 @@ function usernameOf(value: unknown): string | null {
   return /^[A-Za-z0-9._-]{2,40}$/.test(v) ? v : null;
 }
 
-const PROFILE_FIELDS = `handle, team_name, bio, support_dana, support_trakteer, support_tako, support_url_lain,
+const PROFILE_FIELDS = `handle, team_name, bio, avatar_url, support_dana, support_trakteer, support_tako, support_url_lain,
   contact_wa, contact_telegram, contact_discord, status, warnings, suspended_until, moderation_note, created_at`;
 
 /** GET: profil saya (login) atau publik via ?handle=. PATCH: simpan profil & tautan. */
@@ -43,9 +43,9 @@ export async function GET(request: Request) {
   try {
     if (handle) {
       const { rows } = await socialQuery(
-        `select s.handle, s.team_name, s.bio, s.support_dana, s.support_trakteer, s.support_tako,
+        `select s.handle, s.team_name, s.bio, s.avatar_url, s.support_dana, s.support_trakteer, s.support_tako,
                 s.support_url_lain, s.status, s.created_at,
-                p.username as owner_username
+                p.username as owner_username, p.avatar_url as owner_avatar_url
            from scanlator_profiles s
            left join social_profiles p on p.user_id = s.user_id
           where s.handle = $1 and s.status <> 'revoked' limit 1`,
@@ -94,6 +94,18 @@ export async function PATCH(request: Request) {
       }
     }
 
+    const rawAvatar = typeof body?.avatar_url === "string" ? body.avatar_url.trim().slice(0, 500) : "";
+    let avatarUrl: string | null = null;
+    if (rawAvatar) {
+      try {
+        const u = new URL(rawAvatar);
+        if (u.protocol !== "https:") throw new Error("https only");
+        avatarUrl = u.toString();
+      } catch {
+        return NextResponse.json({ error: "URL foto grup tidak valid." }, { status: 400 });
+      }
+    }
+
     const wa = phoneOf(body?.contact_wa);
     const telegram = usernameOf(body?.contact_telegram);
     const discord = usernameOf(body?.contact_discord);
@@ -105,13 +117,14 @@ export async function PATCH(request: Request) {
       `update scanlator_profiles set
          bio = coalesce($1, bio),
          team_name = case when $2 = '' then team_name else $2 end,
+         avatar_url = coalesce($11, avatar_url),
          support_dana = $3, support_trakteer = $4, support_tako = $5, support_url_lain = $6,
          contact_wa = coalesce($7, contact_wa),
          contact_telegram = coalesce($8, contact_telegram),
          contact_discord = coalesce($9, contact_discord),
          updated_at = now()
        where user_id = $10`,
-      [bio, teamName, dana, trakteer, tako, lain, wa, telegram, discord, userId],
+      [bio, teamName, dana, trakteer, tako, lain, wa, telegram, discord, userId, avatarUrl],
     );
     return NextResponse.json({ success: true });
   } catch (error) {

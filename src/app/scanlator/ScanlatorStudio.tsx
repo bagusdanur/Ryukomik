@@ -10,7 +10,7 @@ import { getSession } from "@/lib/auth/getSession";
 import { Button, Field, Panel, PanelHead, Row, Stat, StatusDot, Tabs, inputClass } from "@/components/scanlator/ui";
 
 type Profile = {
-  handle: string; team_name: string; bio: string | null;
+  handle: string; team_name: string; bio: string | null; avatar_url?: string | null;
   support_dana: string | null; support_trakteer: string | null; support_tako: string | null; support_url_lain: string | null;
   contact_wa: string | null; contact_telegram: string | null; contact_discord: string | null;
   status: "active" | "suspended" | "revoked";
@@ -42,6 +42,8 @@ export default function ScanlatorStudio() {
   const [error, setError] = useState("");
 
   const [teamName, setTeamName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [bio, setBio] = useState("");
   const [dana, setDana] = useState("");
   const [trakteer, setTrakteer] = useState("");
@@ -85,6 +87,7 @@ export default function ScanlatorStudio() {
           const p = json.profile;
           setProfile(p);
           setTeamName(p.team_name || "");
+          setAvatarUrl(p.avatar_url || "");
           setBio(p.bio || "");
           setDana(p.support_dana || "");
           setTrakteer(p.support_trakteer || "");
@@ -112,7 +115,7 @@ export default function ScanlatorStudio() {
         method: "PATCH",
         headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          team_name: teamName, bio,
+          team_name: teamName, bio, avatar_url: avatarUrl,
           support_dana: dana, support_trakteer: trakteer, support_tako: tako, support_url_lain: lain,
           contact_discord: cDc,
         }),
@@ -124,7 +127,7 @@ export default function ScanlatorStudio() {
     } finally { setSavingProfile(false); }
   };
 
-  const uploadImage = async (file: File, kind: "cover" | "chapter", slug: string, watermark: boolean) => {
+  const uploadImage = async (file: File, kind: "cover" | "chapter" | "avatar", slug: string, watermark: boolean) => {
     const fd = new FormData();
     fd.append("file", file);
     fd.append("kind", kind);
@@ -156,6 +159,15 @@ export default function ScanlatorStudio() {
       setTitle(""); setCoverUrl(""); setDescription(""); setGenres(""); setIsAdult(false);
       await load();
     } finally { setBusySeries(false); }
+  };
+
+  const onAvatarFile = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true); setError("");
+    try { setAvatarUrl(await uploadImage(file, "avatar", profile?.handle || "group", false)); }
+    catch (err) { setError(err instanceof Error ? err.message : "Upload foto grup gagal."); }
+    finally { setUploadingAvatar(false); }
   };
 
   const onCoverFile = async (files: FileList | null) => {
@@ -233,9 +245,14 @@ export default function ScanlatorStudio() {
     <>
       {/* Identitas tim — ringkas, tanpa hero bergradien */}
       <div className="flex items-center gap-3 pb-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/[.08] bg-white/[.04] text-base font-bold text-white/80">
-          {profile.team_name.slice(0, 1).toUpperCase()}
-        </div>
+        {profile.avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={profile.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-lg border border-white/[.08] object-cover" />
+        ) : (
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/[.08] bg-white/[.04] text-base font-bold text-white/80">
+            {profile.team_name.slice(0, 1).toUpperCase()}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-bold leading-tight">{profile.team_name}</p>
           <p className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-white/35">
@@ -433,6 +450,23 @@ export default function ScanlatorStudio() {
             <Panel>
               <PanelHead title="Identitas" desc={`Handle @${profile.handle} tidak bisa diubah.`} />
               <div className="space-y-3 p-4">
+                <div className="flex items-center gap-3">
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarUrl} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-white/[.08] object-cover" />
+                  ) : (
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-white/[.08] bg-white/[.04] text-lg font-bold text-white/60">
+                      {teamName.slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <label className="mb-1 block text-[11px] font-semibold text-white/60">
+                      Foto grup {uploadingAvatar && <span className="font-normal text-[var(--accent-2)]">mengunggah…</span>}
+                    </label>
+                    <input type="file" accept="image/*" onChange={(e) => void onAvatarFile(e.target.files)} className="w-full text-[11px] text-white/45 file:mr-2 file:rounded-md file:border-0 file:bg-white/[.08] file:px-2.5 file:py-1.5 file:text-[11px] file:font-bold file:text-white/80" />
+                    <p className="mt-1 text-[10px] text-white/30">Kosongkan = pakai foto profil akunmu.</p>
+                  </div>
+                </div>
                 <Field label="Nama tim">
                   <input value={teamName} onChange={(e) => setTeamName(e.target.value)} maxLength={80} className={inputClass} />
                 </Field>

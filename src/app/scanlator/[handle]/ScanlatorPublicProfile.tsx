@@ -6,7 +6,8 @@ import { FiArrowLeft, FiCalendar, FiExternalLink, FiHeart } from "react-icons/fi
 import UserBadges from "@/components/UserBadges";
 
 type Profile = {
-  handle: string; team_name: string; bio: string | null; owner_username?: string | null;
+  handle: string; team_name: string; bio: string | null;
+  avatar_url?: string | null; owner_username?: string | null; owner_avatar_url?: string | null;
   support_dana: string | null; support_trakteer: string | null; support_tako: string | null; support_url_lain: string | null;
   status: string; created_at: string;
 };
@@ -70,9 +71,19 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
 
       {/* Header profil */}
       <header className="mt-3 flex items-start gap-3.5 pb-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-white/[.08] bg-white/[.04] text-xl font-bold text-white/80">
-          {profile.team_name.slice(0, 1).toUpperCase()}
-        </div>
+        {profile.avatar_url || profile.owner_avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={(profile.avatar_url || profile.owner_avatar_url) as string}
+            alt={profile.team_name}
+            loading="eager"
+            className="h-16 w-16 shrink-0 rounded-xl border border-white/[.08] object-cover"
+          />
+        ) : (
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-white/[.08] bg-white/[.04] text-xl font-bold text-white/80">
+            {profile.team_name.slice(0, 1).toUpperCase()}
+          </div>
+        )}
         <div className="min-w-0 flex-1 pt-0.5">
           <div className="flex flex-wrap items-center gap-1.5">
             <h1 className="truncate text-[17px] font-bold leading-tight">{profile.team_name}</h1>

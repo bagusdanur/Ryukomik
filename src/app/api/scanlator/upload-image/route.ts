@@ -37,7 +37,8 @@ export async function POST(request: Request) {
 
   const formData = await request.formData().catch(() => null);
   const file = formData?.get("file") as File | null;
-  const kind = formData?.get("kind") === "cover" ? "cover" : "chapter";
+  const rawKind = String(formData?.get("kind") || "chapter");
+  const kind = rawKind === "cover" || rawKind === "avatar" ? rawKind : "chapter";
   const slugRaw = typeof formData?.get("slug") === "string" ? String(formData.get("slug")) : "";
   const doWatermark = formData?.get("watermark") === "true";
 
