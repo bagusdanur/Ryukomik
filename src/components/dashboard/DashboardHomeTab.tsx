@@ -135,7 +135,7 @@ function Avatar({ name = "", url = "", size = 36 }: AvatarProps) {
 
 function StatCard({ icon, badge, value, label, detail }: StatCardProps) {
   return (
-    <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4">
+    <div className="bg-[#13131a] border border-white/[.06] rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         {icon}
         {badge}
@@ -264,7 +264,7 @@ export default function DashboardHomeTab({
         />
       </div>
 
-      <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4">
+      <div className="bg-[#13131a] border border-white/[.06] rounded-lg p-4">
         <div className="flex items-center justify-between mb-2">
           <p className="text-[12px] font-semibold text-white/60 flex items-center gap-1.5">
             <HiOutlineSparkles size={13} className="text-amber-400" />
@@ -293,7 +293,7 @@ export default function DashboardHomeTab({
         </p>
       </div>
 
-      <div className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4">
+      <div className="bg-[#13131a] border border-white/[.06] rounded-lg p-4">
         <div className="flex items-center justify-between mb-3">
           <div>
             <p className="text-[12px] font-semibold text-white/70">
@@ -376,7 +376,7 @@ export default function DashboardHomeTab({
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setPage("quick-ads")}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-violet-500/30 hover:bg-violet-500/[.04] transition-all text-left"
+            className="bg-[#13131a] border border-white/[.06] rounded-lg p-4 flex items-center gap-3 hover:border-violet-500/30 hover:bg-violet-500/[.04] transition-all text-left"
           >
             <div className="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center">
               <FiZap size={16} className="text-violet-400" />
@@ -391,7 +391,7 @@ export default function DashboardHomeTab({
 
           <button
             onClick={() => setPage("marathon")}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-amber-400/30 hover:bg-amber-400/[.05] transition-all text-left"
+            className="bg-[#13131a] border border-white/[.06] rounded-lg p-4 flex items-center gap-3 hover:border-amber-400/30 hover:bg-amber-400/[.05] transition-all text-left"
           >
             <div className="w-9 h-9 rounded-xl bg-amber-400/10 flex items-center justify-center">
               <FiAward size={16} className="text-amber-300" />
@@ -408,7 +408,7 @@ export default function DashboardHomeTab({
 
           <button
             onClick={() => setPage("comments")}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-cyan-500/30 hover:bg-cyan-500/[.04] transition-all text-left"
+            className="bg-[#13131a] border border-white/[.06] rounded-lg p-4 flex items-center gap-3 hover:border-cyan-500/30 hover:bg-cyan-500/[.04] transition-all text-left"
           >
             <div className="w-9 h-9 rounded-xl bg-cyan-500/10 flex items-center justify-center">
               <FiMessageCircle size={16} className="text-cyan-400" />
@@ -428,7 +428,7 @@ export default function DashboardHomeTab({
               setPage("users");
               setFilter("all");
             }}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-violet-500/30 hover:bg-violet-500/[.04] transition-all text-left"
+            className="bg-[#13131a] border border-white/[.06] rounded-lg p-4 flex items-center gap-3 hover:border-violet-500/30 hover:bg-violet-500/[.04] transition-all text-left"
           >
             <div className="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center">
               <FiUsers size={16} className="text-violet-400" />
@@ -448,7 +448,7 @@ export default function DashboardHomeTab({
               setPage("users");
               setFilter("premium");
             }}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-amber-500/30 hover:bg-amber-500/[.04] transition-all text-left"
+            className="bg-[#13131a] border border-white/[.06] rounded-lg p-4 flex items-center gap-3 hover:border-amber-500/30 hover:bg-amber-500/[.04] transition-all text-left"
           >
             <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center">
               <RiVipCrownLine size={16} className="text-amber-400" />
@@ -465,7 +465,7 @@ export default function DashboardHomeTab({
 
           <button
             onClick={() => setPage("codes")}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-[#7c5cfc]/30 hover:bg-[#7c5cfc]/[.04] transition-all text-left"
+            className="bg-[#13131a] border border-white/[.06] rounded-lg p-4 flex items-center gap-3 hover:border-[#7c5cfc]/30 hover:bg-[#7c5cfc]/[.04] transition-all text-left"
           >
             <div className="w-9 h-9 rounded-xl bg-[#7c5cfc]/10 flex items-center justify-center">
               <HiOutlineSparkles size={16} className="text-[#7c5cfc]" />
@@ -480,7 +480,7 @@ export default function DashboardHomeTab({
 
           <button
             onClick={() => setPage("requests")}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-teal-500/30 hover:bg-teal-500/[.04] transition-all text-left relative"
+            className="bg-[#13131a] border border-white/[.06] rounded-lg p-4 flex items-center gap-3 hover:border-teal-500/30 hover:bg-teal-500/[.04] transition-all text-left relative"
           >
             {pendingCount > 0 && (
               <span className="absolute top-3 right-3 w-5 h-5 bg-[#7c5cfc] rounded-full text-[9px] font-bold text-white flex items-center justify-center">
@@ -502,7 +502,7 @@ export default function DashboardHomeTab({
 
           <button
             onClick={() => setPage("source-health")}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-sky-500/30 hover:bg-sky-500/[.04] transition-all text-left"
+            className="bg-[#13131a] border border-white/[.06] rounded-lg p-4 flex items-center gap-3 hover:border-sky-500/30 hover:bg-sky-500/[.04] transition-all text-left"
           >
             <div className="w-9 h-9 rounded-xl bg-sky-500/10 flex items-center justify-center">
               <FiActivity size={16} className="text-sky-400" />
@@ -517,7 +517,7 @@ export default function DashboardHomeTab({
 
           <button
             onClick={() => setPage("announcements")}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-violet-500/30 hover:bg-violet-500/[.04] transition-all text-left"
+            className="bg-[#13131a] border border-white/[.06] rounded-lg p-4 flex items-center gap-3 hover:border-violet-500/30 hover:bg-violet-500/[.04] transition-all text-left"
           >
             <div className="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center">
               <FiVolume2 size={16} className="text-violet-300" />
@@ -532,7 +532,7 @@ export default function DashboardHomeTab({
 
           <button
             onClick={() => setPage("events")}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-cyan-500/30 hover:bg-cyan-500/[.04] transition-all text-left"
+            className="bg-[#13131a] border border-white/[.06] rounded-lg p-4 flex items-center gap-3 hover:border-cyan-500/30 hover:bg-cyan-500/[.04] transition-all text-left"
           >
             <div className="w-9 h-9 rounded-xl bg-cyan-500/10 flex items-center justify-center">
               <FiAward size={16} className="text-cyan-300" />
@@ -547,7 +547,7 @@ export default function DashboardHomeTab({
 
           <button
             onClick={() => setPage("apk")}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-emerald-500/30 hover:bg-emerald-500/[.04] transition-all text-left"
+            className="bg-[#13131a] border border-white/[.06] rounded-lg p-4 flex items-center gap-3 hover:border-emerald-500/30 hover:bg-emerald-500/[.04] transition-all text-left"
           >
             <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
               <FiSmartphone size={16} className="text-emerald-300" />
@@ -562,7 +562,7 @@ export default function DashboardHomeTab({
 
           <button
             onClick={() => setPage("backup")}
-            className="bg-[#13131a] border border-white/[.06] rounded-2xl p-4 flex items-center gap-3 hover:border-[#7c5cfc]/30 hover:bg-[#7c5cfc]/[.04] transition-all text-left"
+            className="bg-[#13131a] border border-white/[.06] rounded-lg p-4 flex items-center gap-3 hover:border-[#7c5cfc]/30 hover:bg-[#7c5cfc]/[.04] transition-all text-left"
           >
             <div className="w-9 h-9 rounded-xl bg-[#7c5cfc]/10 flex items-center justify-center">
               <FiDatabase size={16} className="text-[#a997ff]" />

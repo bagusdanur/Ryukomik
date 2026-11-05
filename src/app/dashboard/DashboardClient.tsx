@@ -1350,8 +1350,10 @@ export default function AdminDashboard() {
       {/* ── TOPBAR ── */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/[.06] bg-[#0c0c10]/95 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
         <div className="flex items-center gap-2">
-          <span className="text-xl">⚡</span>
-          <span className="font-bold text-[15px]">Ryukomik</span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#7c5cfc]/15 text-[#a997ff]">
+            <FiShield size={14} />
+          </span>
+          <span className="font-bold text-[14px]">Ryukomik</span>
           <span className="text-[9px] font-bold bg-[#7c5cfc] text-white px-1.5 py-0.5 rounded ml-1">
             ADMIN
           </span>
@@ -1380,7 +1382,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* ── CONTENT ── */}
-      <main className="mx-auto w-full max-w-7xl space-y-4 px-4 py-5 pb-24 sm:px-6 lg:px-8 lg:py-8 lg:pb-10">
+      <main className="mx-auto w-full max-w-7xl space-y-3 px-3 py-4 pb-[calc(76px+env(safe-area-inset-bottom))] sm:px-5 sm:py-5 lg:px-8 lg:py-8 lg:pb-10">
         {/* ══ DASHBOARD PAGE ══ */}
         {page === "dashboard" && (
           <DashboardHomeTab
@@ -1543,7 +1545,7 @@ export default function AdminDashboard() {
       </main>
 
       {/* ── BOTTOM NAV ── */}
-      <nav className="fixed bottom-0 left-1/2 z-30 flex w-full -translate-x-1/2 border-t border-white/[.07] bg-[#0f0f14]/95 backdrop-blur lg:inset-y-0 lg:left-0 lg:w-64 lg:translate-x-0 lg:flex-col lg:border-r lg:border-t-0 lg:px-3 lg:py-5">
+      <nav className="fixed bottom-0 left-1/2 z-30 flex w-full -translate-x-1/2 border-t border-white/[.07] bg-[#0f0f14]/98 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:inset-y-0 lg:left-0 lg:w-64 lg:translate-x-0 lg:flex-col lg:border-r lg:border-t-0 lg:px-3 lg:py-5 lg:pb-5">
         <div className="hidden px-3 pb-6 lg:flex lg:items-center lg:gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#7c5cfc]/15 text-xl">⚡</span>
           <div>
@@ -1555,10 +1557,12 @@ export default function AdminDashboard() {
           <button
             key={nav.id}
             onClick={() => setDashboardPage(nav.id)}
-            className={`flex flex-1 flex-col items-center gap-1 py-3 transition-colors lg:flex-none lg:flex-row lg:gap-3 lg:rounded-xl lg:px-3 lg:py-2.5 lg:text-left ${page === nav.id ? "text-[#7c5cfc] lg:bg-[#7c5cfc]/12" : "text-white/25 hover:text-white/50 lg:hover:bg-white/[.04]"}`}
+            aria-current={page === nav.id ? "page" : undefined}
+            className={`relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 transition-colors lg:flex-none lg:flex-row lg:justify-start lg:gap-3 lg:rounded-lg lg:px-3 lg:py-2.5 lg:text-left ${page === nav.id ? "text-[#a997ff] lg:bg-[#7c5cfc]/12" : "text-white/30 hover:text-white/60 lg:hover:bg-white/[.04]"}`}
           >
+            {page === nav.id && <span className="absolute inset-x-3 top-0 h-[2px] rounded-full bg-[#7c5cfc] lg:hidden" />}
             {nav.icon}
-            <span className="text-[10px] font-semibold lg:text-sm">{nav.label}</span>
+            <span className="text-[10px] font-semibold leading-none lg:text-sm">{nav.label}</span>
           </button>
         ))}
       </nav>

@@ -1,112 +1,122 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FiAlertTriangle, FiCheckCircle, FiFileText, FiHeart, FiShield, FiUser, FiXCircle } from "react-icons/fi";
+import { FiArrowLeft } from "react-icons/fi";
 
 export const metadata: Metadata = {
   title: "Syarat & Ketentuan Scanlator — Ryukomik",
-  description: "Aturan resmi untuk Scanlator di Ryukomik: akun, hak cipta, kualitas upload, konten 18+, sanksi, dan donate.",
+  description: "Aturan resmi Scanlator Ryukomik: akun, hak cipta, kualitas upload, konten 18+, sanksi, donate.",
 };
 
-/**
- * Halaman S&K Scanlator — satu-satunya sumber aturan publik.
- * PRD internal tidak memuat aturan (privasi & kejelasan).
- */
+const SECTIONS: Array<{ title: string; items: React.ReactNode[] }> = [
+  {
+    title: "Akun & identitas",
+    items: [
+      <>Satu orang atau tim hanya boleh punya <b>satu Akun Translation</b> aktif. Akun ganda ditolak.</>,
+      <>Nama tim dan handle harus unik, tidak meniru tim lain atau nama &quot;Ryukomik&quot;.</>,
+      <>Akun tidak boleh dijual, disewakan, atau dipindahkan.</>,
+      <>Akun baru aktif setelah <b>ACC admin</b>; sebelum itu tidak ada hak upload.</>,
+    ],
+  },
+  {
+    title: "Hak cipta",
+    items: [
+      <>Unggah hanya karya yang <b>berhak kamu unggah</b>: hasil TL sendiri atau karya orisinil timmu.</>,
+      <>Dilarang re-upload hasil TL tim lain, mentahan bajakan, atau materi tanpa izin.</>,
+      <>Scanlator bertanggung jawab penuh atas keaslian karya. Ryukomik hanya platform.</>,
+      <>Takedown lewat form Report diproses <b>maksimal 1×24 jam</b> bila terbukti.</>,
+      <>Pelanggaran hak cipta berulang = pencabutan akses permanen.</>,
+    ],
+  },
+  {
+    title: "Kualitas upload",
+    items: [
+      <>Minimal <b>8 halaman</b> per chapter, gambar terbaca, utuh, dan berurutan.</>,
+      <>Tanpa watermark situs lain, iklan, atau banner pihak ketiga.</>,
+      <>Halaman terakhir wajib memuat <b>watermark nama tim</b> (dibuat otomatis).</>,
+      <>Judul chapter sopan, tanpa kata kasar atau spam.</>,
+      <>Chapter terbit tidak bisa diganti isinya.</>,
+      <>Batas teknis: 30 MB/gambar, 60 gambar/chapter.</>,
+    ],
+  },
+  {
+    title: "Konten terlarang",
+    items: [
+      <>Konten ilegal, SARA, ujaran kebencian, malware, dan spam.</>,
+      <>Drama antar-tim atau memancing keributan di komunitas.</>,
+      <>Meminta transfer dana di komentar atau menggiring pembaca bertransaksi di luar platform.</>,
+      <>Judul, deskripsi, atau sampul yang menyesatkan.</>,
+    ],
+  },
+  {
+    title: "Konten 18+",
+    items: [
+      <>Wajib ditandai lewat <b>toggle 18+</b> saat upload. Genre tidak berpengaruh.</>,
+      <>Seri 18+ disembunyikan dari pengguna yang mengaktifkan filter 18+ di Setting.</>,
+      <>Salah menandai konten dewasa termasuk pelanggaran berat.</>,
+    ],
+  },
+  {
+    title: "Sanksi",
+    items: [
+      <><b>Peringatan (SP)</b> — pelanggaran ringan, karya terkait diturunkan sementara.</>,
+      <><b>Suspend</b> — akses upload dibekukan sementara (default 7 hari).</>,
+      <><b>Pencabutan akses</b> — pelanggaran berat atau berulang; karya dapat dihapus.</>,
+      <>Keputusan admin final. Banding lewat kontak resmi Ryukomik.</>,
+    ],
+  },
+  {
+    title: "Donate",
+    items: [
+      <>Monetisasi masa beta hanya lewat <b>tautan donate eksternal</b> milik Scanlator.</>,
+      <>Ryukomik tidak menerima, menahan, atau meneruskan dana donasi.</>,
+      <>Dilarang memungut bayaran untuk membuka chapter di luar mekanisme platform.</>,
+    ],
+  },
+  {
+    title: "Data",
+    items: [
+      <>Email, file upload, dan IP saat upload dicatat untuk keamanan dan audit.</>,
+      <>S&amp;K dapat berubah; perubahan penting diumumkan di halaman ini.</>,
+    ],
+  },
+];
+
 export default function ScanlatorTermsPage() {
   return (
-    <main className="rk-page rk-app-surface px-4 pb-24 pt-20 text-white">
-      <div className="mx-auto max-w-2xl">
-        <header className="rk-card rounded-3xl p-6">
-          <p className="rk-social-eyebrow"><FiFileText size={13} /> Aturan Resmi</p>
-          <h1 className="mt-2 text-2xl font-black">Syarat &amp; Ketentuan Scanlator</h1>
-          <p className="mt-2 text-sm leading-relaxed text-white/55">
-            Berlaku untuk semua pemilik Akun Translation (Scanlator) di Ryukomik. Dengan mengajukan Akun Translation,
-            kamu menyetujui seluruh aturan di halaman ini. Terakhir diperbarui: 5 November 2026.
-          </p>
-        </header>
+    <main className="min-h-screen bg-[var(--surface-0)] px-4 pb-20 pt-16 text-white">
+      <div className="mx-auto w-full max-w-2xl">
+        <Link href="/scanlator/daftar" className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/40 transition-colors hover:text-white/70">
+          <FiArrowLeft size={12} /> Kembali ke pengajuan
+        </Link>
 
-        <div className="mt-4 space-y-4">
-          <Section icon={<FiUser size={16} />} title="1. Akun & Identitas">
-            <Li>Satu orang atau satu tim hanya boleh memiliki **satu Akun Translation** yang aktif. Akun ganda langsung ditolak saat review.</Li>
-            <Li>Nama tim dan handle harus unik dan tidak meniru tim lain, penerbit resmi, atau nama "Ryukomik".</Li>
-            <Li>Dilarang menjual, menyewakan, memindahkan, atau membagikan akun kepada pihak lain.</Li>
-            <Li>Akun Translation hanya aktif setelah **ACC admin**. Sebelum itu, tidak ada hak upload apa pun.</Li>
-          </Section>
+        <h1 className="mt-3 text-[19px] font-bold leading-tight">Syarat &amp; Ketentuan Scanlator</h1>
+        <p className="mt-1 text-[12px] leading-relaxed text-white/45">
+          Berlaku untuk semua pemilik Akun Translation. Dengan mengajukan, kamu menyetujui seluruh aturan ini.
+          <span className="text-white/25"> Diperbarui 5 November 2026.</span>
+        </p>
 
-          <Section icon={<FiShield size={16} />} title="2. Hak Cipta & Orisinalitas">
-            <Li>Kamu hanya boleh mengunggah karya yang **kamu berhak untuk unggah** (hasil TL/bersih-bersih sendiri, atau karya orisinil timmu).</Li>
-            <Li>Dilarang mengunggah ulang (re-upload) hasil TL scanlator lain, mentahan bajakan, atau materi tanpa izin pemiliknya.</Li>
-            <Li>Scanlator bertanggung jawab penuh atas keaslian karya yang diunggah. Ryukomik hanya menyediakan platform.</Li>
-            <Li>Pemegang hak atau pihak yang dirugikan dapat mengajukan takedown lewat form Report. Laporan yang terbukti akan diturunkan **maksimal 1×24 jam**.</Li>
-            <Li>Pelanggaran hak cipta berulang mengakibatkan **pencabutan akses permanen** dan penghapusan seluruh karya.</Li>
-          </Section>
-
-          <Section icon={<FiFileText size={16} />} title="3. Kualitas & Upload">
-            <Li>Setiap chapter wajib memuat **minimal 8 halaman** gambar yang terbaca, utuh, dan berurutan.</Li>
-            <Li>Gambar harus bersih (tanpa watermark situs lain, tanpa iklan, tanpa banner promosi pihak ketiga).</Li>
-            <Li>Halaman terakhir setiap chapter wajib memuat **watermark nama tim** kamu (dibuat otomatis oleh sistem).</Li>
-            <Li>Judul chapter harus sopan dan tidak mengandung kata kasar, SARA, atau spam.</Li>
-            <Li>Chapter yang sudah terbit tidak boleh diganti isinya. Perbaikan dilakukan lewat chapter berikutnya atau pengajuan ke admin.</Li>
-            <Li>Batas teknis: maks 30 MB per gambar, maks 60 gambar per chapter, kuota tim 2 GB (Fase F).</Li>
-          </Section>
-
-          <Section icon={<FiAlertTriangle size={16} />} title="4. Konten Terlarang">
-            <Li>Konten ilegal, SARA, ujaran kebencian, malware, dan spam dalam bentuk apa pun.</Li>
-            <Li>Drama antar-tim, saling serang di komentar, atau memancing keributan di komunitas.</Li>
-            <Li>Meminta transfer dana di kolom komentar atau menggiring pembaca keluar platform untuk transaksi.</Li>
-            <Li>Judul, deskripsi, atau gambar sampul yang menipu (clickbait menyesatkan).</Li>
-          </Section>
-
-          <Section icon={<FiXCircle size={16} />} title="5. Konten 18+">
-            <Li>Seri dengan konten 18+ **wajib** ditandai lewat toggle 18+ saat upload. Ini satu-satunya penentu filter — genre tidak berpengaruh.</Li>
-            <Li>Seri 18+ tidak boleh dimasukkan ke daftar rekomendasi umum dan hanya tampil bagi pengguna yang mematikan filter? Sebaliknya: seri 18+ disembunyikan bagi pengguna yang mengaktifkan "Sembunyikan konten 18+" di Setting.</Li>
-            <Li>Salah menandai (menyembunyikan status 18+ dari konten dewasa) adalah pelanggaran berat dan langsung dikenai sanksi.</Li>
-          </Section>
-
-          <Section icon={<FiCheckCircle size={16} />} title="6. Sanksi">
-            <Li><strong className="text-white">Peringatan</strong> — pelanggaran ringan; karya terkait diturunkan sementara.</Li>
-            <Li><strong className="text-white">Suspend 7 hari</strong> — pelanggaran berulang atau sedang; akses upload dibekukan.</Li>
-            <Li><strong className="text-white">Pencabutan akses</strong> — pelanggaran berat (hak cipta, SARA, ilegal, penipuan) atau pelanggaran berulang; seluruh karya dapat dihapus.</Li>
-            <Li>Keputusan admin bersifat final. Banding dapat diajukan lewat kontak resmi Ryukomik.</Li>
-          </Section>
-
-          <Section icon={<FiHeart size={16} />} title="7. Donate & Keuangan">
-            <Li>Monetisasi di masa BETA hanya melalui **tautan donate eksternal milik Scanlator sendiri** (DANA/GoPay, Trakteer, Tako, dan sejenisnya).</Li>
-            <Li>Ryukomik tidak menerima, menahan, atau meneruskan dana donasi dalam bentuk apa pun.</Li>
-            <Li>Dilarang memungut pembayaran untuk membuka chapter di luar mekanisme resmi platform.</Li>
-          </Section>
-
-          <Section icon={<FiShield size={16} />} title="8. Data & Perubahan">
-            <Li>Data yang kamu berikan (email, file upload, alamat IP saat upload) dicatat untuk keamanan dan audit.</Li>
-            <Li>Ryukomik dapat mengubah S&K ini sewaktu-waktu. Perubahan penting diumumkan di halaman ini; penggunaan berkelanjutan berarti menerima versi terbaru.</Li>
-          </Section>
+        <div className="mt-5 divide-y divide-white/[.06] border-y border-white/[.06]">
+          {SECTIONS.map((s, i) => (
+            <section key={s.title} className="py-4">
+              <h2 className="flex items-baseline gap-2 text-[13px] font-bold text-white">
+                <span className="text-[11px] font-semibold text-white/25">{String(i + 1).padStart(2, "0")}</span>
+                {s.title}
+              </h2>
+              <ul className="mt-2 space-y-1.5 pl-6">
+                {s.items.map((item, j) => (
+                  <li key={j} className="relative text-[12px] leading-relaxed text-white/55 before:absolute before:-left-3 before:top-[7px] before:h-1 before:w-1 before:rounded-full before:bg-white/20">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
         </div>
 
-        <div className="rk-card-soft mt-4 rounded-3xl p-5 text-center">
-          <p className="text-sm text-white/55">Sudah paham aturannya?</p>
-          <Link href="/scanlator/daftar" className="rk-btn-primary mt-3 inline-block rounded-full px-6 py-2.5 text-sm font-bold">Ajukan Akun Translation</Link>
-          <p className="mt-3 text-[11px] text-white/35">Dokumen PRD internal tidak dipublikasikan di halaman ini.</p>
-        </div>
+        <Link href="/scanlator/daftar" className="mt-5 flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[var(--accent)] text-[12px] font-bold">
+          Setuju &amp; ajukan Akun Translation
+        </Link>
       </div>
     </main>
-  );
-}
-
-function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
-  return (
-    <section className="rk-card-soft rounded-3xl p-5 sm:p-6">
-      <h2 className="flex items-center gap-2 text-sm font-black text-white">
-        <span className="text-[var(--accent-2)]">{icon}</span> {title}
-      </h2>
-      <ul className="mt-3 space-y-2.5">{children}</ul>
-    </section>
-  );
-}
-
-function Li({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex gap-2.5 text-[13px] leading-relaxed text-white/60">
-      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent-2)]" />
-      <span>{children}</span>
-    </li>
   );
 }

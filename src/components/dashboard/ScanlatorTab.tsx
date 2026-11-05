@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  FiAlertTriangle, FiBookOpen, FiCheckCircle, FiClock, FiMessageCircle, FiRefreshCw,
-  FiShield, FiSlash, FiUserX, FiUsers, FiXCircle,
+  FiAlertTriangle, FiCheck, FiClock, FiMessageCircle, FiRefreshCw, FiSlash, FiUserX, FiX,
 } from "react-icons/fi";
+import { Button, Panel, PanelHead, Tabs, inputClass } from "@/components/scanlator/ui";
 
 type Application = {
   id: string; user_id: string; handle: string; team_name: string;
@@ -20,34 +20,26 @@ type Scanlator = {
   created_at: string; username: string | null;
 };
 
-type ModerationRow = {
-  id: string; user_id: string; action: string; reason: string | null; note: string | null;
-  created_at: string; team_name: string | null;
-};
-
-type WorkReview = {
-  id: string; slug: string; title: string; cover_url: string | null; type: string | null;
-  is_adult: boolean; scanlator_handle: string | null; scanlator_team: string | null;
-};
+type ModerationRow = { id: string; user_id: string; action: string; reason: string | null; note: string | null; created_at: string; team_name: string | null };
+type WorkReview = { id: string; slug: string; title: string; cover_url: string | null; type: string | null; is_adult: boolean; scanlator_handle: string | null; scanlator_team: string | null };
 
 type TabId = "pengajuan" | "karya" | "scanlator" | "moderasi";
 
-const TABS: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [
-  { id: "pengajuan", label: "Pengajuan", icon: <FiUsers size={13} /> },
-  { id: "karya", label: "Review Karya", icon: <FiBookOpen size={13} /> },
-  { id: "scanlator", label: "Scanlator", icon: <FiShield size={13} /> },
-  { id: "moderasi", label: "Moderasi", icon: <FiAlertTriangle size={13} /> },
+const TABS: Array<{ id: TabId; label: string }> = [
+  { id: "pengajuan", label: "Pengajuan" },
+  { id: "karya", label: "Karya" },
+  { id: "scanlator", label: "Scanlator" },
+  { id: "moderasi", label: "Moderasi" },
 ];
 
 function timeAgo(iso: string) {
-  const diff = Math.floor((Date.now() - Date.parse(iso)) / 1000);
-  if (diff < 60) return "baru saja";
-  if (diff < 3600) return `${Math.floor(diff / 60)} menit lalu`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
-  return `${Math.floor(diff / 86400)} hari lalu`;
+  const d = Math.floor((Date.now() - Date.parse(iso)) / 1000);
+  if (d < 60) return "baru";
+  if (d < 3600) return `${Math.floor(d / 60)}m`;
+  if (d < 86400) return `${Math.floor(d / 3600)}j`;
+  return `${Math.floor(d / 86400)}h`;
 }
 
-/** Manajemen Scanlator — pengajuan, review karya, moderasi (SP/suspend/cabut). */
 export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => Promise<string> }) {
   const [tab, setTab] = useState<TabId>("pengajuan");
   const [apps, setApps] = useState<Application[]>([]);
@@ -68,27 +60,18 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
         fetch("/api/admin/scanlator/review", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }),
       ]);
       if (aRes.ok) {
-        const json = (await aRes.json()) as { applications?: Application[]; scanlators?: Scanlator[]; moderation?: ModerationRow[] };
-        setApps(json.applications || []);
-        setScanlators(json.scanlators || []);
-        setModeration(json.moderation || []);
+        const j = (await aRes.json()) as { applications?: Application[]; scanlators?: Scanlator[]; moderation?: ModerationRow[] };
+        setApps(j.applications || []); setScanlators(j.scanlators || []); setModeration(j.moderation || []);
       }
-      if (wRes.ok) {
-        const json = (await wRes.json()) as { works?: WorkReview[] };
-        setWorks(json.works || []);
-      }
-    } catch {
-      setApps([]);
-    } finally {
-      setLoading(false);
-    }
+      if (wRes.ok) setWorks(((await wRes.json()) as { works?: WorkReview[] }).works || []);
+    } catch { setApps([]); }
+    finally { setLoading(false); }
   }, [getAdminToken]);
 
   useEffect(() => { void load(); }, [load]);
 
   const call = async (payload: Record<string, unknown>, okMessage: string) => {
-    setBusy(String(payload.id || payload.user_id || "x"));
-    setNotice("");
+    setBusy(String(payload.id || payload.user_id || "x")); setNotice("");
     try {
       const token = await getAdminToken();
       const res = await fetch("/api/admin/scanlator", {
@@ -100,9 +83,7 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
       if (!res.ok || !json?.success) { setNotice(json?.error || "Gagal memproses."); return; }
       setNotice(okMessage);
       await load();
-    } finally {
-      setBusy(null);
-    }
+    } finally { setBusy(null); }
   };
 
   const reviewWork = async (work: WorkReview, action: "approve" | "reject") => {
@@ -115,7 +96,7 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
         body: JSON.stringify({ id: work.id, action }),
       });
       const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
-      if (!res.ok || !json?.success) { setNotice(json?.error || "Gagal memproses karya."); return; }
+      if (!res.ok || !json?.success) { setNotice(json?.error || "Gagal."); return; }
       setNotice(action === "approve" ? `“${work.title}” terbit.` : `“${work.title}” ditolak.`);
       await load();
     } finally { setBusy(null); }
@@ -124,248 +105,213 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
   const pending = apps.filter((a) => a.status === "pending");
   const done = apps.filter((a) => a.status !== "pending");
   const active = scanlators.filter((s) => s.status === "active");
-  const suspendedList = scanlators.filter((s) => s.status === "suspended");
+  const suspended = scanlators.filter((s) => s.status === "suspended");
   const revoked = scanlators.filter((s) => s.status === "revoked");
 
   return (
-    <div className="space-y-4">
-      <div className="rk-card-soft rounded-3xl p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[13px] font-bold text-white">Manajemen Scanlator <span className="rk-chip ml-1 rounded-full px-2 py-0.5 text-[10px]">BETA</span></p>
-            <p className="mt-0.5 text-[11px] text-white/40">
-              {pending.length} pengajuan · {works.length} karya · {active.length} aktif · {suspendedList.length} suspend
+    <div className="space-y-3">
+      <Panel>
+        <div className="flex items-center justify-between gap-3 px-4 pt-3">
+          <div className="min-w-0">
+            <p className="text-[13px] font-bold">Scanlator</p>
+            <p className="mt-0.5 text-[11px] text-white/35">
+              {pending.length} pengajuan · {works.length} karya · {active.length} aktif · {suspended.length} suspend
             </p>
           </div>
-          <button type="button" onClick={() => void load()} aria-label="Muat ulang" className="rounded-lg border border-white/10 p-2 text-white/40 transition hover:text-white">
-            <FiRefreshCw size={13} className={loading ? "animate-spin" : ""} />
+          <button type="button" onClick={() => void load()} aria-label="Muat ulang" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/[.08] text-white/40 transition-colors hover:text-white">
+            <FiRefreshCw size={12} className={loading ? "animate-spin" : ""} />
           </button>
         </div>
-        {notice && <p className="mt-3 rounded-xl bg-white/[.04] px-3 py-2 text-xs font-semibold text-white/75">{notice}</p>}
+        <div className="mt-2">
+          <Tabs tabs={TABS} active={tab} onChange={(id) => setTab(id as TabId)} />
+        </div>
+        {notice && <p className="border-t border-white/[.05] px-4 py-2 text-[11px] font-semibold text-white/70">{notice}</p>}
+      </Panel>
 
-        <nav className="mt-3 flex gap-1.5 overflow-x-auto rounded-xl border border-white/[.06] bg-white/[.03] p-1 [scrollbar-width:none]">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-[11px] font-bold transition ${
-                tab === t.id ? "bg-[var(--accent)] text-white" : "text-white/45 hover:text-white/80"
-              }`}
-            >
-              {t.icon} {t.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* PENGAJUAN */}
       {tab === "pengajuan" && (
         <>
           {pending.map((app) => (
-            <div key={app.id} className="rk-card-soft rounded-3xl p-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
+            <Panel key={app.id}>
+              <div className="flex items-start justify-between gap-3 px-4 pt-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-white">{app.team_name} <span className="font-semibold text-white/40">@{app.handle}</span></p>
-                  <p className="mt-0.5 text-[11px] text-white/40">User: {app.username || app.user_id.slice(0, 8)} · {timeAgo(app.created_at)}</p>
+                  <p className="truncate text-[13px] font-bold">{app.team_name} <span className="font-normal text-white/35">@{app.handle}</span></p>
+                  <p className="mt-0.5 text-[11px] text-white/35">{app.username || app.user_id.slice(0, 8)} · {timeAgo(app.created_at)} lalu</p>
                 </div>
-                <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold text-amber-300"><FiClock size={10} /> Pending</span>
+                <span className="shrink-0 rounded-md bg-amber-500/10 px-2 py-1 text-[10px] font-bold text-amber-300">Pending</span>
               </div>
 
-              <ContactRow wa={app.contact_wa} tg={app.contact_telegram} dc={app.contact_discord} />
+              <div className="px-4 pt-2"><Contacts wa={app.contact_wa} tg={app.contact_telegram} dc={app.contact_discord} /></div>
 
-              {app.description && <p className="mt-3 text-xs leading-relaxed text-white/60">{app.description}</p>}
+              {app.description && <p className="px-4 pt-2 text-[11px] leading-relaxed text-white/50">{app.description}</p>}
 
-              <div className="mt-3 space-y-1.5">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-white/35">Contoh hasil TL</p>
+              <div className="space-y-1 px-4 pt-2">
                 {app.samples.map((s, i) => (
-                  <p key={i} className="break-all rounded-lg bg-white/[.03] px-2.5 py-1.5 text-[11px] text-white/65">{s}</p>
+                  <p key={i} className="break-all rounded-md bg-white/[.03] px-2.5 py-1.5 text-[11px] text-white/55">{s}</p>
                 ))}
               </div>
 
-              <input
-                value={notes[app.id] || ""}
-                onChange={(e) => setNotes((n) => ({ ...n, [app.id]: e.target.value }))}
-                placeholder="Catatan untuk pemohon (opsional)…"
-                className="rk-input mt-3 w-full rounded-xl px-3 py-2 text-xs"
-              />
-              <div className="mt-3 flex gap-2">
-                <button type="button" disabled={busy === app.id} onClick={() => void call({ id: app.id, action: "approve", note: notes[app.id] || "" }, `${app.team_name} disetujui — role Scanlator aktif.`)} className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-500/90 py-2.5 text-xs font-black text-white disabled:opacity-50">
-                  <FiCheckCircle size={13} /> ACC
-                </button>
-                <button type="button" disabled={busy === app.id} onClick={() => void call({ id: app.id, action: "reject", note: notes[app.id] || "" }, `${app.team_name} ditolak.`)} className="flex items-center justify-center gap-1.5 rounded-xl border border-rose-400/30 px-4 py-2.5 text-xs font-bold text-rose-300 disabled:opacity-50">
-                  <FiXCircle size={13} /> Tolak
-                </button>
+              <div className="p-4 pt-3">
+                <input
+                  value={notes[app.id] || ""}
+                  onChange={(e) => setNotes((n) => ({ ...n, [app.id]: e.target.value }))}
+                  placeholder="Catatan untuk pemohon…"
+                  className={inputClass}
+                />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <Button onClick={() => void call({ id: app.id, action: "approve", note: notes[app.id] || "" }, `${app.team_name} disetujui.`)} disabled={busy === app.id} className="w-full">
+                    <FiCheck size={13} /> ACC
+                  </Button>
+                  <Button variant="danger" onClick={() => void call({ id: app.id, action: "reject", note: notes[app.id] || "" }, `${app.team_name} ditolak.`)} disabled={busy === app.id} className="w-full">
+                    <FiX size={13} /> Tolak
+                  </Button>
+                </div>
               </div>
-            </div>
+            </Panel>
           ))}
 
           {done.length > 0 && (
-            <div className="rk-card-soft rounded-3xl p-4">
-              <p className="text-[13px] font-bold text-white">Riwayat pengajuan</p>
-              <div className="mt-2 divide-y divide-white/[.04]">
-                {done.map((app) => (
-                  <div key={app.id} className="flex items-center justify-between gap-3 py-2.5">
+            <Panel>
+              <PanelHead title="Riwayat" desc={`${done.length} pengajuan sudah diproses`} />
+              <ul className="divide-y divide-white/[.05]">
+                {done.map((a) => (
+                  <li key={a.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
                     <div className="min-w-0">
-                      <p className="truncate text-xs font-semibold text-white/80">{app.team_name} <span className="text-white/40">@{app.handle}</span></p>
-                      {app.review_note && <p className="truncate text-[11px] text-white/40">{app.review_note}</p>}
+                      <p className="truncate text-[12px] text-white/75">{a.team_name} <span className="text-white/30">@{a.handle}</span></p>
+                      {a.review_note && <p className="truncate text-[10px] text-white/30">{a.review_note}</p>}
                     </div>
-                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${app.status === "approved" ? "bg-emerald-500/10 text-emerald-300" : "bg-rose-500/10 text-rose-300"}`}>
-                      {app.status === "approved" ? "ACC" : "Ditolak"}
-                    </span>
-                  </div>
+                    <span className={`shrink-0 text-[10px] font-bold ${a.status === "approved" ? "text-emerald-300" : "text-rose-300"}`}>{a.status === "approved" ? "ACC" : "Ditolak"}</span>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </Panel>
           )}
 
-          {!loading && apps.length === 0 && <p className="py-10 text-center text-sm text-white/40">Belum ada pengajuan.</p>}
+          {!loading && apps.length === 0 && <p className="py-10 text-center text-[12px] text-white/30">Belum ada pengajuan.</p>}
         </>
       )}
 
-      {/* REVIEW KARYA */}
       {tab === "karya" && (
-        <div className="rk-card-soft rounded-3xl p-4">
-          <p className="text-[13px] font-bold text-white">Review karya ({works.length} menunggu)</p>
-          <p className="mt-0.5 text-[11px] text-white/40">ACC = seri + chapter-nya terbit. Tolak = tidak tampil di situs.</p>
-          <div className="mt-3 space-y-3">
-            {works.map((work) => (
-              <div key={work.id} className="flex items-center gap-3 rounded-2xl bg-white/[.03] p-3">
-                {work.cover_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={work.cover_url} alt="" className="h-16 w-12 shrink-0 rounded-lg object-cover" />
-                ) : (
-                  <div className="flex h-16 w-12 shrink-0 items-center justify-center rounded-lg bg-white/[.06]" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-black text-white">{work.title}</p>
-                  <p className="text-[11px] text-white/40">{work.scanlator_team || work.scanlator_handle} · {work.type || "—"}{work.is_adult ? " · 18+" : ""}</p>
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                  <button type="button" disabled={busy === work.id} onClick={() => void reviewWork(work, "approve")} className="flex items-center gap-1 rounded-lg bg-emerald-500/90 px-3 py-2 text-[11px] font-black text-white disabled:opacity-50">
-                    <FiCheckCircle size={12} /> Terbitkan
-                  </button>
-                  <button type="button" disabled={busy === work.id} onClick={() => void reviewWork(work, "reject")} className="flex items-center gap-1 rounded-lg border border-rose-400/30 px-3 py-2 text-[11px] font-bold text-rose-300 disabled:opacity-50">
-                    <FiXCircle size={12} /> Tolak
-                  </button>
-                </div>
-              </div>
-            ))}
-            {works.length === 0 && <p className="py-8 text-center text-xs text-white/40">Tidak ada karya menunggu review.</p>}
-          </div>
-        </div>
+        <Panel>
+          <PanelHead title={`Review karya (${works.length})`} desc="ACC = seri & chapter terbit." />
+          {works.length === 0 ? (
+            <p className="px-4 py-10 text-center text-[12px] text-white/30">Tidak ada karya menunggu.</p>
+          ) : (
+            <ul className="divide-y divide-white/[.05]">
+              {works.map((w) => (
+                <li key={w.id} className="px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    {w.cover_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={w.cover_url} alt="" loading="lazy" className="shrink-0 rounded-[4px] object-cover" style={{ height: 52, width: 36 }} />
+                    ) : (
+                      <div className="shrink-0 rounded-[4px] bg-white/[.05]" style={{ height: 52, width: 36 }} />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[12px] font-semibold text-white/90">{w.title}</p>
+                      <p className="mt-0.5 truncate text-[10px] text-white/30">{w.scanlator_team || w.scanlator_handle} · {w.type || "—"}{w.is_adult ? " · 18+" : ""}</p>
+                    </div>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <Button onClick={() => void reviewWork(w, "approve")} disabled={busy === w.id}><FiCheck size={12} /> Terbitkan</Button>
+                    <Button variant="danger" onClick={() => void reviewWork(w, "reject")} disabled={busy === w.id}><FiX size={12} /> Tolak</Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
       )}
 
-      {/* SCANLATOR AKTIF */}
       {tab === "scanlator" && (
         <>
-          {[...active, ...suspendedList, ...revoked].map((s) => (
-            <div key={s.user_id} className="rk-card-soft rounded-3xl p-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
+          {[...active, ...suspended, ...revoked].map((s) => (
+            <Panel key={s.user_id}>
+              <div className="flex items-start justify-between gap-3 px-4 pt-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-white">{s.team_name} <span className="font-semibold text-white/40">@{s.handle}</span></p>
-                  <p className="mt-0.5 text-[11px] text-white/40">
-                    {s.username || s.user_id.slice(0, 8)} · gabung {timeAgo(s.created_at)}
-                    {s.warnings > 0 ? ` · ${s.warnings} SP` : ""}
+                  <p className="truncate text-[13px] font-bold">{s.team_name} <span className="font-normal text-white/35">@{s.handle}</span></p>
+                  <p className="mt-0.5 text-[11px] text-white/35">
+                    {s.username || s.user_id.slice(0, 8)} · {timeAgo(s.created_at)} lalu{s.warnings > 0 ? ` · ${s.warnings} SP` : ""}
                   </p>
                 </div>
-                <StatusPill status={s.status} />
+                <span className={`shrink-0 text-[10px] font-bold ${s.status === "active" ? "text-emerald-300" : s.status === "suspended" ? "text-amber-300" : "text-rose-300"}`}>
+                  {s.status === "active" ? "Aktif" : s.status === "suspended" ? "Suspend" : "Dicabut"}
+                </span>
               </div>
 
-              <ContactRow wa={s.contact_wa} tg={s.contact_telegram} dc={s.contact_discord} />
+              <div className="px-4 pt-2"><Contacts wa={s.contact_wa} tg={s.contact_telegram} dc={s.contact_discord} /></div>
 
-              {s.suspended_until && s.status === "suspended" && (
-                <p className="mt-2 text-[11px] font-semibold text-amber-200">Suspend sampai {new Date(s.suspended_until).toLocaleDateString("id-ID")}</p>
+              {s.status === "suspended" && s.suspended_until && (
+                <p className="px-4 pt-1.5 text-[10px] font-semibold text-amber-300/80">s.d. {new Date(s.suspended_until).toLocaleDateString("id-ID")}</p>
               )}
-              {s.moderation_note && <p className="mt-1 text-[11px] text-white/40">Catatan: {s.moderation_note}</p>}
+              {s.moderation_note && <p className="px-4 pt-1 text-[10px] text-white/30">Catatan: {s.moderation_note}</p>}
 
-              <input
-                value={notes[s.user_id] || ""}
-                onChange={(e) => setNotes((n) => ({ ...n, [s.user_id]: e.target.value }))}
-                placeholder="Alasan / catatan moderasi…"
-                className="rk-input mt-3 w-full rounded-xl px-3 py-2 text-xs"
-              />
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button type="button" disabled={busy === s.user_id} onClick={() => void call({ user_id: s.user_id, action: "warn", reason: notes[s.user_id] || "Pelanggaran aturan", note: notes[s.user_id] || "" }, `SP diberikan ke ${s.team_name}.`)} className="flex items-center gap-1.5 rounded-xl bg-amber-500/15 px-3 py-2 text-[11px] font-bold text-amber-200 disabled:opacity-50">
-                  <FiAlertTriangle size={12} /> Beri SP
-                </button>
-                <button type="button" disabled={busy === s.user_id} onClick={() => void call({ user_id: s.user_id, action: "suspend", days: 7, reason: notes[s.user_id] || "Pelanggaran aturan", note: notes[s.user_id] || "" }, `${s.team_name} disuspend 7 hari.`)} className="flex items-center gap-1.5 rounded-xl bg-orange-500/15 px-3 py-2 text-[11px] font-bold text-orange-200 disabled:opacity-50">
-                  <FiSlash size={12} /> Suspend 7 hari
-                </button>
-                {s.status !== "revoked" ? (
-                  <button type="button" disabled={busy === s.user_id} onClick={() => void call({ user_id: s.user_id, action: "revoke", reason: notes[s.user_id] || "Pelanggaran berat", note: notes[s.user_id] || "" }, `Akses ${s.team_name} dicabut.`)} className="flex items-center gap-1.5 rounded-xl bg-rose-500/15 px-3 py-2 text-[11px] font-bold text-rose-200 disabled:opacity-50">
-                    <FiUserX size={12} /> Cabut akses
-                  </button>
-                ) : (
-                  <button type="button" disabled={busy === s.user_id} onClick={() => void call({ user_id: s.user_id, action: "restore", note: notes[s.user_id] || "" }, `Akses ${s.team_name} dipulihkan.`)} className="flex items-center gap-1.5 rounded-xl bg-emerald-500/15 px-3 py-2 text-[11px] font-bold text-emerald-200 disabled:opacity-50">
-                    <FiCheckCircle size={12} /> Pulihkan
-                  </button>
-                )}
+              <div className="p-4 pt-3">
+                <input
+                  value={notes[s.user_id] || ""}
+                  onChange={(e) => setNotes((n) => ({ ...n, [s.user_id]: e.target.value }))}
+                  placeholder="Alasan / catatan…"
+                  className={inputClass}
+                />
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <Button variant="warn" onClick={() => void call({ user_id: s.user_id, action: "warn", reason: notes[s.user_id] || "Pelanggaran", note: notes[s.user_id] || "" }, `SP diberikan ke ${s.team_name}.`)} disabled={busy === s.user_id}>
+                    <FiAlertTriangle size={12} /> SP
+                  </Button>
+                  <Button variant="warn" onClick={() => void call({ user_id: s.user_id, action: "suspend", days: 7, reason: notes[s.user_id] || "Pelanggaran", note: notes[s.user_id] || "" }, `${s.team_name} suspend 7 hari.`)} disabled={busy === s.user_id}>
+                    <FiSlash size={12} /> Suspend
+                  </Button>
+                  {s.status !== "revoked" ? (
+                    <Button variant="danger" className="col-span-2" onClick={() => void call({ user_id: s.user_id, action: "revoke", reason: notes[s.user_id] || "Pelanggaran berat", note: notes[s.user_id] || "" }, `Akses ${s.team_name} dicabut.`)} disabled={busy === s.user_id}>
+                      <FiUserX size={12} /> Cabut akses
+                    </Button>
+                  ) : (
+                    <Button className="col-span-2" onClick={() => void call({ user_id: s.user_id, action: "restore", note: notes[s.user_id] || "" }, `Akses ${s.team_name} dipulihkan.`)} disabled={busy === s.user_id}>
+                      <FiCheck size={12} /> Pulihkan akses
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
+            </Panel>
           ))}
-          {!loading && scanlators.length === 0 && <p className="py-10 text-center text-sm text-white/40">Belum ada Scanlator.</p>}
+          {!loading && scanlators.length === 0 && <p className="py-10 text-center text-[12px] text-white/30">Belum ada Scanlator.</p>}
         </>
       )}
 
-      {/* MODERASI */}
       {tab === "moderasi" && (
-        <div className="rk-card-soft rounded-3xl p-4">
-          <p className="text-[13px] font-bold text-white">Riwayat moderasi</p>
-          <div className="mt-2 divide-y divide-white/[.04]">
-            {moderation.map((m) => (
-              <div key={m.id} className="flex items-start justify-between gap-3 py-2.5">
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-white/80">{m.team_name || m.user_id.slice(0, 8)} · {labelAction(m.action)}</p>
-                  {(m.reason || m.note) && <p className="text-[11px] text-white/40">{m.note || m.reason}</p>}
-                </div>
-                <span className="shrink-0 text-[10px] text-white/35">{timeAgo(m.created_at)}</span>
-              </div>
-            ))}
-            {moderation.length === 0 && <p className="py-8 text-center text-xs text-white/40">Belum ada tindakan moderasi.</p>}
-          </div>
-        </div>
+        <Panel>
+          <PanelHead title="Riwayat moderasi" desc={`${moderation.length} tindakan terakhir`} />
+          {moderation.length === 0 ? (
+            <p className="px-4 py-10 text-center text-[12px] text-white/30">Belum ada tindakan.</p>
+          ) : (
+            <ul className="divide-y divide-white/[.05]">
+              {moderation.map((m) => (
+                <li key={m.id} className="flex items-start justify-between gap-3 px-4 py-2.5">
+                  <div className="min-w-0">
+                    <p className="truncate text-[12px] text-white/75">{m.team_name || m.user_id.slice(0, 8)} <span className="text-white/30">· {labelAction(m.action)}</span></p>
+                    {(m.note || m.reason) && <p className="truncate text-[10px] text-white/30">{m.note || m.reason}</p>}
+                  </div>
+                  <span className="shrink-0 text-[10px] text-white/25">{timeAgo(m.created_at)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
       )}
     </div>
   );
 }
 
 function labelAction(action: string) {
-  return { warn: "SP", suspend: "Suspend", revoke: "Cabut akses", restore: "Pulihkan" }[action] || action;
+  return ({ warn: "SP", suspend: "Suspend", revoke: "Cabut akses", restore: "Pulihkan" } as Record<string, string>)[action] || action;
 }
 
-function StatusPill({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    active: { label: "Aktif", cls: "bg-emerald-500/10 text-emerald-300" },
-    suspended: { label: "Suspend", cls: "bg-amber-500/10 text-amber-300" },
-    revoked: { label: "Dicabut", cls: "bg-rose-500/10 text-rose-300" },
-  };
-  const s = map[status] || map.active;
-  return <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${s.cls}`}>{s.label}</span>;
-}
-
-function ContactRow({ wa, tg, dc }: { wa: string | null; tg: string | null; dc: string | null }) {
-  if (!wa && !tg && !dc) {
-    return <p className="mt-2 text-[11px] text-amber-200/70">Kontak belum diisi</p>;
-  }
+function Contacts({ wa, tg, dc }: { wa: string | null; tg: string | null; dc: string | null }) {
+  if (!wa && !tg && !dc) return <p className="text-[10px] text-amber-300/60">Kontak belum diisi</p>;
+  const chip = "inline-flex min-h-[28px] items-center gap-1 rounded-md bg-white/[.05] px-2 text-[10px] font-semibold text-white/60";
   return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
-      {wa && (
-        <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer noopener" className="flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold text-emerald-200">
-          <FiMessageCircle size={10} /> WA
-        </a>
-      )}
-      {tg && (
-        <a href={`https://t.me/${tg}`} target="_blank" rel="noreferrer noopener" className="flex items-center gap-1 rounded-lg bg-sky-500/10 px-2.5 py-1 text-[10px] font-bold text-sky-200">
-          <FiMessageCircle size={10} /> Telegram
-        </a>
-      )}
-      {dc && (
-        <a href={`https://discord.com/users/${dc}`} target="_blank" rel="noreferrer noopener" className="flex items-center gap-1 rounded-lg bg-indigo-500/10 px-2.5 py-1 text-[10px] font-bold text-indigo-200">
-          <FiMessageCircle size={10} /> Discord
-        </a>
-      )}
+    <div className="flex flex-wrap gap-1.5">
+      {wa && <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer noopener" className={chip}><FiMessageCircle size={10} /> WA</a>}
+      {tg && <a href={`https://t.me/${tg}`} target="_blank" rel="noreferrer noopener" className={chip}><FiMessageCircle size={10} /> Telegram</a>}
+      {dc && <a href={`https://discord.com/users/${dc}`} target="_blank" rel="noreferrer noopener" className={chip}><FiMessageCircle size={10} /> Discord</a>}
     </div>
   );
 }
