@@ -109,8 +109,12 @@ async function reviewApplication(id: string | undefined, action: "approve" | "re
       "update scanlator_applications set status = 'approved', review_note = $1, reviewed_by = $2, reviewed_at = now() where id = $3",
       [note, adminId, id],
     );
+    // Jangan turunkan admin/staff: role mereka lebih tinggi dari scanlator.
     await client.query(
-      "update social_profiles set role = 'scanlator', updated_at = now() where user_id = $1",
+      `update social_profiles
+          set role = case when role in ('admin','staff') then role else 'scanlator' end,
+              updated_at = now()
+        where user_id = $1`,
       [row.user_id],
     );
     await client.query(
@@ -192,7 +196,13 @@ async function moderate(
         "update scanlator_profiles set status = 'revoked', moderation_note = $1, updated_at = now() where user_id = $2",
         [note || reason, userId],
       );
-      await client.query("update social_profiles set role = 'user', updated_at = now() where user_id = $1", [userId]);
+      await client.query(
+        `update social_profiles
+            set role = case when role = 'scanlator' then 'user' else role end,
+                updated_at = now()
+          where user_id = $1`,
+        [userId],
+      );
       await client.query(
         "insert into scanlator_moderation (user_id, action, reason, note, admin_id) values ($1, 'revoke', $2, $3, $4)",
         [userId, reason, note, adminId],
@@ -213,7 +223,13 @@ async function moderate(
       "update scanlator_profiles set status = 'active', suspended_until = null, moderation_note = $1, updated_at = now() where user_id = $2",
       [note, userId],
     );
-    await client.query("update social_profiles set role = 'scanlator', updated_at = now() where user_id = $1", [userId]);
+    await client.query(
+      `update social_profiles
+          set role = case when role in ('admin','staff') then role else 'scanlator' end,
+              updated_at = now()
+        where user_id = $1`,
+      [userId],
+    );
     await client.query(
       "insert into scanlator_moderation (user_id, action, reason, note, admin_id) values ($1, 'restore', $2, $3, $4)",
       [userId, reason, note, adminId],
