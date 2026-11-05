@@ -36,8 +36,9 @@ import QuickAdsTab, {
 import ProjectTab from "@/components/dashboard/ProjectTab";
 import ProjectDbTab from "@/components/dashboard/ProjectDbTab";
 import BackupTab from "@/components/dashboard/BackupTab";
+import ScanlatorTab from "@/components/dashboard/ScanlatorTab";
 import AnnouncementsTab from "@/components/dashboard/AnnouncementsTab";
-import { FiBookOpen } from "react-icons/fi";
+import { FiBookOpen, FiPenTool } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
 import { logoutEverywhere } from "@/lib/auth/logout";
 
@@ -59,9 +60,10 @@ type DashboardPage =
   | "announcements"
   | "marathon"
   | "project-db"
-  | "backup";
+  | "backup"
+  | "scanlator";
 
-const DASHBOARD_PAGES: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "announcements", "marathon", "project-db", "backup"];
+const DASHBOARD_PAGES: DashboardPage[] = ["dashboard", "users", "requests", "source-health", "comments", "events", "apk", "quick-ads", "codes", "project", "announcements", "marathon", "project-db", "backup", "scanlator"];
 
 
 type AdminUser = User & {
@@ -1337,6 +1339,11 @@ export default function AdminDashboard() {
       icon: <FiBookOpen size={18} />,
       label: "Project",
     },
+    {
+      id: "scanlator",
+      icon: <FiPenTool size={18} />,
+      label: "Scanlator",
+    },
   ];
 
   // ── render ─────────────────────────────────────────────────────────────
@@ -1424,6 +1431,7 @@ export default function AdminDashboard() {
         {page === "announcements" && <AnnouncementsTab getAdminToken={getAdminToken} />}
         {page === "project-db" && <ProjectDbTab getAdminToken={getAdminToken} />}
         {page === "backup" && <BackupTab getAdminToken={getAdminToken} />}
+        {page === "scanlator" && <ScanlatorTab getAdminToken={getAdminToken} />}
         {page === "users" && (
           <UsersTab
             users={users}
