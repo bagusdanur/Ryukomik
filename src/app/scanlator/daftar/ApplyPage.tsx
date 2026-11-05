@@ -15,8 +15,6 @@ export default function ScanlatorApplyPage() {
   const [teamName, setTeamName] = useState("");
   const [description, setDescription] = useState("");
   const [samples, setSamples] = useState("");
-  const [wa, setWa] = useState("");
-  const [tg, setTg] = useState("");
   const [dc, setDc] = useState("");
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -52,13 +50,13 @@ export default function ScanlatorApplyPage() {
         body: JSON.stringify({
           handle, team_name: teamName, description,
           samples: samples.split("\n").map((s) => s.trim()).filter(Boolean),
-          contact_wa: wa, contact_telegram: tg, contact_discord: dc,
+          contact_discord: dc,
           agree_terms: agree,
         }),
       });
       const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
       if (!res.ok || !json?.success) { setError(json?.error || "Gagal mengajukan."); return; }
-      setHandle(""); setTeamName(""); setDescription(""); setSamples(""); setWa(""); setTg(""); setDc(""); setAgree(false);
+      setHandle(""); setTeamName(""); setDescription(""); setSamples(""); setDc(""); setAgree(false);
       await loadMine();
     } catch { setError("Gagal mengajukan."); }
     finally { setBusy(false); }
@@ -103,13 +101,11 @@ export default function ScanlatorApplyPage() {
                 </Panel>
 
                 <Panel>
-                  <PanelHead title="Kontak admin" desc="Minimal satu. Tidak tampil publik." />
+                  <PanelHead title="Kontak" desc="Discord wajib — admin menghubungi lewat Discord. Tidak tampil publik." />
                   <div className="space-y-3 p-4">
-                    <Field label="WhatsApp"><input value={wa} onChange={(e) => setWa(e.target.value)} inputMode="tel" placeholder="628…" className={inputClass} /></Field>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <Field label="Telegram"><input value={tg} onChange={(e) => setTg(e.target.value)} placeholder="username" className={inputClass} /></Field>
-                      <Field label="Discord"><input value={dc} onChange={(e) => setDc(e.target.value)} placeholder="username" className={inputClass} /></Field>
-                    </div>
+                    <Field label="Username Discord *" hint="tanpa @">
+                      <input value={dc} onChange={(e) => setDc(e.target.value)} required placeholder="username" className={inputClass} />
+                    </Field>
                   </div>
                 </Panel>
 

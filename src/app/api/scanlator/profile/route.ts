@@ -93,6 +93,9 @@ export async function PATCH(request: Request) {
     const wa = phoneOf(body?.contact_wa);
     const telegram = usernameOf(body?.contact_telegram);
     const discord = usernameOf(body?.contact_discord);
+    if (body?.contact_discord !== undefined && !discord) {
+      return NextResponse.json({ error: "Username Discord tidak valid (2–40 karakter, tanpa spasi)." }, { status: 400 });
+    }
 
     await socialQuery(
       `update scanlator_profiles set
@@ -106,9 +109,6 @@ export async function PATCH(request: Request) {
        where user_id = $10`,
       [bio, teamName, dana, trakteer, tako, lain, wa, telegram, discord, userId],
     );
-    if (teamName) {
-      await socialQuery("update social_profiles set username = $1, updated_at = now() where user_id = $2", [teamName, userId]);
-    }
     return NextResponse.json({ success: true });
   } catch (error) {
     const authResponse = authErrorResponse(error);

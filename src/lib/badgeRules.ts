@@ -18,6 +18,7 @@ export type BadgeContext = {
 export type BadgeId =
   | "admin"
   | "staff"
+  | "scanlator"
   | "vip"
   | "marathon"
   | "community"
@@ -37,6 +38,7 @@ export const COMMUNITY_THRESHOLDS = { veteran: 1000, rajin: 300 } as const;
 export const BADGE_RULES: BadgeRule[] = [
   { id: "admin", order: 10, visible: (c) => c.role === "admin" },
   { id: "staff", order: 20, visible: (c) => c.role === "staff" },
+  { id: "scanlator", order: 25, visible: (c) => c.role === "scanlator" },
   { id: "vip", order: 30, visible: (c) => Boolean(c.isPremium) },
   { id: "marathon", order: 35, visible: (c) => Boolean(c.marathon && c.marathon.rank > 0) },
   {

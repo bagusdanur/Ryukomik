@@ -27,7 +27,7 @@ type TabId = "pengajuan" | "karya" | "scanlator" | "moderasi";
 
 const TABS: Array<{ id: TabId; label: string }> = [
   { id: "pengajuan", label: "Pengajuan" },
-  { id: "karya", label: "Karya" },
+  { id: "karya", label: "Project" },
   { id: "scanlator", label: "Scanlator" },
   { id: "moderasi", label: "Moderasi" },
 ];
@@ -115,7 +115,7 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
           <div className="min-w-0">
             <p className="text-[13px] font-bold">Scanlator</p>
             <p className="mt-0.5 text-[11px] text-white/35">
-              {pending.length} pengajuan · {works.length} karya · {active.length} aktif · {suspended.length} suspend
+              {pending.length} pengajuan · {works.length} project · {active.length} aktif · {suspended.length} suspend
             </p>
           </div>
           <button type="button" onClick={() => void load()} aria-label="Muat ulang" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/[.08] text-white/40 transition-colors hover:text-white">
@@ -192,9 +192,9 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
 
       {tab === "karya" && (
         <Panel>
-          <PanelHead title={`Review karya (${works.length})`} desc="ACC = seri & chapter terbit." />
+          <PanelHead title={`Review project (${works.length})`} desc="ACC = project & chapter terbit." />
           {works.length === 0 ? (
-            <p className="px-4 py-10 text-center text-[12px] text-white/30">Tidak ada karya menunggu.</p>
+            <p className="px-4 py-10 text-center text-[12px] text-white/30">Tidak ada project menunggu.</p>
           ) : (
             <ul className="divide-y divide-white/[.05]">
               {works.map((w) => (
@@ -305,13 +305,15 @@ function labelAction(action: string) {
 }
 
 function Contacts({ wa, tg, dc }: { wa: string | null; tg: string | null; dc: string | null }) {
-  if (!wa && !tg && !dc) return <p className="text-[10px] text-amber-300/60">Kontak belum diisi</p>;
-  const chip = "inline-flex min-h-[28px] items-center gap-1 rounded-md bg-white/[.05] px-2 text-[10px] font-semibold text-white/60";
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {wa && <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer noopener" className={chip}><FiMessageCircle size={10} /> WA</a>}
-      {tg && <a href={`https://t.me/${tg}`} target="_blank" rel="noreferrer noopener" className={chip}><FiMessageCircle size={10} /> Telegram</a>}
-      {dc && <a href={`https://discord.com/users/${dc}`} target="_blank" rel="noreferrer noopener" className={chip}><FiMessageCircle size={10} /> Discord</a>}
-    </div>
-  );
+  const chip = "inline-flex min-h-[30px] items-center gap-1 rounded-md bg-[var(--accent)]/15 px-2.5 text-[11px] font-semibold text-[var(--accent-2)]";
+  if (dc) {
+    return (
+      <a href={`https://discord.com/users/${dc}`} target="_blank" rel="noreferrer noopener" className={chip}>
+        <FiMessageCircle size={11} /> Discord · {dc}
+      </a>
+    );
+  }
+  if (tg) return <a href={`https://t.me/${tg}`} target="_blank" rel="noreferrer noopener" className={chip}><FiMessageCircle size={11} /> Telegram · {tg}</a>;
+  if (wa) return <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer noopener" className={chip}><FiMessageCircle size={11} /> WA · {wa}</a>;
+  return <p className="text-[10px] text-amber-300/60">Discord belum diisi</p>;
 }

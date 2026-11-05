@@ -27,7 +27,7 @@ type TabId = "ringkasan" | "upload" | "karya" | "profil";
 const TABS: Array<{ id: TabId; label: string }> = [
   { id: "ringkasan", label: "Ringkasan" },
   { id: "upload", label: "Upload" },
-  { id: "karya", label: "Karya" },
+  { id: "karya", label: "Project" },
   { id: "profil", label: "Profil" },
 ];
 
@@ -47,8 +47,6 @@ export default function ScanlatorStudio() {
   const [trakteer, setTrakteer] = useState("");
   const [tako, setTako] = useState("");
   const [lain, setLain] = useState("");
-  const [cWa, setCWa] = useState("");
-  const [cTg, setCTg] = useState("");
   const [cDc, setCDc] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -92,8 +90,6 @@ export default function ScanlatorStudio() {
           setTrakteer(p.support_trakteer || "");
           setTako(p.support_tako || "");
           setLain(p.support_url_lain || "");
-          setCWa(p.contact_wa || "");
-          setCTg(p.contact_telegram || "");
           setCDc(p.contact_discord || "");
         }
       }
@@ -118,7 +114,7 @@ export default function ScanlatorStudio() {
         body: JSON.stringify({
           team_name: teamName, bio,
           support_dana: dana, support_trakteer: trakteer, support_tako: tako, support_url_lain: lain,
-          contact_wa: cWa, contact_telegram: cTg, contact_discord: cDc,
+          contact_discord: cDc,
         }),
       });
       const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
@@ -279,7 +275,7 @@ export default function ScanlatorStudio() {
         {tab === "ringkasan" && (
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-2">
-              <Stat label="Karya" value={works.length} />
+              <Stat label="Project" value={works.length} />
               <Stat label="Terbit" value={published} tone="ok" />
               <Stat label="Review" value={pendingWorks} tone="warn" />
             </div>
@@ -398,14 +394,14 @@ export default function ScanlatorStudio() {
         {tab === "karya" && (
           <Panel>
             <PanelHead
-              title={`Karya (${works.length})`}
+              title={`Project (${works.length})`}
               desc={pendingWorks > 0 ? `${pendingWorks} menunggu review` : undefined}
               right={works.length > 0 ? <Button variant="ghost" onClick={() => { setTab("upload"); setMode("seri"); }}><FiPlus size={12} /> Seri</Button> : undefined}
             />
             {works.length === 0 ? (
               <div className="px-4 py-10 text-center">
                 <FiBookOpen size={20} className="mx-auto text-white/20" />
-                <p className="mt-2 text-[12px] text-white/35">Belum ada karya.</p>
+                <p className="mt-2 text-[12px] text-white/35">Belum ada project.</p>
                 <Button className="mt-3" onClick={() => { setTab("upload"); setMode("seri"); }}><FiPlus size={12} /> Upload seri</Button>
               </div>
             ) : (
@@ -447,13 +443,11 @@ export default function ScanlatorStudio() {
             </Panel>
 
             <Panel>
-              <PanelHead title="Kontak admin" desc="Tidak tampil publik." />
+              <PanelHead title="Kontak" desc="Discord — dipakai admin untuk menghubungi. Tidak tampil publik." />
               <div className="space-y-3 p-4">
-                <Field label="WhatsApp"><input value={cWa} onChange={(e) => setCWa(e.target.value)} placeholder="628…" inputMode="tel" className={inputClass} /></Field>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <Field label="Telegram"><input value={cTg} onChange={(e) => setCTg(e.target.value)} placeholder="username" className={inputClass} /></Field>
-                  <Field label="Discord"><input value={cDc} onChange={(e) => setCDc(e.target.value)} placeholder="username" className={inputClass} /></Field>
-                </div>
+                <Field label="Username Discord" hint="tanpa @">
+                  <input value={cDc} onChange={(e) => setCDc(e.target.value)} placeholder="username" className={inputClass} />
+                </Field>
               </div>
             </Panel>
 

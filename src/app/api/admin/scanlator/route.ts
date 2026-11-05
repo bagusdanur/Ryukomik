@@ -109,9 +109,8 @@ async function reviewApplication(id: string | undefined, action: "approve" | "re
       [note, adminId, id],
     );
     await client.query(
-      `insert into social_profiles (user_id, username, role) values ($1, $2, 'scanlator')
-       on conflict (user_id) do update set role = 'scanlator', updated_at = now()`,
-      [row.user_id, row.team_name],
+      "update social_profiles set role = 'scanlator', updated_at = now() where user_id = $1",
+      [row.user_id],
     );
     await client.query(
       `insert into scanlator_profiles (user_id, handle, team_name, contact_wa, contact_telegram, contact_discord, status)

@@ -1,6 +1,6 @@
 "use client";
 
-import { FaTools, FaUserShield } from "react-icons/fa";
+import { FaPenNib, FaTools, FaUserShield } from "react-icons/fa";
 import { visibleBadgeIds, type BadgeContext } from "@/lib/badgeRules";
 import VipBadge from "@/components/VipBadge";
 import CommunityBadges from "@/components/CommunityBadges";
@@ -45,6 +45,16 @@ export default function BadgeList({
               >
                 <FaTools size={8} className="shrink-0" />
                 STAFF
+              </span>
+            );
+          case "scanlator":
+            return (
+              <span
+                key={id}
+                className={`inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-2 py-0.5 text-[9px] font-black uppercase leading-none tracking-widest text-white ${className}`}
+              >
+                <FaPenNib size={8} className="shrink-0" />
+                SCANLATOR
               </span>
             );
           case "vip":

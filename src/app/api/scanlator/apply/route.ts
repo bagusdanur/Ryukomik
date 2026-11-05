@@ -68,8 +68,8 @@ export async function POST(request: Request) {
     if (teamName.length < 2) return NextResponse.json({ error: "Nama tim wajib diisi." }, { status: 400 });
     if (samples.length === 0) return NextResponse.json({ error: "Sertakan minimal 1 contoh hasil TL." }, { status: 400 });
     if (!agreeTerms) return NextResponse.json({ error: "Kamu wajib menyetujui Syarat & Ketentuan Scanlator." }, { status: 400 });
-    if (!wa && !telegram && !discord) {
-      return NextResponse.json({ error: "Isi minimal satu kontak: WhatsApp, Telegram, atau Discord." }, { status: 400 });
+    if (!discord) {
+      return NextResponse.json({ error: "Isi username Discord kamu (wajib, untuk dihubungi admin)." }, { status: 400 });
     }
 
     const me = await socialQuery<{ role: string | null }>("select role from social_profiles where user_id = $1", [userId]);
@@ -133,9 +133,9 @@ async function notifyScanlatorApplication(handle: string, teamName: string, wa: 
   const target = process.env.TELEGRAM_PREMIUM_CHAT_ID || "";
   if (!botToken || !target) return;
   const contacts = [
-    wa ? `WA: ${wa}` : "",
-    telegram ? `Telegram: @${telegram}` : "",
     discord ? `Discord: ${discord}` : "",
+    telegram ? `Telegram: @${telegram}` : "",
+    wa ? `WA: ${wa}` : "",
   ].filter(Boolean).join("\n");
   await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: "POST",
