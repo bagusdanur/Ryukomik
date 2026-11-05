@@ -36,8 +36,15 @@ export function initSupabaseUser() {
       if (!initialized) {
         initialized = true;
         supabase.auth.onAuthStateChange((_event, session) => {
-          if (session?.user) emit(session.user);
-          else void getSession().then(({ data: next }) => emit((next?.session?.user as User | undefined) || null));
+          if (session?.user) {
+            emit(session.user);
+            // Login di tengah sesi (modal): tarik + merge riwayat juga di sini,
+            // tidak perlu reload. Guard set mencegah tarik berulang.
+            if (!pulledHistoryFor.has(session.user.id)) {
+              pulledHistoryFor.add(session.user.id);
+              void pullAndMergeHistory();
+            }
+          } else void getSession().then(({ data: next }) => emit((next?.session?.user as User | undefined) || null));
         });
       }
 
