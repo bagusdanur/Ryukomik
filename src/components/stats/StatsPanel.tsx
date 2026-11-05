@@ -4,16 +4,53 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FiAward, FiBookOpen, FiClock, FiBookmark, FiMessageCircle, FiTrendingUp } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
+import HistoryThumb from "@/components/history/HistoryThumb";
 
 type StatsData = {
   profile: { xp: number; level: number; totalReads: number; isPremium: boolean } | null;
   reads: { total: number; today: number; week: number };
   streakDays: number;
   last7Days: Array<{ day: string; count: number }>;
-  recent: Array<{ slug: string; title: string | null; source: string | null; lastChapter: string | null; thumbnail: string | null; readAt: string }>;
+  recent: Array<{ slug: string; title: string | null; source: string | null; lastChapter: string | null; lastChapterSlug: string | null; thumbnail: string | null; readAt: string }>;
   bookmarks: number;
   comments: number;
 };
+
+function formatTitleFromSlug(slug?: string | null) {
+  if (!slug) return "Tanpa judul";
+  return slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function chapterLabel(text?: string | null, slug?: string | null) {
+  let raw = "";
+  if (text) {
+    const m = text.match(/(?:chapter|ch)\s*([\d.]+)/i) || text.match(/([\d.]+)$/);
+    if (m) raw = m[1];
+  }
+  if (!raw && slug) {
+    const m = slug.match(/(?:chapter|ch)[-/]([\d.]+)/i) || slug.match(/(\d+)(?!.*\d)/);
+    if (m) raw = m[1];
+  }
+  if (!raw) return "";
+  const num = parseInt(raw.split(".")[0], 10);
+  return Number.isNaN(num) ? "" : `Ch. ${num}`;
+}
+
+function isSlugLike(title: string | null) {
+  if (!title) return true;
+  if (/^(chapter|ch\.?)\s*[\d.]/i.test(title.trim())) return true;
+  // slug: tidak ada spasi dan mengandung tanda hubung
+  return !title.includes(" ") && title.includes("-");
+}
+
+function timeAgo(iso: string) {
+  const diff = Math.floor((Date.now() - Date.parse(iso)) / 1000);
+  if (!Number.isFinite(diff) || diff < 60) return "baru saja";
+  if (diff < 3600) return `${Math.floor(diff / 60)} menit lalu`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)} hari lalu`;
+  return new Date(iso).toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
+}
 
 function shortDay(day: string) {
   const d = new Date(`${day}T00:00:00`);
@@ -134,45 +171,35 @@ export default function StatsPanel() {
       </div>
 
       {data.recent.length > 0 && (
-        <div className="rk-card-soft overflow-hidden rounded-2xl p-4">
-          <p className="text-[13px] font-bold text-white">Terakhir dibaca</p>
-          <ul className="mt-2 space-y-1">
-            {data.recent.map((item) => (
-              <li key={`${item.source || ""}:${item.slug}`}>
+        <div className="min-w-0">
+          <p className="mb-2 px-1 text-[13px] font-bold text-white">Terakhir dibaca</p>
+          <div className="flex flex-col gap-2">
+            {data.recent.map((item) => {
+              const title = isSlugLike(item.title) ? formatTitleFromSlug(item.slug) : item.title!;
+              const chapter = chapterLabel(item.lastChapter, item.lastChapterSlug || item.slug);
+              const href = item.source && item.lastChapterSlug
+                ? `/chapter/${item.source}/${item.lastChapterSlug}`
+                : item.source
+                  ? `/komik/${item.source}/${item.slug}`
+                  : "/";
+              return (
                 <Link
-                  href={item.source ? `/komik/${item.source}/${item.slug}` : "/"}
-                  className="flex min-w-0 items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-white/[.04]"
+                  key={`${item.source || ""}:${item.slug}`}
+                  href={href}
+                  className="rk-card-soft group flex min-w-0 items-center justify-between rounded-2xl p-3 transition-colors duration-200 hover:border-cyan-200/20"
                 >
-                  {item.thumbnail ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.thumbnail}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      referrerPolicy="no-referrer"
-                      className="h-12 w-9 shrink-0 rounded-md object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-12 w-9 shrink-0 items-center justify-center rounded-md" style={{ background: "var(--surface-3)" }}>
-                      <FiBookOpen size={14} style={{ color: "var(--muted)" }} />
-                    </span>
-                  )}
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-semibold text-white/85" title={item.title || item.slug}>
-                      {item.title || item.slug}
-                    </span>
-                    <span className="block truncate text-[10px] capitalize" style={{ color: "var(--muted)" }}>
-                      {item.source || "—"}
-                    </span>
-                  </span>
-                  {item.lastChapter && (
-                    <span className="rk-chip shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold">{item.lastChapter.replace(/^Chapter\s*/i, "Ch. ")}</span>
-                  )}
+                  <div className="flex min-w-0 items-center gap-3">
+                    <HistoryThumb thumbnail={item.thumbnail || undefined} title={title} className="h-14 w-10 shrink-0" />
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <span className="line-clamp-2 text-sm font-medium text-white/90">{title}</span>
+                      {chapter && <span className="truncate text-xs font-semibold text-cyan-200">{chapter}</span>}
+                    </div>
+                  </div>
+                  <span className="ml-3 shrink-0 whitespace-nowrap text-[11px] text-white/45">{timeAgo(item.readAt)}</span>
                 </Link>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

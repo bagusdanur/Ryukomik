@@ -50,8 +50,8 @@ export async function GET(request: Request) {
          ) s`,
         [userId],
       ),
-      socialQuery<{ comic_slug: string; title: string | null; source: string | null; last_chapter: string | null; thumbnail: string | null; read_at: string }>(
-        `select comic_slug, title, source, last_chapter, thumbnail, read_at
+      socialQuery<{ comic_slug: string; title: string | null; source: string | null; last_chapter: string | null; last_chapter_slug: string | null; thumbnail: string | null; read_at: string }>(
+        `select comic_slug, title, source, last_chapter, last_chapter_slug, thumbnail, read_at
            from history_sync where user_id = $1 order by read_at desc limit 8`,
         [userId],
       ),
@@ -81,6 +81,7 @@ export async function GET(request: Request) {
           title: r.title,
           source: r.source,
           lastChapter: r.last_chapter,
+          lastChapterSlug: r.last_chapter_slug,
           thumbnail: r.thumbnail,
           readAt: r.read_at,
         })),
