@@ -23,6 +23,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { socialFetch } from "@/lib/social/client";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
+import ScanlatorGroupCard from "@/components/social/ScanlatorGroupCard";
 import UserAvatar from "@/components/UserAvatar";
 import { getSession } from "@/lib/auth/getSession";
 
@@ -357,6 +358,8 @@ export default function XPublicProfileHeader({ username, activeTab = "posts", on
           </a>
         </div>
       </div>
+
+      <ScanlatorGroupCard username={profile.username} />
 
       <nav className="grid grid-cols-3 overflow-hidden border-t border-white/[0.08]" aria-label="Navigasi profil">
         {([

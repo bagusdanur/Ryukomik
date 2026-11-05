@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FiArrowUpRight, FiPenTool } from "react-icons/fi";
+import { FiChevronRight, FiPenTool } from "react-icons/fi";
 
 type Group = { handle: string; team_name: string; bio: string | null; status: string };
 
 /**
- * Blok "Grup Scanlator" di profil publik user.
- * Nama grup bisa ditekan → halaman publik grup (/scanlator/<handle>).
- * Tidak render apa pun kalau user bukan Scanlator.
+ * Baris "Grup Scanlator" di profil publik user — tampil DI ATAS tab
+ * Postingan/Koleksi/Aktivitas. Gaya menyatu dengan header profil (tanpa kartu
+ * melayang), memakai token warna global.
  */
 export default function ScanlatorGroupCard({ username }: { username: string }) {
   const [group, setGroup] = useState<Group | null>(null);
@@ -30,17 +30,14 @@ export default function ScanlatorGroupCard({ username }: { username: string }) {
   return (
     <Link
       href={`/scanlator/${group.handle}`}
-      className="mx-4 mb-3 flex items-center gap-3 rounded-lg border border-white/[.07] bg-white/[.02] px-3.5 py-3 transition-colors hover:bg-white/[.04]"
+      className="flex items-center gap-2.5 border-t border-white/[0.08] px-4 py-3 transition-colors hover:bg-white/[0.04]"
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--accent)]/15 text-[var(--accent-2)]">
-        <FiPenTool size={15} />
+      <FiPenTool size={13} className="shrink-0 text-[var(--accent-2)]" />
+      <span className="min-w-0 flex-1 truncate text-[12px] text-white/45">
+        Grup Scanlator <span className="text-white/20">·</span>{" "}
+        <span className="font-bold text-white">{group.team_name}</span>
       </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[10px] font-semibold uppercase tracking-wide text-white/30">Grup Scanlator</span>
-        <span className="mt-0.5 block truncate text-[12px] font-bold text-white">{group.team_name}</span>
-        {group.bio && <span className="mt-0.5 block truncate text-[10px] text-white/35">{group.bio}</span>}
-      </span>
-      <FiArrowUpRight size={14} className="shrink-0 text-white/30" />
+      <FiChevronRight size={14} className="shrink-0 text-white/25" />
     </Link>
   );
 }

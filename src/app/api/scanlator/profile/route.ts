@@ -43,8 +43,12 @@ export async function GET(request: Request) {
   try {
     if (handle) {
       const { rows } = await socialQuery(
-        `select handle, team_name, bio, support_dana, support_trakteer, support_tako, support_url_lain, status, created_at
-           from scanlator_profiles where handle = $1 and status <> 'revoked' limit 1`,
+        `select s.handle, s.team_name, s.bio, s.support_dana, s.support_trakteer, s.support_tako,
+                s.support_url_lain, s.status, s.created_at,
+                p.username as owner_username
+           from scanlator_profiles s
+           left join social_profiles p on p.user_id = s.user_id
+          where s.handle = $1 and s.status <> 'revoked' limit 1`,
         [handle],
       );
       if (!rows[0]) return NextResponse.json({ error: "Profil tidak ditemukan." }, { status: 404 });

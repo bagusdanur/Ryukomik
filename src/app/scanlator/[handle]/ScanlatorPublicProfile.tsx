@@ -6,7 +6,7 @@ import { FiArrowLeft, FiCalendar, FiExternalLink, FiHeart } from "react-icons/fi
 import UserBadges from "@/components/UserBadges";
 
 type Profile = {
-  handle: string; team_name: string; bio: string | null;
+  handle: string; team_name: string; bio: string | null; owner_username?: string | null;
   support_dana: string | null; support_trakteer: string | null; support_tako: string | null; support_url_lain: string | null;
   status: string; created_at: string;
 };
@@ -79,6 +79,17 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
             <UserBadges role="scanlator" />
           </div>
           <p className="mt-0.5 truncate text-[11px] text-white/35">@{profile.handle}</p>
+          {profile.owner_username && (
+            <p className="mt-1 truncate text-[11px] text-white/40">
+              Dikelola oleh{" "}
+              <Link
+                href={`/u/${encodeURIComponent(profile.owner_username)}`}
+                className="font-bold text-[var(--accent-2)] transition-colors hover:underline"
+              >
+                @{profile.owner_username.toLowerCase().replace(/\s+/g, "_")}
+              </Link>
+            </p>
+          )}
           <p className="mt-1 flex items-center gap-1.5 text-[11px] text-white/30">
             <FiCalendar size={11} />
             Bergabung {new Date(profile.created_at).toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
