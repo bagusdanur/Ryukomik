@@ -26,6 +26,7 @@ type ComicDetail = Series & {
   scanlator_team?: string;
   scanlator_donate?: Array<{ label: string; url: string }> | null;
   scanlator_user?: { username: string; user_id: string } | null;
+  scanlator_avatar?: string | null;
   Pengarang?: string;
   Konsep?: string;
   chapters: Chapter[];
@@ -250,37 +251,6 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
                 {statusLabel}
               </span>
             </div>
-            {/* Atribusi: user (profil) + grup (profil grup). Nama yang sama tidak diulang. */}
-            {data.scanlator_handle && (
-              <div className="mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] leading-none">
-                <span className="text-white/30">oleh</span>
-                {data.scanlator_user && (
-                  <Link
-                    href={`/u/${encodeURIComponent(data.scanlator_user.username)}`}
-                    className="font-semibold text-white/80 underline-offset-2 transition-colors hover:text-white hover:underline"
-                  >
-                    {data.scanlator_user.username}
-                  </Link>
-                )}
-                {data.scanlator_team && data.scanlator_team.toLowerCase() !== (data.scanlator_user?.username || "").toLowerCase() && (
-                  <>
-                    <span className="text-white/20">·</span>
-                    <Link
-                      href={`/scanlator/${data.scanlator_handle}`}
-                      className="font-semibold text-[var(--accent-2)] underline-offset-2 transition-colors hover:underline"
-                    >
-                      {data.scanlator_team}
-                    </Link>
-                  </>
-                )}
-                <Link
-                  href={`/scanlator/lapor?slug=${encodeURIComponent(slug)}&handle=${encodeURIComponent(data.scanlator_handle)}`}
-                  className="ml-auto text-[10px] text-white/20 transition-colors hover:text-white/45"
-                >
-                  Laporkan
-                </Link>
-              </div>
-            )}
             {/* TOMBOL SAVED/BOOKMARK */}
             <div className="mt-4">
               <BookmarkButton
@@ -308,21 +278,78 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
             {expand ? "Tutup" : "Lihat selengkapnya"}
           </button>
         )}
-        {/* Blok Dukung kami (Fase C — link donate eksternal Scanlator) */}
-        {data.scanlator_donate && data.scanlator_donate.length > 0 && (
-          <div className="rk-card-soft mt-4 rounded-2xl p-4">
-            <p className="text-sm font-black text-white">Dukung {data.scanlator_team || "tim translate"}!</p>
-            <p className="mt-1 text-xs leading-relaxed text-white/45">Donasi langsung ke akun donate tim ini (keluar dari Ryukomik).</p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {data.scanlator_donate.map((d) => (
-                <a key={d.label} href={d.url} target="_blank" rel="noreferrer noopener" className="rounded-xl bg-white/[.05] px-3 py-2.5 text-center text-xs font-bold text-white/80 transition hover:bg-white/[.09]">
-                  {d.label}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
+
+      {data.scanlator_handle && (
+        <section className="rk-shell px-4 mt-5">
+          <div className="rounded-xl border border-white/[.07] bg-white/[.02]">
+            <div className="flex items-start gap-3 p-3.5">
+              {data.scanlator_avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={data.scanlator_avatar}
+                  alt={data.scanlator_team || "Scanlator"}
+                  loading="lazy"
+                  className="h-11 w-11 shrink-0 rounded-lg border border-white/[.07] object-cover"
+                />
+              ) : (
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/[.07] bg-white/[.04] text-sm font-bold text-white/60">
+                  {(data.scanlator_team || data.scanlator_user?.username || "S").slice(0, 1).toUpperCase()}
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-white/30">Diunggah oleh</p>
+                <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                  {data.scanlator_user && (
+                    <Link
+                      href={`/u/${encodeURIComponent(data.scanlator_user.username)}`}
+                      className="text-[13px] font-bold text-white transition-colors hover:text-[var(--accent-2)]"
+                    >
+                      {data.scanlator_user.username}
+                    </Link>
+                  )}
+                  {data.scanlator_team && (
+                    <>
+                      <span className="text-white/20">·</span>
+                      <Link
+                        href={`/scanlator/${data.scanlator_handle}`}
+                        className="text-[12px] font-semibold text-[var(--accent-2)] transition-colors hover:text-white"
+                      >
+                        {data.scanlator_team}
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </div>
+              <Link
+                href={`/scanlator/lapor?slug=${encodeURIComponent(slug)}&handle=${encodeURIComponent(data.scanlator_handle)}`}
+                className="shrink-0 self-center text-[10px] text-white/20 transition-colors hover:text-white/50"
+              >
+                Laporkan
+              </Link>
+            </div>
+
+            {data.scanlator_donate && data.scanlator_donate.length > 0 && (
+              <div className="border-t border-white/[.06] px-3.5 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-white/30">Dukung tim ini</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {data.scanlator_donate.map((d) => (
+                    <a
+                      key={d.label}
+                      href={d.url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="inline-flex min-h-[30px] items-center rounded-md border border-white/[.08] px-2.5 text-[11px] font-semibold text-white/65 transition-colors hover:bg-white/[.05] hover:text-white"
+                    >
+                      {d.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <div className="rk-shell px-4 mt-4 flex gap-2 flex-wrap">
         {data.genres?.map((g, i) => (

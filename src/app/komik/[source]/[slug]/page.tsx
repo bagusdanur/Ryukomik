@@ -30,6 +30,7 @@ interface ComicDetail extends Series {
   scanlator_team?: string;
   scanlator_donate?: Array<{ label: string; url: string }> | null;
   scanlator_user?: { username: string; user_id: string } | null;
+  scanlator_avatar?: string | null;
   Pengarang?: string;
   Konsep?: string;
   chapters: Chapter[];
@@ -65,14 +66,15 @@ const getDetail = async (source: string, slug: string): Promise<ComicDetail | nu
       const detail = json.data;
       let scanlatorDonate: Array<{ label: string; url: string }> | null = null;
       let scanlatorUser: { username: string; user_id: string } | null = null;
+      let scanlatorAvatar: string | null = null;
       const scanHandle = typeof detail.scanlator_handle === "string" ? detail.scanlator_handle : "";
       if (scanHandle) {
         try {
           const { socialQuery } = await import("@/lib/social/db");
           const { rows } = await socialQuery<{
             support_dana: string | null; support_trakteer: string | null; support_tako: string | null; support_url_lain: string | null;
-            user_id: string;
-          }>("select support_dana, support_trakteer, support_tako, support_url_lain, user_id::text as user_id from scanlator_profiles where handle = $1 limit 1", [scanHandle]);
+            avatar_url: string | null; user_id: string;
+          }>("select support_dana, support_trakteer, support_tako, support_url_lain, avatar_url, user_id::text as user_id from scanlator_profiles where handle = $1 limit 1", [scanHandle]);
           const row = rows[0];
           if (row) {
             scanlatorDonate = [
@@ -89,6 +91,15 @@ const getDetail = async (source: string, slug: string): Promise<ComicDetail | nu
             if (prof.rows[0]?.username) {
               scanlatorUser = { username: prof.rows[0].username, user_id: row.user_id };
             }
+            if (row.avatar_url) {
+              scanlatorAvatar = row.avatar_url;
+            } else {
+              const ownerAvatar = await socialQuery<{ avatar_url: string | null }>(
+                "select avatar_url from social_profiles where user_id = $1 limit 1",
+                [row.user_id],
+              );
+              scanlatorAvatar = ownerAvatar.rows[0]?.avatar_url || null;
+            }
           }
         } catch {
           scanlatorDonate = null;
@@ -99,6 +110,7 @@ const getDetail = async (source: string, slug: string): Promise<ComicDetail | nu
         thumbnail: detail.thumbnail || detail.cover_url,
         scanlator_donate: scanlatorDonate,
         scanlator_user: scanlatorUser,
+        scanlator_avatar: scanlatorAvatar,
         synopsis: detail.synopsis || detail.description,
         chapters: Array.isArray(detail.chapters) ? detail.chapters.map((chapter: Dict) => ({
           ...chapter,
