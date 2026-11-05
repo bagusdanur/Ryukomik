@@ -2,6 +2,8 @@
 
 Tanggal: 2026-11-05
 Status: KONSEP / CONTOH (belum dikerjakan)
+Keputusan monetisasi (2026-11-05): **sistem dulu, monetisasi sementara cukup link donate eksternal**.
+Saldo/tips/revenue-share DICABUT dari MVP dan dipindah ke backlog (Fase Later).
 Nama resmi fitur: **Scanlator** (badge profil: Scanlator, Tim TL adalah sebutan komunitas)
 Referensi konsep: **holodek.run/comic** (HoloToon)
 
@@ -23,7 +25,7 @@ Di Ryukomik, 80% mesinnya sudah ada:
 - Komentar, bookmark, favorit, push chapter
 
 Yang dibangun baru: **lapisan kepemilikan user** (siapa pemilik seri/chapter),
-**antrean review untuk upload user**, **saldo & monetisasi Scanlator**, dan
+**antrean review untuk upload user**, **link donate Scanlator**, dan
 **atribusi di semua tampilan**.
 
 ## 2. Konsep dari HoloToon yang diadopsi (dan yang tidak)
@@ -47,7 +49,7 @@ Tidak diadopsi (dulu):
 | Peran | Cara dapat | Hak |
 |---|---|---|
 | User biasa | default | Baca, bookmark, komentar |
-| **Scanlator** | Apply (form + contoh hasil TL) → admin setujui | Upload seri/chapter (status review), lihat saldo, atur tautan dukungan, lihat statistik karyanya |
+| **Scanlator** | Apply (form + contoh hasil TL) → admin setujui | Upload seri/chapter (status review), atur tautan donate, lihat statistik karyanya |
 | Admin | existing | Review semua upload, edit/hapus paksa, atur flag 18+, ACC pencairan |
 
 Role disimpan di `social_profiles.role = 'scanlator'` (nilai baru, bersama
@@ -85,36 +87,21 @@ Role disimpan di `social_profiles.role = 'scanlator'` (nilai baru, bersama
 - Chapter premium: Scanlator memilih **gratis / lock premium** per chapter
   (pakai `premium_lock_until` yang sudah ada; pola umum: 3 chapter pertama gratis).
 
-## 5. Sistem monetisasi (inti kebingungan — diputuskan bertahap)
+## 5. Sistem monetisasi — diputuskan: link donate dulu
 
-### Tahap 1 — MVP (tanpa uang masuk Scanlator)
-- Scanlator pasang **tautan dukungan eksternal sendiri** (DANA/GOPAY, Trakteer, Tako —
-  pola HoloToon). Uang langsung ke Scanlator, Ryukomik tidak pegang dana.
-- Chapter semua gratis. Tujuan: buktikan ada yang mau upload.
+**Keputusan user (2026-11-05):** bangun sistemnya dulu. Monetisasi sementara
+**hanya tautan donate eksternal per Scanlator** (DANA/GOPAY, Trakteer, Tako —
+pola HoloToon). Uang langsung ke Scanlator, Ryukomik tidak pegang dana,
+tidak ada saldo, tidak ada pencairan, tidak ada ACC pembayaran.
 
-### Tahap 2 — Tips di platform
-- Tombol "Dukung Scanlator" di akhir chapter → user pilih nominal → **saldo Scanlator**
-  bertambah (dicatat di `scanlator_transactions`, tidak bisa diedit).
-- Pembayaran tetap manual: user kirim bukti TF seperti premium sekarang,
-  admin ACC dari dashboard/Telegram.
-- Scanlator ajukan **pencairan** (saldo ≥ Rp 25.000) → admin transfer → tandai lunas.
-- Semua mutasi tercatat (siapa, kapan, nominal, bukti) — audit trail wajib.
+- Tempat tautan: halaman profil Scanlator + blok "Dukung kami!" di halaman detail seri.
+- Field di `scanlator_profiles`: `support_dana`, `support_trakteer`, `support_tako`, `support_url_lain`.
+- Validasi format URL saat disimpan (hanya https, host yang dikenal/terdaftar).
 
-### Tahap 3 — Revenue share premium
-- Chapter premium Scanlator terjual lewat sistem premium yang ada →
-  **70% Scanlator / 30% Ryukomik** masuk saldo Scanlator otomatis saat ACC premium.
-- Laporan per seri di dashboard Scanlator: views, unlock, estimasi saldo.
-
-### Yang TIDAK dipakai
-- Iklan per-halaman (Quick Ads belum per-halaman).
-- Upload berbayar (membunuh semangat kontribusi).
-- Koin multi-mata uang (satu saldo Rupiah cukup).
-
-### Angka awal yang disarankan
-- Saldo minimum pencairan: **Rp 25.000**
-- Share: **70/30** (Scanlator/Ryukomik)
-- Kuota storage awal: **2 GB / Scanlator**, maks **30 MB / chapter**, maks **200 halaman / chapter**
-- Watermark: nama Scanlator, halaman terakhir saja (ringan, tidak merusak baca)
+**BACKLOG (nanti, SETELAH sistem jalan & ada yang upload):**
+saldo Scanlator, tombol tips di platform, revenue share premium 70/30,
+pencairan manual, laporan per seri. Jangan dibangun di MVP — setiap itu
+menambah kewajiban operasional (audit, pencairan, sengketa).
 
 ## 6. Keamanan & penyalahgunaan (prioritas)
 
@@ -126,8 +113,8 @@ Role disimpan di `social_profiles.role = 'scanlator'` (nilai baru, bersama
   scan ukuran sebelum masuk R2, simpan di prefix `scanlator/<user_id>/`.
 - **Token upload**: presigned URL berumur 15 menit via route admin yang sudah ada,
   diperluas untuk role scanlator dengan hak hanya ke prefix miliknya.
-- **Saldo**: tidak ada endpoint yang boleh mengubah saldo selain transaksi tercatat;
-  pencairan wajib ACC admin (webhook Telegram bisa dipakai ulang).
+- **Uang tidak lewat platform** di MVP: tidak ada saldo/tips/pencairan sama sekali,
+  jadi tidak ada permukaan penyalahgunaan dana. (Backlog Fase Later wajib audit penuh.)
 
 ## 7. Data (tabel baru, Postgres sosial yang sama)
 
@@ -135,37 +122,37 @@ Role disimpan di `social_profiles.role = 'scanlator'` (nilai baru, bersama
 |---|---|
 | `scanlator_applications` | Pengajuan jadi Scanlator: user_id, handle, deskripsi, contoh, status, catatan admin |
 | `scanlator_profiles` | Profil publik Scanlator: bio, tautan dukungan (dana/trakteer/tako), total views |
-| `scanlator_balance` | Saldo per Scanlator (satu baris per user) |
-| `scanlator_transactions` | Semua mutasi: tips, share premium, pencairan, penyesuaian admin |
+| `scanlator_balance` | BACKLOG (Fase Later) — jangan buat di MVP |
+| `scanlator_transactions` | BACKLOG (Fase Later) — jangan buat di MVP |
 | Kolom baru di project | `owner_user_id` (pemilik seri), `review_status` (pending/approved/rejected), `review_note` |
 
 Project milik admin lama: `owner_user_id = null` (dianggap milik platform).
 
-## 8. Fase pengerjaan yang diusulkan
+## 8. Fase pengerjaan (direvisi 2026-11-05 — sistem dulu, donate saja)
 
 - **Fase A — Identitas & apply**: role `scanlator`, halaman apply, antrean ACC di dashboard, badge profil.
 - **Fase B — Upload + review**: form seri/chapter untuk Scanlator, status review, atribusi "Diunggah oleh" di kartu/detail/chapter, halaman profil Scanlator, watermark + kompresi.
-- **Fase C — Dukungan eksternal**: tautan DANA/Trakteer/Tako di profil & halaman detail (pola HoloToon). Ini titik "monetisasi pertama" tanpa pegang uang.
-- **Fase D — Tips + saldo**: tabel saldo/transaksi, tombol tips, ACC bukti TF (pakai ulang alur premium + Telegram), pengajuan pencairan.
-- **Fase E — Revenue share premium**: share otomatis 70/30 saat ACC premium, laporan per seri.
+- **Fase C — Link donate**: tautan DANA/Trakteer/Tako di profil Scanlator + blok "Dukung kami!" di detail seri. **Ini satu-satunya monetisasi di MVP.**
+- **Fase Later (backlog, jangan dibangun sekarang)**: tips di platform, saldo + pencairan, revenue share premium 70/30, laporan per seri.
 - **Fase F — Pengerasan**: kuota & rate-limit, anti-duplikat, jalur takedown/DMCA, audit log.
 
-Setiap fase: staging build + deploy terpisah, commit + push (aturan tetap), uji end-to-end (apply → upload → review → terbit → tips → cair).
+Setiap fase: staging build + deploy terpisah, commit + push (aturan tetap), uji end-to-end (apply → upload → review → terbit → klik donate).
 
 ## 9. Risiko & keputusan terbuka
 
 1. **Hak cipta adalah risiko terbesar** — putuskan dulu: platform terbuka penuh (risiko
    DMCA) atau kurasi ketat (hanya seri yang dinyatakan orisinal/remake)? Rekomendasi: kurasi ketat di awal.
 2. **Siapa yang pegang uang** — Tahap 1 sengaja tidak pegang uang sama sekali (eksternal),
-   supaya legal & operasionalnya ringan. Saldo platform baru di Fase D.
+   supaya legal & operasionalnya ringan. Saldo platform baru di Fase Later (backlog).
 3. **Biaya storage** — estimasi kasar: 100 chapter × 15 MB = 1,5 GB; awasi kuota, jangan biarkan tanpa batas.
 4. **Komunitas** (thread, voting karakter ala HoloToon) — sengaja di luar plan ini; bisa jadi Fase G kalau Scanlator sudah jalan.
 
-## 10. Definisi selesai (MVP = Fase A–C)
+## 10. Definisi selesai (MVP = Fase A–C, sistem + donate saja)
 
 - User bisa apply → admin ACC → upload seri + chapter → review → terbit.
 - Publik melihat atribusi Scanlator di kartu, detail, dan tiap chapter.
-- Scanlator punya halaman profil dengan tautan dukungan eksternal.
+- Scanlator punya halaman profil dengan tautan donate eksternal yang bisa diklik.
+- Tidak ada sistem saldo/tips/share di MVP — itu backlog Fase Later.
 - Tidak ada regresi: source lain, premium, dan filter 18+ tetap jalan seperti sekarang.
 
 ## Catatan keputusan (2026-11-05, dari user)
