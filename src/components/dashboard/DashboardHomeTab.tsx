@@ -195,7 +195,7 @@ export default function DashboardHomeTab({
             </span>
           }
           value={stats.totalUsers.toLocaleString("id-ID")}
-          label="Total User"
+          label="Total User (profil)"
         />
 
         <StatCard

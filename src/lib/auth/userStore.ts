@@ -108,9 +108,17 @@ export async function upsertAuthUserFromGoogle(profile: GoogleProfile): Promise<
   if (!row) {
     const legacyId = await linkIdFromSupabaseByEmail(profile.email);
     if (legacyId) {
+      // UUID lama ketemu tapi belum ada di auth_users (mis. profil dibuat
+      // setelah backfill): daftarkan dengan id yang sama, jangan bikin user baru.
       const { rows } = await socialQuery<AuthUserRow>(
-        "select id, email, full_name, avatar_url, banned_until from auth_users where id = $1 limit 1",
-        [legacyId],
+        `insert into auth_users (id, email, google_sub, full_name, avatar_url, last_login_at)
+         values ($1, $2, $3, $4, $5, now())
+         on conflict (id) do update
+           set email = coalesce(auth_users.email, excluded.email),
+               google_sub = coalesce(auth_users.google_sub, excluded.google_sub),
+               updated_at = now()
+         returning id, email, full_name, avatar_url, banned_until`,
+        [legacyId, profile.email, profile.sub, profile.name, profile.picture],
       );
       row = rows[0] ?? null;
     }

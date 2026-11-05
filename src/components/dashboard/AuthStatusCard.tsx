@@ -86,7 +86,7 @@ export default function AuthStatusCard({ getAdminToken }: { getAdminToken: () =>
 
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div className="rounded-xl border border-white/[.06] bg-white/[.02] px-3 py-2">
-          <p className="text-[10px] uppercase tracking-wider text-white/30">Akun</p>
+          <p className="text-[10px] uppercase tracking-wider text-white/30" title="Jumlah akun yang punya identitas login (auth_users)">Akun Login</p>
           <p className="mt-0.5 text-sm font-bold text-white">{(counts?.users ?? 0).toLocaleString("id-ID")}</p>
         </div>
         <div className="rounded-xl border border-white/[.06] bg-white/[.02] px-3 py-2">
