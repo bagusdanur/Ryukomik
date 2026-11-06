@@ -13,6 +13,7 @@ import TitleRushNotice from "@/components/TitleRushNotice";
 import LoginNotice from "@/components/LoginNotice";
 import { getTitleRushEventStatus } from "@/lib/titleRushEvent";
 import ProjectUpdateList from "@/components/ProjectUpdateList";
+import ScanlatorHomeSection from "@/components/scanlator/ScanlatorHomeSection";
 import { getProjectUpdates } from "@/lib/projectUpdates";
 
 // Update Komiku harus tetap segar; backend memakai stale-while-refresh agar
@@ -43,6 +44,7 @@ export default async function Home() {
         {titleRushStatus.enabled && <TitleRushNotice className="pb-3" />}
         <UpdateList list={list} source="kiryuu" />
         <ProjectUpdateList list={projectUpdates} />
+        <ScanlatorHomeSection />
         <PopularSection data={popular} />
         <LatestComments />
       </div>
