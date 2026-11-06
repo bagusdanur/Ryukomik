@@ -91,6 +91,7 @@ export default function ScanlatorStudio() {
   const [chapters, setChapters] = useState<Array<{ id: string; chapter_number: number; title: string | null; is_published: boolean; pages: number }>>([]);
   const [chapterViews, setChapterViews] = useState<Record<number, number>>({});
   const [cleaning, setCleaning] = useState(false);
+  const [chapterBytes, setChapterBytes] = useState(0);
   const [topChapter, setTopChapter] = useState<{ chapter_number: number; views: number } | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
@@ -309,6 +310,8 @@ export default function ScanlatorStudio() {
     finally { setUploadingCover(false); }
   };
 
+  const formatSize = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+
   const onChapterFiles = (files: FileList | null) => {
     if (!files?.length) return;
     void uploadBatch(Array.from(files));
@@ -334,6 +337,7 @@ export default function ScanlatorStudio() {
           (saved) => setProgress((p) => (p ? { ...p, savedBytes: p.savedBytes + saved } : p)),
         );
         setChapterImages((prev) => [...prev, url]);
+        setChapterBytes((n) => n + original.size);
         setProgress((p) => (p ? { ...p, done: p.done + 1 } : p));
       } catch (err) {
         const reason = err instanceof Error ? err.message : "Gagal upload";
@@ -364,7 +368,7 @@ export default function ScanlatorStudio() {
       const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
       if (!res.ok || !json?.success) { setError(json?.error || "Gagal mengunggah chapter."); return; }
       setNotice(`Chapter ${chapterNumber} terkirim.`);
-      setChapterNumber(""); setChapterTitle(""); setChapterImages([]);
+      setChapterNumber(""); setChapterTitle(""); setChapterImages([]); setChapterBytes(0);
     } finally { setBusyChapter(false); }
   };
 
@@ -797,14 +801,36 @@ export default function ScanlatorStudio() {
             {mode === "seri" ? (
               <form onSubmit={createSeries} className="space-y-3">
                 <Panel>
-                  <PanelHead title="Data seri" />
-                  <div className="space-y-3 p-4">
+                  <PanelHead title="Upload seri" desc="Isi data, unggah cover, lalu kirim untuk review." />
+                  <div className="space-y-4 p-4">
                     <Field label="Judul seri" htmlFor="s-title">
                       <input id="s-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} required placeholder="Judul seri" className={inputClass} />
                     </Field>
-                    <Field label="Cover" hint={uploadingCover ? "mengunggah…" : coverUrl ? "terunggah" : "wajib"}>
-                      <input type="file" accept="image/*" onChange={(e) => void onCoverFile(e.target.files)} className="w-full text-[11px] text-white/45 file:mr-3 file:rounded-md file:border-0 file:bg-white/[.08] file:px-3 file:py-2 file:text-[11px] file:font-bold file:text-white/80" />
-                    </Field>
+
+                    <div>
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <p className="text-[11px] font-semibold text-white/55">Cover</p>
+                        <span className={`text-[10px] ${coverUrl ? "text-emerald-300/80" : "text-white/30"}`}>
+                          {uploadingCover ? "mengunggah…" : coverUrl ? "siap" : "wajib"}
+                        </span>
+                      </div>
+                      <label className="flex items-center gap-3 rounded-lg border border-dashed border-white/[.14] bg-white/[.02] p-3 transition-colors hover:border-[var(--accent)]/50 hover:bg-white/[.04]">
+                        {coverUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={coverUrl} alt="Cover" className="h-16 w-12 shrink-0 rounded border border-white/[.08] object-cover" />
+                        ) : (
+                          <span className="flex h-16 w-12 shrink-0 items-center justify-center rounded border border-white/[.08] bg-white/[.04] text-white/25">
+                            <FiImage size={16} />
+                          </span>
+                        )}
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[11.5px] font-semibold text-white/75">{coverUrl ? "Ganti cover" : "Pilih cover"}</span>
+                          <span className="mt-0.5 block text-[10px] leading-snug text-white/35">JPG/PNG/WebP · otomatis jadi WebP 95</span>
+                        </span>
+                        <input type="file" accept="image/*" onChange={(e) => void onCoverFile(e.target.files)} className="hidden" />
+                        <span className="shrink-0 rounded-md border border-white/[.12] px-2.5 py-1.5 text-[10.5px] font-bold text-white/70">Pilih</span>
+                      </label>
+                    </div>
                     <Field label="Deskripsi">
                       <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={3000} placeholder="Ringkasan cerita…" className={inputClass} />
                     </Field>
@@ -835,8 +861,8 @@ export default function ScanlatorStudio() {
             ) : (
               <form onSubmit={createChapter} className="space-y-3">
                 <Panel>
-                  <PanelHead title="Data chapter" />
-                  <div className="space-y-3 p-4">
+                  <PanelHead title="Upload chapter" desc="Pilih seri, isi nomor, lalu unggah gambarnya." />
+                  <div className="space-y-4 p-4">
                     <Field label="Seri">
                       <select value={chapterSlug} onChange={(e) => setChapterSlug(e.target.value)} required className={inputClass}>
                         <option value="" className="bg-[#14121c]">Pilih seri…</option>
@@ -851,9 +877,48 @@ export default function ScanlatorStudio() {
                         <input value={chapterTitle} onChange={(e) => setChapterTitle(e.target.value)} placeholder="Opsional" className={inputClass} />
                       </Field>
                     </div>
-                    <Field label="Gambar" hint={`${chapterImages.length} siap · maks 60`}>
-                      <input type="file" accept="image/*" multiple onChange={(e) => void onChapterFiles(e.target.files)} className="w-full text-[11px] text-white/45 file:mr-3 file:rounded-md file:border-0 file:bg-white/[.08] file:px-3 file:py-2 file:text-[11px] file:font-bold file:text-white/80" />
-                    </Field>
+                    <div>
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <p className="text-[11px] font-semibold text-white/55">Gambar chapter</p>
+                        <span className="text-[10px] text-white/30">{chapterImages.length}/60</span>
+                      </div>
+                      <label
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (e.dataTransfer.files?.length) void uploadBatch(Array.from(e.dataTransfer.files));
+                        }}
+                        className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed border-white/[.14] bg-white/[.02] px-4 py-6 text-center transition-colors hover:border-[var(--accent)]/50 hover:bg-white/[.04]"
+                      >
+                        <FiImage size={20} className="text-white/30" />
+                        <span className="text-[12px] font-semibold text-white/75">
+                          {uploadingChapter ? "Mengunggah gambar…" : "Tarik gambar ke sini, atau ketuk untuk pilih"}
+                        </span>
+                        <span className="text-[10px] leading-snug text-white/35">
+                          Bisa banyak file sekaligus · diurutkan otomatis (p1, p2, p10) · maks 30 MB/gambar
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          disabled={uploadingChapter}
+                          onChange={(e) => { void onChapterFiles(e.target.files); e.currentTarget.value = ""; }}
+                          className="hidden"
+                        />
+                      </label>
+                      {chapterImages.length > 0 && (
+                        <div className="mt-1.5 flex items-center justify-between text-[10px] text-white/35">
+                          <span>{chapterImages.length} gambar · {formatSize(chapterBytes)}</span>
+                          <button
+                            type="button"
+                            onClick={() => { setChapterImages([]); setChapterBytes(0); setProgress(null); }}
+                            className="font-semibold text-white/45 transition-colors hover:text-rose-300"
+                          >
+                            Kosongkan
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
                     {progress && (
                       <div className="rounded-lg border border-white/[.07] bg-white/[.02] p-3">
@@ -953,8 +1018,16 @@ export default function ScanlatorStudio() {
                     )}
                   </div>
                 </Panel>
+                <div className="flex items-center justify-between rounded-lg border border-white/[.07] bg-white/[.02] px-3 py-2 text-[10.5px]">
+                  <span className={chapterImages.length ? "text-white/60" : "text-white/30"}>
+                    {chapterImages.length ? `${chapterImages.length} gambar · ${formatSize(chapterBytes)}` : "Belum ada gambar"}
+                  </span>
+                  <span className={chapterSlug ? "text-emerald-300/80" : "text-amber-300/70"}>
+                    {chapterSlug ? "seri dipilih" : "pilih seri dulu"}
+                  </span>
+                </div>
                 <Button type="submit" disabled={busyChapter || !chapterSlug || chapterImages.length === 0 || blocked} className="w-full">
-                  <FiSend size={13} /> {busyChapter ? "Mengirim…" : "Kirim chapter"}
+                  <FiSend size={13} /> {busyChapter ? "Mengirim…" : `Kirim chapter${chapterImages.length ? ` (${chapterImages.length} gambar)` : ""}`}
                 </Button>
               </form>
             )}

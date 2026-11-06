@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isPushSupported, subscribePush, getExistingSubscription } from "@/utils/pushSubscription";
 import { IoMdNotifications, IoMdClose } from "react-icons/io";
 import Button from "@/components/Button";
 
 export default function NotificationPrompt() {
+  const pathname = usePathname();
   const { user } = useSupabaseUser();
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -14,6 +16,8 @@ export default function NotificationPrompt() {
 
   useEffect(() => {
     if (done) return;
+    // Jangan ganggu alur upload di studio Scanlator.
+    if (pathname?.startsWith("/scanlator")) return;
     if (!user) return;
     if (!isPushSupported()) return;
     if (Notification.permission === "denied") return;
@@ -55,7 +59,7 @@ export default function NotificationPrompt() {
     setDone(true);
   };
 
-  if (!show) return null;
+  if (!show || pathname?.startsWith("/scanlator")) return null;
 
   return (
     <div className="fixed inset-x-4 bottom-24 z-50 mx-auto max-w-sm transition-all duration-300 sm:bottom-6">
