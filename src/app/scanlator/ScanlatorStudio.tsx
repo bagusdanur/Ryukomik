@@ -494,10 +494,15 @@ export default function ScanlatorStudio() {
         headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
         body: JSON.stringify({ image_urls: editChapter.images }),
       });
-      const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
+      const json = (await res.json().catch(() => null)) as { success?: boolean; reviewRequired?: boolean; error?: string } | null;
       if (!res.ok || !json?.success) { setError(json?.error || "Gagal menyimpan halaman."); return; }
-      setChapters((prev) => prev.map((c) => (c.id === editChapter.id ? { ...c, pages: editChapter.images.length } : c)));
-      setNotice(`Halaman chapter ${editChapter.number} disimpan (${editChapter.images.length} gambar).`);
+
+      if (json.reviewRequired) {
+        setNotice(`Revisi chapter ${editChapter.number} dikirim — menunggu ACC admin. Pembaca masih melihat versi lama.`);
+      } else {
+        setChapters((prev) => prev.map((c) => (c.id === editChapter.id ? { ...c, pages: editChapter.images.length } : c)));
+        setNotice(`Halaman chapter ${editChapter.number} disimpan (${editChapter.images.length} gambar).`);
+      }
       setEditChapter(null);
     } catch {
       setError("Gagal menyimpan halaman.");

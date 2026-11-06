@@ -15,6 +15,8 @@ type PendingChapter = {
   title: string | null;
   pages: number;
   is_published: boolean;
+  review_status: string;
+  pending_pages: number;
 };
 
 /**
@@ -47,6 +49,10 @@ export async function GET(request: Request) {
             title: ((c as { title?: string | null }).title ?? null) as string | null,
             pages: Array.isArray((c as { image_urls?: unknown[] }).image_urls) ? ((c as { image_urls: unknown[] }).image_urls.length) : 0,
             is_published: Boolean((c as { is_published?: boolean }).is_published),
+            review_status: String((c as { review_status?: string }).review_status || "approved"),
+            pending_pages: Array.isArray((c as { pending_image_urls?: unknown[] }).pending_image_urls)
+              ? ((c as { pending_image_urls: unknown[] }).pending_image_urls.length)
+              : 0,
           }))
           .sort((a, b) => a.chapter_number - b.chapter_number);
 
@@ -63,12 +69,18 @@ export async function GET(request: Request) {
           scanlator_team: (m.scanlator_team as string | null) || null,
           chapters,
           pendingChapters,
+          revisions: chapters.filter((c) => c.is_published && c.review_status === "pending"),
           review_status: (m.review_status as string | null) || null,
         };
       }),
     );
 
-    const filtered = works.filter((w) => w.review_status === "pending" || (w.pendingChapters?.length ?? 0) > 0);
+    const filtered = works.filter(
+      (w) =>
+        w.review_status === "pending" ||
+        (w.pendingChapters?.length ?? 0) > 0 ||
+        (w.revisions?.length ?? 0) > 0,
+    );
 
     return NextResponse.json({ success: true, works: filtered }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
@@ -152,6 +164,71 @@ export async function POST(request: Request) {
           });
         }
       }
+      return NextResponse.json({ success: true, status: action });
+    }
+
+    // ── REVISI CHAPTER YANG SUDAH TERBIT ─────────────────────────────────
+    if (action === "approve_revision" || action === "reject_revision") {
+      if (!body?.chapter_id || !body?.id) {
+        return NextResponse.json({ error: "Chapter tidak valid." }, { status: 400 });
+      }
+      if (action === "reject_revision" && !note) {
+        return NextResponse.json({ error: "Alasan penolakan revisi wajib diisi." }, { status: 400 });
+      }
+
+      const manga = await projectApiFetch<{ data?: Record<string, unknown> }>(`/admin/projects/${body.id}`).catch(() => null);
+      const slug = String(manga?.data?.slug || "");
+      if (!slug) return NextResponse.json({ error: "Project tidak ditemukan." }, { status: 404 });
+
+      const list = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
+        `/admin/chapters?manga_slug=${encodeURIComponent(slug)}&limit=200&page=1`,
+      ).catch(() => ({ data: [] }));
+      const chapter = (list.data || []).find((c) => (c as { id?: string }).id === body.chapter_id) as
+        | { id?: string; pending_image_urls?: string[] | null; image_urls?: string[] | null }
+        | undefined;
+      if (!chapter) return NextResponse.json({ error: "Chapter tidak ditemukan." }, { status: 404 });
+
+      if (action === "approve_revision") {
+        const pending = Array.isArray(chapter.pending_image_urls) ? chapter.pending_image_urls : [];
+        if (!pending.length) return NextResponse.json({ error: "Tidak ada gambar revisi untuk disetujui." }, { status: 400 });
+        await projectApiFetch(`/admin/chapters/${body.chapter_id}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            image_urls: pending,
+            pending_image_urls: null,
+            review_status: "approved",
+            review_note: null,
+          }),
+        });
+      } else {
+        await projectApiFetch(`/admin/chapters/${body.chapter_id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ pending_image_urls: null, review_status: "approved", review_note: note }),
+        });
+      }
+
+      await logChapterRevision({
+        chapterId: body.chapter_id,
+        mangaSlug: slug,
+        actorId: admin.userId,
+        action: action === "approve_revision" ? "approve" : "reject",
+        before: { pages: (chapter.image_urls || []).length, pending: (chapter.pending_image_urls || []).length },
+        after: action === "approve_revision" ? { pages: (chapter.pending_image_urls || []).length } : { note },
+      });
+
+      const owner = manga?.data?.owner_user_id as string | undefined;
+      if (owner) {
+        await notifyScanlator(owner, {
+          type: action === "approve_revision" ? "project_approved" : "project_rejected",
+          title:
+            action === "approve_revision"
+              ? `Revisi chapter disetujui — ${String(manga?.data?.title || "")}`
+              : `Revisi chapter ditolak — ${String(manga?.data?.title || "")}`,
+          body: action === "approve_revision" ? "Versi baru sudah tayang menggantikan versi lama." : note,
+          link: "/scanlator",
+        });
+      }
+
       return NextResponse.json({ success: true, status: action });
     }
 

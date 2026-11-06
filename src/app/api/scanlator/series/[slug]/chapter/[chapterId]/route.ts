@@ -80,11 +80,25 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
       patch.title = title;
     }
 
+    const before = owned.chapter as Record<string, unknown>;
+    const published = Boolean(before.is_published);
+    let reviewRequired = false;
+
     if (Array.isArray(body?.image_urls)) {
       const urls = body.image_urls.filter((u): u is string => typeof u === "string" && /^https?:\/\//i.test(u));
       if (urls.length === 0) return NextResponse.json({ error: "Chapter minimal punya 1 gambar." }, { status: 400 });
       if (urls.length > 60) return NextResponse.json({ error: "Maksimal 60 gambar per chapter." }, { status: 400 });
-      patch.image_urls = urls;
+
+      if (published) {
+        // Chapter sudah tayang: simpan sebagai revisi, pembaca tetap lihat versi lama.
+        patch.pending_image_urls = urls;
+        patch.review_status = "pending";
+        patch.review_requested_at = new Date().toISOString();
+        reviewRequired = true;
+      } else {
+        patch.image_urls = urls;
+        patch.review_status = "approved";
+      }
     }
 
     if (Object.keys(patch).length === 0) return NextResponse.json({ error: "Tidak ada perubahan." }, { status: 400 });
@@ -95,16 +109,21 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
       chapterId,
       mangaSlug: slug,
       actorId: userId,
-      action: Array.isArray(patch.image_urls) ? "edit_pages" : "edit_title",
-      before: revisionSnapshot(owned.chapter as Record<string, unknown>),
+      action: patch.pending_image_urls ? "edit_pages" : Array.isArray(patch.image_urls) ? "edit_pages" : "edit_title",
+      before: revisionSnapshot(before),
       after: {
-        ...revisionSnapshot(owned.chapter as Record<string, unknown>),
+        ...revisionSnapshot(before),
         ...(Array.isArray(patch.image_urls) ? { pages: (patch.image_urls as string[]).length } : {}),
+        ...(Array.isArray(patch.pending_image_urls) ? { pages: (patch.pending_image_urls as string[]).length, pending: true } : {}),
         ...(typeof patch.title === "string" ? { title: patch.title } : {}),
       },
     });
 
-    return NextResponse.json({ success: true, pages: Array.isArray(patch.image_urls) ? (patch.image_urls as string[]).length : undefined });
+    return NextResponse.json({
+      success: true,
+      reviewRequired,
+      pages: Array.isArray(patch.image_urls) ? (patch.image_urls as string[]).length : undefined,
+    });
   } catch (error) {
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;

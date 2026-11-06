@@ -26,13 +26,14 @@ type ReportRow = {
   reason: string; detail: string | null; status: string; admin_note: string | null;
   created_at: string; reporter: string | null;
 };
-type PendingChapter = { id: string; chapter_number: number; title: string | null; pages: number; is_published: boolean };
+type PendingChapter = { id: string; chapter_number: number; title: string | null; pages: number; is_published: boolean; review_status?: string; pending_pages?: number };
 
 type WorkReview = {
   id: string; slug: string; title: string; cover_url: string | null; type: string | null;
   is_adult: boolean; scanlator_handle: string | null; scanlator_team: string | null;
   chapters?: PendingChapter[];
   pendingChapters?: PendingChapter[];
+  revisions?: PendingChapter[];
   review_status?: string | null;
 };
 
@@ -113,7 +114,7 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
 
   const reviewWork = async (
     work: WorkReview,
-    action: "approve_series" | "reject_series" | "approve_chapter" | "reject_chapter",
+    action: "approve_series" | "reject_series" | "approve_chapter" | "reject_chapter" | "approve_revision" | "reject_revision",
     chapterId?: string,
   ) => {
     const noteKey = chapterId || work.id;
@@ -139,7 +140,11 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
             ? `Seri “${work.title}” ditolak.`
             : action === "approve_chapter"
               ? "Chapter diterbitkan."
-              : "Chapter ditolak.",
+              : action === "approve_revision"
+                ? "Revisi disetujui — versi baru tayang."
+                : action === "reject_revision"
+                  ? "Revisi ditolak, versi lama tetap tayang."
+                  : "Chapter ditolak.",
       );
       await load();
     } finally { setBusy(null); }
@@ -302,6 +307,31 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
                     <p className="mt-2 rounded-md border border-emerald-400/20 bg-emerald-400/[.06] px-2.5 py-1.5 text-[10px] font-semibold text-emerald-300/85">
                       Seri sudah terbit — tinggal ACC chapter baru di bawah.
                     </p>
+                  )}
+
+                  {(w.revisions?.length ?? 0) > 0 && (
+                    <div className="mt-3 rounded-md border border-amber-300/25 bg-amber-300/[.05]">
+                      <p className="border-b border-amber-300/15 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-amber-200/80">
+                        Revisi menunggu ({w.revisions?.length})
+                      </p>
+                      <ul className="divide-y divide-amber-300/10">
+                        {(w.revisions || []).map((c) => (
+                          <li key={`rev-${c.id}`} className="px-2.5 py-2">
+                            <p className="text-[11px] text-white/75">
+                              Ch. {c.chapter_number} · {c.pages} gambar lama → <strong className="font-bold text-amber-200">{c.pending_pages} gambar baru</strong>
+                            </p>
+                            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                              <Button onClick={() => void reviewWork(w, "approve_revision", c.id)} disabled={busy === c.id}>
+                                <FiCheck size={11} /> Setujui
+                              </Button>
+                              <Button variant="danger" onClick={() => void reviewWork(w, "reject_revision", c.id)} disabled={busy === c.id}>
+                                <FiX size={11} /> Tolak
+                              </Button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
 
                   {(w.chapters?.length ?? 0) > 0 && (
