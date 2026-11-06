@@ -56,7 +56,9 @@ export function isAdminAllowed(
   userId: string,
   allowlist: Set<string> | null,
 ): boolean {
+  // Allowlist = admin, apa pun role-nya. Ini membuat akun yang juga punya
+  // badge Scanlator tetap bisa membuka dashboard admin.
+  if (allowlist && allowlist.has(userId)) return true;
   if (role !== "admin") return false;
-  if (!allowlist) return true;
-  return allowlist.has(userId);
+  return !allowlist || allowlist.has(userId);
 }

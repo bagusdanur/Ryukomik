@@ -8,7 +8,7 @@ import { projectApiFetch } from "@/lib/projectApiServer";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Action = "approve" | "reject" | "warn" | "suspend" | "revoke" | "restore" | "delete";
+type Action = "approve" | "reject" | "warn" | "suspend" | "revoke" | "restore" | "delete" | "verify" | "unverify";
 
 /**
  * Manajemen Scanlator di dashboard admin:
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
       ),
       socialQuery(
         `select s.user_id::text as user_id, s.handle, s.team_name, s.bio,
-                s.status, s.warnings, s.suspended_until, s.moderation_note,
+                s.status, s.verified, s.warnings, s.suspended_until, s.moderation_note,
                 s.contact_wa, s.contact_telegram, s.contact_discord, s.created_at,
                 p.username
            from scanlator_profiles s
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       | { id?: string; user_id?: string; action?: Action; note?: string; reason?: string; days?: number }
       | null;
     const action = body?.action;
-    if (!action || !["approve", "reject", "warn", "suspend", "revoke", "restore", "delete"].includes(action)) {
+    if (!action || !["approve", "reject", "warn", "suspend", "revoke", "restore", "delete", "verify", "unverify"].includes(action)) {
       return NextResponse.json({ error: "Aksi tidak valid." }, { status: 400 });
     }
     const note = typeof body?.note === "string" ? body.note.trim().slice(0, 500) || null : null;
@@ -114,6 +114,17 @@ async function reviewApplication(id: string | undefined, action: "approve" | "re
     await client.query(
       `update social_profiles
           set role = case when role in ('admin','staff') then role else 'scanlator' end,
+              premium_until = case when premium_until is not null and premium_until > now() then premium_until else now() + interval '365 days' end,
+              premium_source = case when premium_until is not null and premium_until > now() then premium_source else 'scanlator' end,
+              updated_at = now()
+        where user_id = $1`,
+      [row.user_id],
+    );
+    // Benefit: premium aktif selama status Scanlator aktif.
+    await client.query(
+      `update social_profiles
+          set premium_until = case when premium_until is not null and premium_until > now() then premium_until else now() + interval '365 days' end,
+              premium_source = case when premium_until is not null and premium_until > now() then premium_source else 'scanlator' end,
               updated_at = now()
         where user_id = $1`,
       [row.user_id],
@@ -135,7 +146,7 @@ async function reviewApplication(id: string | undefined, action: "approve" | "re
 
 async function moderate(
   userId: string | undefined,
-  action: "warn" | "suspend" | "revoke" | "restore" | "delete",
+  action: "warn" | "suspend" | "revoke" | "restore" | "delete" | "verify" | "unverify",
   reason: string | null,
   note: string | null,
   days: number | undefined,
@@ -150,6 +161,26 @@ async function moderate(
   );
   if (!target.rows[0]) return NextResponse.json({ error: "Scanlator tidak ditemukan." }, { status: 404 });
 
+  if (action === "verify" || action === "unverify") {
+    const verified = action === "verify";
+    await socialTransaction(async (client) => {
+      await client.query("update scanlator_profiles set verified = $2, updated_at = now() where user_id = $1", [userId, verified]);
+      await client.query(
+        "insert into scanlator_moderation (user_id, action, reason, note, admin_id) values ($1, $2, $3, $4, $5)",
+        [userId, action, reason || (verified ? "Tim diverifikasi" : "Verifikasi dicabut"), note, adminId],
+      );
+    });
+    await notifyScanlator(userId, {
+      type: verified ? "verify" : "unverify",
+      title: verified ? "Tim kamu terverifikasi" : "Verifikasi tim dicabut",
+      body: verified
+        ? "Badge terverifikasi tampil di profil grup dan direktori."
+        : "Badge terverifikasi tidak lagi ditampilkan. Hubungi admin bila keliru.",
+      link: "/scanlator",
+    });
+    return NextResponse.json({ success: true, status: action });
+  }
+
   if (action === "delete") {
     const team = target.rows[0].team_name;
     await socialTransaction(async (client) => {
@@ -157,6 +188,8 @@ async function moderate(
       await client.query(
         `update social_profiles
             set role = case when role = 'scanlator' then 'user' else role end,
+                premium_until = case when premium_source = 'scanlator' then null else premium_until end,
+                premium_source = case when premium_source = 'scanlator' then null else premium_source end,
                 updated_at = now()
           where user_id = $1`,
         [userId],
@@ -235,6 +268,8 @@ async function moderate(
       await client.query(
         `update social_profiles
             set role = case when role = 'scanlator' then 'user' else role end,
+                premium_until = case when premium_source = 'scanlator' then null else premium_until end,
+                premium_source = case when premium_source = 'scanlator' then null else premium_source end,
                 updated_at = now()
           where user_id = $1`,
         [userId],
@@ -262,6 +297,8 @@ async function moderate(
     await client.query(
       `update social_profiles
           set role = case when role in ('admin','staff') then role else 'scanlator' end,
+              premium_until = case when premium_until is not null and premium_until > now() then premium_until else now() + interval '365 days' end,
+              premium_source = case when premium_until is not null and premium_until > now() then premium_source else 'scanlator' end,
               updated_at = now()
         where user_id = $1`,
       [userId],

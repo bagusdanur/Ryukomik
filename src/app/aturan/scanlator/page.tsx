@@ -9,6 +9,16 @@ export const metadata: Metadata = {
 
 const SECTIONS: Array<{ title: string; items: React.ReactNode[] }> = [
   {
+    title: "Benefit Scanlator",
+    items: [
+      <>Badge <b>SCANLATOR</b> tampil di profil publik, komentar, leaderboard, dan postingan komunitas.</>,
+      <>Selama status tim <b>aktif</b>, akun mendapat <b>Premium gratis</b> (tanpa iklan, akses fitur premium).</>,
+      <>Premium otomatis dicabut bila tim <b>dicabut</b> atau <b>dihapus</b>; saat suspend, badge dan premium tetap tersimpan sampai status dipulihkan.</>,
+      <>Selama badge aktif, akun juga dapat atribusi nama tim, tautan donate, studio upload, dan statistik tayangan per chapter.</>,
+      <>Premium dari Scanlator <b>tidak menimpa</b> premium berbayar yang masih aktif — masa berlakunya mengikuti yang paling panjang.</>,
+    ],
+  },
+  {
     title: "Akun & identitas",
     items: [
       <>Satu orang atau tim hanya boleh punya <b>satu Akun Translation</b> aktif. Akun ganda ditolak.</>,

@@ -73,6 +73,24 @@ export default function ScanlatorApplyPage() {
           </p>
         </div>
 
+        <div className="mb-4 rounded-xl border border-white/[.07] bg-white/[.02] p-3.5">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--accent-2)]">Yang kamu dapat</p>
+          <ul className="mt-2 space-y-1.5">
+            {[
+              "Badge SCANLATOR di profil, komentar, leaderboard, dan postingan",
+              "Premium gratis selama status tim aktif — tanpa bayar",
+              "Studio upload: chapter, edit halaman, pratinjau, dan statistik tayangan",
+              "Atribusi nama tim + tautan profil di setiap seri yang kamu unggah",
+              "Tautan donate (DANA/GoPay, Trakteer, Tako) tampil di halaman seri",
+            ].map((b) => (
+              <li key={b} className="flex gap-2 text-[11.5px] leading-relaxed text-white/60">
+                <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-[var(--accent)]" />
+                {b}
+              </li>
+            ))}
+          </ul>
+        </div>
+
         {loading ? (
           <p className="py-16 text-center text-[13px] text-white/35">Memuat…</p>
         ) : needLogin ? (

@@ -90,6 +90,7 @@ export default function ScanlatorStudio() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [chapters, setChapters] = useState<Array<{ id: string; chapter_number: number; title: string | null; is_published: boolean; pages: number }>>([]);
   const [chapterViews, setChapterViews] = useState<Record<number, number>>({});
+  const [cleaning, setCleaning] = useState(false);
   const [topChapter, setTopChapter] = useState<{ chapter_number: number; views: number } | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
@@ -247,6 +248,25 @@ export default function ScanlatorStudio() {
     const json = (await res.json().catch(() => null)) as { success?: boolean; url?: string; error?: string } | null;
     if (!res.ok || !json?.success || !json.url) throw new Error(json?.error || "Upload gagal.");
     return json.url;
+  };
+
+  const cleanupStorage = async () => {
+    if (!window.confirm("Hapus file gambar yang tidak dipakai chapter mana pun? File yang masih dipakai tidak disentuh.")) return;
+    setCleaning(true); setError(""); setNotice("");
+    try {
+      const t = await token();
+      const res = await fetch("/api/scanlator/cleanup-storage", { method: "POST", headers: { Authorization: `Bearer ${t}` } });
+      const json = (await res.json().catch(() => null)) as { success?: boolean; deleted?: number; freedBytes?: number; error?: string } | null;
+      if (!res.ok || !json?.success) { setError(json?.error || "Gagal membersihkan storage."); return; }
+      const freed = ((json.freedBytes || 0) / (1024 * 1024)).toFixed(1);
+      setNotice(json.deleted ? `${json.deleted} file tak terpakai dihapus · ${freed} MB kembali.` : "Tidak ada file tak terpakai.");
+      const qRes = await fetch("/api/scanlator/quota", { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" });
+      if (qRes.ok) setQuota(await qRes.json());
+    } catch {
+      setError("Gagal membersihkan storage.");
+    } finally {
+      setCleaning(false);
+    }
   };
 
   const createSeries = async (e: React.FormEvent) => {
@@ -750,7 +770,17 @@ export default function ScanlatorStudio() {
                     style={{ width: `${Math.max(2, Math.min(100, quota.percent))}%` }}
                   />
                 </div>
-                <p className="mt-1 text-[10px] text-white/30">{quota.fileCount} file terpakai · hapus chapter lama kalau penuh</p>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className="text-[10px] text-white/30">{quota.fileCount} file terpakai</p>
+                  <button
+                    type="button"
+                    onClick={() => void cleanupStorage()}
+                    disabled={cleaning}
+                    className="text-[10px] font-semibold text-[var(--accent-2)] underline-offset-2 hover:underline disabled:opacity-50"
+                  >
+                    {cleaning ? "Membersihkan…" : "Bersihkan file tak terpakai"}
+                  </button>
+                </div>
               </div>
             )}
 
