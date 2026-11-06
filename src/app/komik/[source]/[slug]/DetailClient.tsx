@@ -11,6 +11,7 @@ import CommentsSupabase from "@/components/CommentsSupabase";
 import BookmarkButton from "@/components/BookmarkButton";
 import Button from "@/components/Button";
 import { FaArrowLeft, FaHeart, FaCommentDots } from "react-icons/fa";
+import { FiChevronRight, FiHeart } from "react-icons/fi";
 import ChapterList from "@/components/ChapterList";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
@@ -282,71 +283,90 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
 
       {data.scanlator_handle && (
         <section className="rk-shell px-4 mt-5">
-          <div className="rounded-xl border border-white/[.07] bg-white/[.02]">
-            <div className="flex items-start gap-3 p-3.5">
-              {data.scanlator_avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={data.scanlator_avatar}
-                  alt={data.scanlator_team || "Scanlator"}
-                  loading="lazy"
-                  className="h-11 w-11 shrink-0 rounded-lg border border-white/[.07] object-cover"
-                />
+          <div
+            className="overflow-hidden rounded-xl border border-white/[.08]"
+            style={{ background: "color-mix(in srgb, var(--accent) 6%, rgba(255,255,255,.02))" }}
+          >
+            <Link
+              href={`/scanlator/${data.scanlator_handle}`}
+              className="flex items-center gap-3 p-3.5 transition-colors active:bg-white/[.03]"
+            >
+              <span className="relative shrink-0">
+                {data.scanlator_avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={data.scanlator_avatar}
+                    alt={data.scanlator_team || "Scanlator"}
+                    loading="lazy"
+                    className="h-12 w-12 rounded-lg border border-white/10 object-cover"
+                  />
+                ) : (
+                  <span
+                    className="flex h-12 w-12 items-center justify-center rounded-lg border border-white/10 text-base font-black text-white/70"
+                    style={{ background: "color-mix(in srgb, var(--accent) 18%, transparent)" }}
+                  >
+                    {(data.scanlator_team || data.scanlator_user?.username || "S").slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+                <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent)] text-[9px] font-black text-white ring-2 ring-[#0b0b0f]">
+                  TL
+                </span>
+              </span>
+
+              <span className="min-w-0 flex-1">
+                <span className="block text-[9px] font-bold uppercase tracking-[.08em] text-[var(--accent-2)]">
+                  Tim TL Scanlator
+                </span>
+                <span className="mt-0.5 block truncate text-[14px] font-bold leading-tight text-white">
+                  {data.scanlator_team || data.scanlator_user?.username || "Scanlator"}
+                </span>
+                {data.scanlator_user && (
+                  <span className="mt-0.5 block truncate text-[11px] leading-tight text-white/40">
+                    oleh {data.scanlator_user.username}
+                  </span>
+                )}
+              </span>
+
+              <FiChevronRight size={16} className="shrink-0 text-white/25" />
+            </Link>
+
+            <div className="flex items-center gap-2 border-t border-white/[.06] px-3.5 py-2">
+              {data.scanlator_donate && data.scanlator_donate.length > 0 ? (
+                <>
+                  <span className="flex shrink-0 items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-white/35">
+                    <FiHeart size={10} /> Dukung
+                  </span>
+                  <div className="-mx-0.5 flex flex-1 gap-1.5 overflow-x-auto px-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {data.scanlator_donate.map((d) => (
+                      <a
+                        key={d.label}
+                        href={d.url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex min-h-[30px] shrink-0 items-center gap-1 rounded-md border px-2.5 text-[11px] font-semibold text-white/85 transition-colors active:opacity-80"
+                        style={{
+                          borderColor: "color-mix(in srgb, var(--accent) 28%, transparent)",
+                          background: "color-mix(in srgb, var(--accent) 14%, transparent)",
+                        }}
+                      >
+                        <FiHeart size={9} className="text-[var(--accent-2)]" />
+                        {d.label}
+                      </a>
+                    ))}
+                  </div>
+                </>
               ) : (
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/[.07] bg-white/[.04] text-sm font-bold text-white/60">
-                  {(data.scanlator_team || data.scanlator_user?.username || "S").slice(0, 1).toUpperCase()}
+                <span className="flex-1 truncate text-[10px] text-white/25">
+                  Belum ada link dukungan untuk tim ini
                 </span>
               )}
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-white/30">Diunggah oleh</p>
-                <div className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-                  {data.scanlator_user && (
-                    <Link
-                      href={`/u/${encodeURIComponent(data.scanlator_user.username)}`}
-                      className="text-[13px] font-bold text-white transition-colors hover:text-[var(--accent-2)]"
-                    >
-                      {data.scanlator_user.username}
-                    </Link>
-                  )}
-                  {data.scanlator_team && (
-                    <>
-                      <span className="text-white/20">·</span>
-                      <Link
-                        href={`/scanlator/${data.scanlator_handle}`}
-                        className="text-[12px] font-semibold text-[var(--accent-2)] transition-colors hover:text-white"
-                      >
-                        {data.scanlator_team}
-                      </Link>
-                    </>
-                  )}
-                </div>
-              </div>
               <Link
                 href={`/scanlator/lapor?slug=${encodeURIComponent(slug)}&handle=${encodeURIComponent(data.scanlator_handle)}`}
-                className="shrink-0 self-center text-[10px] text-white/20 transition-colors hover:text-white/50"
+                className="shrink-0 border-l border-white/[.07] pl-2 text-[10px] font-medium text-white/35 transition-colors hover:text-white/70"
               >
                 Laporkan
               </Link>
             </div>
-
-            {data.scanlator_donate && data.scanlator_donate.length > 0 && (
-              <div className="border-t border-white/[.06] px-3.5 py-2.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-white/30">Dukung tim ini</p>
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {data.scanlator_donate.map((d) => (
-                    <a
-                      key={d.label}
-                      href={d.url}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      className="inline-flex min-h-[30px] items-center rounded-md border border-white/[.08] px-2.5 text-[11px] font-semibold text-white/65 transition-colors hover:bg-white/[.05] hover:text-white"
-                    >
-                      {d.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </section>
       )}
