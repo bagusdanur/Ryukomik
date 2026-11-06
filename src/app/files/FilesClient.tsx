@@ -6,7 +6,7 @@ import dynamicImport from "next/dynamic";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { FiBookOpen, FiClock, FiFolder, FiHeart, FiSearch, FiTrendingUp, FiUsers } from "react-icons/fi";
+import { FiBookOpen, FiClock, FiFolder, FiBookmark, FiSearch, FiTrendingUp, FiUsers } from "react-icons/fi";
 import { FaCrown } from "react-icons/fa";
 import CommunityNotifications from "@/components/social/CommunityNotifications";
 import { socialFetch } from "@/lib/social/client";
@@ -99,7 +99,7 @@ export default function FilesClient() {
           {[
             { id: "timeline", label: "Timeline", icon: FiBookOpen },
             { id: "scanlator", label: "Scanlator", icon: FiUsers },
-            { id: "favorite", label: "Favorit", icon: FiHeart },
+            { id: "favorite", label: "Bookmark", icon: FiBookmark },
             { id: "history", label: "Riwayat", icon: FiClock },
             { id: "collections", label: "Koleksi", icon: FiFolder },
           ].map((t) => {
