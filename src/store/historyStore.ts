@@ -4,6 +4,10 @@ import type { ReadHistoryItem } from "@/types/user";
 
 interface HistoryState {
   history: ReadHistoryItem[];
+  /** Penanda hapus: comicSlug -> waktu hapus. Mencegah item muncul lagi dari server. */
+  deleted: Record<string, number>;
+  /** Waktu "hapus semua" — item server yang lebih lama dari ini diabaikan. */
+  deletedAllAt: number;
   addHistory: (item: ReadHistoryItem) => void;
   /** Merge hasil tarikan server: per comicSlug, updatedAt terbaru menang. */
   mergeHistory: (items: ReadHistoryItem[]) => void;
@@ -14,6 +18,24 @@ interface HistoryState {
 }
 
 const MAX_HISTORY = 500;
+
+/** Hapus riwayat di server supaya tidak muncul lagi saat sinkron/refresh. */
+async function deleteRemoteHistory(comicSlug?: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const { getSession } = await import("@/lib/auth/getSession");
+    const { data } = await getSession();
+    const token = data.session?.access_token;
+    if (!token) return;
+    await fetch("/api/history/sync", {
+      method: "DELETE",
+      headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+      body: JSON.stringify(comicSlug ? { comic_slug: comicSlug } : { all: true }),
+    });
+  } catch {
+    // offline: tombstone lokal tetap mencegah item muncul kembali
+  }
+}
 
 // 🔥 MIGRATION SCRIPT UNTUK PENGGUNA LAMA
 if (typeof window !== "undefined") {
@@ -45,6 +67,8 @@ export const useHistoryStore = create<HistoryState>()(
   persist(
     (set) => ({
       history: [],
+      deleted: {},
+      deletedAllAt: 0,
       addHistory: (item) =>
         set((state) => {
           // Hapus history lama jika comicSlug sama, lalu taruh di depan
@@ -52,13 +76,25 @@ export const useHistoryStore = create<HistoryState>()(
             (h) => h.comicSlug !== item.comicSlug
           );
           filtered.unshift(item);
-          return { history: filtered.slice(0, MAX_HISTORY) };
+          const deleted = { ...state.deleted };
+          delete deleted[item.comicSlug];
+          return { history: filtered.slice(0, MAX_HISTORY), deleted };
         }),
       mergeHistory: (items) =>
         set((state) => {
           const map = new Map<string, ReadHistoryItem>();
           for (const item of state.history) map.set(item.comicSlug, item);
+
+          // Buang tombstone yang sudah tidak ada di server (hapus berhasil).
+          const serverSlugs = new Set(items.map((i) => i.comicSlug));
+          const deleted: Record<string, number> = {};
+          for (const [slug, at] of Object.entries(state.deleted)) {
+            if (serverSlugs.has(slug)) deleted[slug] = at;
+          }
+
           for (const item of items) {
+            if (deleted[item.comicSlug]) continue;
+            if (state.deletedAllAt && item.updatedAt <= state.deletedAllAt) continue;
             const existing = map.get(item.comicSlug);
             if (!existing || item.updatedAt > existing.updatedAt) {
               // Thumbnail lokal dipertahankan kalau versi server tidak punya.
@@ -70,13 +106,19 @@ export const useHistoryStore = create<HistoryState>()(
             }
           }
           const merged = [...map.values()].sort((a, b) => b.updatedAt - a.updatedAt);
-          return { history: merged.slice(0, MAX_HISTORY) };
+          return { history: merged.slice(0, MAX_HISTORY), deleted };
         }),
-      removeHistory: (comicSlug) =>
+      removeHistory: (comicSlug) => {
         set((state) => ({
           history: state.history.filter((h) => h.comicSlug !== comicSlug),
-        })),
-      clearHistory: () => set({ history: [] }),
+          deleted: { ...state.deleted, [comicSlug]: Date.now() },
+        }));
+        void deleteRemoteHistory(comicSlug);
+      },
+      clearHistory: () => {
+        set({ history: [], deleted: {}, deletedAllAt: Date.now() });
+        void deleteRemoteHistory();
+      },
       updateHistoryThumbs: (entries) =>
         set((state) => {
           if (!entries.length) return state;

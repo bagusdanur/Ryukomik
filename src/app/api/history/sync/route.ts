@@ -57,6 +57,30 @@ export async function GET(request: Request) {
   }
 }
 
+/** Hapus riwayat: satu komik (comic_slug) atau seluruh riwayat (all: true). */
+export async function DELETE(request: Request) {
+  try {
+    const userId = await requireUserId(request);
+    const body = (await request.json().catch(() => null)) as { comic_slug?: unknown; all?: unknown } | null;
+
+    if (body?.all === true) {
+      await socialQuery("delete from history_sync where user_id = $1", [userId]);
+      return NextResponse.json({ success: true, deleted: "all" }, { headers: { "Cache-Control": "no-store" } });
+    }
+
+    const slug = textField(body?.comic_slug, 300);
+    if (!slug) return NextResponse.json({ error: "comic_slug wajib diisi." }, { status: 400 });
+
+    await socialQuery("delete from history_sync where user_id = $1 and comic_slug = $2", [userId, slug]);
+    return NextResponse.json({ success: true, comic_slug: slug }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+    console.error("[history-sync DELETE] gagal:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Gagal menghapus riwayat." }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId(request);
