@@ -15,7 +15,7 @@ type Application = {
 
 type Scanlator = {
   user_id: string; handle: string; team_name: string; bio: string | null;
-  status: string; warnings: number; suspended_until: string | null; moderation_note: string | null;
+  status: string; verified?: boolean; warnings: number; suspended_until: string | null; moderation_note: string | null;
   contact_wa: string | null; contact_telegram: string | null; contact_discord: string | null;
   created_at: string; username: string | null;
 };
@@ -350,7 +350,7 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
                 <div className="min-w-0">
                   <p className="truncate text-[13px] font-bold">{s.team_name} <span className="font-normal text-white/35">@{s.handle}</span></p>
                   <p className="mt-0.5 text-[11px] text-white/35">
-                    {s.username || s.user_id.slice(0, 8)} · {timeAgo(s.created_at)} lalu{s.warnings > 0 ? ` · ${s.warnings} SP` : ""}
+                    {s.username || s.user_id.slice(0, 8)} · {timeAgo(s.created_at)} lalu{s.verified ? " · terverifikasi" : ""}{s.warnings > 0 ? ` · ${s.warnings} SP` : ""}
                   </p>
                 </div>
                 <span className={`shrink-0 text-[10px] font-bold ${s.status === "active" ? "text-emerald-300" : s.status === "suspended" ? "text-amber-300" : "text-rose-300"}`}>
@@ -437,6 +437,19 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
                     </Button>
                   )}
                 </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void call(
+                      { user_id: s.user_id, action: s.verified ? "unverify" : "verify", note: notes[s.user_id] || "" },
+                      s.verified ? `Verifikasi ${s.team_name} dicabut.` : `${s.team_name} terverifikasi.`,
+                    )
+                  }
+                  disabled={busy === s.user_id}
+                  className="mt-2 w-full rounded-md border border-white/[.08] py-1.5 text-[10px] font-semibold text-[var(--accent-2)] transition-colors hover:bg-white/[.04]"
+                >
+                  {s.verified ? "Cabut verifikasi" : "Tandai terverifikasi"}
+                </button>
                 <button
                   type="button"
                   onClick={() => setDeleteTarget({ userId: s.user_id, team: s.team_name })}
@@ -549,7 +562,7 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
 }
 
 function labelAction(action: string) {
-  return ({ warn: "SP", suspend: "Suspend", revoke: "Cabut akses", restore: "Pulihkan", delete: "Hapus tim" } as Record<string, string>)[action] || action;
+  return ({ warn: "SP", suspend: "Suspend", revoke: "Cabut akses", restore: "Pulihkan", delete: "Hapus tim", verify: "Verifikasi", unverify: "Cabut verifikasi" } as Record<string, string>)[action] || action;
 }
 
 function Contacts({ wa, tg, dc }: { wa: string | null; tg: string | null; dc: string | null }) {

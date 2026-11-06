@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     if (handle) {
       const { rows } = await socialQuery(
         `select s.handle, s.team_name, s.bio, s.avatar_url, s.support_dana, s.support_trakteer, s.support_tako,
-                s.support_url_lain, s.status, s.created_at,
+                s.support_url_lain, s.status, s.verified, s.created_at,
                 p.username as owner_username, p.avatar_url as owner_avatar_url
            from scanlator_profiles s
            left join social_profiles p on p.user_id = s.user_id

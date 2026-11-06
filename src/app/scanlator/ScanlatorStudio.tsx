@@ -67,6 +67,7 @@ export default function ScanlatorStudio() {
   const [type, setType] = useState("Manhwa");
   const [genres, setGenres] = useState("");
   const [isAdult, setIsAdult] = useState(false);
+  const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const [busySeries, setBusySeries] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
 
@@ -243,13 +244,14 @@ export default function ScanlatorStudio() {
         headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           title, cover_url: coverUrl, description, type, is_adult: isAdult,
+          rights_confirmed: rightsConfirmed,
           genres: genres.split(",").map((g) => g.trim()).filter(Boolean),
         }),
       });
       const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
       if (!res.ok || !json?.success) { setError(json?.error || "Gagal membuat seri."); return; }
       setNotice("Seri terkirim — menunggu review admin.");
-      setTitle(""); setCoverUrl(""); setDescription(""); setGenres(""); setIsAdult(false);
+      setTitle(""); setCoverUrl(""); setDescription(""); setGenres(""); setIsAdult(false); setRightsConfirmed(false);
       await load();
     } finally { setBusySeries(false); }
   };
@@ -728,9 +730,13 @@ export default function ScanlatorStudio() {
                       <input type="checkbox" checked={isAdult} onChange={(e) => setIsAdult(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#8b5cf6]" />
                       Konten 18+ (penentu filter, bukan genre)
                     </label>
+                    <label className="flex items-start gap-2.5 rounded-lg border border-white/[.06] px-3 py-2.5 text-[11px] leading-relaxed text-white/55">
+                      <input type="checkbox" checked={rightsConfirmed} onChange={(e) => setRightsConfirmed(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#8b5cf6]" />
+                      Saya penerjemah karya ini atau punya izin dari pemegang hak. Pernyataan ini dicatat sebagai bukti.
+                    </label>
                   </div>
                 </Panel>
-                <Button type="submit" disabled={busySeries || !coverUrl || blocked} className="w-full">
+                <Button type="submit" disabled={busySeries || !coverUrl || blocked || !rightsConfirmed} className="w-full">
                   <FiSend size={13} /> {busySeries ? "Mengirim…" : "Kirim untuk review"}
                 </Button>
               </form>

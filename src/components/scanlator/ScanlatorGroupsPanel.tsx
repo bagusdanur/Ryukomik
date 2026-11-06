@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FiBookOpen, FiChevronRight, FiClock, FiUsers } from "react-icons/fi";
+import { FiBookOpen, FiCheckCircle, FiChevronRight, FiClock, FiUsers } from "react-icons/fi";
 
 type Group = {
   handle: string;
@@ -10,6 +10,7 @@ type Group = {
   bio: string | null;
   avatar_url: string | null;
   status: string;
+  verified?: boolean;
   projects: number;
   latest_update: string | null;
 };
@@ -84,6 +85,7 @@ export default function ScanlatorGroupsPanel() {
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 truncate text-[12.5px] font-bold text-white/90">
                   {g.team_name}
+                  {g.verified && <FiCheckCircle size={11} className="shrink-0 text-[var(--accent-2)]" />}
                   {g.status === "suspended" && <span className="text-[9px] font-bold text-amber-300/80">suspend</span>}
                 </p>
                 <p className="truncate text-[10.5px] text-white/35">@{g.handle}</p>

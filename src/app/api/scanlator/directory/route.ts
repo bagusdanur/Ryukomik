@@ -12,10 +12,10 @@ export async function GET() {
     const [groups, projects] = await Promise.all([
       socialQuery<{
         handle: string; team_name: string; bio: string | null; avatar_url: string | null;
-        owner_avatar_url: string | null; status: string; created_at: string;
+        owner_avatar_url: string | null; status: string; verified: boolean; created_at: string;
       }>(
         `select s.handle, s.team_name, s.bio, s.avatar_url,
-                p.avatar_url as owner_avatar_url, s.status, s.created_at
+                p.avatar_url as owner_avatar_url, s.status, s.verified, s.created_at
            from scanlator_profiles s
            left join social_profiles p on p.user_id = s.user_id
           where s.status <> 'revoked'
@@ -45,6 +45,7 @@ export async function GET() {
           bio: g.bio,
           avatar_url: g.avatar_url || g.owner_avatar_url || null,
           status: g.status,
+          verified: g.verified,
           projects: meta?.count || 0,
           latest_update: meta?.latest || null,
         };

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
+import { isReservedHandle } from "@/lib/scanlatorReserved";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +65,12 @@ export async function POST(request: Request) {
 
     if (!HANDLE_RE.test(handle)) {
       return NextResponse.json({ error: "Handle harus 3–30 karakter: huruf kecil, angka, dan strip." }, { status: 400 });
+    }
+    if (isReservedHandle(handle)) {
+      return NextResponse.json(
+        { error: "Handle ini dilindungi. Pakai nama lain, mis. tambahkan nama timmu sendiri." },
+        { status: 400 },
+      );
     }
     if (teamName.length < 2) return NextResponse.json({ error: "Nama tim wajib diisi." }, { status: 400 });
     if (samples.length === 0) return NextResponse.json({ error: "Sertakan minimal 1 contoh hasil TL." }, { status: 400 });

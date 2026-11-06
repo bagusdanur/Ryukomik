@@ -79,8 +79,15 @@ export async function POST(request: Request) {
     const statusSeries = typeof body?.status === "string" ? body.status.trim().slice(0, 30) : "Ongoing";
     const genres = Array.isArray(body?.genres) ? body.genres.filter((g): g is string => typeof g === "string").slice(0, 10) : [];
     const isAdult = body?.is_adult === true;
+    const rightsConfirmed = body?.rights_confirmed === true;
 
     if (title.length < 2) return NextResponse.json({ error: "Judul wajib diisi." }, { status: 400 });
+    if (!rightsConfirmed) {
+      return NextResponse.json(
+        { error: "Centang pernyataan bahwa kamu penerjemah karya ini atau punya izin dari pemegang hak." },
+        { status: 400 },
+      );
+    }
     if (!coverUrl.startsWith("https://")) return NextResponse.json({ error: "Cover wajib diunggah dulu (URL https dari upload)." }, { status: 400 });
 
     // Anti-duplikat: judul yang sama/mirip dengan project yang sudah ada ditolak.
@@ -133,6 +140,14 @@ export async function POST(request: Request) {
     if (!created?.data) {
       return NextResponse.json({ error: "Gagal membuat seri di Project API. Coba lagi." }, { status: 502 });
     }
+
+    // Bukti pernyataan hak unggah (dipakai bila ada sengketa).
+    await socialQuery(
+      `insert into scanlator_rights_confirmations (user_id, manga_slug) values ($1, $2)
+       on conflict (user_id, manga_slug) do update set confirmed_at = now()`,
+      [userId, slug],
+    ).catch(() => undefined);
+
     return NextResponse.json({ success: true, slug, status: "pending" });
   } catch (error) {
     const authResponse = authErrorResponse(error);

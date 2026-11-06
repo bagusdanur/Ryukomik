@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiArrowLeft, FiCalendar, FiExternalLink, FiHeart, FiUser } from "react-icons/fi";
+import { FiArrowLeft, FiCalendar, FiCheckCircle, FiExternalLink, FiHeart, FiUser } from "react-icons/fi";
 import UserBadges from "@/components/UserBadges";
 import { getSession } from "@/lib/auth/getSession";
 
 type Profile = {
   handle: string; team_name: string; bio: string | null;
-  avatar_url?: string | null; owner_username?: string | null; owner_avatar_url?: string | null;
+  avatar_url?: string | null; owner_username?: string | null; owner_avatar_url?: string | null; verified?: boolean;
   support_dana: string | null; support_trakteer: string | null; support_tako: string | null; support_url_lain: string | null;
   status: string; created_at: string;
 };
@@ -148,6 +148,15 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5">
               <h1 className="truncate text-[16px] font-bold leading-tight text-white">{profile.team_name}</h1>
+              {profile.verified && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--accent-2)]"
+                  style={{ borderColor: "color-mix(in srgb, var(--accent) 35%, transparent)" }}
+                  title="Tim terverifikasi"
+                >
+                  <FiCheckCircle size={9} /> Terverifikasi
+                </span>
+              )}
               <UserBadges role="scanlator" />
             </div>
             <p className="mt-0.5 truncate text-[11px] text-white/35">@{profile.handle}</p>
