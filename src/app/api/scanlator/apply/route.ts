@@ -4,6 +4,7 @@ import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { isReservedHandle } from "@/lib/scanlatorReserved";
+import { rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,6 +52,8 @@ function usernameOf(value: unknown): string | null {
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId(request);
+    const limited = rateLimitResponse(`apply:${userId}`, 3, 10 * 60 * 1000);
+    if (limited) return limited;
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
 
     const handle = textOf(body?.handle, 30).toLowerCase();

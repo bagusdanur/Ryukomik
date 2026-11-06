@@ -140,6 +140,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: buildCanonicalUrl("/leaderboard"), changeFrequency: "daily", priority: 0.6 },
     { url: buildCanonicalUrl("/border"), changeFrequency: "weekly", priority: 0.5 },
     { url: buildCanonicalUrl("/scanlator/direktori"), changeFrequency: "weekly", priority: 0.5 },
+    { url: buildCanonicalUrl("/dmca"), changeFrequency: "monthly", priority: 0.4 },
     ...sourceRoutes.flat(),
     ...profileRoutes,
     ...scanlatorRoutes,

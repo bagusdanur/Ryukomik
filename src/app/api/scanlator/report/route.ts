@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
+import { rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,8 @@ const KINDS = new Set(["copyright", "appeal", "other"]);
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId(request);
+    const limited = rateLimitResponse(`report:${userId}`, 5, 10 * 60 * 1000);
+    if (limited) return limited;
     const body = (await request.json().catch(() => null)) as
       | { kind?: string; target_slug?: string; target_handle?: string; reason?: string; detail?: string }
       | null;

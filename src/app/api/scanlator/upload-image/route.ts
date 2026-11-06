@@ -7,6 +7,7 @@ import { targetById } from "@/lib/r2Targets";
 import { getScanlatorUsage, SCANLATOR_QUOTA_BYTES, formatBytes } from "@/lib/scanlatorQuota";
 import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
+import { rateLimitResponse } from "@/lib/rateLimit";
 import { socialQuery } from "@/lib/social/db";
 
 export const runtime = "nodejs";
@@ -24,6 +25,8 @@ export async function POST(request: Request) {
   let userId: string;
   try {
     userId = await requireUserId(request);
+    const limited = rateLimitResponse(`upload-image:${userId}`, 60, 10 * 60 * 1000);
+    if (limited) return limited;
   } catch (error) {
     return authErrorResponse(error) ?? NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
   }

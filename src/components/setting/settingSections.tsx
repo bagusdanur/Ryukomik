@@ -477,6 +477,11 @@ export function SupportInfoSection() {
       label: "Privacy Policy",
     },
     {
+      href: "/dmca",
+      icon: <FaShieldAlt className="text-white/70" />,
+      label: "Hak Cipta & DMCA",
+    },
+    {
       href: "/terms-of-service",
       icon: <FaShieldAlt className="text-white/70" />,
       label: "Terms of Service",

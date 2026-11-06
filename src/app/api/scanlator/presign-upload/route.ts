@@ -7,6 +7,7 @@ import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { getScanlatorUsage, SCANLATOR_QUOTA_BYTES, formatBytes } from "@/lib/scanlatorQuota";
+import { rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +20,8 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId(request);
+    const limited = rateLimitResponse(`presign:${userId}`, 200, 5 * 60 * 1000);
+    if (limited) return limited;
     const profile = await socialQuery<{ handle: string; storage_handle: string | null; status: string }>(
       "select handle, storage_handle, status from scanlator_profiles where user_id = $1 limit 1",
       [userId],
