@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  FiAlertTriangle, FiBookOpen, FiCheck, FiClock, FiMessageCircle, FiRefreshCw, FiSlash, FiUserX, FiX,
+  FiAlertTriangle, FiBookOpen, FiCheck, FiClock, FiMessageCircle, FiRefreshCw, FiSlash, FiTrash2, FiUserX, FiX,
 } from "react-icons/fi";
 import { Button, Panel, PanelHead, Tabs, inputClass } from "@/components/scanlator/ui";
 
@@ -64,6 +64,7 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
   const [userWorks, setUserWorks] = useState<Record<string, Array<{ slug: string; title: string; review_status: string; is_published: boolean; view_count: number }>>>({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ userId: string; team: string } | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
 
@@ -391,11 +392,46 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
                     </Button>
                   )}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget({ userId: s.user_id, team: s.team_name })}
+                  disabled={busy === s.user_id}
+                  className="mt-2 w-full rounded-md py-1.5 text-[10px] font-semibold text-rose-300/60 transition-colors hover:bg-rose-500/10 hover:text-rose-300"
+                >
+                  Hapus tim permanen
+                </button>
               </div>
             </Panel>
           ))}
           {!loading && scanlators.length === 0 && <p className="py-10 text-center text-[12px] text-white/30">Belum ada Scanlator.</p>}
         </>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-sm rounded-xl border border-white/[.08] bg-[#111115] p-4">
+            <p className="text-[13px] font-bold text-white">Hapus tim “{deleteTarget.team}”?</p>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-white/45">
+              Profil grup dihapus, akses Scanlator dicabut, dan semua seri tim ini disembunyikan dari publik (karya tidak dihapus).
+            </p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button onClick={() => setDeleteTarget(null)}>Batal</Button>
+              <Button
+                variant="danger"
+                onClick={() => {
+                  const target = deleteTarget;
+                  setDeleteTarget(null);
+                  void call(
+                    { user_id: target.userId, action: "delete", reason: "Tim dihapus admin", note: notes[target.userId] || "" },
+                    `Tim ${target.team} dihapus.`,
+                  );
+                }}
+              >
+                <FiTrash2 size={12} /> Hapus
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {tab === "laporan" && (
@@ -468,7 +504,7 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
 }
 
 function labelAction(action: string) {
-  return ({ warn: "SP", suspend: "Suspend", revoke: "Cabut akses", restore: "Pulihkan" } as Record<string, string>)[action] || action;
+  return ({ warn: "SP", suspend: "Suspend", revoke: "Cabut akses", restore: "Pulihkan", delete: "Hapus tim" } as Record<string, string>)[action] || action;
 }
 
 function Contacts({ wa, tg, dc }: { wa: string | null; tg: string | null; dc: string | null }) {

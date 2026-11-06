@@ -3,11 +3,12 @@ import { NextResponse } from "next/server";
 import { adminErrorResponse, verifyAdminRequest } from "@/lib/adminApi";
 import { socialQuery, socialTransaction } from "@/lib/social/db";
 import { notifyScanlator } from "@/lib/scanlatorNotify";
+import { projectApiFetch } from "@/lib/projectApiServer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Action = "approve" | "reject" | "warn" | "suspend" | "revoke" | "restore";
+type Action = "approve" | "reject" | "warn" | "suspend" | "revoke" | "restore" | "delete";
 
 /**
  * Manajemen Scanlator di dashboard admin:
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
       | { id?: string; user_id?: string; action?: Action; note?: string; reason?: string; days?: number }
       | null;
     const action = body?.action;
-    if (!action || !["approve", "reject", "warn", "suspend", "revoke", "restore"].includes(action)) {
+    if (!action || !["approve", "reject", "warn", "suspend", "revoke", "restore", "delete"].includes(action)) {
       return NextResponse.json({ error: "Aksi tidak valid." }, { status: 400 });
     }
     const note = typeof body?.note === "string" ? body.note.trim().slice(0, 500) || null : null;
@@ -134,7 +135,7 @@ async function reviewApplication(id: string | undefined, action: "approve" | "re
 
 async function moderate(
   userId: string | undefined,
-  action: "warn" | "suspend" | "revoke" | "restore",
+  action: "warn" | "suspend" | "revoke" | "restore" | "delete",
   reason: string | null,
   note: string | null,
   days: number | undefined,
@@ -148,6 +149,41 @@ async function moderate(
     [userId],
   );
   if (!target.rows[0]) return NextResponse.json({ error: "Scanlator tidak ditemukan." }, { status: 404 });
+
+  if (action === "delete") {
+    const team = target.rows[0].team_name;
+    await socialTransaction(async (client) => {
+      await client.query("delete from scanlator_profiles where user_id = $1", [userId]);
+      await client.query(
+        `update social_profiles
+            set role = case when role = 'scanlator' then 'user' else role end,
+                updated_at = now()
+          where user_id = $1`,
+        [userId],
+      );
+      await client.query(
+        "insert into scanlator_moderation (user_id, action, reason, note, admin_id) values ($1, 'delete', $2, $3, $4)",
+        [userId, reason || "Tim dihapus admin", note ? `${note} · tim: ${team}` : `tim: ${team}`, adminId],
+      );
+    });
+
+    // Seri milik tim disembunyikan (bukan dihapus) supaya atribusi tidak menggantung.
+    let hidden = 0;
+    try {
+      const list = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>("/admin/projects?limit=100&page=1");
+      const owned = (list.data || []).filter((m) => String((m as { owner_user_id?: string }).owner_user_id || "") === userId);
+      for (const m of owned) {
+        const id = String((m as { id?: string }).id || "");
+        if (!id) continue;
+        await projectApiFetch(`/admin/projects/${id}`, { method: "PATCH", body: JSON.stringify({ is_published: false }) }).catch(() => null);
+        hidden += 1;
+      }
+    } catch {
+      // pengunyian opsional
+    }
+
+    return NextResponse.json({ success: true, status: "deleted", hiddenSeries: hidden });
+  }
 
   if (action === "warn") {
     await socialTransaction(async (client) => {
