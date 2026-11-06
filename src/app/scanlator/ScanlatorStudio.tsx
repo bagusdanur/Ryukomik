@@ -20,7 +20,7 @@ type Profile = {
 
 type Work = {
   slug: string; title: string; cover_url: string | null; type: string | null;
-  review_status: string | null; review_note?: string | null; is_published: boolean; is_adult: boolean;
+  review_status: string | null; review_note?: string | null; is_published: boolean; is_adult: boolean; chapters?: number;
 };
 
 type Notif = {
@@ -612,6 +612,7 @@ export default function ScanlatorStudio() {
 
   const published = works.filter((w) => w.review_status === "approved").length;
   const pendingWorks = works.filter((w) => w.review_status === "pending").length;
+  const activeWork = works.find((w) => w.slug === openSlug) || null;
   const blocked = profile.status !== "active";
 
   return shell(
@@ -965,7 +966,7 @@ export default function ScanlatorStudio() {
           <Panel>
             <PanelHead
               title={`Project (${works.length})`}
-              desc={pendingWorks > 0 ? `${pendingWorks} menunggu review` : "Ketuk project untuk edit atau hapus"}
+              desc={pendingWorks > 0 ? `${pendingWorks} menunggu review` : "Ketuk salah satu project untuk kelola chapter"}
               right={works.length > 0 ? <Button variant="ghost" onClick={() => { setTab("upload"); setMode("seri"); }}><FiPlus size={12} /> Seri</Button> : undefined}
             />
             {works.length === 0 ? (
@@ -974,33 +975,28 @@ export default function ScanlatorStudio() {
                 <p className="mt-2 text-[12px] text-white/35">Belum ada project.</p>
                 <Button className="mt-3" onClick={() => { setTab("upload"); setMode("seri"); }}><FiPlus size={12} /> Upload seri</Button>
               </div>
-            ) : (
-              <ul className="divide-y divide-white/[.05]">
-                {works.map((w) => (
-                  <li key={w.slug} className="border-b border-white/[.05] last:border-0">
-                    <button type="button" onClick={() => void openProject(w.slug)} className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-white/[.03]">
-                      {w.cover_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={w.cover_url} alt="" loading="lazy" className="shrink-0 rounded-[4px] object-cover" style={{ height: 52, width: 36 }} />
-                      ) : (
-                        <div className="flex shrink-0 items-center justify-center rounded-[4px] bg-white/[.05] text-white/20" style={{ height: 52, width: 36 }}><FiBookOpen size={12} /></div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[12px] font-semibold text-white/90">{w.title}</p>
-                        <p className="mt-0.5 text-[10px] text-white/30">{w.type || "—"}{w.is_adult ? " · 18+" : ""}</p>
-                        {w.review_status === "rejected" && w.review_note && (
-                          <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-rose-300/80">Ditolak: {w.review_note}</p>
-                        )}
-                      </div>
-                      <span className={`shrink-0 text-[10px] font-bold ${w.review_status === "approved" ? "text-emerald-300" : w.review_status === "rejected" ? "text-rose-300" : "text-amber-300"}`}>
-                        {w.review_status === "approved" ? "Terbit" : w.review_status === "rejected" ? "Ditolak" : "Review"}
-                      </span>
-                      <FiChevronDown size={13} className={`shrink-0 text-white/25 transition-transform ${openSlug === w.slug ? "rotate-180" : ""}`} />
-                    </button>
-
-                    {openSlug === w.slug && (
-                      <div className="border-t border-white/[.05] bg-white/[.015] px-4 py-3">
-                        {detailLoading ? (
+            ) : openSlug ? (
+              <div className="p-3">
+                <button
+                  type="button"
+                  onClick={() => setOpenSlug(null)}
+                  className="mb-2 inline-flex items-center gap-1.5 rounded-md px-1 py-1 text-[11px] font-semibold text-white/45 transition-colors hover:text-white"
+                >
+                  <FiChevronLeft size={13} /> Semua project
+                </button>
+                {activeWork && (
+                  <div className="mb-3 flex items-center gap-2.5">
+                    {activeWork.cover_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={activeWork.cover_url} alt="" className="h-12 w-9 shrink-0 rounded border border-white/[.08] object-cover" />
+                    ) : null}
+                    <div className="min-w-0">
+                      <p className="truncate text-[12.5px] font-bold text-white/90">{activeWork.title}</p>
+                      <p className="text-[10px] text-white/35">{chapters.length} chapter · {activeWork.type || "—"}</p>
+                    </div>
+                  </div>
+                )}
+                                        {detailLoading ? (
                           <p className="py-4 text-center text-[11px] text-white/35">Memuat…</p>
                         ) : (
                           <div className="space-y-3">
@@ -1036,7 +1032,7 @@ export default function ScanlatorStudio() {
 
                             <div className="grid grid-cols-2 gap-2">
                               <Button onClick={() => void saveProjectEdit()} disabled={savingEdit}><FiSave size={12} /> {savingEdit ? "Menyimpan…" : "Simpan"}</Button>
-                              <Button variant="danger" onClick={() => void removeProject(w.slug, w.title)}><FiTrash2 size={12} /> Hapus</Button>
+                              <Button variant="danger" onClick={() => void removeProject(activeWork?.slug || "", activeWork?.title || "")}><FiTrash2 size={12} /> Hapus</Button>
                             </div>
                             </div>
                             )}
@@ -1105,11 +1101,37 @@ export default function ScanlatorStudio() {
                             )}
                           </div>
                         )}
-                      </div>
-                    )}
-                  </li>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2.5 p-3 sm:grid-cols-3">
+                {works.map((w) => (
+                  <button
+                    key={w.slug}
+                    type="button"
+                    onClick={() => void openProject(w.slug)}
+                    className="group min-w-0 text-left"
+                  >
+                    <div className="relative aspect-[3/4] overflow-hidden rounded-lg border border-white/[.07] bg-white/[.04]">
+                      {w.cover_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={w.cover_url} alt={w.title} loading="lazy" className="h-full w-full object-cover transition-opacity group-hover:opacity-85" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-white/20"><FiBookOpen size={18} /></div>
+                      )}
+                      <span className={`absolute left-1.5 top-1.5 rounded px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-wide ${
+                        w.review_status === "approved" ? "bg-emerald-400/90 text-black" : w.review_status === "rejected" ? "bg-rose-400/90 text-black" : "bg-amber-300/90 text-black"
+                      }`}>
+                        {w.review_status === "approved" ? "Terbit" : w.review_status === "rejected" ? "Ditolak" : "Review"}
+                      </span>
+                      {w.chapters ? (
+                        <span className="absolute right-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[8.5px] font-bold text-white/80">{w.chapters} ch</span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1.5 truncate text-[11.5px] font-semibold leading-tight text-white/85">{w.title}</p>
+                    <p className="truncate text-[10px] text-white/35">{w.type || "—"}{w.is_adult ? " · 18+" : ""}</p>
+                  </button>
                 ))}
-              </ul>
+              </div>
             )}
           </Panel>
           </div>

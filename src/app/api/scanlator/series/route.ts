@@ -40,10 +40,14 @@ export async function GET(request: Request) {
     const data = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
       `/admin/projects?limit=100&search=&page=1`,
     ).catch(() => ({ data: [] }));
-    const mine = (data.data || [])
-      .filter((m) => (m as { owner_user_id?: string }).owner_user_id === userId)
-      .map((m) => {
+    const owned = (data.data || []).filter((m) => (m as { owner_user_id?: string }).owner_user_id === userId);
+    const mine = await Promise.all(
+      owned.map(async (m) => {
         const row = m as Record<string, unknown>;
+        const slug = String(row.slug || "");
+        const chapterRows = await projectApiFetch<{ data?: unknown[] }>(
+          `/admin/chapters?manga_slug=${encodeURIComponent(slug)}&limit=200&page=1`,
+        ).catch(() => ({ data: [] }));
         return {
           slug: row.slug,
           title: row.title,
@@ -53,8 +57,10 @@ export async function GET(request: Request) {
           review_note: row.review_note ?? null,
           is_published: row.is_published,
           is_adult: row.is_adult,
+          chapters: Array.isArray(chapterRows.data) ? chapterRows.data.length : 0,
         };
-      });
+      }),
+    );
     return NextResponse.json({ success: true, profile, works: mine }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     const authResponse = authErrorResponse(error);
