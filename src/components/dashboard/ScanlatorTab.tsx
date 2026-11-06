@@ -61,7 +61,12 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
   const [works, setWorks] = useState<WorkReview[]>([]);
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [openUser, setOpenUser] = useState<string | null>(null);
-  const [userWorks, setUserWorks] = useState<Record<string, Array<{ slug: string; title: string; review_status: string; is_published: boolean; view_count: number }>>>({});
+  type TeamWork = {
+    slug: string; title: string; cover_url?: string | null; type?: string | null;
+    review_status: string; review_note?: string | null; is_published: boolean;
+    view_count: number; chapters_total?: number; chapters_published?: number;
+  };
+  const [userWorks, setUserWorks] = useState<Record<string, TeamWork[]>>({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ userId: string; team: string } | null>(null);
@@ -147,7 +152,13 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
       const token = await getAdminToken();
       const res = await fetch(`/api/admin/scanlator/projects?user_id=${userId}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
       if (res.ok) {
-        const j = (await res.json()) as { works?: Array<{ slug: string; title: string; review_status: string; is_published: boolean; view_count: number }> };
+        const j = (await res.json()) as {
+          works?: Array<{
+            slug: string; title: string; cover_url?: string | null; type?: string | null;
+            review_status: string; review_note?: string | null; is_published: boolean;
+            view_count: number; chapters_total?: number; chapters_published?: number;
+          }>;
+        };
         setUserWorks((prev) => ({ ...prev, [userId]: j.works || [] }));
       }
     } catch { /* diamkan */ }
@@ -348,21 +359,48 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
               {s.moderation_note && <p className="px-4 pt-1 text-[10px] text-white/30">Catatan: {s.moderation_note}</p>}
 
               <div className="px-4 pt-2">
-                <button type="button" onClick={() => void toggleUserProjects(s.user_id)} className="flex items-center gap-1 text-[11px] font-bold text-[var(--accent-2)]">
-                  <FiBookOpen size={11} /> {openUser === s.user_id ? "Sembunyikan project" : "Lihat project"}
+                <button type="button" onClick={() => void toggleUserProjects(s.user_id)} className="flex w-full items-center gap-1 rounded-md border border-white/[.07] px-2.5 py-1.5 text-[11px] font-bold text-[var(--accent-2)]">
+                  <FiBookOpen size={11} />
+                  {openUser === s.user_id ? "Sembunyikan project" : "Lihat project"}
+                  {userWorks[s.user_id] && (
+                    <span className="ml-auto text-[10px] font-semibold text-white/35">{userWorks[s.user_id].length} seri</span>
+                  )}
                 </button>
+
                 {openUser === s.user_id && (
-                  <ul className="mt-1.5 divide-y divide-white/[.05] rounded-md border border-white/[.06]">
+                  <ul className="mt-2 divide-y divide-white/[.05] overflow-hidden rounded-md border border-white/[.06]">
                     {(userWorks[s.user_id] || []).map((w) => (
-                      <li key={w.slug} className="flex items-center justify-between gap-2 px-2.5 py-2">
-                        <span className="min-w-0 truncate text-[11px] text-white/70">{w.title}</span>
-                        <span className="shrink-0 text-[10px] text-white/35">
-                          {w.review_status === "approved" ? "Terbit" : w.review_status === "rejected" ? "Ditolak" : "Review"} · {w.view_count} tayangan
-                        </span>
+                      <li key={w.slug} className="flex items-center gap-2.5 px-2.5 py-2">
+                        {w.cover_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={w.cover_url} alt="" loading="lazy" className="h-10 w-8 shrink-0 rounded border border-white/[.07] object-cover" />
+                        ) : (
+                          <span className="flex h-10 w-8 shrink-0 items-center justify-center rounded border border-white/[.07] bg-white/[.04] text-[9px] text-white/25">—</span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <a
+                            href={`/komik/project/${w.slug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block truncate text-[11px] font-semibold text-white/80 hover:text-white"
+                          >
+                            {w.title}
+                          </a>
+                          <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[10px] text-white/35">
+                            <span className={w.is_published ? "text-emerald-300/80" : w.review_status === "rejected" ? "text-rose-300/80" : "text-amber-300/80"}>
+                              {w.is_published ? "Terbit" : w.review_status === "rejected" ? "Ditolak" : "Menunggu"}
+                            </span>
+                            <span>·</span>
+                            <span>{w.chapters_published ?? 0}/{w.chapters_total ?? 0} chapter</span>
+                            <span>·</span>
+                            <span>{w.view_count} tayangan</span>
+                          </p>
+                          {w.review_note && <p className="mt-0.5 line-clamp-1 text-[10px] text-rose-300/60">{w.review_note}</p>}
+                        </div>
                       </li>
                     ))}
                     {(userWorks[s.user_id] || []).length === 0 && (
-                      <li className="px-2.5 py-2 text-[11px] text-white/30">Belum ada project.</li>
+                      <li className="px-2.5 py-3 text-[11px] text-white/30">Belum ada project.</li>
                     )}
                   </ul>
                 )}

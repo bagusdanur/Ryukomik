@@ -18,19 +18,31 @@ export async function GET(request: Request) {
     const list = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>("/admin/projects?limit=100&page=1")
       .catch(() => ({ data: [] }));
 
-    const works = (list.data || [])
-      .filter((m) => (m as { owner_user_id?: string }).owner_user_id === userId)
-      .map((m) => {
-        const r = m as Record<string, unknown>;
-        return {
-          slug: r.slug,
-          title: r.title,
-          review_status: r.review_status,
-          is_published: r.is_published,
-          view_count: Number(r.view_count || 0),
-          updated_at: r.updated_at,
-        };
-      });
+    const works = await Promise.all(
+      (list.data || [])
+        .filter((m) => (m as { owner_user_id?: string }).owner_user_id === userId)
+        .map(async (m) => {
+          const r = m as Record<string, unknown>;
+          const slug = String(r.slug || "");
+          const chapters = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
+            `/admin/chapters?manga_slug=${encodeURIComponent(slug)}&limit=200&page=1`,
+          ).catch(() => ({ data: [] }));
+          const rows = chapters.data || [];
+          return {
+            slug,
+            title: r.title,
+            cover_url: (r.cover_url as string | null) || null,
+            type: (r.type as string | null) || null,
+            review_status: r.review_status,
+            review_note: (r.review_note as string | null) || null,
+            is_published: r.is_published,
+            view_count: Number(r.view_count || 0),
+            updated_at: r.updated_at,
+            chapters_total: rows.length,
+            chapters_published: rows.filter((c) => Boolean((c as { is_published?: boolean }).is_published)).length,
+          };
+        }),
+    );
 
     return NextResponse.json({ success: true, works }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
