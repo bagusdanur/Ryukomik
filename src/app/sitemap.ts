@@ -107,10 +107,30 @@ async function fetchProfileRoutes(): Promise<MetadataRoute.Sitemap> {
   }
 }
 
+async function fetchScanlatorRoutes(): Promise<MetadataRoute.Sitemap> {
+  try {
+    const { rows } = await socialQuery<{ handle: string; updated_at: string | null }>(
+      `select handle, updated_at from scanlator_profiles
+        where status <> 'revoked'
+        order by updated_at desc nulls last
+        limit 500`,
+    );
+    return rows.map((row) => ({
+      url: buildCanonicalUrl(`/scanlator/${encodeURIComponent(row.handle)}`),
+      lastModified: row.updated_at ? new Date(row.updated_at) : undefined,
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [sourceRoutes, profileRoutes] = await Promise.all([
+  const [sourceRoutes, profileRoutes, scanlatorRoutes] = await Promise.all([
     Promise.all(PUBLIC_COMIC_SOURCES.map(fetchSource)),
     fetchProfileRoutes(),
+    fetchScanlatorRoutes(),
   ]);
   return [
     { url: buildCanonicalUrl("/"), changeFrequency: "daily", priority: 1 },
@@ -119,7 +139,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: buildCanonicalUrl("/marathon"), changeFrequency: "daily", priority: 0.7 },
     { url: buildCanonicalUrl("/leaderboard"), changeFrequency: "daily", priority: 0.6 },
     { url: buildCanonicalUrl("/border"), changeFrequency: "weekly", priority: 0.5 },
+    { url: buildCanonicalUrl("/scanlator/direktori"), changeFrequency: "weekly", priority: 0.5 },
     ...sourceRoutes.flat(),
     ...profileRoutes,
+    ...scanlatorRoutes,
   ];
 }

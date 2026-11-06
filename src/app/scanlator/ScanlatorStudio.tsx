@@ -88,6 +88,8 @@ export default function ScanlatorStudio() {
   const [openSlug, setOpenSlug] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [chapters, setChapters] = useState<Array<{ id: string; chapter_number: number; title: string | null; is_published: boolean; pages: number }>>([]);
+  const [chapterViews, setChapterViews] = useState<Record<number, number>>({});
+  const [topChapter, setTopChapter] = useState<{ chapter_number: number; views: number } | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editType, setEditType] = useState("Manhwa");
@@ -365,6 +367,20 @@ export default function ScanlatorStudio() {
         setEditGenres(Array.isArray(json.project.genres) ? (json.project.genres as string[]).join(", ") : "");
         setEditAdult(Boolean(json.project.is_adult));
         setChapters(json.chapters || []);
+      }
+
+      const statsRes = await fetch(`/api/scanlator/chapter-stats?slug=${encodeURIComponent(slug)}`, {
+        headers: { Authorization: `Bearer ${t}` },
+        cache: "no-store",
+      }).catch(() => null);
+      if (statsRes?.ok) {
+        const stats = (await statsRes.json().catch(() => null)) as
+          | { chapters?: Array<{ chapter_number: number; views: number }>; top?: { chapter_number: number; views: number } | null }
+          | null;
+        const map: Record<number, number> = {};
+        for (const c of stats?.chapters || []) map[c.chapter_number] = c.views;
+        setChapterViews(map);
+        setTopChapter(stats?.top || null);
       }
     } catch { setError("Gagal memuat detail project."); }
     finally { setDetailLoading(false); }
@@ -975,12 +991,18 @@ export default function ScanlatorStudio() {
 
                             {projectTab === "chapter" && (
                             <div className="pt-1">
+                              {topChapter && (
+                                <p className="mb-2 rounded-md border border-white/[.06] bg-white/[.02] px-2.5 py-1.5 text-[10px] text-white/45">
+                                  Terpopuler: <strong className="font-bold text-white/75">Ch. {topChapter.chapter_number}</strong> · {topChapter.views.toLocaleString("id-ID")} tayangan
+                                </p>
+                              )}
                               <div className="mt-1.5 space-y-1.5">
                                 {chapters.map((c) => (
                                   <div key={c.id} className="rounded-md border border-white/[.06] bg-white/[.02] p-2">
                                     <div className="flex items-center justify-between gap-2">
                                       <p className="min-w-0 truncate text-[11px] text-white/70">
                                         Ch. {c.chapter_number} · {c.title || "Tanpa judul"} · {c.pages} gambar
+                                        <span className="ml-1 text-[10px] text-white/35">· 👁 {chapterViews[c.chapter_number] ?? 0}</span>
                                         {!c.is_published && <span className="ml-1 text-[10px] text-amber-300">(belum terbit)</span>}
                                       </p>
                                       <button type="button" onClick={() => void removeChapter(c.id, c.chapter_number)} aria-label={`Hapus chapter ${c.chapter_number}`} className="shrink-0 rounded p-1 text-rose-300/70 transition-colors hover:text-rose-300">

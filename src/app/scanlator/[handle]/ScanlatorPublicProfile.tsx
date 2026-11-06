@@ -40,6 +40,9 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [followBusy, setFollowBusy] = useState(false);
+  const [followHint, setFollowHint] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -61,6 +64,14 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
           if (meRes?.ok) {
             const me = (await meRes.json()) as { profile?: { handle?: string } | null };
             if (me.profile?.handle && me.profile.handle.toLowerCase() === handle.toLowerCase()) setIsOwner(true);
+          }
+          const fRes = await fetch(`/api/scanlator/follow?handle=${encodeURIComponent(handle)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          }).catch(() => null);
+          if (fRes?.ok) {
+            const f = (await fRes.json()) as { following?: boolean };
+            setFollowing(Boolean(f.following));
           }
         }
       } catch {
@@ -111,6 +122,30 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
       </>,
     );
   }
+
+  const toggleFollow = async () => {
+    if (followBusy) return;
+    setFollowBusy(true); setFollowHint("");
+    try {
+      const { data } = await getSession();
+      const token = data.session?.access_token;
+      if (!token) { setFollowHint("Masuk dulu untuk mengikuti grup ini."); return; }
+      const next = !following;
+      const res = await fetch("/api/scanlator/follow", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ handle: profile?.handle, follow: next }),
+      });
+      const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
+      if (!res.ok || !json?.success) { setFollowHint(json?.error || "Gagal menyimpan."); return; }
+      setFollowing(next);
+      setFollowHint(next ? "Kamu akan dapat notifikasi chapter baru dari tim ini." : "Berhenti mengikuti.");
+    } catch {
+      setFollowHint("Gagal menyimpan.");
+    } finally {
+      setFollowBusy(false);
+    }
+  };
 
   const donate = [
     { label: "DANA / GoPay", url: profile.support_dana },
@@ -188,14 +223,29 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
         </div>
       </header>
 
-      {isOwner && (
-        <Link
-          href="/scanlator"
-          className="mt-3 flex min-h-[38px] w-full items-center justify-center rounded-lg border border-[color-mix(in_srgb,var(--accent)_45%,transparent)] bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] text-[12px] font-bold text-white transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_22%,transparent)]"
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => void toggleFollow()}
+          disabled={followBusy}
+          className={`min-h-[36px] flex-1 rounded-lg border text-[12px] font-bold transition-colors ${
+            following
+              ? "border-white/[.1] bg-white/[.05] text-white/75"
+              : "border-[color-mix(in_srgb,var(--accent)_45%,transparent)] bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] text-white"
+          }`}
         >
-          Buka Studio Scanlator
-        </Link>
-      )}
+          {followBusy ? "Menyimpan…" : following ? "Diikuti" : "Ikuti grup"}
+        </button>
+        {isOwner && (
+          <Link
+            href="/scanlator"
+            className="min-h-[36px] flex-1 rounded-lg border border-white/[.1] text-center text-[12px] font-bold leading-[34px] text-white/80"
+          >
+            Studio
+          </Link>
+        )}
+      </div>
+      {followHint && <p className="mt-1.5 px-1 text-[10.5px] text-white/40">{followHint}</p>}
 
       {profile.bio && (
         <p className="px-1 pb-1 pt-3 text-[12px] leading-relaxed text-white/60">{profile.bio}</p>

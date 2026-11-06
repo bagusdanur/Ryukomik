@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { adminErrorResponse, verifyAdminRequest } from "@/lib/adminApi";
 import { projectApiFetch } from "@/lib/projectApiServer";
 import { notifyScanlator } from "@/lib/scanlatorNotify";
+import { socialQuery } from "@/lib/social/db";
 import { logChapterRevision } from "@/lib/scanlatorAudit";
 
 export const runtime = "nodejs";
@@ -108,6 +109,37 @@ export async function POST(request: Request) {
           after: { is_published: action === "approve_chapter", note },
         });
         const owner = manga?.data?.owner_user_id as string | undefined;
+
+        // Notifikasi pembaca yang mengikuti grup — hanya saat chapter benar-benar terbit.
+        if (action === "approve_chapter") {
+          const teamHandle = String(manga?.data?.scanlator_handle || "").toLowerCase();
+          if (teamHandle) {
+            const chapterRows = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
+              `/admin/chapters?manga_slug=${encodeURIComponent(String(manga?.data?.slug || ""))}&limit=200&page=1`,
+            ).catch(() => ({ data: [] }));
+            const chapter = (chapterRows.data || []).find((c) => (c as { id?: string }).id === body.chapter_id);
+            const chNumber = Number((chapter as { chapter_number?: number } | undefined)?.chapter_number || 0);
+            const teamName = String(manga?.data?.scanlator_team || manga?.data?.scanlator_handle || "Scanlator");
+            const seriesTitle = String(manga?.data?.title || "");
+            const link = `/komik/project/${String(manga?.data?.slug || "")}`;
+
+            await socialQuery(
+              `insert into scanlator_notifications (user_id, type, title, body, link)
+               select f.user_id, 'info', $1, $2, $3
+                 from scanlator_follows f
+                where f.handle = $4 and f.notify = true and f.user_id <> $5
+                limit 5000`,
+              [
+                `Chapter baru dari ${teamName}`,
+                `${seriesTitle} · Ch. ${chNumber} sudah bisa dibaca.`,
+                link,
+                teamHandle,
+                owner || "00000000-0000-0000-0000-000000000000",
+              ],
+            ).catch(() => undefined);
+          }
+        }
+
         if (owner) {
           await notifyScanlator(owner, {
             type: action === "approve_chapter" ? "project_approved" : "project_rejected",
