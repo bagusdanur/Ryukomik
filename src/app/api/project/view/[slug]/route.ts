@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseServer";
 import { projectApiUrl } from "@/lib/projectApiServer";
 
-const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
+// Slug project lama bisa berakhir dengan tanda hubung karena judul dipotong
+// saat dibuat. Tetap batasi hanya huruf/angka/tanda hubung.
+const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]*$/i;
 const VISITOR_ID_PATTERN = /^[a-f0-9-]{36}$/i;
 const CHAPTER_PATTERN = /^\d+(?:\.\d+)?$/;
 

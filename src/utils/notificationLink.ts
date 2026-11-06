@@ -26,6 +26,11 @@ export function getNotificationLink(notification: LinkNotification) {
   if (notification.type === "premium_activated" || notification.type === "premium_reward") return "/premium-pay";
   if (notification.type === "scanlator_approved") return "/scanlator";
   if (notification.type === "scanlator_rejected") return "/scanlator/daftar";
+  if (notification.type === "scanlator_update") {
+    return notification.slug?.startsWith("/") && !notification.slug.startsWith("//")
+      ? notification.slug
+      : "/scanlator";
+  }
   if (notification.type === "new_follower") {
     const profile = notification.actor_name || notification.target_id;
     return profile ? `/u/${encodeURIComponent(profile)}` : "/connections";

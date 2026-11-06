@@ -20,18 +20,35 @@ export function useProjectViewCounter(source: string, mangaSlug?: string, chapte
     const chapterMatch = chapterSlug.match(/(?:chapter[-/\s]?)(\d+(?:\.\d+)?)/i);
     if (!chapterMatch) return;
     const chapterNumber = chapterMatch[1];
+    let eligible = false;
+    let sent = false;
 
-    const timer = window.setTimeout(() => {
-      if (document.visibilityState !== "visible") return;
+    const send = () => {
+      if (!eligible || sent || document.visibilityState !== "visible") return;
+      sent = true;
       const visitorId = getVisitorId();
       void fetch(`/api/project/view/${encodeURIComponent(mangaSlug)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ visitorId, chapterNumber }),
         keepalive: true,
-      }).catch(() => undefined);
-    }, MIN_READING_MS);
+      }).catch(() => {
+        // Analytics tidak boleh mengganggu reader. Izinkan percobaan ulang saat
+        // tab terlihat lagi bila request pertama gagal sebelum terkirim.
+        sent = false;
+      });
+    };
 
-    return () => window.clearTimeout(timer);
+    const timer = window.setTimeout(() => {
+      eligible = true;
+      send();
+    }, MIN_READING_MS);
+    const onVisibility = () => send();
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [source, mangaSlug, chapterSlug]);
 }

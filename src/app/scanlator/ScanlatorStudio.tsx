@@ -23,11 +23,6 @@ type Work = {
   review_status: string | null; review_note?: string | null; is_published: boolean; is_adult: boolean; chapters?: number;
 };
 
-type Notif = {
-  id: string; type: string; title: string; body: string | null; link: string | null;
-  read_at: string | null; created_at: string;
-};
-
 type TabId = "ringkasan" | "upload" | "karya" | "profil";
 
 const TABS: Array<{ id: TabId; label: string }> = [
@@ -45,8 +40,6 @@ export default function ScanlatorStudio() {
   const [notScanlator, setNotScanlator] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
-  const [notifs, setNotifs] = useState<Notif[]>([]);
-  const [unread, setUnread] = useState(0);
   const [quota, setQuota] = useState<{ usedLabel: string; limitLabel: string; percent: number; fileCount: number } | null>(null);
   const [stats, setStats] = useState<{ totalViews: number; totalChapters: number; projects: Array<{ slug: string; title: string; views: number }> } | null>(null);
 
@@ -137,7 +130,6 @@ export default function ScanlatorStudio() {
           setChapters([]);
           setStats(null);
           setQuota(null);
-          setNotifs([]);
           setNotScanlator(true);
           return;
         }
@@ -162,12 +154,7 @@ export default function ScanlatorStudio() {
         const qj = (await qRes.json()) as { usedLabel: string; limitLabel: string; percent: number; fileCount: number };
         setQuota(qj);
       }
-      const nRes = await fetch("/api/scanlator/notifications", { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" }).catch(() => null);
-      if (nRes?.ok) {
-        const nj = (await nRes.json()) as { notifications?: Notif[]; unread?: number };
-        setNotifs(nj.notifications || []);
-        setUnread(nj.unread || 0);
-      }
+
     } catch {
       setError("Gagal memuat studio.");
     } finally {
@@ -395,18 +382,7 @@ export default function ScanlatorStudio() {
     </main>
   );
 
-  const markAllRead = async () => {
-    try {
-      const t = await token();
-      await fetch("/api/scanlator/notifications", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ all: true }),
-      });
-      setNotifs((prev) => prev.map((n) => ({ ...n, read_at: n.read_at || new Date().toISOString() })));
-      setUnread(0);
-    } catch { /* diamkan */ }
-  };
+
 
   const openProject = async (slug: string, force = false) => {
     if (openSlug === slug && !force) { setOpenSlug(null); return; }
@@ -707,32 +683,6 @@ export default function ScanlatorStudio() {
                     <li key={p.slug} className="flex items-center justify-between gap-3 px-4 py-2.5">
                       <span className="truncate text-[12px] text-white/75">{p.title}</span>
                       <span className="shrink-0 text-[11px] font-semibold text-white/40">{p.views.toLocaleString("id-ID")} tayangan</span>
-                    </li>
-                  ))}
-                </ul>
-              </Panel>
-            )}
-
-            {notifs.length > 0 && (
-              <Panel>
-                <PanelHead
-                  title={`Notifikasi${unread > 0 ? ` · ${unread} baru` : ""}`}
-                  desc="Status project dan tindakan admin."
-                  right={unread > 0 ? <Button variant="ghost" onClick={() => void markAllRead()}>Tandai dibaca</Button> : undefined}
-                />
-                <ul className="divide-y divide-white/[.05]">
-                  {notifs.slice(0, 6).map((n) => (
-                    <li key={n.id} className="px-4 py-2.5">
-                      <div className="flex items-start gap-2">
-                        {!n.read_at && <span className="mt-[6px] h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent-2)]" />}
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-[12px] ${n.read_at ? "text-white/65" : "font-semibold text-white"}`}>{n.title}</p>
-                          {n.body && <p className="mt-0.5 text-[11px] leading-relaxed text-white/40">{n.body}</p>}
-                          <p className="mt-1 text-[10px] text-white/25">
-                            {new Date(n.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
-                          </p>
-                        </div>
-                      </div>
                     </li>
                   ))}
                 </ul>

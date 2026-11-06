@@ -1,6 +1,6 @@
 import type { NotificationItem } from "@/types/content";
 
-export function getNotificationLabel(item: Pick<NotificationItem, "type" | "actor_name" | "notification_title" | "notification_message" | "chapter" | "slug">) {
+export function getNotificationLabel(item: Pick<NotificationItem, "type" | "actor_name" | "notification_title" | "notification_message" | "chapter" | "slug" | "target_id">) {
   const actor = item.actor_name || "Seseorang";
   switch (item.type) {
     case "announcement":
@@ -19,6 +19,8 @@ export function getNotificationLabel(item: Pick<NotificationItem, "type" | "acto
       return "Pengajuan Scanlator kamu disetujui — studio sudah terbuka";
     case "scanlator_rejected":
       return "Pengajuan Scanlator kamu ditolak — cek alasannya";
+    case "scanlator_update":
+      return [item.target_id, item.chapter].filter(Boolean).join(" — ") || "Ada pembaruan Scanlator";
     case "premium_activated":
       return "Premium akunmu sudah aktif";
     case "premium_reward":
