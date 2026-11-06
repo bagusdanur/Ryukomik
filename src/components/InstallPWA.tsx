@@ -44,7 +44,15 @@ export default function InstallPWA() {
   // Jangan tampilkan ajakan install di halaman dewasa /tonton: dialog install
   // Android (WebAPK) memunculkan permintaan izin "mengakses aplikasi dan layanan
   // lain di perangkat ini", yang mengganggu di section 18+.
-  if (pathname?.startsWith("/hentai") || pathname?.startsWith("/tonton")) return null;
+  // Banner install tidak ditampilkan di halaman yang butuh fokus baca/profil.
+  if (
+    pathname?.startsWith("/hentai") ||
+    pathname?.startsWith("/tonton") ||
+    pathname?.startsWith("/scanlator") ||
+    /^\/komik\/[^/]+\/[^/]+\/?$/.test(pathname || "")
+  ) {
+    return null;
+  }
   if (!show) return null;
 
   return (

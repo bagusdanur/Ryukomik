@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FiArrowLeft, FiCalendar, FiExternalLink, FiHeart } from "react-icons/fi";
+import { useRouter } from "next/navigation";
+import { FiArrowLeft, FiCalendar, FiExternalLink, FiHeart, FiUser } from "react-icons/fi";
 import UserBadges from "@/components/UserBadges";
 import { getSession } from "@/lib/auth/getSession";
 
@@ -14,11 +15,27 @@ type Profile = {
 };
 
 type Project = {
-  slug: string; title: string; cover_url: string | null; type: string | null; latest_chapter?: number | null;
+  slug: string; title: string; cover_url: string | null; type: string | null;
+  latest_chapter?: number | null; updated_at?: string | null; latest_chapter_at?: string | null;
 };
 
-/** Profil publik Scanlator — gaya profil: identitas, badge, donate, daftar project. */
+function timeAgo(iso: string | null | undefined) {
+  if (!iso) return null;
+  const diff = Date.now() - Date.parse(iso);
+  if (!Number.isFinite(diff) || diff < 0) return null;
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "baru saja";
+  if (m < 60) return `${m} mnt lalu`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} jam lalu`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d} hari lalu`;
+  return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+}
+
+/** Profil publik Scanlator — rapi, flat, mengikuti warna global. */
 export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
+  const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,20 +71,44 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
     })();
   }, [handle]);
 
+  /** Kembali ke halaman sebelumnya; kalau dibuka langsung, ke daftar grup. */
+  const goBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) router.back();
+    else router.push("/files?tab=scanlator");
+  };
+
   const shell = (children: React.ReactNode) => (
-    <main className="min-h-screen bg-[var(--surface-0)] px-4 pb-20 pt-16 text-white">
+    <main className="min-h-screen bg-[var(--surface-0)] px-4 pb-24 pt-16 text-white">
       <div className="mx-auto w-full max-w-2xl">{children}</div>
     </main>
   );
 
-  if (loading) return shell(<p className="py-20 text-center text-[13px] text-white/35">Memuat…</p>);
+  const backBar = (
+    <button
+      type="button"
+      onClick={goBack}
+      className="mb-3 inline-flex items-center gap-1.5 rounded-md px-1 py-1 text-[11px] font-semibold text-white/40 transition-colors hover:text-white/75"
+    >
+      <FiArrowLeft size={13} /> Kembali
+    </button>
+  );
+
+  if (loading) return shell(<>{backBar}<p className="py-20 text-center text-[13px] text-white/35">Memuat…</p></>);
 
   if (!profile) {
     return shell(
-      <div className="mt-6 rounded-xl border border-white/[.07] bg-white/[.02] p-6 text-center">
-        <p className="text-[13px] text-white/45">Tim tidak ditemukan.</p>
-        <Link href="/" className="mt-4 inline-flex min-h-[40px] items-center rounded-lg bg-[var(--accent)] px-4 text-[12px] font-bold">Ke beranda</Link>
-      </div>,
+      <>
+        {backBar}
+        <div className="rounded-xl border border-white/[.07] bg-white/[.02] px-5 py-10 text-center">
+          <p className="text-[13px] text-white/45">Tim tidak ditemukan.</p>
+          <Link
+            href="/files?tab=scanlator"
+            className="mt-4 inline-flex min-h-[38px] items-center rounded-lg border border-white/[.1] px-4 text-[12px] font-bold text-white/75"
+          >
+            Lihat daftar grup
+          </Link>
+        </div>
+      </>,
     );
   }
 
@@ -78,114 +119,135 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
     { label: "Donate lain", url: profile.support_url_lain },
   ].filter((d) => d.url);
 
+  const lastUpdate = projects
+    .map((p) => p.latest_chapter_at || p.updated_at || null)
+    .filter((v): v is string => Boolean(v))
+    .sort((a, b) => Date.parse(b) - Date.parse(a))[0] || null;
+
   return shell(
     <>
-      <Link href="/" className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/40 transition-colors hover:text-white/70">
-        <FiArrowLeft size={12} /> Beranda
-      </Link>
+      {backBar}
 
-      {/* Header profil */}
-      <header className="mt-3 flex items-start gap-3.5 pb-4">
-        {profile.avatar_url || profile.owner_avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={(profile.avatar_url || profile.owner_avatar_url) as string}
-            alt={profile.team_name}
-            loading="eager"
-            className="h-16 w-16 shrink-0 rounded-xl border border-white/[.08] object-cover"
-          />
-        ) : (
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-white/[.08] bg-white/[.04] text-xl font-bold text-white/80">
-            {profile.team_name.slice(0, 1).toUpperCase()}
-          </div>
-        )}
-        <div className="min-w-0 flex-1 pt-0.5">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <h1 className="truncate text-[17px] font-bold leading-tight">{profile.team_name}</h1>
-            <UserBadges role="scanlator" />
-          </div>
-          <p className="mt-0.5 truncate text-[11px] text-white/35">@{profile.handle}</p>
-          {profile.owner_username && (
-            <p className="mt-1 truncate text-[11px] text-white/40">
-              Dikelola oleh{" "}
+      {/* Identitas tim */}
+      <header className="rounded-xl border border-white/[.07] bg-white/[.02] p-4">
+        <div className="flex items-start gap-3.5">
+          {profile.avatar_url || profile.owner_avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={(profile.avatar_url || profile.owner_avatar_url) as string}
+              alt={profile.team_name}
+              loading="eager"
+              className="h-14 w-14 shrink-0 rounded-lg border border-white/[.08] object-cover"
+            />
+          ) : (
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-white/[.08] bg-white/[.04] text-lg font-black text-white/70">
+              {profile.team_name.slice(0, 1).toUpperCase()}
+            </div>
+          )}
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <h1 className="truncate text-[16px] font-bold leading-tight text-white">{profile.team_name}</h1>
+              <UserBadges role="scanlator" />
+            </div>
+            <p className="mt-0.5 truncate text-[11px] text-white/35">@{profile.handle}</p>
+            {profile.owner_username && (
               <Link
                 href={`/u/${encodeURIComponent(profile.owner_username)}`}
-                className="font-bold text-[var(--accent-2)] transition-colors hover:underline"
+                className="mt-1 inline-flex max-w-full items-center gap-1 truncate text-[11px] text-white/40 transition-colors hover:text-white/70"
               >
-                @{profile.owner_username.toLowerCase().replace(/\s+/g, "_")}
+                <FiUser size={10} className="shrink-0" />
+                <span className="truncate">{profile.owner_username}</span>
               </Link>
-            </p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center gap-3 border-t border-white/[.06] pt-2.5 text-[10.5px] text-white/45">
+          <span className="inline-flex items-center gap-1">
+            <FiCalendar size={10} />
+            {new Date(profile.created_at).toLocaleDateString("id-ID", { month: "short", year: "numeric" })}
+          </span>
+          <span className="h-2.5 w-px bg-white/10" />
+          <span><strong className="font-bold text-white/70">{projects.length}</strong> seri</span>
+          {timeAgo(lastUpdate) && (
+            <>
+              <span className="h-2.5 w-px bg-white/10" />
+              <span>Update <strong className="font-bold text-white/70">{timeAgo(lastUpdate)}</strong></span>
+            </>
           )}
-          <p className="mt-1 flex items-center gap-1.5 text-[11px] text-white/30">
-            <FiCalendar size={11} />
-            Bergabung {new Date(profile.created_at).toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
-          </p>
         </div>
       </header>
 
       {isOwner && (
         <Link
           href="/scanlator"
-          className="mb-4 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-lg bg-[var(--accent)] text-[12px] font-bold text-white transition-colors hover:bg-[var(--accent)]/85"
+          className="mt-3 flex min-h-[38px] w-full items-center justify-center rounded-lg border border-[color-mix(in_srgb,var(--accent)_45%,transparent)] bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] text-[12px] font-bold text-white transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_22%,transparent)]"
         >
           Buka Studio Scanlator
         </Link>
       )}
 
-      {profile.bio && <p className="pb-4 text-[12px] leading-relaxed text-white/55">{profile.bio}</p>}
+      {profile.bio && (
+        <p className="px-1 pb-1 pt-3 text-[12px] leading-relaxed text-white/60">{profile.bio}</p>
+      )}
 
-      {/* Statistik ringkas */}
-      <div className="grid grid-cols-2 gap-2 pb-4">
-        <div className="rounded-lg border border-white/[.06] bg-white/[.02] px-3 py-2.5">
-          <p className="text-base font-bold leading-none">{projects.length}</p>
-          <p className="mt-1 text-[10px] text-white/35">Project</p>
-        </div>
-        <div className="rounded-lg border border-white/[.06] bg-white/[.02] px-3 py-2.5">
-          <p className="text-base font-bold leading-none">
-            {projects.reduce((sum, p) => sum + (Number(p.latest_chapter) || 0), 0)}
-          </p>
-          <p className="mt-1 text-[10px] text-white/35">Chapter terakhir</p>
-        </div>
-      </div>
-
-      {/* Donate */}
       {donate.length > 0 && (
-        <section className="border-y border-white/[.06] py-3">
-          <p className="flex items-center gap-1.5 text-[11px] font-bold text-white/60"><FiHeart size={11} className="text-rose-300" /> Dukung tim ini</p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+        <section className="mt-3">
+          <p className="mb-1.5 flex items-center gap-1.5 px-1 text-[10px] font-bold uppercase tracking-wide text-white/30">
+            <FiHeart size={10} /> Dukung tim
+          </p>
+          <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {donate.map((d) => (
-              <a key={d.label} href={d.url!} target="_blank" rel="noreferrer noopener"
-                className="inline-flex min-h-[32px] items-center gap-1 rounded-md border border-white/[.08] px-2.5 text-[11px] font-semibold text-white/65 transition-colors hover:bg-white/[.05] hover:text-white">
-                {d.label} <FiExternalLink size={10} className="text-white/30" />
+              <a
+                key={d.label}
+                href={d.url!}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex min-h-[32px] shrink-0 items-center gap-1 rounded-md border px-2.5 text-[11px] font-semibold text-white/80 transition-colors active:opacity-80"
+                style={{
+                  borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)",
+                  background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+                }}
+              >
+                {d.label}
+                <FiExternalLink size={9} className="text-white/40" />
               </a>
             ))}
           </div>
         </section>
       )}
 
-      {/* Project */}
-      <section className="pt-4">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-[13px] font-bold">Project</h2>
-          <span className="text-[11px] text-white/30">{projects.length} judul</span>
+      {/* Karya */}
+      <section className="pt-5">
+        <div className="mb-2.5 flex items-baseline justify-between px-1">
+          <h2 className="text-[13px] font-bold text-white">Seri terbit</h2>
+          <span className="text-[10.5px] text-white/30">{projects.length} judul</span>
         </div>
 
         {projects.length === 0 ? (
-          <p className="py-10 text-center text-[12px] text-white/30">Belum ada project terbit.</p>
+          <div className="rounded-xl border border-white/[.07] bg-white/[.02] px-4 py-10 text-center">
+            <p className="text-[12px] text-white/35">Belum ada seri terbit.</p>
+          </div>
         ) : (
-          <div className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-4">
+          <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4">
             {projects.map((p) => (
               <Link key={p.slug} href={`/komik/project/${p.slug}`} className="group min-w-0">
-                <div className="aspect-[3/4] overflow-hidden rounded-md bg-white/[.04]">
+                <div className="aspect-[3/4] overflow-hidden rounded-lg border border-white/[.06] bg-white/[.03]">
                   {p.cover_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.cover_url} alt={p.title} loading="lazy" className="h-full w-full object-cover transition-opacity group-hover:opacity-85" />
+                    <img
+                      src={p.cover_url}
+                      alt={p.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-opacity group-hover:opacity-85"
+                    />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center text-[10px] text-white/20">No cover</div>
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-white/20">Tanpa cover</div>
                   )}
                 </div>
                 <p className="mt-1.5 truncate text-[11px] font-semibold leading-tight text-white/80">{p.title}</p>
-                <p className="text-[10px] text-white/30">
+                <p className="text-[10px] text-white/35">
                   {p.latest_chapter ? `Ch. ${p.latest_chapter}` : "Belum ada chapter"}
                 </p>
               </Link>

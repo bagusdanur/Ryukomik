@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FiArrowLeft, FiChevronRight, FiPenTool } from "react-icons/fi";
 
 type Group = {
@@ -19,6 +20,7 @@ function ago(iso: string | null) {
 
 /** Direktori publik semua grup Scanlator. */
 export default function DirectoryClient() {
+  const router = useRouter();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -38,9 +40,16 @@ export default function DirectoryClient() {
   return (
     <main className="min-h-screen bg-[var(--surface-0)] px-4 pb-20 pt-16 text-white">
       <div className="mx-auto w-full max-w-2xl">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/40 transition-colors hover:text-white/70">
-          <FiArrowLeft size={12} /> Beranda
-        </Link>
+        <button
+          type="button"
+          onClick={() => {
+            if (window.history.length > 1) router.back();
+            else router.push("/files?tab=scanlator");
+          }}
+          className="inline-flex items-center gap-1.5 rounded-md px-1 py-1 text-[11px] font-semibold text-white/40 transition-colors hover:text-white/75"
+        >
+          <FiArrowLeft size={12} /> Kembali
+        </button>
 
         <h1 className="mt-3 text-[19px] font-bold leading-tight">Tim Scanlator</h1>
         <p className="mt-1 text-[12px] text-white/40">{groups.length} tim terdaftar · diurutkan dari yang paling banyak project</p>

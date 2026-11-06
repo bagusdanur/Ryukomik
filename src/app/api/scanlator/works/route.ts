@@ -19,6 +19,8 @@ export async function GET(request: Request) {
       cover_url: (m as { cover_url?: string }).cover_url,
       type: (m as { type?: string }).type,
       latest_chapter: (m as { latest_chapter?: number | null }).latest_chapter ?? null,
+      updated_at: (m as { updated_at?: string }).updated_at ?? null,
+      latest_chapter_at: (m as { latest_chapter_uploaded_at?: string }).latest_chapter_uploaded_at ?? null,
     }));
   return NextResponse.json({ success: true, works }, { headers: { "Cache-Control": "public, max-age=60" } });
 }
