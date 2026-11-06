@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  FiAlertTriangle, FiArrowRight, FiBookOpen, FiClock, FiEdit3, FiImage,
+  FiAlertTriangle, FiArrowRight, FiBookOpen, FiClock, FiEdit3, FiEye, FiImage,
   FiChevronDown, FiChevronLeft, FiChevronRight, FiPlus, FiSave, FiSend, FiTrash2, FiUser, FiX,
 } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
@@ -96,6 +96,9 @@ export default function ScanlatorStudio() {
   const [chapterDraft, setChapterDraft] = useState<Record<string, string>>({});
   const [projectTab, setProjectTab] = useState<"detail" | "chapter">("detail");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [editChapter, setEditChapter] = useState<{ id: string; number: number; titles: string; images: string[] } | null>(null);
+  const [previewChapter, setPreviewChapter] = useState<{ number: number; title: string | null; images: string[] } | null>(null);
+  const [savingPages, setSavingPages] = useState(false);
 
   const token = async () => (await getSession()).data.session?.access_token || "";
 
@@ -402,6 +405,68 @@ export default function ScanlatorStudio() {
       setChapters((prev) => prev.filter((c) => c.id !== chapterId));
       setNotice(`Chapter ${number} dihapus.`);
     } catch { setError("Gagal menghapus chapter."); }
+  };
+
+  const loadChapter = async (chapterId: string, number: number, title: string | null) => {
+    if (!openSlug) return;
+    setError(""); setNotice("");
+    try {
+      const t = await token();
+      const res = await fetch(`/api/scanlator/series/${encodeURIComponent(openSlug)}/chapter/${chapterId}`, {
+        headers: { Authorization: `Bearer ${t}` },
+        cache: "no-store",
+      });
+      const json = (await res.json().catch(() => null)) as { success?: boolean; chapter?: { image_urls?: string[] }; error?: string } | null;
+      if (!res.ok || !json?.success) { setError(json?.error || "Gagal memuat chapter."); return; }
+      return { id: chapterId, number, titles: title || "", images: json.chapter?.image_urls || [] };
+    } catch {
+      setError("Gagal memuat chapter.");
+      return null;
+    }
+  };
+
+  const openChapterEditor = async (chapterId: string, number: number, title: string | null) => {
+    const data = await loadChapter(chapterId, number, title);
+    if (data) setEditChapter(data);
+  };
+
+  const openChapterPreview = async (chapterId: string, number: number, title: string | null) => {
+    const data = await loadChapter(chapterId, number, title);
+    if (data) setPreviewChapter({ number, title, images: data.images });
+  };
+
+  const moveEditImage = (from: number, to: number) => {
+    setEditChapter((prev) => {
+      if (!prev) return prev;
+      if (to < 0 || to >= prev.images.length || from === to) return prev;
+      const images = [...prev.images];
+      const [item] = images.splice(from, 1);
+      images.splice(to, 0, item);
+      return { ...prev, images };
+    });
+  };
+
+  const saveChapterPages = async () => {
+    if (!openSlug || !editChapter) return;
+    if (editChapter.images.length === 0) { setError("Chapter minimal punya 1 gambar."); return; }
+    setSavingPages(true); setError(""); setNotice("");
+    try {
+      const t = await token();
+      const res = await fetch(`/api/scanlator/series/${encodeURIComponent(openSlug)}/chapter/${editChapter.id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ image_urls: editChapter.images }),
+      });
+      const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
+      if (!res.ok || !json?.success) { setError(json?.error || "Gagal menyimpan halaman."); return; }
+      setChapters((prev) => prev.map((c) => (c.id === editChapter.id ? { ...c, pages: editChapter.images.length } : c)));
+      setNotice(`Halaman chapter ${editChapter.number} disimpan (${editChapter.images.length} gambar).`);
+      setEditChapter(null);
+    } catch {
+      setError("Gagal menyimpan halaman.");
+    } finally {
+      setSavingPages(false);
+    }
   };
 
   const saveChapterTitle = async (chapterId: string) => {
@@ -876,6 +941,23 @@ export default function ScanlatorStudio() {
                                         <FiTrash2 size={12} />
                                       </button>
                                     </div>
+                                    <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => void openChapterPreview(c.id, c.chapter_number, c.title)}
+                                        className="flex min-h-[30px] items-center justify-center gap-1 rounded-md border border-white/[.08] text-[10px] font-bold text-white/60 transition-colors hover:bg-white/[.04] hover:text-white"
+                                      >
+                                        <FiEye size={11} /> Pratinjau
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => void openChapterEditor(c.id, c.chapter_number, c.title)}
+                                        className="flex min-h-[30px] items-center justify-center gap-1 rounded-md border border-white/[.08] text-[10px] font-bold text-[var(--accent-2)] transition-colors hover:bg-white/[.04]"
+                                      >
+                                        <FiImage size={11} /> Edit halaman
+                                      </button>
+                                    </div>
+
                                     <div className="mt-1.5 flex gap-1.5">
                                       <input
                                         value={chapterDraft[c.id] ?? ""}
@@ -963,6 +1045,88 @@ export default function ScanlatorStudio() {
           </form>
         )}
       </div>
+
+      {/* Editor halaman chapter — hapus / ubah urutan */}
+      {editChapter && (
+        <div className="fixed inset-0 z-[130] flex flex-col bg-black/85" role="dialog" aria-modal="true">
+          <div className="flex items-center justify-between border-b border-white/[.08] px-4 py-3">
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-bold">Edit halaman · Ch. {editChapter.number}</p>
+              <p className="text-[10px] text-white/35">{editChapter.images.length} gambar · tarik atau pakai panah</p>
+            </div>
+            <button type="button" onClick={() => setEditChapter(null)} aria-label="Tutup" className="rounded-md p-1.5 text-white/60">
+              <FiX size={16} />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-3 py-3">
+            <div className="mx-auto grid max-w-2xl grid-cols-3 gap-1.5">
+              {editChapter.images.map((url, i) => (
+                <div
+                  key={`${url}-${i}`}
+                  draggable
+                  onDragStart={() => setDragIndex(i)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => { if (dragIndex !== null) moveEditImage(dragIndex, i); setDragIndex(null); }}
+                  onDragEnd={() => setDragIndex(null)}
+                  className={`relative overflow-hidden rounded-md border ${dragIndex === i ? "border-[var(--accent)]" : "border-white/[.08]"}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Halaman ${i + 1}`} loading="lazy" draggable={false} className="aspect-[3/4] w-full object-cover" />
+                  <span className="absolute left-1 top-1 rounded bg-black/75 px-1 text-[9px] font-bold">{i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => setEditChapter((prev) => (prev ? { ...prev, images: prev.images.filter((_, idx) => idx !== i) } : prev))}
+                    aria-label={`Hapus halaman ${i + 1}`}
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded bg-black/75 text-rose-300"
+                  >
+                    <FiX size={11} />
+                  </button>
+                  <div className="absolute inset-x-0 bottom-0 flex">
+                    <button type="button" onClick={() => moveEditImage(i, i - 1)} disabled={i === 0} aria-label="Geser kiri" className="flex h-6 flex-1 items-center justify-center bg-black/65 text-white/70 disabled:opacity-25">
+                      <FiChevronLeft size={12} />
+                    </button>
+                    <button type="button" onClick={() => moveEditImage(i, i + 1)} disabled={i === editChapter.images.length - 1} aria-label="Geser kanan" className="flex h-6 flex-1 items-center justify-center bg-black/65 text-white/70 disabled:opacity-25">
+                      <FiChevronRight size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-white/[.08] px-4 py-3">
+            <div className="mx-auto flex max-w-2xl gap-2">
+              <Button variant="ghost" onClick={() => setEditChapter(null)} className="flex-1">Batal</Button>
+              <Button onClick={() => void saveChapterPages()} disabled={savingPages} className="flex-1">
+                <FiSave size={12} /> {savingPages ? "Menyimpan…" : "Simpan halaman"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pratinjau baca chapter */}
+      {previewChapter && (
+        <div className="fixed inset-0 z-[130] bg-black" role="dialog" aria-modal="true">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-black/90 px-4 py-3 backdrop-blur">
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-bold">Ch. {previewChapter.number}{previewChapter.title ? ` · ${previewChapter.title}` : ""}</p>
+              <p className="text-[10px] text-white/40">{previewChapter.images.length} gambar · pratinjau</p>
+            </div>
+            <button type="button" onClick={() => setPreviewChapter(null)} aria-label="Tutup" className="rounded-md p-1.5 text-white/70">
+              <FiX size={16} />
+            </button>
+          </div>
+          <div className="mx-auto max-w-2xl">
+            {previewChapter.images.map((url, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={`${url}-${i}`} src={url} alt={`Halaman ${i + 1}`} loading="lazy" className="w-full" />
+            ))}
+            {previewChapter.images.length === 0 && <p className="py-16 text-center text-[12px] text-white/35">Belum ada gambar.</p>}
+          </div>
+        </div>
+      )}
     </>,
   );
 }

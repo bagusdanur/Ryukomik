@@ -26,10 +26,12 @@ export async function GET(request: Request) {
     if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
     const data = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>("/admin/projects?limit=100&page=1");
-    const pendingSeries = (data.data || []).filter((m) => (m as { review_status?: string }).review_status === "pending");
+    // Sertakan seri yang masih pending ATAU punya chapter yang belum terbit —
+    // supaya chapter baru pada seri yang sudah di-ACC tetap masuk antrean.
+    const candidates = (data.data || []).filter((m) => Boolean((m as { owner_user_id?: string }).owner_user_id));
 
     const works = await Promise.all(
-      pendingSeries.map(async (raw) => {
+      candidates.map(async (raw) => {
         const m = raw as Record<string, unknown>;
         const slug = String(m.slug || "");
         const chapterRes = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
@@ -46,6 +48,8 @@ export async function GET(request: Request) {
           }))
           .sort((a, b) => a.chapter_number - b.chapter_number);
 
+        const pendingChapters = chapters.filter((c) => !c.is_published);
+
         return {
           id: String(m.id || ""),
           slug,
@@ -56,12 +60,15 @@ export async function GET(request: Request) {
           scanlator_handle: (m.scanlator_handle as string | null) || null,
           scanlator_team: (m.scanlator_team as string | null) || null,
           chapters,
-          pendingChapters: chapters.filter((c) => !c.is_published),
+          pendingChapters,
+          review_status: (m.review_status as string | null) || null,
         };
       }),
     );
 
-    return NextResponse.json({ success: true, works }, { headers: { "Cache-Control": "private, no-store" } });
+    const filtered = works.filter((w) => w.review_status === "pending" || (w.pendingChapters?.length ?? 0) > 0);
+
+    return NextResponse.json({ success: true, works: filtered }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return adminErrorResponse(error, "Gagal memuat antrean review.");
   }

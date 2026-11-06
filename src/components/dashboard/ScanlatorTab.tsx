@@ -33,6 +33,7 @@ type WorkReview = {
   is_adult: boolean; scanlator_handle: string | null; scanlator_team: string | null;
   chapters?: PendingChapter[];
   pendingChapters?: PendingChapter[];
+  review_status?: string | null;
 };
 
 type TabId = "pengajuan" | "karya" | "scanlator" | "moderasi" | "laporan";
@@ -292,10 +293,16 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
                     placeholder="Alasan (wajib saat menolak)…"
                     className={`${inputClass} mt-2`}
                   />
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    <Button onClick={() => void reviewWork(w, "approve_series")} disabled={busy === w.id}><FiCheck size={12} /> ACC seri</Button>
-                    <Button variant="danger" onClick={() => void reviewWork(w, "reject_series")} disabled={busy === w.id}><FiX size={12} /> Tolak seri</Button>
-                  </div>
+                  {w.review_status === "pending" ? (
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <Button onClick={() => void reviewWork(w, "approve_series")} disabled={busy === w.id}><FiCheck size={12} /> ACC seri</Button>
+                      <Button variant="danger" onClick={() => void reviewWork(w, "reject_series")} disabled={busy === w.id}><FiX size={12} /> Tolak seri</Button>
+                    </div>
+                  ) : (
+                    <p className="mt-2 rounded-md border border-emerald-400/20 bg-emerald-400/[.06] px-2.5 py-1.5 text-[10px] font-semibold text-emerald-300/85">
+                      Seri sudah terbit — tinggal ACC chapter baru di bawah.
+                    </p>
+                  )}
 
                   {(w.chapters?.length ?? 0) > 0 && (
                     <div className="mt-3 rounded-md border border-white/[.06]">

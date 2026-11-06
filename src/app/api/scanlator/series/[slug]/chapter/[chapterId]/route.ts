@@ -32,6 +32,35 @@ async function ownChapter(userId: string, slug: string, chapterId: string) {
   return { chapter };
 }
 
+/** Detail satu chapter (dipakai editor & pratinjau studio). */
+export async function GET(request: Request, context: { params: Promise<{ slug: string; chapterId: string }> }) {
+  try {
+    const userId = await requireUserId(request);
+    const { slug, chapterId } = await context.params;
+    const owned = await ownChapter(userId, slug, chapterId);
+    if ("error" in owned) return NextResponse.json({ error: owned.error }, { status: owned.status });
+
+    const c = owned.chapter as Record<string, unknown>;
+    return NextResponse.json(
+      {
+        success: true,
+        chapter: {
+          id: String(c.id || ""),
+          chapter_number: Number(c.chapter_number || 0),
+          title: (c.title as string | null) || null,
+          is_published: Boolean(c.is_published),
+          image_urls: Array.isArray(c.image_urls) ? (c.image_urls as string[]) : [],
+        },
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+    return NextResponse.json({ error: "Gagal memuat chapter." }, { status: 500 });
+  }
+}
+
 /** Edit judul chapter milik sendiri. */
 export async function PATCH(request: Request, context: { params: Promise<{ slug: string; chapterId: string }> }) {
   try {
@@ -40,12 +69,27 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
     const owned = await ownChapter(userId, slug, chapterId);
     if ("error" in owned) return NextResponse.json({ error: owned.error }, { status: owned.status });
 
-    const body = (await request.json().catch(() => null)) as { title?: string } | null;
-    const title = typeof body?.title === "string" ? body.title.trim().slice(0, 200) : "";
-    if (!title) return NextResponse.json({ error: "Judul chapter wajib diisi." }, { status: 400 });
+    const body = (await request.json().catch(() => null)) as { title?: string; image_urls?: unknown } | null;
 
-    await projectApiFetch(`/admin/chapters/${chapterId}`, { method: "PATCH", body: JSON.stringify({ title }) });
-    return NextResponse.json({ success: true });
+    const patch: Record<string, unknown> = {};
+
+    if (typeof body?.title === "string") {
+      const title = body.title.trim().slice(0, 200);
+      if (!title) return NextResponse.json({ error: "Judul chapter wajib diisi." }, { status: 400 });
+      patch.title = title;
+    }
+
+    if (Array.isArray(body?.image_urls)) {
+      const urls = body.image_urls.filter((u): u is string => typeof u === "string" && /^https?:\/\//i.test(u));
+      if (urls.length === 0) return NextResponse.json({ error: "Chapter minimal punya 1 gambar." }, { status: 400 });
+      if (urls.length > 60) return NextResponse.json({ error: "Maksimal 60 gambar per chapter." }, { status: 400 });
+      patch.image_urls = urls;
+    }
+
+    if (Object.keys(patch).length === 0) return NextResponse.json({ error: "Tidak ada perubahan." }, { status: 400 });
+
+    await projectApiFetch(`/admin/chapters/${chapterId}`, { method: "PATCH", body: JSON.stringify(patch) });
+    return NextResponse.json({ success: true, pages: Array.isArray(patch.image_urls) ? (patch.image_urls as string[]).length : undefined });
   } catch (error) {
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;
