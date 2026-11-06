@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { FiTrash2 } from "react-icons/fi";
 import { useHistoryStore } from "@/store/historyStore";
+import { resolveProjectTitles } from "@/utils/projectTitles";
 import type { ReadHistoryItem } from "@/types/user";
 import Button from "@/components/Button";
 import HistoryThumb from "@/components/history/HistoryThumb";
@@ -34,6 +35,7 @@ export default function HistoryTab({ search = "" }: HistoryTabProps) {
   const historyStore = useHistoryStore((state) => state.history);
   const removeHistory = useHistoryStore((state) => state.removeHistory);
   const [data, setData] = useState<ReadHistoryItem[]>([]);
+  const [resolvedTitles, setResolvedTitles] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<ReadHistoryItem | null>(null); // item yang mau dihapus
 
 
@@ -141,6 +143,20 @@ const cleanTitle = useCallback((title?: string) => {
 
   useHistoryThumbBackfill(data);
 
+  useEffect(() => {
+    const slugs = data
+      .filter((item) => item.source === "project" && !resolvedTitles[item.comicSlug])
+      .map((item) => item.comicSlug)
+      .filter(Boolean)
+      .slice(0, 20);
+    if (!slugs.length) return;
+    let alive = true;
+    void resolveProjectTitles(slugs).then((titles) => {
+      if (alive && Object.keys(titles).length) setResolvedTitles((prev) => ({ ...prev, ...titles }));
+    });
+    return () => { alive = false; };
+  }, [data, resolvedTitles]);
+
   const deleteItem = () => {
     if (!confirm) return;
     removeHistory(confirm.comicSlug);
@@ -171,12 +187,12 @@ const cleanTitle = useCallback((title?: string) => {
             <div className="flex min-w-0 items-center gap-3">
             <HistoryThumb
               thumbnail={item.thumbnail}
-              title={item.title}
+              title={resolvedTitles[item.comicSlug] || item.title}
               className="h-14 w-10"
             />
             <div className="flex flex-col gap-1 min-w-0">
               <span className="text-sm font-medium line-clamp-2">
-                {item.title}
+                {resolvedTitles[item.comicSlug] || item.title}
               </span>
               <span className="text-xs font-semibold text-cyan-200 line-clamp-1">
                 {item.lastChapter}

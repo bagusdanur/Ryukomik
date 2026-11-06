@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useHistoryStore } from "@/store/historyStore";
+import { resolveProjectTitles } from "@/utils/projectTitles";
 import HistoryThumb from "@/components/history/HistoryThumb";
 import useHistoryThumbBackfill from "@/hooks/useHistoryThumbBackfill";
 
@@ -25,6 +27,21 @@ function chapterHref(item: { source?: string | null; lastChapterSlug?: string | 
 export default function HistoryPage() {
   const history = useHistoryStore((state) => state.history);
   const clearHistory = useHistoryStore((state) => state.clearHistory);
+  const [resolvedTitles, setResolvedTitles] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const slugs = history
+      .filter((h) => h.source === "project" && !resolvedTitles[h.comicSlug])
+      .map((h) => String(h.comicSlug || ""))
+      .filter(Boolean)
+      .slice(0, 20);
+    if (!slugs.length) return;
+    let alive = true;
+    void resolveProjectTitles(slugs).then((titles) => {
+      if (alive && Object.keys(titles).length) setResolvedTitles((prev) => ({ ...prev, ...titles }));
+    });
+    return () => { alive = false; };
+  }, [history, resolvedTitles]);
 
   // Cover riwayat lama diisi bertahap (maks 12 per kunjungan) lewat cache.
   useHistoryThumbBackfill(history);
@@ -58,13 +75,13 @@ export default function HistoryPage() {
           >
             <HistoryThumb
               thumbnail={item.thumbnail}
-              title={displayTitle(item)}
+              title={resolvedTitles[item.comicSlug || ""] || displayTitle(item)}
               className="h-16 w-11"
             />
 
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-sm font-medium md:text-base">
-                {displayTitle(item)}
+                {resolvedTitles[item.comicSlug || ""] || displayTitle(item)}
               </p>
               <p className="mt-0.5 line-clamp-1 text-xs font-semibold text-cyan-200">
                 {item.lastChapter ?? (item as any).chapter ?? ""}

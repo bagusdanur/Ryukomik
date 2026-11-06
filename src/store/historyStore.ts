@@ -19,6 +19,22 @@ interface HistoryState {
 
 const MAX_HISTORY = 500;
 
+/** Judul chapter ("Chapter 1") bukan judul komik — jangan dipakai. */
+function isBadTitle(title?: string | null) {
+  if (!title) return true;
+  const t = title.trim().toLowerCase();
+  return /^(chapter|ch\.?)\s*[\d.]/.test(t) || t === "untitled";
+}
+
+function betterTitle(current?: string | null, incoming?: string | null) {
+  if (isBadTitle(current)) return !isBadTitle(incoming) ? (incoming as string) : (current || incoming || "");
+  if (!isBadTitle(incoming) && current && (incoming as string).length > (current as string).length * 1.5) {
+    // Server punya judul jauh lebih lengkap (mis. slug → judul asli).
+    return incoming as string;
+  }
+  return current as string;
+}
+
 /** Hapus riwayat di server supaya tidak muncul lagi saat sinkron/refresh. */
 async function deleteRemoteHistory(comicSlug?: string) {
   if (typeof window === "undefined") return;
@@ -101,8 +117,17 @@ export const useHistoryStore = create<HistoryState>()(
               map.set(item.comicSlug, {
                 ...item,
                 thumbnail: item.thumbnail || existing?.thumbnail,
-                title: item.title || existing?.title,
+                title: betterTitle(existing?.title, item.title),
               });
+            } else if (existing) {
+              // Judul lokal rusak ("Chapter 1") tetap diganti judul server yang benar.
+              let healed = betterTitle(existing.title, item.title);
+              // Judul project di server = judul seri asli dari database; lokal bisa
+              // berisi tebakan dari slug ("Ryuscanlation Inma ..."), jadi server menang.
+              if (item.source === "project" && item.title && item.title.trim() && item.title !== existing.title) {
+                healed = item.title;
+              }
+              if (healed !== existing.title) map.set(item.comicSlug, { ...existing, title: healed });
             }
           }
           const merged = [...map.values()].sort((a, b) => b.updatedAt - a.updatedAt);

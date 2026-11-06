@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import SeriesCard from "@/components/SeriesCard";
 import { useHistoryStore } from "@/store/historyStore";
+import { resolveProjectTitles } from "@/utils/projectTitles";
 import {
   backfillHistoryThumbnails,
   buildContinueItems,
@@ -35,6 +36,7 @@ function relativeTime(ts: number, now: number): string {
 
 export default function ContinueReading() {
   const history = useHistoryStore((state) => state.history);
+  const [resolvedTitles, setResolvedTitles] = useState<Record<string, string>>({});
   const updateThumbs = useHistoryStore((state) => state.updateHistoryThumbs);
   const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState(0);
@@ -85,6 +87,21 @@ export default function ContinueReading() {
     };
   }, [mounted, history]);
 
+  useEffect(() => {
+    if (!mounted) return;
+    const slugs = history
+      .filter((h) => h.source === "project" && !resolvedTitles[h.comicSlug])
+      .map((h) => String(h.comicSlug || ""))
+      .filter(Boolean)
+      .slice(0, 20);
+    if (!slugs.length) return;
+    let alive = true;
+    void resolveProjectTitles(slugs).then((titles) => {
+      if (alive && Object.keys(titles).length) setResolvedTitles((prev) => ({ ...prev, ...titles }));
+    });
+    return () => { alive = false; };
+  }, [mounted, history, resolvedTitles]);
+
   if (!mounted || !history.length) return null;
 
   const items = buildContinueItems(history, 10);
@@ -125,7 +142,7 @@ export default function ContinueReading() {
               <SeriesCard
                 key={`${slug}-${item.lastChapterSlug}`}
                 href={href}
-                title={item.displayTitle}
+                title={resolvedTitles[slug] || item.displayTitle}
                 image={item.thumbnail || undefined}
                 source={source}
                 eyebrow={readChapter !== null ? `Dibaca Ch. ${readChapter}` : undefined}
