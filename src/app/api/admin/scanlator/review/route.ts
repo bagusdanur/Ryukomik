@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { adminErrorResponse, verifyAdminRequest } from "@/lib/adminApi";
 import { projectApiFetch } from "@/lib/projectApiServer";
 import { notifyScanlator } from "@/lib/scanlatorNotify";
+import { logChapterRevision } from "@/lib/scanlatorAudit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -99,6 +100,13 @@ export async function POST(request: Request) {
 
       if (body.id) {
         const manga = await projectApiFetch<{ data?: Record<string, unknown> }>(`/admin/projects/${body.id}`).catch(() => null);
+        await logChapterRevision({
+          chapterId: body.chapter_id,
+          mangaSlug: String(manga?.data?.slug || ""),
+          actorId: admin.userId,
+          action: action === "approve_chapter" ? "approve" : "reject",
+          after: { is_published: action === "approve_chapter", note },
+        });
         const owner = manga?.data?.owner_user_id as string | undefined;
         if (owner) {
           await notifyScanlator(owner, {

@@ -4,6 +4,7 @@ import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { projectApiFetch } from "@/lib/projectApiServer";
+import { logChapterRevision, revisionSnapshot } from "@/lib/scanlatorAudit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -89,6 +90,20 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
     if (Object.keys(patch).length === 0) return NextResponse.json({ error: "Tidak ada perubahan." }, { status: 400 });
 
     await projectApiFetch(`/admin/chapters/${chapterId}`, { method: "PATCH", body: JSON.stringify(patch) });
+
+    await logChapterRevision({
+      chapterId,
+      mangaSlug: slug,
+      actorId: userId,
+      action: Array.isArray(patch.image_urls) ? "edit_pages" : "edit_title",
+      before: revisionSnapshot(owned.chapter as Record<string, unknown>),
+      after: {
+        ...revisionSnapshot(owned.chapter as Record<string, unknown>),
+        ...(Array.isArray(patch.image_urls) ? { pages: (patch.image_urls as string[]).length } : {}),
+        ...(typeof patch.title === "string" ? { title: patch.title } : {}),
+      },
+    });
+
     return NextResponse.json({ success: true, pages: Array.isArray(patch.image_urls) ? (patch.image_urls as string[]).length : undefined });
   } catch (error) {
     const authResponse = authErrorResponse(error);
@@ -106,6 +121,15 @@ export async function DELETE(request: Request, context: { params: Promise<{ slug
     if ("error" in owned) return NextResponse.json({ error: owned.error }, { status: owned.status });
 
     await projectApiFetch(`/admin/chapters/${chapterId}`, { method: "DELETE" });
+
+    await logChapterRevision({
+      chapterId,
+      mangaSlug: slug,
+      actorId: userId,
+      action: "delete",
+      before: revisionSnapshot(owned.chapter as Record<string, unknown>),
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     const authResponse = authErrorResponse(error);

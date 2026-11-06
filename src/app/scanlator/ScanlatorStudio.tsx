@@ -100,15 +100,17 @@ export default function ScanlatorStudio() {
   const [editChapter, setEditChapter] = useState<{ id: string; number: number; titles: string; images: string[] } | null>(null);
   const [previewChapter, setPreviewChapter] = useState<{ number: number; title: string | null; images: string[] } | null>(null);
   const [savingPages, setSavingPages] = useState(false);
+  const [historyChapter, setHistoryChapter] = useState<{ number: number; items: Array<{ id: string; action: string; before: Record<string, unknown> | null; after: Record<string, unknown> | null; created_at: string }> } | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Kunci scroll halaman di belakang saat modal terbuka.
   useEffect(() => {
-    const open = Boolean(editChapter || previewChapter);
+    const open = Boolean(editChapter || previewChapter || historyChapter);
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
-  }, [editChapter, previewChapter]);
+  }, [editChapter, previewChapter, historyChapter]);
 
   const token = async () => (await getSession()).data.session?.access_token || "";
 
@@ -485,6 +487,27 @@ export default function ScanlatorStudio() {
       setError("Gagal menyimpan halaman.");
     } finally {
       setSavingPages(false);
+    }
+  };
+
+  const openChapterHistory = async (chapterId: string, number: number) => {
+    if (!openSlug) return;
+    setLoadingHistory(true); setError("");
+    try {
+      const t = await token();
+      const res = await fetch(`/api/scanlator/series/${encodeURIComponent(openSlug)}/chapter/${chapterId}/revisions`, {
+        headers: { Authorization: `Bearer ${t}` },
+        cache: "no-store",
+      });
+      const json = (await res.json().catch(() => null)) as
+        | { success?: boolean; revisions?: Array<{ id: string; action: string; before: Record<string, unknown> | null; after: Record<string, unknown> | null; created_at: string }>; error?: string }
+        | null;
+      if (!res.ok || !json?.success) { setError(json?.error || "Gagal memuat riwayat."); return; }
+      setHistoryChapter({ number, items: json.revisions || [] });
+    } catch {
+      setError("Gagal memuat riwayat.");
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
@@ -964,7 +987,7 @@ export default function ScanlatorStudio() {
                                         <FiTrash2 size={12} />
                                       </button>
                                     </div>
-                                    <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                                    <div className="mt-1.5 grid grid-cols-3 gap-1.5">
                                       <button
                                         type="button"
                                         onClick={() => void openChapterPreview(c.id, c.chapter_number, c.title)}
@@ -978,6 +1001,14 @@ export default function ScanlatorStudio() {
                                         className="flex min-h-[30px] items-center justify-center gap-1 rounded-md border border-white/[.08] text-[10px] font-bold text-[var(--accent-2)] transition-colors hover:bg-white/[.04]"
                                       >
                                         <FiImage size={11} /> Edit halaman
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => void openChapterHistory(c.id, c.chapter_number)}
+                                        disabled={loadingHistory}
+                                        className="flex min-h-[30px] items-center justify-center gap-1 rounded-md border border-white/[.08] text-[10px] font-bold text-white/55 transition-colors hover:bg-white/[.04] hover:text-white"
+                                      >
+                                        <FiClock size={11} /> Riwayat
                                       </button>
                                     </div>
 
@@ -1068,6 +1099,58 @@ export default function ScanlatorStudio() {
           </form>
         )}
       </div>
+
+      {/* Riwayat revisi chapter */}
+      {historyChapter && (
+        <div className="fixed inset-0 z-[130] flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true">
+          <div className="max-h-[80vh] w-full max-w-md overflow-hidden rounded-t-xl border border-white/[.08] bg-[#111115] sm:rounded-xl">
+            <div className="flex items-center justify-between border-b border-white/[.07] px-4 py-3">
+              <div>
+                <p className="text-[13px] font-bold">Riwayat · Ch. {historyChapter.number}</p>
+                <p className="text-[10px] text-white/35">{historyChapter.items.length} catatan terakhir</p>
+              </div>
+              <button type="button" onClick={() => setHistoryChapter(null)} aria-label="Tutup" className="rounded-md p-1.5 text-white/60">
+                <FiX size={16} />
+              </button>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto">
+              {historyChapter.items.length === 0 ? (
+                <p className="py-10 text-center text-[11px] text-white/30">Belum ada catatan revisi.</p>
+              ) : (
+                <ul className="divide-y divide-white/[.05]">
+                  {historyChapter.items.map((r) => {
+                    const label =
+                      r.action === "edit_pages" ? "Ganti halaman"
+                      : r.action === "edit_title" ? "Ubah judul"
+                      : r.action === "approve" ? "Disetujui admin"
+                      : r.action === "reject" ? "Ditolak admin"
+                      : r.action === "delete" ? "Chapter dihapus"
+                      : "Dibuat";
+                    const pages = (r.after?.pages ?? r.before?.pages) as number | undefined;
+                    return (
+                      <li key={r.id} className="px-4 py-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-semibold text-white/80">{label}</span>
+                          <span className="shrink-0 text-[10px] text-white/30">
+                            {new Date(r.created_at).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        {pages !== undefined && (
+                          <p className="mt-0.5 text-[10px] text-white/35">
+                            {r.before?.pages !== undefined && r.action === "edit_pages"
+                              ? `${r.before.pages} → ${pages} gambar`
+                              : `${pages} gambar`}
+                          </p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Editor halaman chapter — hapus / ubah urutan */}
       {editChapter && (
