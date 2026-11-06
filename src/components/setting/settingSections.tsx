@@ -237,6 +237,16 @@ export function AccountSection({
           </span>
       </button>
 
+      {isLogin && (
+        <Link
+          href="/statistik"
+          className="flex w-full items-center justify-between px-4 py-4 transition hover:bg-white/[0.06]"
+        >
+          <RowLeft icon={<FaChartBar className="text-white/70" />} label="Statistik" />
+          <span className="text-white/40 text-sm">Lihat</span>
+        </Link>
+      )}
+
       {isLogin && username && (
         <Link
           href={`/u/${encodeURIComponent(username)}`}
