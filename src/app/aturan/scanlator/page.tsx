@@ -12,17 +12,17 @@ const SECTIONS: Array<{ title: string; items: React.ReactNode[] }> = [
     title: "Benefit Scanlator",
     items: [
       <>Badge <b>SCANLATOR</b> tampil di profil publik, komentar, leaderboard, dan postingan komunitas.</>,
-      <>Selama status tim <b>aktif</b>, akun mendapat <b>Premium gratis</b> (tanpa iklan, akses fitur premium).</>,
-      <>Premium otomatis dicabut bila tim <b>dicabut</b> atau <b>dihapus</b>; saat suspend, badge dan premium tetap tersimpan sampai status dipulihkan.</>,
-      <>Selama badge aktif, akun juga dapat atribusi nama tim, tautan donate, studio upload, dan statistik tayangan per chapter.</>,
+      <>Selama status user <b>aktif</b>, akun mendapat <b>Premium gratis</b> (tanpa iklan, akses fitur premium).</>,
+      <>Premium otomatis dicabut bila akun <b>dicabut</b> atau <b>dihapus</b>; saat suspend, badge dan premium tetap tersimpan sampai status dipulihkan.</>,
+      <>Selama badge aktif, akun juga dapat atribusi nama user, tautan donate, studio upload, dan statistik tayangan per chapter.</>,
       <>Premium dari Scanlator <b>tidak menimpa</b> premium berbayar yang masih aktif — masa berlakunya mengikuti yang paling panjang.</>,
     ],
   },
   {
     title: "Akun & identitas",
     items: [
-      <>Satu orang atau tim hanya boleh punya <b>satu Akun Translation</b> aktif. Akun ganda ditolak.</>,
-      <>Nama tim dan handle harus unik, tidak meniru tim lain atau nama &quot;Ryukomik&quot;.</>,
+      <>Satu orang hanya boleh punya <b>satu Akun Translation</b> aktif. Akun ganda ditolak.</>,
+      <>Nama user dan handle harus unik, tidak meniru user lain atau nama &quot;Ryukomik&quot;.</>,
       <>Akun tidak boleh dijual, disewakan, atau dipindahkan.</>,
       <>Akun baru aktif setelah <b>ACC admin</b>; sebelum itu tidak ada hak upload.</>,
     ],
@@ -30,8 +30,8 @@ const SECTIONS: Array<{ title: string; items: React.ReactNode[] }> = [
   {
     title: "Hak cipta",
     items: [
-      <>Unggah hanya karya yang <b>berhak kamu unggah</b>: hasil TL sendiri atau karya orisinil timmu.</>,
-      <>Dilarang re-upload hasil TL tim lain, mentahan bajakan, atau materi tanpa izin.</>,
+      <>Unggah hanya karya yang <b>berhak kamu unggah</b>: hasil TL sendiri atau karya orisinil kamu.</>,
+      <>Dilarang re-upload hasil TL user lain, mentahan bajakan, atau materi tanpa izin.</>,
       <>Scanlator bertanggung jawab penuh atas keaslian karya. Ryukomik hanya platform.</>,
       <>Takedown lewat form Report diproses <b>maksimal 1×24 jam</b> bila terbukti.</>,
       <>Pelanggaran hak cipta berulang = pencabutan akses permanen.</>,
@@ -42,17 +42,17 @@ const SECTIONS: Array<{ title: string; items: React.ReactNode[] }> = [
     items: [
       <>Gambar harus terbaca, utuh, dan berurutan.</>,
       <>Tanpa watermark situs lain, iklan, atau banner pihak ketiga.</>,
-      <>Halaman terakhir wajib memuat <b>watermark nama tim</b> (dibuat otomatis).</>,
+      <>Halaman terakhir wajib memuat <b>watermark nama user</b> (dibuat otomatis).</>,
       <>Judul chapter sopan, tanpa kata kasar atau spam.</>,
       <>Chapter terbit tidak bisa diganti isinya.</>,
-      <>Batas teknis: maks 30 MB per gambar, maks 60 gambar per chapter, kuota storage 2 GB per tim.</>,
+      <>Batas teknis: maks 30 MB per gambar, maks 60 gambar per chapter, kuota storage 2 GB per user.</>,
     ],
   },
   {
     title: "Konten terlarang",
     items: [
       <>Konten ilegal, SARA, ujaran kebencian, malware, dan spam.</>,
-      <>Drama antar-tim atau memancing keributan di komunitas.</>,
+      <>Drama antar-user atau memancing keributan di komunitas.</>,
       <>Meminta transfer dana di komentar atau menggiring pembaca bertransaksi di luar platform.</>,
       <>Judul, deskripsi, atau sampul yang menyesatkan.</>,
     ],

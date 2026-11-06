@@ -1,0 +1,118 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#08090d"><title>Ryukomik · Home Varian B</title><style>
+:root{
+  --bg:#08090d; --surface:#11131a; --surface2:#171a23; --line:rgba(255,255,255,.07);
+  --txt:#eef1f7; --muted:rgba(255,255,255,.44); --cyan:#22d3ee; --violet:#8b5cf6; --amber:#fbbf24;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{background:#05060a;color:var(--txt);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+img{display:block;border:0}
+.phone{position:relative;max-width:430px;min-height:100vh;margin:0 auto;background:var(--bg);padding-bottom:92px;overflow-x:hidden}
+@media(min-width:560px){body{padding:28px 0}.phone{min-height:900px;border-radius:30px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 40px 80px -40px #000}}
+.hdr{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(8,9,13,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.logo{font-size:15px;font-weight:900;letter-spacing:.12em}
+.logo b{color:var(--cyan)}
+.hdr .sp{flex:1}
+.iconbtn{width:34px;height:34px;display:grid;place-items:center;border-radius:11px;background:rgba(255,255,255,.05);border:1px solid var(--line);color:rgba(255,255,255,.72)}
+main{padding:0 14px}
+.sec{margin-top:22px}
+.sechead{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+.sechead h2{font-size:15px;font-weight:800;margin:0;letter-spacing:-.01em}
+.sechead .kick{font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(34,211,238,.6)}
+.sechead .more{margin-left:auto;font-size:11px;font-weight:700;color:rgba(255,255,255,.38)}
+/* hero */
+.hero{position:relative;margin-top:12px;border-radius:20px;overflow:hidden;border:1px solid var(--line);min-height:290px;display:flex;align-items:flex-end}
+.hero img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 22%}
+.hero .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,9,13,.1) 0%,rgba(8,9,13,.55) 45%,rgba(8,9,13,.96) 100%)}
+.hero .in{position:relative;padding:14px;width:100%}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:8.5px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;padding:4px 8px;border-radius:999px;border:1px solid rgba(34,211,238,.35);background:rgba(34,211,238,.12);color:#a5f3fc}
+.hero h1{font-size:21px;line-height:1.15;font-weight:900;margin:8px 0 4px;letter-spacing:-.02em;max-width:300px}
+.hero .meta{font-size:10.5px;color:rgba(255,255,255,.55);display:flex;gap:8px;align-items:center}
+.dot{width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.3)}
+.cta{display:flex;gap:8px;margin-top:12px}
+.btn{flex:1;text-align:center;padding:10px;border-radius:12px;font-size:12px;font-weight:800}
+.btn.p{background:linear-gradient(135deg,#22d3ee,#0891b2);color:#04212b;box-shadow:0 8px 20px -12px rgba(34,211,238,.9)}
+.btn.g{background:rgba(255,255,255,.07);border:1px solid var(--line);color:#fff;flex:0 0 96px}
+/* continue */
+.crow{display:flex;gap:9px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.crow::-webkit-scrollbar{display:none}
+.ccard{flex:0 0 168px;display:flex;gap:8px;padding:8px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.ccard img{width:42px;height:58px;border-radius:9px;object-fit:cover}
+.ccard .t{font-size:10.5px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:27px}
+.bar{height:3px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#22d3ee,#8b5cf6)}
+.ccard .sub{font-size:8.5px;color:var(--muted);margin-top:4px;font-weight:600}
+/* event strip */
+.evt{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:14px;border:1px solid rgba(251,191,36,.3);background:linear-gradient(100deg,rgba(251,191,36,.12),rgba(251,191,36,.03));margin-top:14px}
+.evt .ic{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#fbbf24,#f97316);color:#3b1d02;flex:0 0 auto}
+.evt .tt{font-size:11.5px;font-weight:800;line-height:1.2}
+.evt .ss{font-size:9px;color:rgba(255,255,255,.5);margin-top:2px}
+.evt .go{font-size:10px;font-weight:800;color:#fcd34d;margin-left:auto;white-space:nowrap}
+/* tabs */
+.pills{display:flex;gap:6px;margin-bottom:10px}
+.pill{font-size:10px;font-weight:800;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:rgba(255,255,255,.45)}
+.pill.on{background:rgba(34,211,238,.14);border-color:rgba(34,211,238,.4);color:#a5f3fc}
+/* update grid */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{position:relative;border-radius:14px;overflow:hidden;background:var(--surface);border:1px solid var(--line)}
+.card .cv{position:relative;aspect-ratio:3/4;background:var(--surface2)}
+.card .cv img{width:100%;height:100%;object-fit:cover}
+.card .ch{position:absolute;left:6px;bottom:6px;font-size:9px;font-weight:800;padding:3px 6px;border-radius:7px;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.14)}
+.card .new{position:absolute;right:6px;top:6px;font-size:7.5px;font-weight:900;letter-spacing:.1em;padding:3px 5px;border-radius:6px;background:rgba(34,211,238,.9);color:#04212b}
+.card .bd{padding:8px 8px 9px}
+.card .ti{font-size:10.5px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:27px}
+.card .mt{font-size:8.5px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:5px}
+.flag{font-size:7px;font-weight:900;padding:1px 4px;border-radius:4px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7)}
+/* rank list */
+.rank{display:flex;align-items:center;gap:10px;padding:8px;border-radius:14px;background:var(--surface);border:1px solid var(--line);margin-bottom:7px}
+.rank .n{width:20px;text-align:center;font-size:13px;font-weight:900;color:rgba(255,255,255,.25)}
+.rank:nth-child(1) .n{color:#fbbf24}
+.rank:nth-child(2) .n{color:#cbd5e1}
+.rank:nth-child(3) .n{color:#f0883e}
+.rank img{width:38px;height:52px;border-radius:9px;object-fit:cover}
+.rank .ti{font-size:11px;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rank .mt{font-size:8.5px;color:var(--muted);margin-top:3px}
+.rank .tr{margin-left:auto;font-size:9px;font-weight:800;color:#34d399;white-space:nowrap}
+/* big rank grid (variant B) */
+.big{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+.big img{width:100%;aspect-ratio:3/4;object-fit:cover}
+.big .ov{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.88) 100%)}
+.big .rk{position:absolute;left:7px;top:7px;font-size:11px;font-weight:900;padding:3px 7px;border-radius:8px;background:rgba(0,0,0,.66);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(6px)}
+.big .rk.g1{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#3b1d02;border-color:transparent}
+.big .in{position:absolute;left:0;right:0;bottom:0;padding:8px}
+.big .ti{font-size:10.5px;font-weight:800;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.big .mt{font-size:8px;color:rgba(255,255,255,.55);margin-top:3px}
+/* compact rows (variant B) */
+.row{display:flex;gap:9px;padding:8px;border-radius:13px;background:var(--surface);border:1px solid var(--line);margin-bottom:7px;align-items:center}
+.row img{width:44px;height:60px;border-radius:9px;object-fit:cover}
+.row .ti{font-size:11.5px;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.row .mt{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:9px;color:var(--muted)}
+.chipch{font-size:8.5px;font-weight:800;padding:2px 6px;border-radius:6px;background:rgba(34,211,238,.14);border:1px solid rgba(34,211,238,.3);color:#a5f3fc}
+.badge{font-size:8px;font-weight:800;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6)}
+.badge.pj{border-color:rgba(139,92,246,.4);background:rgba(139,92,246,.16);color:#c4b5fd}
+/* segmented */
+.seg{position:sticky;top:59px;z-index:15;display:flex;gap:6px;padding:8px 0;background:linear-gradient(180deg,rgba(8,9,13,.98),rgba(8,9,13,.92));backdrop-filter:blur(10px)}
+.seg button{flex:1;padding:8px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.035);color:rgba(255,255,255,.42);font-size:10.5px;font-weight:800;font-family:inherit}
+.seg button.on{background:linear-gradient(135deg,rgba(34,211,238,.2),rgba(139,92,246,.18));color:#fff;border-color:rgba(34,211,238,.4)}
+.search{flex:1;display:flex;align-items:center;gap:7px;padding:8px 11px;border-radius:11px;background:rgba(255,255,255,.05);border:1px solid var(--line);color:rgba(255,255,255,.35);font-size:11px}
+/* carousel hero (B) */
+.chz{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
+.chz::-webkit-scrollbar{display:none}
+.chz .hslide{flex:0 0 92%;scroll-snap-align:center;position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);min-height:250px;display:flex;align-items:flex-end}
+.chz .hslide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 20%}
+.chz .hslide .in{position:relative;padding:12px;width:100%}
+.chz .hslide h1{font-size:17px;font-weight:900;margin:6px 0 3px;line-height:1.15;max-width:230px}
+.dots{display:flex;gap:4px;justify-content:center;margin-top:8px}
+.dots i{width:14px;height:3px;border-radius:99px;background:rgba(255,255,255,.16)}
+.dots i.on{background:var(--cyan);width:22px}
+/* tabbar */
+.tabbar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:430px;display:flex;padding:8px 6px 10px;background:rgba(8,9,13,.92);backdrop-filter:blur(18px);border-top:1px solid var(--line);z-index:30}
+.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:8px;font-weight:700;color:rgba(255,255,255,.32)}
+.tabbar a.on{color:var(--cyan)}
+.vpill{position:fixed;top:14px;right:calc(50% - 215px);z-index:40;display:flex;gap:2px;padding:3px;border-radius:999px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(8px);font-size:9px;font-weight:800}
+@media(max-width:559px){.vpill{right:8px;top:9px}}
+.vpill a{padding:4px 9px;border-radius:999px;color:rgba(255,255,255,.45)}
+.vpill a.on{background:var(--cyan);color:#04212b}
+.note{font-size:9px;color:rgba(255,255,255,.28);text-align:center;padding:14px 20px 4px;line-height:1.5}
+</style></head><body><div class="phone"><header class="hdr"><div class="logo">RYUKO<b>MIK</b></div><div class="search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg> Cari komik, manhwa…</div><div class="iconbtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></header><div class="vpill"><a href="a.html" >A</a><a href="b.html" class="on">B</a></div><main><div class="chz" style="margin-top:12px"><div class="hslide"><img src="https://thumbnail.komiku.org/uploads/manga/margraves-bastard-son-was-the-emperor/manga_img_horizontal-A1-Margraves-Bastard-Son-was-The-Emperor.jpg?resize=240,360" alt=""><div class="shade" style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,9,13,.05),rgba(8,9,13,.95))"></div><div class="in"><span class="tag">Update</span><h1>Margrave&#x27;s Bastard Son was The Emperor</h1><div class="meta" style="font-size:10px;color:rgba(255,255,255,.55)">Ch. 131 · 2 menit lalu</div><div class="cta"><div class="btn p">Baca</div><div class="btn g">+ List</div></div></div></div><div class="hslide"><img src="https://thumbnail.komiku.org/new/img/images/2026/09/30/20260930220541_51bd0b98f85e5c29_feab3c21.png?resize=240,360" alt=""><div class="shade" style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,9,13,.05),rgba(8,9,13,.95))"></div><div class="in"><span class="tag">Update</span><h1>The Jaegal Clan&#x27;s Son-in-Law for a Bowl of Jjajangmyeon</h1><div class="meta" style="font-size:10px;color:rgba(255,255,255,.55)">Ch. 65 · 2 menit lalu</div><div class="cta"><div class="btn p">Baca</div><div class="btn g">+ List</div></div></div></div><div class="hslide"><img src="https://thumbnail.komiku.org/img/upload/the_evil_alchemist_can___t_handle_his_own_experiment/img_683569c48ce013.11563667.png?resize=240,360" alt=""><div class="shade" style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,9,13,.05),rgba(8,9,13,.95))"></div><div class="in"><span class="tag">Update</span><h1>The Evil Alchemist Can&#x27;t Handle His Own Experiment</h1><div class="meta" style="font-size:10px;color:rgba(255,255,255,.55)">Ch. 103 · 2 menit lalu</div><div class="cta"><div class="btn p">Baca</div><div class="btn g">+ List</div></div></div></div></div><div class="dots"><i class="on"></i><i></i><i></i></div><a class="evt" href="#"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg></span><div><div class="tt">Speedrun Baca</div><div class="ss">Mingguan · Juara 1-3 dapat premium</div></div><span class="go">Ikuti →</span></a><div class="seg"><button class="on" data-t="pop">Populer</button><button data-t="upd">Update</button><button data-t="prj">Project</button></div><section class="sec" style="margin-top:6px" data-s="pop"><div class="sechead"><span class="kick">Minggu ini</span><h2>Paling Dibaca</h2><span class="more">Semua</span></div><div class="grid"><a class="big" href="#"><img src="https://thumbnail.komiku.org/uploads/manga/king-account-at-the-start/manga_img_horizontal-Komik-King-Account-At-The-Start.jpg?resize=240,360" alt="" loading="lazy"><div class="ov"></div><span class="rk g1">#1</span><div class="in"><div class="ti">King Account At The Start</div><div class="mt">389 ch · +18%</div></div></a><a class="big" href="#"><img src="https://thumbnail.komiku.org/uploads/manga/margraves-bastard-son-was-the-emperor/manga_img_horizontal-A1-Margraves-Bastard-Son-was-The-Emperor.jpg?resize=240,360" alt="" loading="lazy"><div class="ov"></div><span class="rk">#2</span><div class="in"><div class="ti">Margrave&#x27;s Bastard Son was The Emperor</div><div class="mt">131 ch · +11%</div></div></a><a class="big" href="#"><img src="https://thumbnail.komiku.org/uploads/manga/surviving-in-an-action-manhwa/manga_img_horizontal-Komik-Surviving-In-An-Action-Manhwa.jpg?resize=240,360" alt="" loading="lazy"><div class="ov"></div><span class="rk">#3</span><div class="in"><div class="ti">Surviving In An Action Manhwa</div><div class="mt">36 ch · +9%</div></div></a><a class="big" href="#"><img src="/mockup/thumbs/rebirth-monarch-of-the-dead.webp" alt="" loading="lazy"><div class="ov"></div><span class="rk">#4</span><div class="in"><div class="ti">Rebirth Monarch of the Dead</div><div class="mt">28 ch · BARU</div></div></a></div></section><section class="sec" data-s="upd" hidden><div class="sechead"><span class="kick">Real-time</span><h2>Update Terbaru</h2><span class="more">Semua</span></div><a class="row" href="#"><img src="https://thumbnail.komiku.org/uploads/manga/margraves-bastard-son-was-the-emperor/manga_img_horizontal-A1-Margraves-Bastard-Son-was-The-Emperor.jpg?resize=240,360" alt="" loading="lazy"><div style="min-width:0;flex:1"><div class="ti">Margrave&#x27;s Bastard Son was The Emperor</div><div class="mt"><span class="chipch">Ch. 131</span>2 menit lalu<span class="badge pj">Project</span></div></div></a><a class="row" href="#"><img src="https://thumbnail.komiku.org/new/img/images/2026/09/30/20260930220541_51bd0b98f85e5c29_feab3c21.png?resize=240,360" alt="" loading="lazy"><div style="min-width:0;flex:1"><div class="ti">The Jaegal Clan&#x27;s Son-in-Law for a Bowl of Jjajangmyeon</div><div class="mt"><span class="chipch">Ch. 65</span>2 menit lalu<span class="badge">Komik</span></div></div></a><a class="row" href="#"><img src="https://thumbnail.komiku.org/img/upload/the_evil_alchemist_can___t_handle_his_own_experiment/img_683569c48ce013.11563667.png?resize=240,360" alt="" loading="lazy"><div style="min-width:0;flex:1"><div class="ti">The Evil Alchemist Can&#x27;t Handle His Own Experiment</div><div class="mt"><span class="chipch">Ch. 103</span>2 menit lalu<span class="badge">Komik</span></div></div></a><a class="row" href="#"><img src="https://thumbnail.komiku.org/uploads/manga/tensei-kizoku-no-isekai-boukenroku-jichou-wo-shiranai-kamigami-no-shit/manga_img_horizontal-Manga-Tensei-Kizoku-no-Isekai-Boukenroku-Jichou-wo-Shiranai-Kamigami-no-Shit.jpg?resize=240,360" alt="" loading="lazy"><div style="min-width:0;flex:1"><div class="ti">Tensei Kizoku no Isekai Boukenroku</div><div class="mt"><span class="chipch">Ch. 82</span>3 menit lalu<span class="badge">Komik</span></div></div></a><a class="row" href="#"><img src="https://thumbnail.komiku.org/uploads/manga/surviving-in-an-action-manhwa/manga_img_horizontal-Komik-Surviving-In-An-Action-Manhwa.jpg?resize=240,360" alt="" loading="lazy"><div style="min-width:0;flex:1"><div class="ti">Surviving In An Action Manhwa</div><div class="mt"><span class="chipch">Ch. 36</span>3 menit lalu<span class="badge">Komik</span></div></div></a><a class="row" href="#"><img src="https://thumbnail.komiku.org/uploads/manga/king-account-at-the-start/manga_img_horizontal-Komik-King-Account-At-The-Start.jpg?resize=240,360" alt="" loading="lazy"><div style="min-width:0;flex:1"><div class="ti">King Account At The Start</div><div class="mt"><span class="chipch">Ch. 389</span>3 menit lalu<span class="badge">Komik</span></div></div></a></section><section class="sec" data-s="prj" hidden><div class="sechead"><span class="kick">Tim kami</span><h2>Project Ryukomik</h2><span class="more">Semua</span></div><a class="row" href="#"><img src="/mockup/thumbs/rebirth-monarch-of-the-dead.webp" alt="" loading="lazy"><div style="min-width:0;flex:1"><div class="ti">Rebirth Monarch of the Dead</div><div class="mt"><span class="chipch">Ch. 28</span>6 hari lalu<span class="badge pj">KR</span></div></div></a><a class="row" href="#"><img src="/mockup/thumbs/psycho-apartment.webp" alt="" loading="lazy"><div style="min-width:0;flex:1"><div class="ti">Psycho Apartment</div><div class="mt"><span class="chipch">Ch. 3</span>3 hari lalu<span class="badge pj">CN</span></div></div></a><a class="row" href="#"><img src="/mockup/thumbs/student-jo-eun.webp" alt="" loading="lazy"><div style="min-width:0;flex:1"><div class="ti">Student Jo-Eun</div><div class="mt"><span class="chipch">Ch. 60</span>5 hari lalu<span class="badge pj">KR</span></div></div></a><a class="row" href="#"><img src="/mockup/thumbs/sicario.webp" alt="" loading="lazy"><div style="min-width:0;flex:1"><div class="ti">Sicario</div><div class="mt"><span class="chipch">Ch. 32</span>1 minggu lalu<span class="badge pj">KR</span></div></div></a></section><p class="note">Mockup varian B — angka populer masih placeholder.</p></main><nav class="tabbar"><a class="on"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.2 12 3l9 8.2V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></a><a class=""><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.5 3 4.5 5 4.5 9a4.5 4.5 0 0 1-9 0c0-2 .8-3.2 1.8-4.4C10 8.8 12 6 12 2z"/></svg><span>Anime</span></a><a class=""><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Terbaru</span></a><a class=""><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Komunitas</span></a><a class=""><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 15H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 9 3V3a2 2 0 1 1 4 0v.1A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 9h0a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Setting</span></a></nav><script>const S=document.querySelectorAll(".seg button");S.forEach(b=>b.onclick=()=>{S.forEach(x=>x.classList.remove("on"));b.classList.add("on");document.querySelectorAll("[data-s]").forEach(s=>s.hidden=s.dataset.s!==b.dataset.t)});</script></div></body></html>

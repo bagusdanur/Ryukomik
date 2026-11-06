@@ -1,0 +1,61 @@
+{
+ "profile": {
+  "user_id": "8b8f7808-9d02-4fbb-9f60-b9745cd1c86b",
+  "username": "Aku siapa!?",
+  "avatar_url": "https://i.ibb.co/2Ym42J90/1000334092.png",
+  "banner_url": null,
+  "bio": "probe-test",
+  "level": 400,
+  "role": "admin",
+  "is_premium": false,
+  "source_updated_at": "2026-10-23T13:35:42.777Z",
+  "created_at": "2026-10-23T12:30:24.949Z",
+  "updated_at": "2026-10-26T19:01:45.877Z",
+  "total_reads": 0,
+  "total_comments": 0,
+  "avatar_border": null,
+  "xp": 0,
+  "premium_until": null,
+  "is_banned": true,
+  "banned_until": null,
+  "ban_reason": null,
+  "banned_at": "2026-10-26T19:01:45.875Z",
+  "banned_by": "88237d4d-a94f-472b-9eb1-3ca267d58561",
+  "show_public_reads": true,
+  "show_public_comments": true,
+  "show_public_join_date": true
+ },
+ "writeLog": [
+  {
+   "id": "7696",
+   "fields": {
+    "is_premium": false,
+    "premium_until": null
+   },
+   "actor": "admin/users",
+   "created_at": "2026-10-26T19:01:34.023Z"
+  },
+  {
+   "id": "7698",
+   "fields": {
+    "is_premium": false,
+    "premium_until": null
+   },
+   "actor": "admin/users",
+   "created_at": "2026-10-26T19:01:39.459Z"
+  },
+  {
+   "id": "7701",
+   "fields": {
+    "banned_at": "2026-10-26T19:01:45.875Z",
+    "banned_by": "88237d4d-a94f-472b-9eb1-3ca267d58561",
+    "is_banned": true,
+    "ban_reason": null,
+    "banned_until": null
+   },
+   "actor": "admin/users",
+   "created_at": "2026-10-26T19:01:45.879Z"
+  }
+ ],
+ "authStatus": 404
+}

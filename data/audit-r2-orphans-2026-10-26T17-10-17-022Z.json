@@ -1,0 +1,1249 @@
+{
+ "bucket": "ryukomik-project",
+ "scannedAt": "2026-10-26T17:10:17.022Z",
+ "totals": {
+  "objects": 9138,
+  "objectBytes": 12067873872,
+  "referencedKeys": 8907,
+  "orphanFiles": 244,
+  "orphanBytes": 808924222,
+  "missingFiles": 13
+ },
+ "orphans": [
+  {
+   "key": "chapters/surviving-in-an-rpg-maker-horror-game/8/ch-surviving-in-an-rpg-maker-horr_010.png",
+   "size": 15516022,
+   "lastModified": "2026-09-18T17:01:37.400Z"
+  },
+  {
+   "key": "chapters/surviving-in-an-rpg-maker-horror-game/8/ch-surviving-in-an-rpg-maker-horr_004.png",
+   "size": 15265944,
+   "lastModified": "2026-09-18T16:58:46.596Z"
+  },
+  {
+   "key": "chapters/surviving-in-an-rpg-maker-horror-game/8/ch-surviving-in-an-rpg-maker-horr_009.png",
+   "size": 15019687,
+   "lastModified": "2026-09-18T17:01:06.164Z"
+  },
+  {
+   "key": "chapters/surviving-in-an-rpg-maker-horror-game/8/ch-surviving-in-an-rpg-maker-horr_007.png",
+   "size": 14238072,
+   "lastModified": "2026-09-18T17:00:09.868Z"
+  },
+  {
+   "key": "chapters/surviving-in-an-rpg-maker-horror-game/8/ch-surviving-in-an-rpg-maker-horr_005.png",
+   "size": 13908284,
+   "lastModified": "2026-09-18T16:59:14.641Z"
+  },
+  {
+   "key": "chapters/surviving-in-an-rpg-maker-horror-game/8/ch-surviving-in-an-rpg-maker-horr_003.png",
+   "size": 13654755,
+   "lastModified": "2026-09-18T16:58:15.391Z"
+  },
+  {
+   "key": "chapters/surviving-in-an-rpg-maker-horror-game/8/ch-surviving-in-an-rpg-maker-horr_006.png",
+   "size": 13653296,
+   "lastModified": "2026-09-18T16:59:41.561Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/17/4.png",
+   "size": 13437890,
+   "lastModified": "2026-08-14T13:18:55.175Z"
+  },
+  {
+   "key": "chapters/surviving-in-an-rpg-maker-horror-game/8/ch-surviving-in-an-rpg-maker-horr_002.png",
+   "size": 13391379,
+   "lastModified": "2026-09-18T16:57:45.736Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/17/9.png",
+   "size": 13370631,
+   "lastModified": "2026-08-14T13:20:55.906Z"
+  },
+  {
+   "key": "chapters/surviving-in-an-rpg-maker-horror-game/8/ch-surviving-in-an-rpg-maker-horr_008.png",
+   "size": 13283719,
+   "lastModified": "2026-09-18T17:00:35.863Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/37/ch-13732-37_part005.png",
+   "size": 12926887,
+   "lastModified": "2026-10-05T15:52:25.107Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/37/ch-13732-37_part001.png",
+   "size": 12727947,
+   "lastModified": "2026-10-05T15:51:58.790Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/17/3.png",
+   "size": 12479174,
+   "lastModified": "2026-08-14T13:18:28.990Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/37/ch-13732-37_part003.png",
+   "size": 12472050,
+   "lastModified": "2026-10-05T15:52:11.614Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/17/5.png",
+   "size": 12061292,
+   "lastModified": "2026-08-14T13:19:18.965Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/17/6.png",
+   "size": 11993265,
+   "lastModified": "2026-08-14T13:19:45.685Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/17/8.png",
+   "size": 11977819,
+   "lastModified": "2026-08-14T13:20:30.514Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/17/2.png",
+   "size": 11924836,
+   "lastModified": "2026-08-14T13:18:05.357Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/6/halaman_2.png",
+   "size": 11692406,
+   "lastModified": "2026-08-06T15:40:13.006Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/37/ch-13732-37_part004.png",
+   "size": 11278429,
+   "lastModified": "2026-10-05T15:52:18.624Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/17/7.png",
+   "size": 10457193,
+   "lastModified": "2026-08-14T13:20:07.322Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/37/ch-13732-37_part002.png",
+   "size": 10025834,
+   "lastModified": "2026-10-05T15:52:04.904Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/37/ch-13732-37_part007.png",
+   "size": 9790098,
+   "lastModified": "2026-10-05T15:52:38.235Z"
+  },
+  {
+   "key": "chapters/surviving-in-an-rpg-maker-horror-game/8/ch-surviving-in-an-rpg-maker-horr_001.png",
+   "size": 9601315,
+   "lastModified": "2026-09-18T16:57:19.056Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/6/halaman_1.png",
+   "size": 9275655,
+   "lastModified": "2026-08-06T15:39:51.465Z"
+  },
+  {
+   "key": "chapters/surviving-in-an-rpg-maker-horror-game/8/ch-surviving-in-an-rpg-maker-horr_011.png",
+   "size": 8743731,
+   "lastModified": "2026-09-18T17:01:54.774Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/37/ch-13732-37_part006.png",
+   "size": 8303648,
+   "lastModified": "2026-10-05T15:52:30.827Z"
+  },
+  {
+   "key": "chapters/affair-agency/14/6.png",
+   "size": 8218198,
+   "lastModified": "2026-09-10T16:01:57.015Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/17/1.png",
+   "size": 8096635,
+   "lastModified": "2026-08-14T13:17:39.551Z"
+  },
+  {
+   "key": "chapters/affair-agency/14/4.png",
+   "size": 7755081,
+   "lastModified": "2026-09-10T16:01:53.142Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/4.jpg",
+   "size": 7668657,
+   "lastModified": "2026-08-31T09:48:36.333Z"
+  },
+  {
+   "key": "chapters/affair-agency/14/2.png",
+   "size": 7591589,
+   "lastModified": "2026-09-10T16:01:48.762Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/3.jpg",
+   "size": 7485946,
+   "lastModified": "2026-08-31T09:48:18.696Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/9.jpg",
+   "size": 7201248,
+   "lastModified": "2026-08-31T09:49:48.572Z"
+  },
+  {
+   "key": "chapters/student-jo-eun/47/ch-student-joe-e-chapter-47-eng-l_001.png",
+   "size": 7072132,
+   "lastModified": "2026-09-24T16:56:19.919Z"
+  },
+  {
+   "key": "chapters/affair-agency/14/3.png",
+   "size": 6968698,
+   "lastModified": "2026-09-10T16:01:50.916Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/6.jpg",
+   "size": 6778168,
+   "lastModified": "2026-08-31T09:49:07.225Z"
+  },
+  {
+   "key": "chapters/affair-agency/14/8.png",
+   "size": 6707111,
+   "lastModified": "2026-09-10T16:02:00.480Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/5.jpg",
+   "size": 6605370,
+   "lastModified": "2026-08-31T09:48:51.677Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/17/10.png",
+   "size": 6596258,
+   "lastModified": "2026-08-14T13:21:09.355Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/10.jpg",
+   "size": 6418342,
+   "lastModified": "2026-08-31T09:50:03.678Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/12.jpg",
+   "size": 6372843,
+   "lastModified": "2026-08-31T09:50:32.812Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/7.jpg",
+   "size": 6171090,
+   "lastModified": "2026-08-31T09:49:21.536Z"
+  },
+  {
+   "key": "chapters/affair-agency/14/9.png",
+   "size": 6166614,
+   "lastModified": "2026-09-10T16:02:02.042Z"
+  },
+  {
+   "key": "chapters/revenge-of-the-villain-slayer/3/ch-revenge-of-the-villain-slayer-_001.jpg",
+   "size": 6094443,
+   "lastModified": "2026-08-08T08:03:07.985Z"
+  },
+  {
+   "key": "chapters/affair-agency/14/5.png",
+   "size": 5948699,
+   "lastModified": "2026-09-10T16:01:54.799Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/2.jpg",
+   "size": 5888855,
+   "lastModified": "2026-08-31T09:48:01.286Z"
+  },
+  {
+   "key": "chapters/affair-agency/14/7.png",
+   "size": 5715742,
+   "lastModified": "2026-09-10T16:01:58.776Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/37/ch-13732-37_part008.png",
+   "size": 5644836,
+   "lastModified": "2026-10-05T15:52:43.732Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/11.jpg",
+   "size": 5628781,
+   "lastModified": "2026-08-31T09:50:16.514Z"
+  },
+  {
+   "key": "chapters/affair-agency/14/1.png",
+   "size": 5581794,
+   "lastModified": "2026-09-10T16:01:47.092Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/1.jpg",
+   "size": 5382809,
+   "lastModified": "2026-08-31T09:47:47.702Z"
+  },
+  {
+   "key": "chapters/you-get-dumb-when-you-re-in-love/9/9.png",
+   "size": 4868946,
+   "lastModified": "2026-09-20T13:24:48.197Z"
+  },
+  {
+   "key": "chapters/affair-agency/14/10.png",
+   "size": 4830677,
+   "lastModified": "2026-09-10T16:02:03.549Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/12/ch-rebirth-monarch-of-the-dead-ch_008.png",
+   "size": 4694696,
+   "lastModified": "2026-08-14T16:58:23.883Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/13.jpg",
+   "size": 4599244,
+   "lastModified": "2026-08-31T09:50:45.290Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/12/ch-rebirth-monarch-of-the-dead-ch_004.png",
+   "size": 4532254,
+   "lastModified": "2026-08-14T16:57:50.879Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/8.jpg",
+   "size": 4450506,
+   "lastModified": "2026-08-31T09:49:31.706Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/12/ch-rebirth-monarch-of-the-dead-ch_011.png",
+   "size": 4239509,
+   "lastModified": "2026-08-14T16:58:45.990Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/12/ch-rebirth-monarch-of-the-dead-ch_007.png",
+   "size": 4018142,
+   "lastModified": "2026-08-14T16:58:14.468Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/12/ch-rebirth-monarch-of-the-dead-ch_006.png",
+   "size": 3853413,
+   "lastModified": "2026-08-14T16:58:05.829Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/12/ch-rebirth-monarch-of-the-dead-ch_002.png",
+   "size": 3830722,
+   "lastModified": "2026-08-14T16:57:33.861Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/12/ch-rebirth-monarch-of-the-dead-ch_003.png",
+   "size": 3817414,
+   "lastModified": "2026-08-14T16:57:41.622Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/12/ch-rebirth-monarch-of-the-dead-ch_005.png",
+   "size": 3724314,
+   "lastModified": "2026-08-14T16:57:58.193Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/12/ch-rebirth-monarch-of-the-dead-ch_001.png",
+   "size": 3706445,
+   "lastModified": "2026-08-14T16:57:26.003Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/6_restss.webp",
+   "size": 3502354,
+   "lastModified": "2026-09-04T14:55:02.021Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/12/ch-rebirth-monarch-of-the-dead-ch_010.png",
+   "size": 3432604,
+   "lastModified": "2026-08-14T16:58:37.705Z"
+  },
+  {
+   "key": "chapters/you-get-dumb-when-you-re-in-love/9/8.png",
+   "size": 3412994,
+   "lastModified": "2026-09-20T13:24:38.133Z"
+  },
+  {
+   "key": "chapters/you-get-dumb-when-you-re-in-love/9/2.png",
+   "size": 3380521,
+   "lastModified": "2026-09-20T13:23:53.767Z"
+  },
+  {
+   "key": "chapters/rebirth-monarch-of-the-dead/12/ch-rebirth-monarch-of-the-dead-ch_009.png",
+   "size": 3294149,
+   "lastModified": "2026-08-14T16:58:30.831Z"
+  },
+  {
+   "key": "chapters/you-get-dumb-when-you-re-in-love/9/7.png",
+   "size": 3164893,
+   "lastModified": "2026-09-20T13:24:29.648Z"
+  },
+  {
+   "key": "chapters/you-get-dumb-when-you-re-in-love/9/6.png",
+   "size": 3160428,
+   "lastModified": "2026-09-20T13:24:21.145Z"
+  },
+  {
+   "key": "chapters/the-hero-cant-rest/2/001_001.webp",
+   "size": 3095822,
+   "lastModified": "2026-09-25T17:22:25.312Z"
+  },
+  {
+   "key": "chapters/you-get-dumb-when-you-re-in-love/9/3.png",
+   "size": 3092224,
+   "lastModified": "2026-09-20T13:24:01.531Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/4_restss.webp",
+   "size": 2857810,
+   "lastModified": "2026-09-04T14:54:50.924Z"
+  },
+  {
+   "key": "chapters/you-get-dumb-when-you-re-in-love/9/4.png",
+   "size": 2839510,
+   "lastModified": "2026-09-20T13:24:08.038Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/10_restss.webp",
+   "size": 2790136,
+   "lastModified": "2026-09-04T14:55:24.390Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/14_restss.webp",
+   "size": 2741266,
+   "lastModified": "2026-09-04T14:55:45.578Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_12_restss.webp",
+   "size": 2706820,
+   "lastModified": "2026-08-31T09:35:25.155Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/18_restss.webp",
+   "size": 2705050,
+   "lastModified": "2026-09-04T14:56:06.015Z"
+  },
+  {
+   "key": "covers/beast-saga/cover.png",
+   "size": 2672625,
+   "lastModified": "2026-08-09T15:29:48.364Z"
+  },
+  {
+   "key": "chapters/killing-darling-baby-ying/6/chapter-06-opening-page.png",
+   "size": 2661854,
+   "lastModified": "2026-09-11T10:53:21.781Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_13_restss.webp",
+   "size": 2642674,
+   "lastModified": "2026-08-31T09:35:29.781Z"
+  },
+  {
+   "key": "chapters/you-get-dumb-when-you-re-in-love/9/5.png",
+   "size": 2607778,
+   "lastModified": "2026-09-20T13:24:14.278Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_3_restss.webp",
+   "size": 2596912,
+   "lastModified": "2026-08-31T09:34:49.916Z"
+  },
+  {
+   "key": "chapters/you-get-dumb-when-you-re-in-love/9/1.png",
+   "size": 2594124,
+   "lastModified": "2026-09-20T13:23:45.440Z"
+  },
+  {
+   "key": "covers/i-m-the-hero-but-the-main-heroines-are-trying-to-kill-me/cover.png",
+   "size": 2536353,
+   "lastModified": "2026-08-08T14:02:30.293Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_4_restss.webp",
+   "size": 2496126,
+   "lastModified": "2026-08-31T09:34:54.187Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_2_restss.webp",
+   "size": 2480216,
+   "lastModified": "2026-08-31T09:34:45.297Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_6_restss.webp",
+   "size": 2469840,
+   "lastModified": "2026-08-31T09:35:02.454Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/7_restss.webp",
+   "size": 2467850,
+   "lastModified": "2026-09-04T14:55:07.504Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/1_restss.webp",
+   "size": 2462520,
+   "lastModified": "2026-09-04T14:54:36.749Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_9_restss.webp",
+   "size": 2413296,
+   "lastModified": "2026-08-31T09:35:13.711Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_5_restss.webp",
+   "size": 2346746,
+   "lastModified": "2026-08-31T09:34:58.255Z"
+  },
+  {
+   "key": "covers/leu-leu-leu/cover.png",
+   "size": 2322037,
+   "lastModified": "2026-08-19T11:07:27.907Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/8_restss.webp",
+   "size": 2317838,
+   "lastModified": "2026-09-04T14:55:13.132Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/16_restss.webp",
+   "size": 2251876,
+   "lastModified": "2026-09-04T14:55:57.331Z"
+  },
+  {
+   "key": "chapters/error-d-echo/1/001_001.webp",
+   "size": 2250974,
+   "lastModified": "2026-09-24T17:03:54.858Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/Header_Atas__4_.png",
+   "size": 2224105,
+   "lastModified": "2026-08-31T09:50:53.059Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_10_restss.webp",
+   "size": 2205872,
+   "lastModified": "2026-08-31T09:35:17.433Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/3_restss.webp",
+   "size": 2201346,
+   "lastModified": "2026-09-04T14:54:44.771Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/9_restss.webp",
+   "size": 2162632,
+   "lastModified": "2026-09-04T14:55:17.592Z"
+  },
+  {
+   "key": "chapters/affair-agency/14/Header_Atas__2_.png",
+   "size": 2161948,
+   "lastModified": "2026-09-10T16:02:05.088Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_8_restss.webp",
+   "size": 2147966,
+   "lastModified": "2026-08-31T09:35:09.622Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/5_restss.webp",
+   "size": 2080616,
+   "lastModified": "2026-09-04T14:54:54.977Z"
+  },
+  {
+   "key": "chapters/giantess-buddy-an-infinite-link-with-a-world-destroying-beauty/19/ChatGPT_Image_11_Sep_2026__08.08.00.png",
+   "size": 2069337,
+   "lastModified": "2026-09-14T11:41:38.302Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_7_restss.webp",
+   "size": 2004402,
+   "lastModified": "2026-08-31T09:35:05.957Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/13_restss.webp",
+   "size": 2002250,
+   "lastModified": "2026-09-04T14:55:38.953Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/15_restss.webp",
+   "size": 1984990,
+   "lastModified": "2026-09-04T14:55:50.258Z"
+  },
+  {
+   "key": "chapters/killing-darling-baby-ying/10/009_009.webp",
+   "size": 1859930,
+   "lastModified": "2026-09-11T07:37:56.033Z"
+  },
+  {
+   "key": "chapters/you-get-dumb-when-you-re-in-love/9/Footer.png",
+   "size": 1841942,
+   "lastModified": "2026-09-20T13:24:52.330Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_008_restss.webp",
+   "size": 1822396,
+   "lastModified": "2026-08-31T16:47:25.260Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_11_restss.webp",
+   "size": 1815018,
+   "lastModified": "2026-08-31T09:35:20.548Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_009_restss.webp",
+   "size": 1810120,
+   "lastModified": "2026-08-31T16:47:28.360Z"
+  },
+  {
+   "key": "chapters/how-to-survive-in-the-horror-novel-i-wrote/11/015_015-v2.webp",
+   "size": 1790206,
+   "lastModified": "2026-10-23T14:12:35.126Z"
+  },
+  {
+   "key": "chapters/how-to-survive-in-the-horror-novel-i-wrote/11/015_015.webp",
+   "size": 1790206,
+   "lastModified": "2026-10-23T13:03:29.905Z"
+  },
+  {
+   "key": "chapters/how-to-survive-in-the-horror-novel-i-wrote/10/014_014.webp",
+   "size": 1790028,
+   "lastModified": "2026-10-23T12:34:42.258Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/2_restss.webp",
+   "size": 1775684,
+   "lastModified": "2026-09-04T14:54:40.329Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/17/Header_Atas__2_.png",
+   "size": 1775291,
+   "lastModified": "2026-08-14T13:21:14.367Z"
+  },
+  {
+   "key": "chapters/the-hero-cant-rest/2/016_016.webp",
+   "size": 1757190,
+   "lastModified": "2026-09-25T17:22:46.978Z"
+  },
+  {
+   "key": "chapters/error-d-echo/1/016_016.webp",
+   "size": 1712548,
+   "lastModified": "2026-09-24T17:04:09.865Z"
+  },
+  {
+   "key": "chapters/error-d-echo/3/001_001.webp",
+   "size": 1707614,
+   "lastModified": "2026-09-24T17:52:33.063Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/11_restss.webp",
+   "size": 1696004,
+   "lastModified": "2026-09-04T14:55:29.905Z"
+  },
+  {
+   "key": "chapters/the-old-man-vows-revenge-against-his-demon-wife/1/Page__26__result.webp",
+   "size": 1688986,
+   "lastModified": "2026-08-04T12:09:55.380Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/12_restss.webp",
+   "size": 1682814,
+   "lastModified": "2026-09-04T14:55:33.970Z"
+  },
+  {
+   "key": "chapters/a-girl-who-s-bad-at-expressing-herself/3/001_001.webp",
+   "size": 1650064,
+   "lastModified": "2026-09-29T07:38:17.450Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_012_ress.webp",
+   "size": 1621344,
+   "lastModified": "2026-09-10T15:34:48.384Z"
+  },
+  {
+   "key": "chapters/the-old-man-vows-revenge-against-his-demon-wife/1/Page__1__result.webp",
+   "size": 1613852,
+   "lastModified": "2026-08-04T12:14:05.959Z"
+  },
+  {
+   "key": "chapters/shadow-sovereign-leveling-up-with-monsters/8/Header__11_.png",
+   "size": 1606509,
+   "lastModified": "2026-10-04T17:32:56.493Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_006_ress.webp",
+   "size": 1606256,
+   "lastModified": "2026-09-10T15:34:42.861Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_014_ress.webp",
+   "size": 1601422,
+   "lastModified": "2026-09-10T15:34:50.112Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_004_ress.webp",
+   "size": 1582762,
+   "lastModified": "2026-09-10T15:34:41.259Z"
+  },
+  {
+   "key": "chapters/killing-darling-baby-ying/9/009_009.webp",
+   "size": 1579744,
+   "lastModified": "2026-09-11T07:26:41.836Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_011_restss.webp",
+   "size": 1570396,
+   "lastModified": "2026-08-31T16:47:33.262Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_012_restss.webp",
+   "size": 1562010,
+   "lastModified": "2026-08-31T16:47:35.954Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/13_restss.webp",
+   "size": 1553034,
+   "lastModified": "2026-08-31T09:50:36.753Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_015_restss.webp",
+   "size": 1537258,
+   "lastModified": "2026-08-31T16:47:43.313Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/17_restss.webp",
+   "size": 1533524,
+   "lastModified": "2026-09-04T14:56:00.813Z"
+  },
+  {
+   "key": "chapters/error-d-echo/2/001_001.webp",
+   "size": 1526680,
+   "lastModified": "2026-09-24T17:28:11.766Z"
+  },
+  {
+   "key": "chapters/ill-spend-my-fortune-to-become-the-strongest-before-the-game-ends/3/1000913505.png",
+   "size": 1524383,
+   "lastModified": "2026-09-16T11:47:23.392Z"
+  },
+  {
+   "key": "chapters/affair-agency/14/Footer_Bawah.png",
+   "size": 1493862,
+   "lastModified": "2026-09-10T16:02:04.290Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/Footer_Bawah.png",
+   "size": 1493862,
+   "lastModified": "2026-08-31T09:50:48.279Z"
+  },
+  {
+   "key": "chapters/error-d-echo/3/014_014.webp",
+   "size": 1493346,
+   "lastModified": "2026-09-24T17:52:44.469Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_016_restss.webp",
+   "size": 1488328,
+   "lastModified": "2026-08-31T16:47:45.968Z"
+  },
+  {
+   "key": "chapters/the-hero-cant-rest/6/017_017.webp",
+   "size": 1483302,
+   "lastModified": "2026-09-25T22:12:41.781Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_009_ress.webp",
+   "size": 1479956,
+   "lastModified": "2026-09-10T15:34:45.556Z"
+  },
+  {
+   "key": "chapters/a-girl-who-s-bad-at-expressing-herself/3/008_008.webp",
+   "size": 1474506,
+   "lastModified": "2026-09-29T07:38:27.572Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_014_restss.webp",
+   "size": 1470632,
+   "lastModified": "2026-08-31T16:47:40.659Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/h_1_restss.webp",
+   "size": 1458252,
+   "lastModified": "2026-08-31T09:34:38.894Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_005_ress.webp",
+   "size": 1445930,
+   "lastModified": "2026-09-10T15:34:42.073Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_008_ress.webp",
+   "size": 1441608,
+   "lastModified": "2026-09-10T15:34:44.734Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_011_ress.webp",
+   "size": 1431136,
+   "lastModified": "2026-09-10T15:34:47.542Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_001_ress.webp",
+   "size": 1426654,
+   "lastModified": "2026-09-10T15:34:38.260Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_001_restss.webp",
+   "size": 1417462,
+   "lastModified": "2026-08-31T16:47:08.784Z"
+  },
+  {
+   "key": "chapters/error-d-echo/4/001_001.webp",
+   "size": 1416172,
+   "lastModified": "2026-09-24T18:18:06.358Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_016_ress.webp",
+   "size": 1402640,
+   "lastModified": "2026-09-10T15:34:51.867Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_003_ress.webp",
+   "size": 1398840,
+   "lastModified": "2026-09-10T15:34:40.196Z"
+  },
+  {
+   "key": "chapters/killing-darling-baby-ying/11/017_017.webp",
+   "size": 1395120,
+   "lastModified": "2026-09-11T07:50:05.148Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_003_restss.webp",
+   "size": 1387732,
+   "lastModified": "2026-08-31T16:47:13.418Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_007_ress.webp",
+   "size": 1374312,
+   "lastModified": "2026-09-10T15:34:43.912Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_015_ress.webp",
+   "size": 1370976,
+   "lastModified": "2026-09-10T15:34:50.873Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_005_restss.webp",
+   "size": 1362418,
+   "lastModified": "2026-08-31T16:47:17.785Z"
+  },
+  {
+   "key": "chapters/killing-darling-baby-ying/6/024_024.webp",
+   "size": 1345748,
+   "lastModified": "2026-09-11T03:43:55.772Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_013_ress.webp",
+   "size": 1324428,
+   "lastModified": "2026-09-10T15:34:49.137Z"
+  },
+  {
+   "key": "chapters/revenge-of-the-villain-slayer/3/ch-revenge-of-the-villain-slayer-_002_res.webp",
+   "size": 1323230,
+   "lastModified": "2026-08-08T08:03:49.864Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_006_restss.webp",
+   "size": 1319952,
+   "lastModified": "2026-08-31T16:47:20.104Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_010_ress.webp",
+   "size": 1297844,
+   "lastModified": "2026-09-10T15:34:46.520Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_03.webp",
+   "size": 1267658,
+   "lastModified": "2026-08-14T08:57:15.985Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_010_restss.webp",
+   "size": 1251928,
+   "lastModified": "2026-08-31T16:47:30.550Z"
+  },
+  {
+   "key": "chapters/the-hero-cant-rest/6/001_001.webp",
+   "size": 1250794,
+   "lastModified": "2026-09-25T22:12:20.087Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_002_restss.webp",
+   "size": 1243640,
+   "lastModified": "2026-08-31T16:47:10.936Z"
+  },
+  {
+   "key": "chapters/namgoongse-is-a-little-prince/7/ch-student-joe-e-chapter-30-eng-l_002_ress.webp",
+   "size": 1235964,
+   "lastModified": "2026-09-10T15:34:39.267Z"
+  },
+  {
+   "key": "chapters/a-girl-who-s-bad-at-expressing-herself/2/001_001.webp",
+   "size": 1227784,
+   "lastModified": "2026-09-29T07:31:44.523Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_12.webp",
+   "size": 1227198,
+   "lastModified": "2026-08-14T08:57:24.612Z"
+  },
+  {
+   "key": "chapters/the-hero-cant-rest/1/021_021.webp",
+   "size": 1221518,
+   "lastModified": "2026-09-25T18:04:42.107Z"
+  },
+  {
+   "key": "chapters/the-hero-cant-rest/7/001_001.webp",
+   "size": 1196836,
+   "lastModified": "2026-09-25T22:18:28.706Z"
+  },
+  {
+   "key": "chapters/ill-spend-my-fortune-to-become-the-strongest-before-the-game-ends/6/Header__9_.png",
+   "size": 1173963,
+   "lastModified": "2026-09-19T10:50:31.241Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_017_restss.webp",
+   "size": 1157236,
+   "lastModified": "2026-08-31T16:47:48.004Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_013_restss.webp",
+   "size": 1152506,
+   "lastModified": "2026-08-31T16:47:38.111Z"
+  },
+  {
+   "key": "chapters/a-girl-who-s-bad-at-expressing-herself/1/001_001.webp",
+   "size": 1141506,
+   "lastModified": "2026-09-29T03:40:56.877Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_004_restss.webp",
+   "size": 1121646,
+   "lastModified": "2026-08-31T16:47:15.408Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_007_restss.webp",
+   "size": 1064734,
+   "lastModified": "2026-08-31T16:47:21.973Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_018_restss.webp",
+   "size": 1058982,
+   "lastModified": "2026-08-31T16:47:49.819Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0__02.webp",
+   "size": 976538,
+   "lastModified": "2026-08-14T08:57:14.417Z"
+  },
+  {
+   "key": "chapters/the-hero-cant-rest/7/012_012.webp",
+   "size": 974860,
+   "lastModified": "2026-09-25T22:18:42.636Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_06.webp",
+   "size": 943134,
+   "lastModified": "2026-08-14T08:57:18.543Z"
+  },
+  {
+   "key": "chapters/error-d-echo/4/013_013.webp",
+   "size": 900164,
+   "lastModified": "2026-09-24T18:18:16.851Z"
+  },
+  {
+   "key": "chapters/killing-darling-baby-ying/12/008_008.webp",
+   "size": 826780,
+   "lastModified": "2026-09-11T07:52:39.395Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_11.webp",
+   "size": 805258,
+   "lastModified": "2026-08-14T08:57:23.460Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_04.webp",
+   "size": 800984,
+   "lastModified": "2026-08-14T08:57:16.820Z"
+  },
+  {
+   "key": "chapters/a-girl-who-s-bad-at-expressing-herself/1/011_011.webp",
+   "size": 796584,
+   "lastModified": "2026-09-29T03:41:08.566Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_08.webp",
+   "size": 781892,
+   "lastModified": "2026-08-14T08:57:20.499Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_019_restss.webp",
+   "size": 752000,
+   "lastModified": "2026-08-31T16:47:51.171Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_14.webp",
+   "size": 747560,
+   "lastModified": "2026-08-14T08:57:26.461Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_07.webp",
+   "size": 742024,
+   "lastModified": "2026-08-14T08:57:19.375Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_09.webp",
+   "size": 733186,
+   "lastModified": "2026-08-14T08:57:21.450Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/19_restss.webp",
+   "size": 728946,
+   "lastModified": "2026-09-04T14:56:08.010Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_10.webp",
+   "size": 727864,
+   "lastModified": "2026-08-14T08:57:22.365Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_13.webp",
+   "size": 707006,
+   "lastModified": "2026-08-14T08:57:25.565Z"
+  },
+  {
+   "key": "chapters/a-girl-who-s-bad-at-expressing-herself/2/009_009.webp",
+   "size": 692202,
+   "lastModified": "2026-09-29T07:31:51.539Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_05.webp",
+   "size": 653528,
+   "lastModified": "2026-08-14T08:57:17.713Z"
+  },
+  {
+   "key": "chapters/how-to-survive-in-the-horror-novel-i-wrote/8/.trashed-1792000422-page_1.jpeg",
+   "size": 637030,
+   "lastModified": "2026-10-02T06:32:23.086Z"
+  },
+  {
+   "key": "chapters/killing-darling-baby-ying/13/015_015.webp",
+   "size": 625298,
+   "lastModified": "2026-09-11T08:02:12.227Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_15.webp",
+   "size": 560000,
+   "lastModified": "2026-08-14T08:57:27.360Z"
+  },
+  {
+   "key": "covers/a-match-with-me/cover.webp",
+   "size": 480530,
+   "lastModified": "2026-08-26T12:51:01.426Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/Header_Atas__2__restss.webp",
+   "size": 443694,
+   "lastModified": "2026-09-04T14:56:10.273Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/Header_Atas__4__restss.webp",
+   "size": 443278,
+   "lastModified": "2026-08-31T09:50:49.113Z"
+  },
+  {
+   "key": "chapters/error-d-echo/2/014_014.webp",
+   "size": 395406,
+   "lastModified": "2026-09-24T17:28:22.903Z"
+  },
+  {
+   "key": "chapters/the-hero-cant-rest/4/024_024.webp",
+   "size": 289344,
+   "lastModified": "2026-09-25T18:43:21.927Z"
+  },
+  {
+   "key": "chapters/operation-heart-pounding/37/019_019.webp",
+   "size": 186530,
+   "lastModified": "2026-10-03T15:10:06.513Z"
+  },
+  {
+   "key": "chapters/operation-heart-pounding/46/021_021.webp",
+   "size": 184756,
+   "lastModified": "2026-10-06T17:13:05.738Z"
+  },
+  {
+   "key": "chapters/operation-heart-pounding/45/018_018.webp",
+   "size": 183546,
+   "lastModified": "2026-10-06T16:49:11.365Z"
+  },
+  {
+   "key": "chapters/operation-heart-pounding/42/017_017.webp",
+   "size": 183180,
+   "lastModified": "2026-10-04T11:17:28.402Z"
+  },
+  {
+   "key": "chapters/operation-heart-pounding/44/017_017.webp",
+   "size": 182994,
+   "lastModified": "2026-10-06T16:58:31.543Z"
+  },
+  {
+   "key": "chapters/operation-heart-pounding/39/021_021.webp",
+   "size": 182686,
+   "lastModified": "2026-10-03T15:19:35.518Z"
+  },
+  {
+   "key": "chapters/operation-heart-pounding/41/021_021.webp",
+   "size": 181568,
+   "lastModified": "2026-10-04T11:16:52.643Z"
+  },
+  {
+   "key": "chapters/operation-heart-pounding/40/019_019.webp",
+   "size": 181084,
+   "lastModified": "2026-10-03T15:21:32.936Z"
+  },
+  {
+   "key": "chapters/the-revenge-of-the-regressed-s-class-hero/21/014_014.webp",
+   "size": 177092,
+   "lastModified": "2026-10-13T03:06:01.599Z"
+  },
+  {
+   "key": "chapters/student-jo-eun/22/017_ch-22_017.webp",
+   "size": 170132,
+   "lastModified": "2026-09-01T15:11:08.059Z"
+  },
+  {
+   "key": "chapters/student-jo-eun/14/022_ch-14_022.webp",
+   "size": 169566,
+   "lastModified": "2026-08-31T13:56:32.909Z"
+  },
+  {
+   "key": "chapters/student-jo-eun/15/017_ch-15_017.webp",
+   "size": 169566,
+   "lastModified": "2026-08-31T14:38:36.312Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/11/0_res.webp",
+   "size": 161784,
+   "lastModified": "2026-08-09T16:14:43.055Z"
+  },
+  {
+   "key": "chapters/operation-heart-pounding/36/022_022.webp",
+   "size": 160406,
+   "lastModified": "2026-10-03T15:06:25.237Z"
+  },
+  {
+   "key": "chapters/the-regressor-and-the-blind-saintess/6/021_021.webp",
+   "size": 155960,
+   "lastModified": "2026-10-07T08:56:20.315Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/28/ch-18_020_restss.webp",
+   "size": 154444,
+   "lastModified": "2026-08-31T16:47:51.592Z"
+  },
+  {
+   "key": "chapters/the-revenge-of-the-regressed-s-class-hero/20/015_015.webp",
+   "size": 151248,
+   "lastModified": "2026-10-13T03:02:26.233Z"
+  },
+  {
+   "key": "chapters/the-devil-and-the-ice-witch/3/001_001-v2.webp",
+   "size": 149604,
+   "lastModified": "2026-10-26T12:24:36.969Z"
+  },
+  {
+   "key": "covers/new-manga/cover.jpg",
+   "size": 145441,
+   "lastModified": "2026-08-14T16:10:51.713Z"
+  },
+  {
+   "key": "chapters/the-devil-and-the-ice-witch/2/017_017-v2.webp",
+   "size": 138948,
+   "lastModified": "2026-10-26T12:14:39.959Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/27/Footer_Bawah_restss.webp",
+   "size": 130698,
+   "lastModified": "2026-08-31T09:50:45.698Z"
+  },
+  {
+   "key": "chapters/you-like-someone-with-that-face/39/Footer_Bawah_restss.webp",
+   "size": 130698,
+   "lastModified": "2026-09-04T14:56:08.714Z"
+  },
+  {
+   "key": "chapters/erica-when-a-friend-is-obsessed-with-me/15/ch-the-retired-killer-wants-a-qui_part025.webp",
+   "size": 101200,
+   "lastModified": "2026-09-07T05:21:55.893Z"
+  },
+  {
+   "key": "chapters/the-revenge-of-the-regressed-s-class-hero/5/001_ch-the-revenge-of-the-regressed-s_001.webp",
+   "size": 96682,
+   "lastModified": "2026-09-06T04:40:04.557Z"
+  },
+  {
+   "key": "chapters/how-to-survive-in-the-horror-novel-i-wrote/5/001_001.webp",
+   "size": 81534,
+   "lastModified": "2026-09-19T11:36:58.754Z"
+  },
+  {
+   "key": "chapters/student-jo-eun/14/021_ch-14_021.webp",
+   "size": 78180,
+   "lastModified": "2026-08-31T13:56:30.975Z"
+  },
+  {
+   "key": "chapters/sicario/1/sicario_ch0_01.webp",
+   "size": 60902,
+   "lastModified": "2026-08-14T08:57:15.021Z"
+  },
+  {
+   "key": "covers/new-manga/cover.webp",
+   "size": 35396,
+   "lastModified": "2026-07-27T18:19:01.551Z"
+  },
+  {
+   "key": "chapters/how-to-survive-in-the-horror-novel-i-wrote/10/001_001.webp",
+   "size": 10988,
+   "lastModified": "2026-10-23T12:34:06.127Z"
+  },
+  {
+   "key": "chapters/how-to-survive-in-the-horror-novel-i-wrote/11/001_001-v2.webp",
+   "size": 10988,
+   "lastModified": "2026-10-23T14:11:58.272Z"
+  },
+  {
+   "key": "chapters/how-to-survive-in-the-horror-novel-i-wrote/11/001_001.webp",
+   "size": 10988,
+   "lastModified": "2026-10-23T13:02:11.594Z"
+  },
+  {
+   "key": "chapters/how-to-survive-in-the-horror-novel-i-wrote/11/014_014-v2.webp",
+   "size": 10898,
+   "lastModified": "2026-10-23T14:12:31.215Z"
+  },
+  {
+   "key": "chapters/how-to-survive-in-the-horror-novel-i-wrote/11/014_014.webp",
+   "size": 10898,
+   "lastModified": "2026-10-23T13:03:01.706Z"
+  },
+  {
+   "key": "chapters/how-to-survive-in-the-horror-novel-i-wrote/10/013_013.webp",
+   "size": 10028,
+   "lastModified": "2026-10-23T12:34:36.180Z"
+  }
+ ],
+ "missing": [
+  "thunder/image",
+  "komikid/image",
+  "luvyaa/image",
+  "komiku/image",
+  "chapters/erica-when-a-friend-is-obsessed-with-me/13/001_ch-erica-when-a-friend-is-obsesse_001_part01.webp",
+  "chapters/erica-when-a-friend-is-obsessed-with-me/13/001_ch-erica-when-a-friend-is-obsesse_001_part02.webp",
+  "chapters/erica-when-a-friend-is-obsessed-with-me/13/001_ch-erica-when-a-friend-is-obsesse_001_part03.webp",
+  "chapters/erica-when-a-friend-is-obsessed-with-me/13/002_ch-erica-when-a-friend-is-obsesse_002_part01.webp",
+  "chapters/erica-when-a-friend-is-obsessed-with-me/13/002_ch-erica-when-a-friend-is-obsesse_002_part02.webp",
+  "chapters/erica-when-a-friend-is-obsessed-with-me/13/002_ch-erica-when-a-friend-is-obsesse_002_part03.webp",
+  "chapters/erica-when-a-friend-is-obsessed-with-me/13/003_ch-erica-when-a-friend-is-obsesse_003_part01.webp",
+  "chapters/erica-when-a-friend-is-obsessed-with-me/13/003_ch-erica-when-a-friend-is-obsesse_003_part02.webp",
+  "chapters/erica-when-a-friend-is-obsessed-with-me/13/003_ch-erica-when-a-friend-is-obsesse_003_part03.webp"
+ ]
+}

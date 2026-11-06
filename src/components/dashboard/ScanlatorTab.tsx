@@ -486,7 +486,7 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
                   disabled={busy === s.user_id}
                   className="mt-2 w-full rounded-md py-1.5 text-[10px] font-semibold text-rose-300/60 transition-colors hover:bg-rose-500/10 hover:text-rose-300"
                 >
-                  Hapus tim permanen
+                  Hapus user permanen
                 </button>
               </div>
             </Panel>
@@ -498,7 +498,7 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
       {deleteTarget && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">
           <div className="w-full max-w-sm rounded-xl border border-white/[.08] bg-[#111115] p-4">
-            <p className="text-[13px] font-bold text-white">Hapus tim “{deleteTarget.team}”?</p>
+            <p className="text-[13px] font-bold text-white">Hapus user “{deleteTarget.team}”?</p>
             <p className="mt-1.5 text-[11px] leading-relaxed text-white/45">
               Profil grup dihapus, akses Scanlator dicabut, dan semua seri tim ini disembunyikan dari publik (karya tidak dihapus).
             </p>
@@ -510,8 +510,8 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
                   const target = deleteTarget;
                   setDeleteTarget(null);
                   void call(
-                    { user_id: target.userId, action: "delete", reason: "Tim dihapus admin", note: notes[target.userId] || "" },
-                    `Tim ${target.team} dihapus.`,
+                    { user_id: target.userId, action: "delete", reason: "User dihapus admin", note: notes[target.userId] || "" },
+                    `User ${target.team} dihapus.`,
                   );
                 }}
               >
@@ -592,7 +592,7 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
 }
 
 function labelAction(action: string) {
-  return ({ warn: "SP", suspend: "Suspend", revoke: "Cabut akses", restore: "Pulihkan", delete: "Hapus tim", verify: "Verifikasi", unverify: "Cabut verifikasi" } as Record<string, string>)[action] || action;
+  return ({ warn: "SP", suspend: "Suspend", revoke: "Cabut akses", restore: "Pulihkan", delete: "Hapus user", verify: "Verifikasi", unverify: "Cabut verifikasi" } as Record<string, string>)[action] || action;
 }
 
 function Contacts({ wa, tg, dc }: { wa: string | null; tg: string | null; dc: string | null }) {

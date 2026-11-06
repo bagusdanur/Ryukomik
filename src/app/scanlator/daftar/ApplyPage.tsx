@@ -69,7 +69,7 @@ export default function ScanlatorApplyPage() {
           <p className="text-[11px] font-bold uppercase tracking-wide text-white/30">Akun Translation · Beta</p>
           <h1 className="mt-1 text-[19px] font-bold leading-tight">Jadi Scanlator</h1>
           <p className="mt-1 text-[12px] leading-relaxed text-white/45">
-            Unggah hasil TL, dapat atribusi nama tim, pasang tautan donate sendiri. Pengajuan diperiksa admin.
+            Unggah hasil TL, dapat atribusi nama user, pasang tautan donate sendiri. Pengajuan diperiksa admin.
           </p>
         </div>
 
@@ -78,9 +78,9 @@ export default function ScanlatorApplyPage() {
           <ul className="mt-2 space-y-1.5">
             {[
               "Badge SCANLATOR di profil, komentar, leaderboard, dan postingan",
-              "Premium gratis selama status tim aktif — tanpa bayar",
+              "Premium gratis selama status user aktif — tanpa bayar",
               "Studio upload: chapter, edit halaman, pratinjau, dan statistik tayangan",
-              "Atribusi nama tim + tautan profil di setiap seri yang kamu unggah",
+              "Atribusi nama user + tautan profil di setiap seri yang kamu unggah",
               "Tautan donate (DANA/GoPay, Trakteer, Tako) tampil di halaman seri",
             ].map((b) => (
               <li key={b} className="flex gap-2 text-[11.5px] leading-relaxed text-white/60">
@@ -107,9 +107,9 @@ export default function ScanlatorApplyPage() {
                 <Panel>
                   <PanelHead title={mine ? "Ajukan ulang" : "Formulir pengajuan"} desc="Semua field bertanda * wajib diisi." />
                   <div className="space-y-3 p-4">
-                    <Field label="Nama tim *"><input value={teamName} onChange={(e) => setTeamName(e.target.value)} maxLength={80} required placeholder="Tim Baca Seru" className={inputClass} /></Field>
+                    <Field label="Nama user *"><input value={teamName} onChange={(e) => setTeamName(e.target.value)} maxLength={80} required placeholder="Scan Baca Seru" className={inputClass} /></Field>
                     <Field label="Handle *" hint="huruf kecil, angka, strip">
-                      <input value={handle} onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} maxLength={30} required placeholder="tim-baca-seru" className={inputClass} />
+                      <input value={handle} onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} maxLength={30} required placeholder="user-baca-seru" className={inputClass} />
                     </Field>
                     <Field label="Deskripsi"><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={1000} placeholder="Pengalaman, genre, dsb." className={inputClass} /></Field>
                     <Field label="Contoh hasil TL *" hint="satu per baris, maks 3">

@@ -51,13 +51,13 @@ export default function DirectoryClient() {
           <FiArrowLeft size={12} /> Kembali
         </button>
 
-        <h1 className="mt-3 text-[19px] font-bold leading-tight">Tim Scanlator</h1>
-        <p className="mt-1 text-[12px] text-white/40">{groups.length} tim terdaftar · diurutkan dari yang paling banyak project</p>
+        <h1 className="mt-3 text-[19px] font-bold leading-tight">User Scanlator</h1>
+        <p className="mt-1 text-[12px] text-white/40">{groups.length} user terdaftar · diurutkan dari yang paling banyak project</p>
 
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Cari tim…"
+          placeholder="Cari user…"
           className="mt-3 w-full rounded-lg border border-white/[.08] bg-white/[.03] px-3 py-2.5 text-[13px] text-white placeholder:text-white/25 outline-none focus:border-[var(--accent)]/60"
         />
 
@@ -65,7 +65,7 @@ export default function DirectoryClient() {
           {loading ? (
             <p className="py-10 text-center text-[12px] text-white/35">Memuat…</p>
           ) : filtered.length === 0 ? (
-            <p className="py-10 text-center text-[12px] text-white/35">Belum ada tim.</p>
+            <p className="py-10 text-center text-[12px] text-white/35">Belum ada user.</p>
           ) : (
             <ul className="divide-y divide-white/[.05]">
               {filtered.map((g) => (

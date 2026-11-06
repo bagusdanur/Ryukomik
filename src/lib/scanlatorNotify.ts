@@ -8,6 +8,8 @@ export type ScanlatorNotificationType =
   | "suspend"
   | "revoke"
   | "restore"
+  | "verify"
+  | "unverify"
   | "info";
 
 /**

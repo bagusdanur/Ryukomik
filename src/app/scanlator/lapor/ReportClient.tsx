@@ -72,7 +72,7 @@ export default function ReportClient({ slug, handle, kind: initialKind }: { slug
               {(slug || handle) && (
                 <p className="mt-3 flex items-center gap-1.5 text-[11px] text-white/40">
                   <FiAlertTriangle size={11} className="text-amber-300/70" />
-                  {slug ? `Project: ${slug}` : ""}{slug && handle ? " · " : ""}{handle ? `Tim: @${handle}` : ""}
+                  {slug ? `Project: ${slug}` : ""}{slug && handle ? " · " : ""}{handle ? `User: @${handle}` : ""}
                 </p>
               )}
 

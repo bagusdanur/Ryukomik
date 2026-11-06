@@ -29,7 +29,7 @@ function timeAgo(iso: string | null) {
   return new Date(iso).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
 
-/** Daftar grup Scanlator di Komunitas — bisa dibuka ke profil publiknya. */
+/** Daftar user Scanlator di Komunitas — bisa dibuka ke profil publiknya. */
 export default function ScanlatorGroupsPanel() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +45,7 @@ export default function ScanlatorGroupsPanel() {
   }, []);
 
   if (loading) {
-    return <div className="rk-card-soft rounded-xl p-6 text-center text-[12px] text-white/35">Memuat grup…</div>;
+    return <div className="rk-card-soft rounded-xl p-6 text-center text-[12px] text-white/35">Memuat user…</div>;
   }
 
   return (
@@ -53,7 +53,7 @@ export default function ScanlatorGroupsPanel() {
       <div className="flex items-center gap-2 px-0.5">
         <FiUsers size={13} className="text-[var(--accent-2)]" />
         <p className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
-          {groups.length} grup scanlator
+          {groups.length} user scanlator
         </p>
         <Link href="/scanlator/direktori" className="ml-auto text-[10px] font-semibold text-[var(--accent-2)]">
           Direktori
@@ -62,7 +62,7 @@ export default function ScanlatorGroupsPanel() {
 
       {groups.length === 0 && (
         <div className="rounded-xl border border-white/[.07] bg-white/[.02] px-4 py-8 text-center">
-          <p className="text-[12px] text-white/40">Belum ada grup Scanlator.</p>
+          <p className="text-[12px] text-white/40">Belum ada user Scanlator.</p>
           <Link href="/scanlator/daftar" className="mt-2 inline-block text-[11px] font-bold text-[var(--accent-2)]">
             Daftar jadi Scanlator
           </Link>

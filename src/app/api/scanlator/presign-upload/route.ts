@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `Maksimal 30 MB per gambar (file ini ${formatBytes(size)}).` }, { status: 400 });
     }
 
-    // Kuota 2 GB per tim — termasuk slot yang sedang dipesan upload lain.
+    // Kuota 2 GB per user — termasuk slot yang sedang dipesan upload lain.
     await socialQuery(
       "update scanlator_uploads set status = 'expired' where handle = $1 and status = 'reserved' and expires_at < now()",
       [storage],

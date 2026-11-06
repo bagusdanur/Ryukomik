@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
-import { getSession } from "@/lib/auth/getSession";
+import { clearLocalSessionCache, getSession } from "@/lib/auth/getSession";
 import { pullAndMergeHistory } from "@/utils/historySync";
 
 type Listener = (user: User | null) => void;

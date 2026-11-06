@@ -75,7 +75,7 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    if (teamName.length < 2) return NextResponse.json({ error: "Nama tim wajib diisi." }, { status: 400 });
+    if (teamName.length < 2) return NextResponse.json({ error: "Nama user wajib diisi." }, { status: 400 });
     if (samples.length === 0) return NextResponse.json({ error: "Sertakan minimal 1 contoh hasil TL." }, { status: 400 });
     if (!agreeTerms) return NextResponse.json({ error: "Kamu wajib menyetujui Syarat & Ketentuan Scanlator." }, { status: 400 });
     if (!discord) {
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       [handle],
     );
     if (handleTaken.rows[0]) {
-      return NextResponse.json({ error: "Handle sudah dipakai tim lain." }, { status: 409 });
+      return NextResponse.json({ error: "Handle sudah dipakai user lain." }, { status: 409 });
     }
 
     const { rows } = await socialQuery<{ id: string }>(
@@ -157,7 +157,7 @@ async function notifyScanlatorApplication(handle: string, teamName: string, wa: 
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: target,
-      text: `Pengajuan Scanlator baru (BETA)\n\nTim: ${teamName}\nHandle: ${handle}\n\nKontak:\n${contacts}\n\nCek dashboard admin → tab Scanlator.`,
+      text: `Pengajuan Scanlator baru (BETA)\n\nUser: ${teamName}\nHandle: ${handle}\n\nKontak:\n${contacts}\n\nCek dashboard admin → tab Scanlator.`,
       reply_markup: { inline_keyboard: [[{ text: "Buka Dashboard Scanlator", url: "https://ryukomik.my.id/dashboard?page=scanlator" }]] },
     }),
     signal: AbortSignal.timeout(15_000),

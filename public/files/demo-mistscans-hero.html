@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mist Scans - Animated Cover Background Demo</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #090a0f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* Container HP / Card Wrapper agar mirip tampilan mobile */
+    .mobile-frame {
+      width: 100%;
+      max-width: 440px;
+      height: 720px;
+      background: #0b0d14;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Top App Bar Header */
+    .top-header {
+      height: 56px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(11, 13, 20, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #a78bfa, #6366f1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 14px;
+      color: #9ca3af;
+    }
+
+    /* HERO WRAPPER */
+    .hero-container {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 1. BACKGROUND COVER MARQUEE */
+    .hero-bg {
+      position: absolute;
+      inset: -80px -25px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      opacity: 0.38; /* Opacity cover asli */
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Kolom Vertikal */
+    .hero-col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 98px;
+      flex-shrink: 0;
+    }
+
+    /* Card Cover Asli */
+    .cover-card {
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #1e202e;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    .cover-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* ANIMASI VERTICAL SCROLL INFINITE */
+    .scroll-up {
+      animation: scrollUp 24s linear infinite;
+    }
+
+    .scroll-down {
+      animation: scrollDown 28s linear infinite;
+    }
+
+    .scroll-up-slow {
+      animation: scrollUp 32s linear infinite;
+    }
+
+    .scroll-down-slow {
+      animation: scrollDown 26s linear infinite;
+    }
+
+    @keyframes scrollUp {
+      0% {
+        transform: translateY(0);
+      }
+      100% {
+        transform: translateY(-50%);
+      }
+    }
+
+    @keyframes scrollDown {
+      0% {
+        transform: translateY(-50%);
+      }
+      100% {
+        transform: translateY(0);
+      }
+    }
+
+    /* 2. OVERLAY GELAP (VIGNETTE + FADE GRADIENT) */
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(circle at center, rgba(11, 13, 20, 0.72) 10%, rgba(11, 13, 20, 0.95) 90%),
+        linear-gradient(to bottom, rgba(11, 13, 20, 0.9) 0%, transparent 20%, transparent 80%, rgba(11, 13, 20, 0.98) 100%);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* 3. FOREGROUND CONTENT (Teks Hero) */
+    .hero-content {
+      position: relative;
+      z-index: 3;
+      max-width: 360px;
+      padding: 24px 20px;
+      text-align: center;
+    }
+
+    .badge-sub {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #a78bfa;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .main-heading {
+      font-size: 23px;
+      line-height: 1.3;
+      font-weight: 800;
+      margin-bottom: 14px;
+      color: #ffffff;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+    }
+
+    .body-desc {
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-bottom: 22px;
+    }
+
+    .body-desc strong {
+      color: #fff;
+    }
+
+    .feature-tags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .tag-item {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #f1f5f9;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+
+    /* Bottom Navigation Bar */
+    .bottom-nav {
+      height: 60px;
+      background: rgba(11, 13, 20, 0.96);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 10px;
+      z-index: 10;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      color: #64748b;
+      cursor: pointer;
+    }
+
+    .nav-item.active {
+      color: #a78bfa;
+      font-weight: 600;
+    }
+
+    .nav-item svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MOBILE DEVICE FRAME -->
+  <div class="mobile-frame">
+    <!-- Header -->
+    <div class="top-header">
+      <div class="brand">
+        <div class="brand-icon">🐉</div>
+        <span>Mist Scans</span>
+      </div>
+      <div class="header-actions">
+        <span>🔍</span>
+        <span>🌙</span>
+      </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero-container">
+      
+      <!-- BACKGROUND COVER MARQUEE (Cover asli cdn meowing / wsrv dari Mist Scans) -->
+      <div class="hero-bg">
+
+        <!-- Kolom 1 (Bergerak ke Atas) -->
+        <div class="hero-col scroll-up">
+          <!-- Set A -->
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/65e72c982de.avif&w=200" alt="Roxana" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/1o93sW5pi4O&w=200" alt="Solo EX Rank Summoner" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/eMQBripS-2N&w=200" alt="Butterfly Trap" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/uvmcULAvEFA&w=200" alt="The Evil Alchemist" loading="lazy"></div>
+          <!-- Set B (Duplikat untuk Seamless Loop) -->
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/65e72c982de.avif&w=200" alt="Roxana" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/1o93sW5pi4O&w=200" alt="Solo EX Rank Summoner" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/eMQBripS-2N&w=200" alt="Butterfly Trap" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/uvmcULAvEFA&w=200" alt="The Evil Alchemist" loading="lazy"></div>
+        </div>
+
+        <!-- Kolom 2 (Bergerak ke Bawah) -->
+        <div class="hero-col scroll-down">
+          <!-- Set A -->
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/65ca0564ff7.avif&w=200" alt="Trashy First Prince" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/Zpqlx8lhhkM&w=200" alt="Umbilical" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/VCH8bEmrRad&w=200" alt="Zero Magic Power" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/2XjjiEtL0us&w=200" alt="Human Protection Company" loading="lazy"></div>
+          <!-- Set B (Duplikat) -->
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/65ca0564ff7.avif&w=200" alt="Trashy First Prince" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/Zpqlx8lhhkM&w=200" alt="Umbilical" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/VCH8bEmrRad&w=200" alt="Zero Magic Power" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/2XjjiEtL0us&w=200" alt="Human Protection Company" loading="lazy"></div>
+        </div>
+
+        <!-- Kolom 3 (Bergerak ke Atas Lebih Santai) -->
+        <div class="hero-col scroll-up-slow">
+          <!-- Set A -->
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/mReRaPnUPaK&w=200" alt="Immortal Monk" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/eB4XyGa0y-T&w=200" alt="Abducted By UFO" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/65df863b8f9.avif&w=200" alt="Psycho Apartment" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/HDNZ2YUzh-v&w=200" alt="Tomb Raider King" loading="lazy"></div>
+          <!-- Set B (Duplikat) -->
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/mReRaPnUPaK&w=200" alt="Immortal Monk" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/eB4XyGa0y-T&w=200" alt="Abducted By UFO" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/65df863b8f9.avif&w=200" alt="Psycho Apartment" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/HDNZ2YUzh-v&w=200" alt="Tomb Raider King" loading="lazy"></div>
+        </div>
+
+        <!-- Kolom 4 (Bergerak ke Bawah) -->
+        <div class="hero-col scroll-down-slow">
+          <!-- Set A -->
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/65980cd5946.avif&w=200" alt="Academy Survival Guide" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/659a30d4cd9.avif&w=200" alt="48 Techniques" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/65e405581f3.avif&w=200" alt="Monsters Live Stream" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/MpTGYkvYnhv&w=200" alt="Max-level Priestess" loading="lazy"></div>
+          <!-- Set B (Duplikat) -->
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/65980cd5946.avif&w=200" alt="Academy Survival Guide" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/659a30d4cd9.avif&w=200" alt="48 Techniques" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/65e405581f3.avif&w=200" alt="Monsters Live Stream" loading="lazy"></div>
+          <div class="cover-card"><img src="https://wsrv.nl/?url=cdn.meowing.org/uploads/MpTGYkvYnhv&w=200" alt="Max-level Priestess" loading="lazy"></div>
+        </div>
+
+      </div>
+
+      <!-- OVERLAY VIGNETTE GELAP -->
+      <div class="hero-overlay"></div>
+
+      <!-- FOREGROUND CONTENT -->
+      <div class="hero-content">
+        <span class="badge-sub">Mist Scans</span>
+        <h1 class="main-heading">Read Manhwa, Manhua, Mangatoon &amp; Manga</h1>
+        <p class="body-desc">
+          Faster releases than any other scans, with exclusive early access on paid chapters.<br>
+          Your <strong>bookmarks and chapter history</strong> stay synced with reading progress on every device.
+        </p>
+
+        <div class="feature-tags">
+          <span class="tag-item">⚡ Faster releases</span>
+          <span class="tag-item">📱 Mobile-friendly</span>
+          <span class="tag-item">⭐ XP, orbs &amp; achievements</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Nav Bar -->
+    <div class="bottom-nav">
+      <div class="nav-item active">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>Home</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+        <span>Recent</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1zM4 19h16v2H4zm8-18C7.58 1 4 4.58 4 9c0 5.25 7 13 8 13s8-7.75 8-13c0-4.42-3.58-8-8-8z"/></svg>
+        <span>Browse</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+        <span>Sign in</span>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

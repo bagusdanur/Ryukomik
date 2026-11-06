@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import DirectoryClient from "./DirectoryClient";
 
 export const metadata: Metadata = {
-  title: "Tim Scanlator — Ryukomik",
-  description: "Daftar tim scanlation yang menerbitkan project di Ryukomik.",
+  title: "User Scanlator — Ryukomik",
+  description: "Daftar user scanlator yang menerbitkan project di Ryukomik.",
 };
 
 export default function Page() {

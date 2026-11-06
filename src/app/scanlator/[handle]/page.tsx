@@ -32,7 +32,7 @@ async function getGroup(handle: string): Promise<GroupRow | null> {
 export async function generateMetadata({ params }: { params: Promise<{ handle: string }> }): Promise<Metadata> {
   const { handle } = await params;
   const group = await getGroup(handle);
-  if (!group) return { title: "Tim Scanlator tidak ditemukan — Ryukomik" };
+  if (!group) return { title: "User Scanlator tidak ditemukan — Ryukomik" };
 
   const title = `${group.team_name} (@${group.handle}) — Scanlator`;
   const description = group.bio?.slice(0, 160) || `Karya terjemahan ${group.team_name} di Ryukomik.`;

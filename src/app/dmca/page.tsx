@@ -27,7 +27,7 @@ export default function DmcaPage() {
           <div>
             <h1 className="text-[19px] font-bold leading-tight">Kebijakan Hak Cipta &amp; Takedown</h1>
             <p className="mt-1 text-[12px] leading-relaxed text-white/45">
-              Berlaku untuk seluruh konten di Ryukomik, termasuk karya yang diunggah tim Scanlator.
+              Berlaku untuk seluruh konten di Ryukomik, termasuk karya yang diunggah user Scanlator.
               <span className="text-white/25"> Diperbarui 6 November 2026.</span>
             </p>
           </div>
@@ -98,7 +98,7 @@ export default function DmcaPage() {
               <li className="list-disc">Pelanggaran pertama: konten dihapus + surat peringatan (SP1).</li>
               <li className="list-disc">Pelanggaran kedua: suspend upload 7 hari dan konten terkait disembunyikan.</li>
               <li className="list-disc">Pelanggaran ketiga: akses Scanlator dicabut permanen.</li>
-              <li className="list-disc">Tim yang mengunggah ulang konten yang sudah dihapus langsung dicabut aksesnya.</li>
+              <li className="list-disc">User yang mengunggah ulang konten yang sudah dihapus langsung dicabut aksesnya.</li>
             </ul>
           </section>
 
@@ -115,7 +115,7 @@ export default function DmcaPage() {
           <section className="py-4">
             <h2 className="flex items-center gap-2 text-[13px] font-bold text-white">7. Tanggung jawab pengunggah</h2>
             <p className="mt-2 text-[12px] leading-relaxed text-white/60">
-              Setiap tim Scanlator wajib mencentang pernyataan bahwa karya yang diunggah adalah hasil
+              Setiap user Scanlator wajib mencentang pernyataan bahwa karya yang diunggah adalah hasil
               terjemahan sendiri atau sudah mendapat izin. Pernyataan itu tersimpan sebagai bukti dan
               bisa kami tunjukkan bila terjadi sengketa.
             </p>

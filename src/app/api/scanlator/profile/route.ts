@@ -112,7 +112,7 @@ export async function PATCH(request: Request) {
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     const bio = typeof body?.bio === "string" ? body.bio.trim().slice(0, 1000) : null;
     const teamName = typeof body?.team_name === "string" ? body.team_name.trim().slice(0, 80) : "";
-    if (teamName && teamName.length < 2) return NextResponse.json({ error: "Nama tim minimal 2 karakter." }, { status: 400 });
+    if (teamName && teamName.length < 2) return NextResponse.json({ error: "Nama user minimal 2 karakter." }, { status: 400 });
 
     const dana = cleanLink(body?.support_dana);
     const trakteer = cleanLink(body?.support_trakteer);

@@ -111,7 +111,7 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
       <>
         {backBar}
         <div className="rounded-xl border border-white/[.07] bg-white/[.02] px-5 py-10 text-center">
-          <p className="text-[13px] text-white/45">Tim tidak ditemukan.</p>
+          <p className="text-[13px] text-white/45">User tidak ditemukan.</p>
           <Link
             href="/files?tab=scanlator"
             className="mt-4 inline-flex min-h-[38px] items-center rounded-lg border border-white/[.1] px-4 text-[12px] font-bold text-white/75"
@@ -139,7 +139,7 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
       const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
       if (!res.ok || !json?.success) { setFollowHint(json?.error || "Gagal menyimpan."); return; }
       setFollowing(next);
-      setFollowHint(next ? "Kamu akan dapat notifikasi chapter baru dari tim ini." : "Berhenti mengikuti.");
+      setFollowHint(next ? "Kamu akan dapat notifikasi chapter baru dari user ini." : "Berhenti mengikuti.");
     } catch {
       setFollowHint("Gagal menyimpan.");
     } finally {
@@ -163,7 +163,7 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
     <>
       {backBar}
 
-      {/* Identitas tim */}
+      {/* Identitas user */}
       <header className="rounded-xl border border-white/[.07] bg-white/[.02] p-4">
         <div className="flex items-start gap-3.5">
           {profile.avatar_url || profile.owner_avatar_url ? (
@@ -187,7 +187,7 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
                 <span
                   className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[var(--accent-2)]"
                   style={{ borderColor: "color-mix(in srgb, var(--accent) 35%, transparent)" }}
-                  title="Tim terverifikasi"
+                  title="User terverifikasi"
                 >
                   <FiCheckCircle size={9} /> Terverifikasi
                 </span>
@@ -254,7 +254,7 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
       {donate.length > 0 && (
         <section className="mt-3">
           <p className="mb-1.5 flex items-center gap-1.5 px-1 text-[10px] font-bold uppercase tracking-wide text-white/30">
-            <FiHeart size={10} /> Dukung tim
+            <FiHeart size={10} /> Dukung user
           </p>
           <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {donate.map((d) => (

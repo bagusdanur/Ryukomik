@@ -315,7 +315,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
 
               <span className="min-w-0 flex-1">
                 <span className="block text-[9px] font-bold uppercase tracking-[.08em] text-[var(--accent-2)]">
-                  Tim TL Scanlator
+                  Scanlator
                 </span>
                 <span className="mt-0.5 block truncate text-[14px] font-bold leading-tight text-white">
                   {data.scanlator_team || data.scanlator_user?.username || "Scanlator"}
@@ -357,7 +357,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
                 </>
               ) : (
                 <span className="flex-1 truncate text-[10px] text-white/25">
-                  Belum ada link dukungan untuk tim ini
+                  Belum ada link dukungan untuk user ini
                 </span>
               )}
               <Link

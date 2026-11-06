@@ -131,7 +131,7 @@ export default function ScanlatorStudio() {
       if (pRes.ok) {
         const json = (await pRes.json()) as { profile?: Profile | null };
         if (!json.profile) {
-          // Tim dihapus/dicabut admin: jangan biarkan sisa data lama tampil.
+          // User dihapus/dicabut admin: jangan biarkan sisa data lama tampil.
           setProfile(null);
           setWorks([]);
           setChapters([]);
@@ -623,7 +623,7 @@ export default function ScanlatorStudio() {
     <Panel className="mt-6 p-6">
       <p className="text-[13px] font-bold">Akun Translation tidak aktif</p>
       <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
-        Studio hanya untuk tim yang sudah ACC admin. Kalau tim kamu baru dihapus atau dicabut,
+        Studio hanya untuk user yang sudah ACC admin. Kalau akun kamu baru dihapus atau dicabut,
         akses ini memang tertutup — ajukan ulang untuk membuka studio lagi.
       </p>
       <Link href="/scanlator/daftar" className="mt-4 inline-flex min-h-[40px] w-full items-center justify-center rounded-lg bg-[var(--accent)] text-[12px] font-bold">
@@ -639,7 +639,7 @@ export default function ScanlatorStudio() {
 
   return shell(
     <>
-      {/* Identitas tim — ringkas, tanpa hero bergradien */}
+      {/* Identitas user */}
       <div className="flex items-center gap-3 pb-4">
         {profile.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -766,11 +766,11 @@ export default function ScanlatorStudio() {
                 <Link href="/aturan/scanlator" className="flex items-center gap-1 text-[11px] font-bold text-[var(--accent-2)]">Baca <FiArrowRight size={11} /></Link>
               </Row>
               <Row className="flex items-center justify-between">
-                <span className="text-[12px] text-white/60">Direktori semua tim</span>
+                <span className="text-[12px] text-white/60">Direktori user</span>
                 <Link href="/scanlator/direktori" className="flex items-center gap-1 text-[11px] font-bold text-[var(--accent-2)]">Buka <FiArrowRight size={11} /></Link>
               </Row>
               <Row className="flex items-center justify-between">
-                <span className="text-[12px] text-white/60">Halaman publik tim</span>
+                <span className="text-[12px] text-white/60">Halaman publik user</span>
                 <Link href={`/scanlator/${profile.handle}`} className="flex items-center gap-1 text-[11px] font-bold text-[var(--accent-2)]">Lihat <FiArrowRight size={11} /></Link>
               </Row>
             </Panel>
@@ -875,7 +875,7 @@ export default function ScanlatorStudio() {
                     </label>
                     <label className="flex items-start gap-2.5 rounded-lg border border-white/[.06] px-3 py-2.5 text-[11px] leading-relaxed text-white/55">
                       <input type="checkbox" checked={rightsConfirmed} onChange={(e) => setRightsConfirmed(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#8b5cf6]" />
-                      Karya ini hasil terjemahan saya / tim sendiri, bukan re-upload dari tim lain.
+                      Karya ini hasil terjemahan saya sendiri, bukan re-upload dari user lain.
                     </label>
                   </div>
                 </Panel>
@@ -1291,11 +1291,11 @@ export default function ScanlatorStudio() {
                     <p className="mt-1 text-[10px] text-white/30">Kosongkan = pakai foto profil akunmu.</p>
                   </div>
                 </div>
-                <Field label="Nama tim">
+                <Field label="Nama user">
                   <input value={teamName} onChange={(e) => setTeamName(e.target.value)} maxLength={80} className={inputClass} />
                 </Field>
                 <Field label="Bio">
-                  <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} maxLength={1000} placeholder="Tentang timmu…" className={inputClass} />
+                  <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} maxLength={1000} placeholder="Tentang kamu…" className={inputClass} />
                 </Field>
               </div>
             </Panel>
