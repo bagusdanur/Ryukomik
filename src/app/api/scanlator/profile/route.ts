@@ -72,7 +72,8 @@ export async function GET(request: Request) {
         [userId],
       );
       const approved = app.rows[0];
-      if (approved) {
+      const tomb = await socialQuery("select 1 from scanlator_deleted where user_id = $1 or handle = $2 limit 1", [userId, approved?.handle || ""]);
+      if (approved && !tomb.rows[0]) {
         await socialQuery(
           `insert into scanlator_profiles (user_id, handle, team_name, contact_wa, contact_telegram, contact_discord, status)
            values ($1, $2, $3, $4, $5, $6, 'active')

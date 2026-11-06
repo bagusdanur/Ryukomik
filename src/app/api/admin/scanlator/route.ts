@@ -27,6 +27,7 @@ export async function GET(request: Request) {
                 a.contact_wa, a.contact_telegram, a.contact_discord, p.username
            from scanlator_applications a
            left join social_profiles p on p.user_id = a.user_id
+          where not exists (select 1 from scanlator_deleted d where d.user_id = a.user_id)
           order by case when a.status = 'pending' then 0 else 1 end, a.created_at desc
           limit 100`,
       ),
@@ -131,6 +132,8 @@ async function reviewApplication(id: string | undefined, action: "approve" | "re
         where user_id = $1`,
       [row.user_id],
     );
+    // ACC baru membatalkan tombstone (tim dihidupkan lagi).
+    await client.query("delete from scanlator_deleted where user_id = $1 or handle = $2", [row.user_id, row.handle]);
     // Benefit: premium aktif selama status Scanlator aktif.
     await client.query(
       `update social_profiles
@@ -178,8 +181,8 @@ async function moderate(
   if (!userId || !/^[0-9a-f-]{36}$/i.test(userId)) {
     return NextResponse.json({ error: "User Scanlator tidak valid." }, { status: 400 });
   }
-  const target = await socialQuery<{ team_name: string }>(
-    "select team_name from scanlator_profiles where user_id = $1 limit 1",
+  const target = await socialQuery<{ team_name: string; handle: string }>(
+    "select team_name, handle from scanlator_profiles where user_id = $1 limit 1",
     [userId],
   );
   if (!target.rows[0]) return NextResponse.json({ error: "Scanlator tidak ditemukan." }, { status: 404 });
@@ -206,6 +209,7 @@ async function moderate(
 
   if (action === "delete") {
     const team = target.rows[0].team_name;
+    const teamHandle = target.rows[0].handle;
     await socialTransaction(async (client) => {
       await client.query("delete from scanlator_profiles where user_id = $1", [userId]);
       await client.query(
@@ -217,7 +221,12 @@ async function moderate(
           where user_id = $1`,
         [userId],
       );
-      // Hapus pengajuan supaya handle bebas dipakai lagi (unique per handle).
+      // Hapus pengajuan supaya handle bebas dipakai lagi (unique per handle),
+      // dan catat tombstone agar profil tidak dibuat ulang otomatis.
+      await client.query(
+        "insert into scanlator_deleted (user_id, handle) values ($1, $2) on conflict (user_id) do update set handle = excluded.handle, deleted_at = now()",
+        [userId, teamHandle],
+      );
       await client.query("delete from scanlator_applications where user_id = $1", [userId]);
       await client.query(
         "insert into scanlator_moderation (user_id, action, reason, note, admin_id) values ($1, 'delete', $2, $3, $4)",
