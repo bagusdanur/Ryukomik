@@ -100,6 +100,15 @@ export default function ScanlatorStudio() {
   const [previewChapter, setPreviewChapter] = useState<{ number: number; title: string | null; images: string[] } | null>(null);
   const [savingPages, setSavingPages] = useState(false);
 
+  // Kunci scroll halaman di belakang saat modal terbuka.
+  useEffect(() => {
+    const open = Boolean(editChapter || previewChapter);
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [editChapter, previewChapter]);
+
   const token = async () => (await getSession()).data.session?.access_token || "";
 
   const load = useCallback(async () => {
@@ -1108,8 +1117,8 @@ export default function ScanlatorStudio() {
 
       {/* Pratinjau baca chapter */}
       {previewChapter && (
-        <div className="fixed inset-0 z-[130] bg-black" role="dialog" aria-modal="true">
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-black/90 px-4 py-3 backdrop-blur">
+        <div className="fixed inset-0 z-[130] flex flex-col bg-black" role="dialog" aria-modal="true">
+          <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-black px-4 py-3">
             <div className="min-w-0">
               <p className="truncate text-[13px] font-bold">Ch. {previewChapter.number}{previewChapter.title ? ` · ${previewChapter.title}` : ""}</p>
               <p className="text-[10px] text-white/40">{previewChapter.images.length} gambar · pratinjau</p>
@@ -1118,12 +1127,33 @@ export default function ScanlatorStudio() {
               <FiX size={16} />
             </button>
           </div>
-          <div className="mx-auto max-w-2xl">
-            {previewChapter.images.map((url, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={`${url}-${i}`} src={url} alt={`Halaman ${i + 1}`} loading="lazy" className="w-full" />
-            ))}
-            {previewChapter.images.length === 0 && <p className="py-16 text-center text-[12px] text-white/35">Belum ada gambar.</p>}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y">
+            <div className="mx-auto max-w-2xl">
+              {previewChapter.images.map((url, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={`${url}-${i}`}
+                  src={url}
+                  alt={`Halaman ${i + 1}`}
+                  loading={i < 3 ? "eager" : "lazy"}
+                  decoding="async"
+                  className="block w-full select-none"
+                />
+              ))}
+              {previewChapter.images.length === 0 && <p className="py-16 text-center text-[12px] text-white/35">Belum ada gambar.</p>}
+              {previewChapter.images.length > 0 && (
+                <p className="py-8 text-center text-[11px] text-white/30">Akhir chapter · {previewChapter.images.length} halaman</p>
+              )}
+            </div>
+          </div>
+
+          <div className="shrink-0 border-t border-white/10 bg-black px-4 py-2.5">
+            <div className="mx-auto flex max-w-2xl items-center justify-between gap-2">
+              <span className="text-[10px] text-white/35">Pratinjau · tidak dihitung sebagai tayangan</span>
+              <button type="button" onClick={() => setPreviewChapter(null)} className="rounded-md border border-white/[.12] px-3 py-1.5 text-[11px] font-bold text-white/70">
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}
