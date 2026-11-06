@@ -12,14 +12,14 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
     const userId = await requireUserId(request);
-    const profile = await socialQuery<{ handle: string }>(
-      "select handle from scanlator_profiles where user_id = $1 limit 1",
+    const profile = await socialQuery<{ handle: string; storage_handle: string | null }>(
+      "select handle, storage_handle from scanlator_profiles where user_id = $1 limit 1",
       [userId],
     );
     const me = profile.rows[0];
     if (!me) return NextResponse.json({ error: "Kamu belum Scanlator aktif." }, { status: 403 });
 
-    const usage = await getScanlatorUsage(me.handle);
+    const usage = await getScanlatorUsage(me.storage_handle || me.handle);
     return NextResponse.json(
       {
         success: true,

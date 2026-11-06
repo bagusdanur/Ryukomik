@@ -19,11 +19,12 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId(request);
-    const profile = await socialQuery<{ handle: string; status: string }>(
-      "select handle, status from scanlator_profiles where user_id = $1 limit 1",
+    const profile = await socialQuery<{ handle: string; storage_handle: string | null; status: string }>(
+      "select handle, storage_handle, status from scanlator_profiles where user_id = $1 limit 1",
       [userId],
     );
     const me = profile.rows[0];
+    const storage = me?.storage_handle || me?.handle || "";
     if (!me || me.status === "revoked") {
       return NextResponse.json({ error: "Kamu belum Scanlator aktif." }, { status: 403 });
     }
@@ -54,15 +55,15 @@ export async function POST(request: Request) {
     // Kuota 2 GB per tim — termasuk slot yang sedang dipesan upload lain.
     await socialQuery(
       "update scanlator_uploads set status = 'expired' where handle = $1 and status = 'reserved' and expires_at < now()",
-      [me.handle],
+      [storage],
     );
     const reservedRow = await socialQuery<{ reserved: string }>(
       "select coalesce(sum(bytes), 0)::text as reserved from scanlator_uploads where handle = $1 and status = 'reserved' and expires_at > now()",
-      [me.handle],
+      [storage],
     );
     const reservedBytes = Number(reservedRow.rows[0]?.reserved || 0);
 
-    const usage = await getScanlatorUsage(me.handle);
+    const usage = await getScanlatorUsage(storage);
     if (usage.usedBytes + reservedBytes + size > SCANLATOR_QUOTA_BYTES) {
       const sisa = Math.max(0, SCANLATOR_QUOTA_BYTES - usage.usedBytes - reservedBytes);
       return NextResponse.json(
@@ -74,7 +75,7 @@ export async function POST(request: Request) {
     const target = targetById(undefined);
     const ext = (filename.split(".").pop() || "webp").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5);
     const unique = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-    const key = `scanlator/${me.handle}/${slug}/${kind}/${unique}.${ext}`;
+    const key = `scanlator/${storage}/${slug}/${kind}/${unique}.${ext}`;
 
     const command = new PutObjectCommand({
       Bucket: target.bucket,
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
     // Pesan slot kuota selama 30 menit; ditandai committed setelah PUT sukses.
     await socialQuery(
       "insert into scanlator_uploads (handle, object_key, bytes) values ($1, $2, $3) on conflict (object_key) do nothing",
-      [me.handle, key, size],
+      [storage, key, size],
     );
 
     return NextResponse.json({ presignedUrl, publicUrl: `${target.publicBase}/${key}`, key });

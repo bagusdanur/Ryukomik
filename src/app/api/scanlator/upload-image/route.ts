@@ -28,8 +28,8 @@ export async function POST(request: Request) {
     return authErrorResponse(error) ?? NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
   }
 
-  const profile = await socialQuery<{ handle: string; team_name: string; status: string }>(
-    "select handle, team_name, status from scanlator_profiles where user_id = $1 limit 1",
+  const profile = await socialQuery<{ handle: string; team_name: string; storage_handle: string | null; status: string }>(
+    "select handle, team_name, storage_handle, status from scanlator_profiles where user_id = $1 limit 1",
     [userId],
   );
   const me = profile.rows[0];
@@ -50,7 +50,8 @@ export async function POST(request: Request) {
   const slug = slugRaw.replace(/[\\/]+/g, "-").replace(/\.\.+/g, ".").replace(/[^\w.\- ]+/g, "").trim().slice(0, 80) || me.handle;
 
   // Kuota 2 GB per Scanlator (dihitung dari prefix R2 miliknya).
-  const usage = await getScanlatorUsage(me.handle);
+  const storage = me.storage_handle || me.handle;
+  const usage = await getScanlatorUsage(storage);
   if (usage.usedBytes + file.size > SCANLATOR_QUOTA_BYTES) {
     const sisa = Math.max(0, SCANLATOR_QUOTA_BYTES - usage.usedBytes);
     return NextResponse.json(
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Gambar tidak valid atau tidak bisa diproses." }, { status: 400 });
   }
 
-  const key = `scanlator/${me.handle}/${slug}/${kind}/${randomUUID()}.webp`;
+  const key = `scanlator/${storage}/${slug}/${kind}/${randomUUID()}.webp`;
   try {
     await target.client.send(new PutObjectCommand({
       Bucket: target.bucket,
