@@ -36,6 +36,7 @@ const DEFAULT_PROFILE = Object.freeze({
   level: 1,
   role: "user",
   is_premium: false,
+  is_scanlator: false,
   xp: 0,
   username: "",
   avatar_url: "",
@@ -52,6 +53,7 @@ type CommentProfile = {
   level?: number;
   role?: string;
   is_premium?: boolean;
+  is_scanlator?: boolean;
   xp?: number;
   username?: string;
   avatar_url?: string;
@@ -211,6 +213,7 @@ const getLatestCommentsCached = unstable_cache(
               xp: person.xp,
               role: person.role ?? undefined,
               is_premium: person.is_premium,
+              is_scanlator: Boolean(person.is_scanlator),
               username: person.username,
               avatar_url: person.avatar_url ?? undefined,
               total_reads: person.total_reads,
@@ -221,7 +224,7 @@ const getLatestCommentsCached = unstable_cache(
       };
     });
   },
-  ["latest-comments"],
+  ["latest-comments-v2"],
   { revalidate: LATEST_COMMENTS_TTL, tags: ["comments"] }
 );
 
@@ -284,12 +287,14 @@ function CommentAvatar({
 /** Badge role */
 function RoleBadge({
   role,
+  isScanlator,
   isPremium,
   titleRushRank,
   xpRank,
   totalReads,
 }: {
   role?: string;
+  isScanlator?: boolean;
   isPremium?: boolean;
   titleRushRank?: number | null;
   xpRank?: number | null;
@@ -298,6 +303,7 @@ function RoleBadge({
   return (
     <UserBadges
       role={role}
+      isScanlator={isScanlator}
       isPremium={isPremium}
       titleRushRank={titleRushRank}
       xpRank={xpRank}
@@ -398,6 +404,7 @@ function CommentCard({
               )}
               <RoleBadge
                 role={profile.role}
+                isScanlator={profile.is_scanlator}
                 isPremium={profile.is_premium}
                 titleRushRank={titleRushRank}
                 xpRank={xpRank}
