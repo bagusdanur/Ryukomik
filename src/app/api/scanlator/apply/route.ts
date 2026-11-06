@@ -95,7 +95,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const handleTaken = await socialQuery<{ id: string }>("select id::text as id from scanlator_applications where handle = $1 limit 1", [handle]);
+    // Hanya pengajuan yang masih hidup yang mengunci handle. Tim yang sudah
+    // dihapus/dicabut tidak boleh menghalangi pemiliknya mengajukan ulang.
+    const handleTaken = await socialQuery<{ id: string }>(
+      "select id::text as id from scanlator_applications where handle = $1 and status in ('pending','approved') limit 1",
+      [handle],
+    );
     if (handleTaken.rows[0]) {
       return NextResponse.json({ error: "Handle sudah dipakai tim lain." }, { status: 409 });
     }

@@ -217,6 +217,8 @@ async function moderate(
           where user_id = $1`,
         [userId],
       );
+      // Hapus pengajuan supaya handle bebas dipakai lagi (unique per handle).
+      await client.query("delete from scanlator_applications where user_id = $1", [userId]);
       await client.query(
         "insert into scanlator_moderation (user_id, action, reason, note, admin_id) values ($1, 'delete', $2, $3, $4)",
         [userId, reason || "Tim dihapus admin", note ? `${note} · tim: ${team}` : `tim: ${team}`, adminId],
@@ -297,6 +299,7 @@ async function moderate(
           where user_id = $1`,
         [userId],
       );
+      await client.query("delete from scanlator_applications where user_id = $1", [userId]);
       await client.query(
         "insert into scanlator_moderation (user_id, action, reason, note, admin_id) values ($1, 'revoke', $2, $3, $4)",
         [userId, reason, note, adminId],

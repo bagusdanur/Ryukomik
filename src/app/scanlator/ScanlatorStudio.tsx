@@ -127,9 +127,20 @@ export default function ScanlatorStudio() {
         fetch("/api/scanlator/profile", { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" }),
         fetch("/api/scanlator/series", { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" }),
       ]);
-      if (pRes.status === 403) { setNotScanlator(true); return; }
+      if (pRes.status === 403) { setNotScanlator(true); setProfile(null); setWorks([]); return; }
       if (pRes.ok) {
         const json = (await pRes.json()) as { profile?: Profile | null };
+        if (!json.profile) {
+          // Tim dihapus/dicabut admin: jangan biarkan sisa data lama tampil.
+          setProfile(null);
+          setWorks([]);
+          setChapters([]);
+          setStats(null);
+          setQuota(null);
+          setNotifs([]);
+          setNotScanlator(true);
+          return;
+        }
         if (json.profile) {
           const p = json.profile;
           setProfile(p);
@@ -610,9 +621,10 @@ export default function ScanlatorStudio() {
 
   if (notScanlator || !profile) return shell(
     <Panel className="mt-6 p-6">
-      <p className="text-[13px] font-bold">Belum punya Akun Translation</p>
+      <p className="text-[13px] font-bold">Akun Translation tidak aktif</p>
       <p className="mt-1.5 text-[12px] leading-relaxed text-white/45">
-        Studio hanya untuk akun yang sudah ACC admin. Ajukan dulu, lalu tunggu review.
+        Studio hanya untuk tim yang sudah ACC admin. Kalau tim kamu baru dihapus atau dicabut,
+        akses ini memang tertutup — ajukan ulang untuk membuka studio lagi.
       </p>
       <Link href="/scanlator/daftar" className="mt-4 inline-flex min-h-[40px] w-full items-center justify-center rounded-lg bg-[var(--accent)] text-[12px] font-bold">
         Ajukan Akun Translation
