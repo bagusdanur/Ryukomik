@@ -102,6 +102,17 @@ async function reviewApplication(id: string | undefined, action: "approve" | "re
       "update scanlator_applications set status = 'rejected', review_note = $1, reviewed_by = $2, reviewed_at = now() where id = $3",
       [note, adminId, id],
     );
+    await notifyScanlator(row.user_id, {
+      type: "project_rejected",
+      title: "Pengajuan Scanlator ditolak",
+      body: note || "Pengajuanmu belum bisa disetujui. Perbaiki lalu ajukan ulang.",
+      link: "/scanlator/daftar",
+    });
+    await socialQuery(
+      `insert into social_notifications (user_id, actor_name, type, slug, is_read)
+       values ($1, 'Ryukomik', 'scanlator_rejected', '/scanlator/daftar', false)`,
+      [row.user_id],
+    ).catch(() => undefined);
     return NextResponse.json({ success: true, status: "rejected" });
   }
 
@@ -140,6 +151,18 @@ async function reviewApplication(id: string | undefined, action: "approve" | "re
       [row.user_id, row.handle, row.team_name, row.contact_wa, row.contact_telegram, row.contact_discord],
     );
   });
+
+  await notifyScanlator(row.user_id, {
+    type: "project_approved",
+    title: "Akun Translation disetujui 🎉",
+    body: `Tim “${row.team_name}” sudah aktif. Kamu bisa upload chapter dan badge SCANLATOR tampil di profil.`,
+    link: "/scanlator",
+  });
+  await socialQuery(
+    `insert into social_notifications (user_id, actor_name, type, slug, is_read)
+     values ($1, 'Ryukomik', 'scanlator_approved', '/scanlator', false)`,
+    [row.user_id],
+  ).catch(() => undefined);
 
   return NextResponse.json({ success: true, status: "approved" });
 }

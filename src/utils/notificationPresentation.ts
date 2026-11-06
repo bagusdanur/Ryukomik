@@ -15,6 +15,10 @@ export function getNotificationLabel(item: Pick<NotificationItem, "type" | "acto
       return `${actor} menyebut kamu dalam postingan`;
     case "social_collection":
       return `${actor} membagikan koleksi kepadamu`;
+    case "scanlator_approved":
+      return "Pengajuan Scanlator kamu disetujui — studio sudah terbuka";
+    case "scanlator_rejected":
+      return "Pengajuan Scanlator kamu ditolak — cek alasannya";
     case "premium_activated":
       return "Premium akunmu sudah aktif";
     case "premium_reward":
