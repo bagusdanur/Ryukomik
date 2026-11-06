@@ -11,6 +11,7 @@ interface LeaderboardProfile {
   xp?: number;
   level?: number;
   role?: string;
+  is_scanlator?: boolean;
   is_premium?: boolean;
   total_reads?: number;
   total_comments?: number;
@@ -38,7 +39,8 @@ const getLeaderboardCached = unstable_cache(
     // (irisan 1) dan tidak menambah egress Supabase.
     const { rows: localRows } = await socialQuery<LeaderboardProfile & { avatar_border: string | null }>(
       `select user_id as id, username, avatar_url, xp, level, role, is_premium,
-              total_reads, total_comments, avatar_border
+              total_reads, total_comments, avatar_border,
+              exists(select 1 from scanlator_profiles sp where sp.user_id = social_profiles.user_id and sp.status <> 'revoked') as is_scanlator
          from social_profiles
         order by xp desc
         limit $1`,

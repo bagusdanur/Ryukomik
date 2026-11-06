@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     if (title.length < 2) return NextResponse.json({ error: "Judul wajib diisi." }, { status: 400 });
     if (!rightsConfirmed) {
       return NextResponse.json(
-        { error: "Centang pernyataan bahwa kamu penerjemah karya ini atau punya izin dari pemegang hak." },
+        { error: "Centang pernyataan bahwa karya ini hasil terjemahanmu sendiri." },
         { status: 400 },
       );
     }

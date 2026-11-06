@@ -823,7 +823,7 @@ export default function ScanlatorStudio() {
                     </label>
                     <label className="flex items-start gap-2.5 rounded-lg border border-white/[.06] px-3 py-2.5 text-[11px] leading-relaxed text-white/55">
                       <input type="checkbox" checked={rightsConfirmed} onChange={(e) => setRightsConfirmed(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#8b5cf6]" />
-                      Saya penerjemah karya ini atau punya izin dari pemegang hak. Pernyataan ini dicatat sebagai bukti.
+                      Karya ini hasil terjemahan saya / tim sendiri, bukan re-upload dari tim lain.
                     </label>
                   </div>
                 </Panel>

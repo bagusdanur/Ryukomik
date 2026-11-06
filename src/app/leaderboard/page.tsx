@@ -14,6 +14,7 @@ type LeaderboardUser = {
   avatar_border?: string | null;
   is_premium?: boolean | null;
   role?: string | null;
+  is_scanlator?: boolean;
   xp?: number | null;
   level?: number | null;
   total_reads?: number | null;
@@ -146,6 +147,7 @@ function PodiumCard({
       <div className="flex flex-wrap gap-1 justify-center">
         <UserBadges
           role={user.role}
+          isScanlator={user.is_scanlator}
           isPremium={user.is_premium}
           titleRushRank={user.title_rush_rank}
           xpRank={kategori === "xp" ? user.rank || index + 1 : null}
