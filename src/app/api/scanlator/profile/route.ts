@@ -55,7 +55,43 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, profile: rows[0] }, { headers: { "Cache-Control": "public, max-age=60" } });
     }
     const userId = await requireUserId(request);
-    const { rows } = await socialQuery(`select ${PROFILE_FIELDS} from scanlator_profiles where user_id = $1 limit 1`, [userId]);
+    let { rows } = await socialQuery(`select ${PROFILE_FIELDS} from scanlator_profiles where user_id = $1 limit 1`, [userId]);
+
+    // Pemulihan otomatis: pengajuan sudah ACC tapi baris profil hilang (mis. tim
+    // pernah dihapus). ACC adalah sumber kebenaran, jadi profil dibuat ulang.
+    if (!rows[0]) {
+      const app = await socialQuery<{
+        handle: string; team_name: string; contact_wa: string | null;
+        contact_telegram: string | null; contact_discord: string | null;
+      }>(
+        `select handle, team_name, contact_wa, contact_telegram, contact_discord
+           from scanlator_applications
+          where user_id = $1 and status = 'approved'
+          order by reviewed_at desc nulls last, created_at desc
+          limit 1`,
+        [userId],
+      );
+      const approved = app.rows[0];
+      if (approved) {
+        await socialQuery(
+          `insert into scanlator_profiles (user_id, handle, team_name, contact_wa, contact_telegram, contact_discord, status)
+           values ($1, $2, $3, $4, $5, $6, 'active')
+           on conflict (user_id) do nothing`,
+          [userId, approved.handle, approved.team_name, approved.contact_wa, approved.contact_telegram, approved.contact_discord],
+        );
+        await socialQuery(
+          `update social_profiles
+              set role = case when role in ('admin','staff') then role else 'scanlator' end,
+                  premium_until = case when premium_until is not null and premium_until > now() then premium_until else now() + interval '365 days' end,
+                  premium_source = case when premium_until is not null and premium_until > now() then premium_source else 'scanlator' end,
+                  updated_at = now()
+            where user_id = $1`,
+          [userId],
+        );
+        ({ rows } = await socialQuery(`select ${PROFILE_FIELDS} from scanlator_profiles where user_id = $1 limit 1`, [userId]));
+      }
+    }
+
     return NextResponse.json({ success: true, profile: rows[0] || null }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     const authResponse = authErrorResponse(error);
