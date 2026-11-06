@@ -7,6 +7,7 @@ import {
   FiChevronDown, FiChevronLeft, FiChevronRight, FiPlus, FiSave, FiSend, FiTrash2, FiUser, FiX,
 } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
+import { toWebp } from "@/utils/toWebp";
 import { Button, Field, Panel, PanelHead, Row, Stat, StatusDot, Tabs, inputClass } from "@/components/scanlator/ui";
 
 type Profile = {
@@ -189,8 +190,18 @@ export default function ScanlatorStudio() {
    * Upload seperti dashboard Project: minta presigned URL, unggah langsung ke
    * R2 dari browser. Kalau R2 menolak (CORS), baru lewat server sebagai cadangan.
    */
-  const uploadImage = async (file: File, kind: "cover" | "chapter" | "avatar", slug: string, watermark = false) => {
+  const uploadImage = async (
+    rawFile: File,
+    kind: "cover" | "chapter" | "avatar",
+    slug: string,
+    watermark = false,
+    onPrepared?: (savedBytes: number) => void,
+  ) => {
     const t = await token();
+    // WebP kualitas 95 tanpa ubah dimensi (mengikuti converter RyukomikBot).
+    const webp = await toWebp(rawFile);
+    const file = webp.file;
+    if (webp.converted) onPrepared?.(webp.originalBytes - webp.bytes);
 
     // Watermark digambar di server (bukan saat upload langsung), jadi halaman
     // terakhir chapter tetap lewat jalur server.
@@ -295,7 +306,13 @@ export default function ScanlatorStudio() {
       const original = list[i];
       setProgress((p) => (p ? { ...p, currentName: original.name } : p));
       try {
-        const url = await uploadImage(original, "chapter", chapterSlug || profile?.handle || "chapter", i === list.length - 1);
+        const url = await uploadImage(
+          original,
+          "chapter",
+          chapterSlug || profile?.handle || "chapter",
+          i === list.length - 1,
+          (saved) => setProgress((p) => (p ? { ...p, savedBytes: p.savedBytes + saved } : p)),
+        );
         setChapterImages((prev) => [...prev, url]);
         setProgress((p) => (p ? { ...p, done: p.done + 1 } : p));
       } catch (err) {

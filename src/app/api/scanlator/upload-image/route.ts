@@ -75,7 +75,8 @@ export async function POST(request: Request) {
       const svg = `<svg width="${meta.width || 800}" height="${meta.height || 1200}" xmlns="http://www.w3.org/2000/svg"><text x="50%" y="97%" font-size="${w}" fill="rgba(255,255,255,0.55)" font-family="sans-serif" text-anchor="middle">${escapeXml(me.team_name)}</text></svg>`;
       pipeline = pipeline.composite([{ input: Buffer.from(svg), gravity: "south" }]);
     }
-    buffer = await pipeline.webp({ quality: 82 }).toBuffer();
+    // Kualitas 95 + effort 6, sama seperti converter RyukomikBot (dimensi tetap).
+    buffer = await pipeline.webp({ quality: 95, effort: 6 }).toBuffer();
   } catch {
     return NextResponse.json({ error: "Gambar tidak valid atau tidak bisa diproses." }, { status: 400 });
   }
