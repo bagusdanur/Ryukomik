@@ -62,7 +62,9 @@ export async function POST(request: Request) {
         const publicUrl = `${target.publicBase}/${obj.Key}`;
         if (used.has(publicUrl)) continue;
         const modified = obj.LastModified ? obj.LastModified.getTime() : 0;
-        if (Date.now() - modified < 60 * 60 * 1000) continue; // jangan hapus upload yang sedang jalan
+        // 10 menit: cukup untuk menghindari upload yang sedang berjalan,
+        // tapi sisa upload yang gagal/terputus cepat dibersihkan.
+        if (Date.now() - modified < 10 * 60 * 1000) continue;
         orphans.push({ Key: obj.Key, Size: Number(obj.Size || 0) });
       }
       token = page.IsTruncated ? page.NextContinuationToken : undefined;
