@@ -32,7 +32,6 @@ type TabId = "ringkasan" | "upload" | "karya" | "profil";
 
 const TABS: Array<{ id: TabId; label: string }> = [
   { id: "ringkasan", label: "Ringkasan" },
-  { id: "upload", label: "Upload" },
   { id: "karya", label: "Project" },
   { id: "profil", label: "Profil" },
 ];
@@ -367,8 +366,15 @@ export default function ScanlatorStudio() {
       });
       const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
       if (!res.ok || !json?.success) { setError(json?.error || "Gagal mengunggah chapter."); return; }
+      const sentSlug = chapterSlug;
       setNotice(`Chapter ${chapterNumber} terkirim.`);
-      setChapterNumber(""); setChapterTitle(""); setChapterImages([]); setChapterBytes(0);
+      setChapterNumber(""); setChapterTitle(""); setChapterImages([]); setChapterBytes(0); setProgress(null);
+      if (sentSlug) {
+        setMode("chapter");
+        setTab("karya");
+        await openProject(sentSlug, true);
+        setProjectTab("chapter");
+      }
     } finally { setBusyChapter(false); }
   };
 
@@ -391,8 +397,8 @@ export default function ScanlatorStudio() {
     } catch { /* diamkan */ }
   };
 
-  const openProject = async (slug: string) => {
-    if (openSlug === slug) { setOpenSlug(null); return; }
+  const openProject = async (slug: string, force = false) => {
+    if (openSlug === slug && !force) { setOpenSlug(null); return; }
     setOpenSlug(slug); setDetailLoading(true); setChapters([]); setProjectTab("detail");
     try {
       const t = await token();
@@ -761,6 +767,13 @@ export default function ScanlatorStudio() {
 
         {tab === "upload" && (
           <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => { setTab("karya"); if (chapterSlug) void openProject(chapterSlug, true); }}
+              className="inline-flex items-center gap-1.5 rounded-md px-1 py-1 text-[11px] font-semibold text-white/45 transition-colors hover:text-white"
+            >
+              <FiChevronLeft size={13} /> Kembali ke project
+            </button>
             {quota && (
               <div className="rounded-lg border border-white/[.07] bg-white/[.02] px-3 py-2.5">
                 <div className="flex items-center justify-between text-[11px]">
@@ -863,12 +876,34 @@ export default function ScanlatorStudio() {
                 <Panel>
                   <PanelHead title="Upload chapter" desc="Pilih seri, isi nomor, lalu unggah gambarnya." />
                   <div className="space-y-4 p-4">
-                    <Field label="Seri">
-                      <select value={chapterSlug} onChange={(e) => setChapterSlug(e.target.value)} required className={inputClass}>
-                        <option value="" className="bg-[#14121c]">Pilih seri…</option>
-                        {works.map((w) => <option key={w.slug} value={w.slug} className="bg-[#14121c]">{w.title}</option>)}
-                      </select>
-                    </Field>
+                    {chapterSlug && works.some((w) => w.slug === chapterSlug) ? (
+                      <div>
+                        <p className="mb-1.5 text-[11px] font-semibold text-white/55">Seri</p>
+                        <div className="flex items-center gap-2.5 rounded-lg border border-white/[.07] bg-white/[.02] p-2.5">
+                          {works.find((w) => w.slug === chapterSlug)?.cover_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={works.find((w) => w.slug === chapterSlug)?.cover_url as string} alt="" className="h-12 w-9 shrink-0 rounded border border-white/[.08] object-cover" />
+                          ) : (
+                            <span className="flex h-12 w-9 shrink-0 items-center justify-center rounded border border-white/[.08] bg-white/[.04] text-white/25"><FiBookOpen size={13} /></span>
+                          )}
+                          <p className="min-w-0 flex-1 truncate text-[12px] font-semibold text-white/85">{works.find((w) => w.slug === chapterSlug)?.title}</p>
+                          <button
+                            type="button"
+                            onClick={() => setTab("karya")}
+                            className="shrink-0 text-[10.5px] font-bold text-[var(--accent-2)]"
+                          >
+                            Ganti
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Field label="Seri">
+                        <select value={chapterSlug} onChange={(e) => setChapterSlug(e.target.value)} required className={inputClass}>
+                          <option value="" className="bg-[#14121c]">Pilih seri…</option>
+                          {works.map((w) => <option key={w.slug} value={w.slug} className="bg-[#14121c]">{w.title}</option>)}
+                        </select>
+                      </Field>
+                    )}
                     <div className="grid grid-cols-2 gap-2.5">
                       <Field label="Nomor">
                         <input value={chapterNumber} onChange={(e) => setChapterNumber(e.target.value)} placeholder="12 / 12.5" inputMode="decimal" required className={inputClass} />
@@ -1112,6 +1147,18 @@ export default function ScanlatorStudio() {
 
                             {projectTab === "chapter" && (
                             <div className="pt-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!openSlug || !activeWork) return;
+                                  setChapterSlug(openSlug);
+                                  setMode("chapter");
+                                  setTab("upload");
+                                }}
+                                className="mb-2 flex min-h-[38px] w-full items-center justify-center gap-1.5 rounded-lg border border-[color-mix(in_srgb,var(--accent)_45%,transparent)] bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-[11.5px] font-bold text-white"
+                              >
+                                <FiPlus size={13} /> Chapter baru
+                              </button>
                               {topChapter && (
                                 <p className="mb-2 rounded-md border border-white/[.06] bg-white/[.02] px-2.5 py-1.5 text-[10px] text-white/45">
                                   Terpopuler: <strong className="font-bold text-white/75">Ch. {topChapter.chapter_number}</strong> · {topChapter.views.toLocaleString("id-ID")} tayangan
