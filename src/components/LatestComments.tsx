@@ -285,31 +285,8 @@ function CommentAvatar({
 }
 
 /** Badge role */
-function RoleBadge({
-  role,
-  isScanlator,
-  isPremium,
-  titleRushRank,
-  xpRank,
-  totalReads,
-}: {
-  role?: string;
-  isScanlator?: boolean;
-  isPremium?: boolean;
-  titleRushRank?: number | null;
-  xpRank?: number | null;
-  totalReads?: number | null;
-}) {
-  return (
-    <UserBadges
-      role={role}
-      isScanlator={isScanlator}
-      isPremium={isPremium}
-      titleRushRank={titleRushRank}
-      xpRank={xpRank}
-      totalReads={totalReads}
-    />
-  );
+function RoleBadge({ user }: { user: import("@/components/UserBadges").BadgeUser }) {
+  return <UserBadges user={user} />;
 }
 
 /** Level + XP bar */
@@ -403,12 +380,7 @@ function CommentCard({
                 </span>
               )}
               <RoleBadge
-                role={profile.role}
-                isScanlator={profile.is_scanlator}
-                isPremium={profile.is_premium}
-                titleRushRank={titleRushRank}
-                xpRank={xpRank}
-                totalReads={profile.total_reads}
+                user={{ ...profile, title_rush_rank: titleRushRank, xp_rank: xpRank }}
               />
             </div>
             <LevelBadge level={profile.level} xp={profile.xp} />

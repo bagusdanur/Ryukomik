@@ -281,7 +281,7 @@ export default function XPublicProfileHeader({ username, activeTab = "posts", on
 
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <h1 className="break-words text-xl font-black leading-tight">{profile.username}</h1>
-          <UserBadges role={profile.role} isScanlator={profile.is_scanlator} isPremium={profile.is_premium} totalReads={profile.total_reads} />
+          <UserBadges user={profile} />
         </div>
         <p className="break-all text-sm text-white/40">
           @{profile.username.toLowerCase().replace(/\s+/g, "_")}

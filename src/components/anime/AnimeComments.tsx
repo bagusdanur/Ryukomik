@@ -280,7 +280,7 @@ export default function AnimeComments({ slug, title }: { slug: string; title?: s
             <Link href={href} className="max-w-[10rem] truncate text-sm font-black hover:text-cyan-200 sm:max-w-[14rem]">
               {author.username || "User"}
             </Link>
-            <UserBadges role={author.role} isScanlator={(author as { is_scanlator?: boolean }).is_scanlator} isPremium={author.is_premium} totalReads={author.total_reads} />
+            <UserBadges user={author} />
             <span className="text-[10px] text-white/30">· {relativeTime(comment.created_at)}</span>
           </div>
           <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-white/80">{comment.content}</p>

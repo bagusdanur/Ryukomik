@@ -146,12 +146,7 @@ function PodiumCard({
       {/* Badges */}
       <div className="flex flex-wrap gap-1 justify-center">
         <UserBadges
-          role={user.role}
-          isScanlator={user.is_scanlator}
-          isPremium={user.is_premium}
-          titleRushRank={user.title_rush_rank}
-          xpRank={kategori === "xp" ? user.rank || index + 1 : null}
-          totalReads={user.total_reads}
+          user={{ ...user, xp_rank: kategori === "xp" ? user.rank || index + 1 : null }}
           className="text-[8px]"
         />
         {isSelf && <Badge>KAMU</Badge>}
@@ -219,11 +214,7 @@ function RankRow({
           </Link>
           {isSelf && <Badge>KAMU</Badge>}
           <UserBadges
-            role={user.role}
-            isPremium={user.is_premium}
-            titleRushRank={user.title_rush_rank}
-            xpRank={kategori === "xp" ? user.rank || index + 1 : null}
-            totalReads={user.total_reads}
+            user={{ ...user, xp_rank: kategori === "xp" ? user.rank || index + 1 : null }}
             className="text-[8px]"
           />
         </div>

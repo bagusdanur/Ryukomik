@@ -493,7 +493,7 @@ function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post
                 <Link href={profileHref} className="block max-w-[10rem] truncate text-sm font-black hover:underline sm:max-w-[14rem]">
                   {author.username || "User"}
                 </Link>
-                <UserBadges role={author.role} isScanlator={(author as { is_scanlator?: boolean }).is_scanlator} isPremium={author.is_premium} totalReads={author.total_reads} />
+                <UserBadges user={author} />
               </div>
               <span className="text-[11px] text-white/35">
                 Lv.{author.level || 1} ·{" "}

@@ -89,12 +89,7 @@ type CommentAvatarProps = {
 };
 
 type CommentBadgeProps = {
-  role?: string | null;
-  isScanlator?: boolean | null;
-  isPremium?: boolean | null;
-  titleRushRank?: number | null;
-  xpRank?: number | null;
-  totalReads?: number | null;
+  user: import("@/components/UserBadges").BadgeUser;
 };
 
 type CommentItemProps = {
@@ -325,17 +320,8 @@ const AccentBar = memo(({ type }: { type: CommentType }) => (
 ));
 AccentBar.displayName = "AccentBar";
 
-const CommentBadge = memo(({ role, isScanlator, isPremium, titleRushRank, xpRank, totalReads }: CommentBadgeProps) => {
-  return (
-    <UserBadges
-      role={role}
-      isScanlator={isScanlator}
-      isPremium={isPremium}
-      titleRushRank={titleRushRank}
-      xpRank={xpRank}
-      totalReads={totalReads}
-    />
-  );
+const CommentBadge = memo(({ user }: CommentBadgeProps) => {
+  return <UserBadges user={user} />;
 });
 CommentBadge.displayName = "CommentBadge";
 
@@ -480,12 +466,7 @@ const CommentItem = memo(({
                   </span>
                 )}
                 <CommentBadge
-                  role={profile.role}
-                  isScanlator={(profile as { is_scanlator?: boolean }).is_scanlator}
-                  isPremium={profile.is_premium}
-                  titleRushRank={titleRushRank}
-                  xpRank={xpRank}
-                  totalReads={profile.total_reads}
+                  user={{ ...profile, title_rush_rank: titleRushRank, xp_rank: xpRank }}
                 />
               </div>
               <div className="flex flex-col items-end gap-1 flex-shrink-0">
@@ -668,7 +649,7 @@ const PremiumPromoComment = memo(() => {
           <div className="mb-1 flex items-center gap-2">
             <div className="flex min-w-0 items-center gap-2">
               <span className="truncate text-[13px] font-black text-white">Ryukomik</span>
-              <CommentBadge role={null} isPremium={true} />
+              <CommentBadge user={{ role: null, is_premium: true }} />
               <span className="rounded-full border border-[var(--accent-2)]/25 bg-[var(--accent-2)]/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-[var(--accent-2)]">
                 Disematkan
               </span>
