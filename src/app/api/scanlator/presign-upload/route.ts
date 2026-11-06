@@ -51,10 +51,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `Maksimal 30 MB per gambar (file ini ${formatBytes(size)}).` }, { status: 400 });
     }
 
-    // Kuota 2 GB per tim.
+    // Kuota 2 GB per tim — termasuk slot yang sedang dipesan upload lain.
+    await socialQuery(
+      "update scanlator_uploads set status = 'expired' where handle = $1 and status = 'reserved' and expires_at < now()",
+      [me.handle],
+    );
+    const reservedRow = await socialQuery<{ reserved: string }>(
+      "select coalesce(sum(bytes), 0)::text as reserved from scanlator_uploads where handle = $1 and status = 'reserved' and expires_at > now()",
+      [me.handle],
+    );
+    const reservedBytes = Number(reservedRow.rows[0]?.reserved || 0);
+
     const usage = await getScanlatorUsage(me.handle);
-    if (usage.usedBytes + size > SCANLATOR_QUOTA_BYTES) {
-      const sisa = Math.max(0, SCANLATOR_QUOTA_BYTES - usage.usedBytes);
+    if (usage.usedBytes + reservedBytes + size > SCANLATOR_QUOTA_BYTES) {
+      const sisa = Math.max(0, SCANLATOR_QUOTA_BYTES - usage.usedBytes - reservedBytes);
       return NextResponse.json(
         { error: `Kuota storage habis. Terpakai ${formatBytes(usage.usedBytes)} dari ${formatBytes(SCANLATOR_QUOTA_BYTES)}, sisa ${formatBytes(sisa)}.` },
         { status: 413 },
@@ -76,6 +86,12 @@ export async function POST(request: Request) {
       expiresIn: 600,
       unhoistableHeaders: new Set(["x-amz-checksum-crc32", "x-amz-sdk-checksum-algorithm"]),
     });
+
+    // Pesan slot kuota selama 30 menit; ditandai committed setelah PUT sukses.
+    await socialQuery(
+      "insert into scanlator_uploads (handle, object_key, bytes) values ($1, $2, $3) on conflict (object_key) do nothing",
+      [me.handle, key, size],
+    );
 
     return NextResponse.json({ presignedUrl, publicUrl: `${target.publicBase}/${key}`, key });
   } catch (error) {

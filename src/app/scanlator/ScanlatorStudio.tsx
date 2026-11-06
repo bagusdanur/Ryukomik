@@ -197,7 +197,7 @@ export default function ScanlatorStudio() {
         body: JSON.stringify({ filename: file.name, contentType: file.type || "image/webp", slug, kind, size: file.size }),
       });
       const presign = (await presignRes.json().catch(() => null)) as
-        | { presignedUrl?: string; publicUrl?: string; error?: string }
+        | { presignedUrl?: string; publicUrl?: string; key?: string; error?: string }
         | null;
       if (!presignRes.ok) throw new Error(presign?.error || `Gagal menyiapkan upload (${presignRes.status}).`);
 
@@ -207,7 +207,15 @@ export default function ScanlatorStudio() {
           headers: { "Content-Type": file.type || "image/webp" },
           body: file,
         }).catch(() => null);
-        if (put?.ok) return presign.publicUrl;
+        if (put?.ok) {
+          // Lepas slot reservasi kuota (kalau gagal, slot kedaluwarsa sendiri 30 menit).
+          void fetch("/api/scanlator/upload-commit", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ key: presign.key }),
+          }).catch(() => undefined);
+          return presign.publicUrl;
+        }
       }
     } catch (err) {
       // Lanjut ke jalur server di bawah.
