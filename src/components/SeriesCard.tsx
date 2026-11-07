@@ -4,7 +4,7 @@ import type { MouseEventHandler, ReactNode } from "react";
 import FallbackImage from "@/components/FallbackImage";
 import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 import AdultCoverGuard from "@/components/adult/AdultCoverGuard";
-import { hasAdultConsent, isAdultSource, requestAdultConsent } from "@/utils/adultConsent";
+import { isAdultSource } from "@/utils/adultConsent";
 
 type SeriesCardProps = {
   href: string;
@@ -51,11 +51,6 @@ export default function SeriesCard({
   const adult = isAdult || isAdultSource(detectedSource) || badge === "18+";
 
   const handleClick: MouseEventHandler<HTMLAnchorElement> = (event) => {
-    if (adult && !hasAdultConsent()) {
-      event.preventDefault();
-      requestAdultConsent(() => window.location.assign(href));
-      return;
-    }
     onClick?.(event);
   };
 

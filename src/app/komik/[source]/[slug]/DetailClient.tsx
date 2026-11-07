@@ -19,6 +19,7 @@ import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 import ProjectUpvoteButton from "@/components/ProjectUpvoteButton";
 import DiscussComicCard from "@/components/social/DiscussComicCard";
 import AdultCoverGuard from "@/components/adult/AdultCoverGuard";
+import { requestAdultConsent } from "@/utils/adultConsent";
 
 type ComicDetail = Series & {
   thumbnail: string;
@@ -49,6 +50,10 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [source, slug]);
+
+  useEffect(() => {
+    if (data?.is_adult === true) requestAdultConsent();
+  }, [data?.is_adult]);
 
   const router = useRouter();
 

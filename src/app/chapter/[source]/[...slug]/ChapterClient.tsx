@@ -25,6 +25,7 @@ import ReaderSettingModal from "@/components/reader/ReaderSettingModal";
 import ReaderProgress from "@/components/reader/ReaderProgress";
 import ReaderSupportAd from "@/components/reader/ReaderSupportAd";
 import ReaderEndSection from "@/components/reader/ReaderEndSection";
+import { requestAdultConsent } from "@/utils/adultConsent";
 
 interface ChapterClientProps {
   data: ReaderChapter;
@@ -52,6 +53,18 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
   useXpQueueFlush();
   useXpRead({ user, slugStr });
   useProjectViewCounter(source, data?.mangaId, slugStr);
+
+  useEffect(() => {
+    if (source !== "project" || !data?.mangaId) return;
+    let cancelled = false;
+    fetch(`/api/project/${encodeURIComponent(data.mangaId)}`, { cache: "no-store" })
+      .then((res) => res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`)))
+      .then((payload: { data?: { is_adult?: boolean } }) => {
+        if (!cancelled && payload.data?.is_adult === true) requestAdultConsent();
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [source, data?.mangaId]);
 
   const settings = useReaderStore();
   const addHistory = useHistoryStore((state) => state.addHistory);

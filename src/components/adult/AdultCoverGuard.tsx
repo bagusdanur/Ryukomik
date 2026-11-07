@@ -1,12 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { FiEyeOff } from "react-icons/fi";
-import {
-  ADULT_CONSENT_EVENT,
-  hasAdultConsent,
-  requestAdultConsent,
-} from "@/utils/adultConsent";
 
 type Props = {
   adult?: boolean;
@@ -15,16 +10,9 @@ type Props = {
 };
 
 export default function AdultCoverGuard({ adult = false, children, className = "" }: Props) {
-  const [allowed, setAllowed] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
-  useEffect(() => {
-    const sync = () => setAllowed(hasAdultConsent());
-    sync();
-    window.addEventListener(ADULT_CONSENT_EVENT, sync);
-    return () => window.removeEventListener(ADULT_CONSENT_EVENT, sync);
-  }, []);
-
-  if (!adult || allowed) return <>{children}</>;
+  if (!adult || revealed) return <>{children}</>;
 
   return (
     <div className={`relative h-full w-full overflow-hidden ${className}`}>
@@ -34,7 +22,7 @@ export default function AdultCoverGuard({ adult = false, children, className = "
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          requestAdultConsent();
+          setRevealed(true);
         }}
         className="absolute inset-0 z-10 flex min-h-10 flex-col items-center justify-center gap-1 bg-black/25 px-2 text-center text-white"
         aria-label="Tampilkan cover konten 18+"
