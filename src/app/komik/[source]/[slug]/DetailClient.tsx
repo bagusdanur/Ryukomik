@@ -18,6 +18,7 @@ import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache"
 import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
 import ProjectUpvoteButton from "@/components/ProjectUpvoteButton";
 import DiscussComicCard from "@/components/social/DiscussComicCard";
+import AdultCoverGuard from "@/components/adult/AdultCoverGuard";
 
 type ComicDetail = Series & {
   thumbnail: string;
@@ -215,16 +216,18 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
 
       <div className="rk-shell px-4 -mt-14 relative z-10">
         <div className="flex gap-4 items-start">
-          <div className="flex-shrink-0">
-            <img
-              referrerPolicy="no-referrer"
-              src={proxiedThumbnail}
-              alt="Poster"
-              loading="eager"
-              decoding="async"
-              sizes="112px"
-              className="h-40 w-28 rounded-2xl border border-white/[0.1] object-cover"
-            />
+          <div className="h-40 w-28 flex-shrink-0 overflow-hidden rounded-xl border border-white/[0.1]">
+            <AdultCoverGuard adult={data.is_adult === true}>
+              <img
+                referrerPolicy="no-referrer"
+                src={proxiedThumbnail}
+                alt="Poster"
+                loading="eager"
+                decoding="async"
+                sizes="112px"
+                className="h-full w-full object-cover"
+              />
+            </AdultCoverGuard>
           </div>
           <div className="flex-1 flex min-w-0 flex-col pt-2">
             <h1 className="text-xl font-black leading-tight line-clamp-2">

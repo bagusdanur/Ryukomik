@@ -3,6 +3,8 @@ import { useMemo } from "react";
 import type { MouseEventHandler, ReactNode } from "react";
 import FallbackImage from "@/components/FallbackImage";
 import { getProxiedThumbnailUrl } from "@/lib/imageProxy";
+import AdultCoverGuard from "@/components/adult/AdultCoverGuard";
+import { hasAdultConsent, isAdultSource, requestAdultConsent } from "@/utils/adultConsent";
 
 type SeriesCardProps = {
   href: string;
@@ -17,6 +19,7 @@ type SeriesCardProps = {
   priority?: boolean;
   className?: string;
   source?: string;
+  isAdult?: boolean;
   onClick?: MouseEventHandler<HTMLAnchorElement>;
 };
 
@@ -33,6 +36,7 @@ export default function SeriesCard({
   priority = false,
   className = "",
   source,
+  isAdult = false,
   onClick,
 }: SeriesCardProps) {
   const detectedSource = useMemo(() => {
@@ -43,6 +47,17 @@ export default function SeriesCard({
     }
     return undefined;
   }, [href, source]);
+
+  const adult = isAdult || isAdultSource(detectedSource) || badge === "18+";
+
+  const handleClick: MouseEventHandler<HTMLAnchorElement> = (event) => {
+    if (adult && !hasAdultConsent()) {
+      event.preventDefault();
+      requestAdultConsent(() => window.location.assign(href));
+      return;
+    }
+    onClick?.(event);
+  };
 
   const candidates = useMemo(() => {
     if (imageCandidates) return imageCandidates;
@@ -61,20 +76,22 @@ export default function SeriesCard({
     <Link
       prefetch={false}
       href={href}
-      onClick={onClick}
+      onClick={handleClick}
       className={`rk-cover-card group ${className}`}
     >
       <div className="rk-cover-frame">
-        <FallbackImage
-          referrerPolicy="no-referrer"
-          loading={priority ? "eager" : "lazy"}
-          fetchPriority={priority ? "high" : "auto"}
-          decoding="async"
-          src={image || ""}
-          candidates={candidates}
-          alt={title || "Komik"}
-          sizes="(max-width: 640px) 32vw, (max-width: 1024px) 20vw, 160px"
-        />
+        <AdultCoverGuard adult={adult}>
+          <FallbackImage
+            referrerPolicy="no-referrer"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
+            decoding="async"
+            src={image || ""}
+            candidates={candidates}
+            alt={title || "Komik"}
+            sizes="(max-width: 640px) 32vw, (max-width: 1024px) 20vw, 160px"
+          />
+        </AdultCoverGuard>
         {badge && (
           <span className="rk-cover-badge absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold">
             {badge}

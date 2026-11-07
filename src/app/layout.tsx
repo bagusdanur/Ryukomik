@@ -20,6 +20,7 @@ import AdBanner from "@/components/AdBanner";
 import AntiAdblock from "@/components/AntiAdblock";
 import NotificationPrompt from "@/components/NotificationPrompt";
 import YukiChatEmbed from "@/components/YukiChatEmbed";
+import AdultConsentProvider from "@/components/adult/AdultConsentProvider";
 
 export const viewport: Viewport = {
   themeColor: "#090a12",
@@ -126,6 +127,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AutoBackup />
         <Navbar />
         {children}
+        <AdultConsentProvider />
         </AuthProvider>
         <InstallPWA />
         <NotificationPrompt />

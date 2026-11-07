@@ -17,6 +17,7 @@ export interface Series {
   updated_at?: string;
   upvote_count?: number;
   reaction_counts?: Record<string, number>;
+  is_adult?: boolean;
 }
 
 export interface Chapter {
@@ -72,6 +73,7 @@ export interface UpdateItem {
   status?: string;
   source?: SourceId;
   upvote_count?: number;
+  is_adult?: boolean;
 }
 
 export interface FilterOption {

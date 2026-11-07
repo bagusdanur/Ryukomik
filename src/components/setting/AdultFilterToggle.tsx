@@ -7,6 +7,7 @@ import {
   isAdultHidden,
   setAdultHidden,
 } from "@/utils/adultFilter";
+import { revokeAdultConsent } from "@/utils/adultConsent";
 
 /**
  * Toggle "Sembunyikan konten 18+".
@@ -32,6 +33,7 @@ export default function AdultFilterToggle() {
     const next = !hidden;
     setHidden(next);
     setAdultHidden(next);
+    if (next) revokeAdultConsent();
   };
 
   return (

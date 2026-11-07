@@ -57,6 +57,7 @@ export default function ProjectUpdateList({
                 title={item.title}
                 image={item.image}
                 badge={typeBadge(item.type_genre)}
+                isAdult={item.is_adult === true}
                 eyebrow={item.chapter_terbaru?.replace("Chapter", "Ch.")}
                 meta={item.info}
                 corner={

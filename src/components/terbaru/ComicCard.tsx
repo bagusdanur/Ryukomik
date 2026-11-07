@@ -39,6 +39,7 @@ function ComicCard({ item, lastRead, source, onNavigate }: ComicCardProps) {
       onClick={() => onNavigate?.(href)}
       title={item.title}
       image={item.image}
+      isAdult={item.is_adult === true}
       eyebrow={(item.chapter_terbaru || "").replace("Chapter", "Ch.")}
       sideEyebrow={lastRead ? (lastRead.lastChapter || "").replace("Chapter", "Ch.") : undefined}
       meta={item.info || ""}
