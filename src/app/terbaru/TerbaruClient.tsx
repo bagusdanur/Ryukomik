@@ -41,7 +41,7 @@ interface SourceResponse {
 
 
 const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
-const LISTING_CACHE_PREFIX = "rk_terbaru_listing_v3";
+const LISTING_CACHE_PREFIX = "rk_terbaru_listing_v4";
 const GLOBAL_STATE_CACHE_KEY = "rk_terbaru_global_state_v1";
 const LISTING_CACHE_TTL = 5 * 60 * 1000;
 import { VALID_SOURCE_IDS, DEFAULT_SOURCE, sourceHasFilter } from "@/config/sources";
@@ -98,6 +98,7 @@ function normalizeListingItems(items: unknown, source: SourceId): UpdateItem[] {
         image: typeof entry.image === "string" ? entry.image : "",
         info: typeof entry.info === "string" ? entry.info : "",
         type_genre: typeof entry.type_genre === "string" ? entry.type_genre : "",
+        is_adult: entry.is_adult === true,
         chapter_terbaru:
           typeof entry.chapter_terbaru === "string" ? entry.chapter_terbaru : "",
       };
