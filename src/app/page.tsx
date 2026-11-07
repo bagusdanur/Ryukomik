@@ -40,12 +40,12 @@ export default async function Home() {
         </Suspense>
         <ContinueReading />
         <RecruitBanner />
-        <RyukomikDiscordBanner />
-        {titleRushStatus.enabled && <TitleRushNotice className="pb-3" />}
-        <UpdateList list={list} source="kiryuu" />
         <ProjectUpdateList list={projectUpdates} />
         <ScanlatorHomeSection />
         <PopularSection data={popular} />
+        <UpdateList list={list} source="kiryuu" />
+        <RyukomikDiscordBanner />
+        {titleRushStatus.enabled && <TitleRushNotice className="pb-3" />}
         <LatestComments />
       </div>
     </main>
