@@ -669,7 +669,7 @@ export default function ScanlatorStudio() {
             <div className="grid grid-cols-3 gap-2">
               <Stat label="Project" value={works.length} />
               <Stat label="Terbit" value={published} tone="ok" />
-              <Stat label="Review" value={pendingWorks} tone="warn" />
+              <Stat label="Menunggu ACC" value={pendingWorks} tone="warn" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <Stat label="Total tayangan" value={(stats?.totalViews ?? 0).toLocaleString("id-ID")} />
@@ -1203,7 +1203,7 @@ export default function ScanlatorStudio() {
                       <span className={`absolute left-1.5 top-1.5 rounded px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-wide ${
                         w.is_published ? "bg-emerald-400/90 text-black" : w.review_status === "rejected" ? "bg-rose-400/90 text-black" : "bg-amber-300/90 text-black"
                       }`}>
-                        {w.is_published ? "Terbit" : w.review_status === "approved" ? "ACC · Tunggu Ch" : w.review_status === "rejected" ? "Ditolak" : "Review"}
+                        {w.is_published ? "Terbit" : w.review_status === "approved" ? "Sudah ACC · Tunggu Ch" : w.review_status === "rejected" ? "Ditolak" : "Menunggu ACC"}
                       </span>
                       {w.chapters ? (
                         <span className="absolute right-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[8.5px] font-bold text-white/80">{w.chapters} ch</span>
