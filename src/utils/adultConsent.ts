@@ -5,7 +5,7 @@ export const ADULT_CONSENT_EVENT = "rk-adult-consent-changed";
 export const ADULT_CONSENT_REQUEST = "rk-adult-consent-request";
 export const ADULT_CONSENT_DAYS = 30;
 
-const ADULT_SOURCES = new Set(["doujindesu", "sektedoujin", "hentai"]);
+const ADULT_SOURCES = new Set(["sekte", "doujindesu", "sektedoujin", "hentai"]);
 
 export function isAdultSource(source?: string | null): boolean {
   return ADULT_SOURCES.has(String(source || "").toLowerCase());
