@@ -22,12 +22,15 @@ function wasRevealedToday(key?: string): boolean {
   }
 }
 
+const ADULT_COVER_REVEALED_EVENT = "rk-adult-cover-revealed";
+
 function rememberRevealToday(key?: string) {
   if (!key) return;
   try {
     const now = new Date();
     const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
     localStorage.setItem(revealStorageKey(key), String(midnight.getTime()));
+    window.dispatchEvent(new CustomEvent(ADULT_COVER_REVEALED_EVENT, { detail: key }));
   } catch {}
 }
 
@@ -36,6 +39,11 @@ export default function AdultCoverGuard({ adult = false, revealKey, children, cl
 
   useEffect(() => {
     if (revealKey && wasRevealedToday(revealKey)) setRevealed(true);
+    const sync = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === revealKey) setRevealed(true);
+    };
+    window.addEventListener(ADULT_COVER_REVEALED_EVENT, sync);
+    return () => window.removeEventListener(ADULT_COVER_REVEALED_EVENT, sync);
   }, [revealKey]);
 
   if (!adult || revealed) return <>{children}</>;

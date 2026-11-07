@@ -81,6 +81,11 @@ export default function AdultConsentProvider() {
         <p className="mt-2 text-sm leading-6 text-white/55">
           Halaman ini ditujukan untuk pengguna berusia 18 tahun ke atas dan mungkin memuat materi sensitif.
         </p>
+        {isAdultSource(source) && (
+          <p className="mt-2 rounded-lg border border-rose-300/15 bg-rose-400/[.06] px-3 py-2 text-[11px] leading-5 text-rose-100/75">
+            Cover di Source 7/8 yang kamu buka akan langsung hilang blur-nya dan tetap terbuka sampai tengah malam ini.
+          </p>
+        )}
         <p className="mt-2 text-[11px] leading-5 text-white/35">Persetujuan disimpan selama 30 hari di perangkat ini.</p>
         <div className="mt-5 grid grid-cols-2 gap-2">
           <button type="button" onClick={leave} className="flex min-h-11 items-center justify-center gap-2 rounded-lg border border-white/[.1] px-3 text-sm font-bold text-white/65 hover:bg-white/[.05]">
