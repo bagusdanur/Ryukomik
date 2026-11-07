@@ -101,18 +101,27 @@ export async function POST(request: Request) {
 
     // ── CHAPTER ──────────────────────────────────────────────────────────
     if (action === "approve_chapter" || action === "reject_chapter") {
-      if (!body?.chapter_id) return NextResponse.json({ error: "Chapter tidak valid." }, { status: 400 });
+      if (!body?.chapter_id || !body?.id) return NextResponse.json({ error: "Chapter atau seri tidak valid." }, { status: 400 });
       if (action === "reject_chapter" && !note) {
         return NextResponse.json({ error: "Alasan penolakan chapter wajib diisi." }, { status: 400 });
       }
 
-      await projectApiFetch(`/admin/chapters/${body.chapter_id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ is_published: action === "approve_chapter" }),
-      });
-
       if (body.id) {
         const manga = await projectApiFetch<{ data?: Record<string, unknown> }>(`/admin/projects/${body.id}`).catch(() => null);
+        if (!manga?.data) return NextResponse.json({ error: "Project tidak ditemukan." }, { status: 404 });
+        if (String(manga.data.review_status || "") !== "approved") {
+          return NextResponse.json({ error: "ACC seri lebih dulu sebelum menerbitkan chapter." }, { status: 409 });
+        }
+
+        // Publikasi chapter pertama sekaligus membuka seri. Endpoint project-db
+        // menjalankan keduanya dalam satu transaksi agar seri tidak pernah tayang kosong.
+        await projectApiFetch(`/admin/chapters/${body.chapter_id}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            is_published: action === "approve_chapter",
+            publish_parent_if_first: action === "approve_chapter",
+          }),
+        });
         await logChapterRevision({
           chapterId: body.chapter_id,
           mangaSlug: String(manga?.data?.slug || ""),
@@ -261,20 +270,21 @@ export async function POST(request: Request) {
     }
 
     if (action === "approve" || action === "approve_series") {
-      // Seri disetujui TANPA menerbitkan chapter — chapter di-ACC satu per satu.
+      // ACC seri hanya menyetujui identitas/project. Seri tetap tersembunyi sampai
+      // chapter pertamanya disetujui, agar pembaca tidak melihat seri kosong.
       await projectApiFetch(`/admin/projects/${body.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ review_status: "approved", is_published: true, review_note: null }),
+        body: JSON.stringify({ review_status: "approved", is_published: false, review_note: null }),
       });
       if (owner) {
         await notifyScanlator(owner, {
           type: "project_approved",
           title: `Project “${String(manga.data.title || "")}” disetujui`,
-          body: "Seri sudah tampil. Chapter perlu disetujui satu per satu oleh admin.",
-          link: `/komik/project/${String(manga.data.slug || "")}`,
+          body: "Seri sudah di-ACC dan menunggu chapter pertama. Seri akan otomatis terbit saat chapter pertama di-ACC admin.",
+          link: "/scanlator",
         });
       }
-      return NextResponse.json({ success: true, status: "approved" });
+      return NextResponse.json({ success: true, status: "approved_waiting_chapter" });
     }
 
     return NextResponse.json({ error: "Aksi tidak dikenal." }, { status: 400 });

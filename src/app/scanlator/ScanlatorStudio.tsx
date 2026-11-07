@@ -608,7 +608,7 @@ export default function ScanlatorStudio() {
     </Panel>,
   );
 
-  const published = works.filter((w) => w.review_status === "approved").length;
+  const published = works.filter((w) => w.is_published).length;
   const pendingWorks = works.filter((w) => w.review_status === "pending").length;
   const activeWork = works.find((w) => w.slug === openSlug) || null;
   const blocked = profile.status !== "active";
@@ -1201,9 +1201,9 @@ export default function ScanlatorStudio() {
                         <div className="flex h-full w-full items-center justify-center text-white/20"><FiBookOpen size={18} /></div>
                       )}
                       <span className={`absolute left-1.5 top-1.5 rounded px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-wide ${
-                        w.review_status === "approved" ? "bg-emerald-400/90 text-black" : w.review_status === "rejected" ? "bg-rose-400/90 text-black" : "bg-amber-300/90 text-black"
+                        w.is_published ? "bg-emerald-400/90 text-black" : w.review_status === "rejected" ? "bg-rose-400/90 text-black" : "bg-amber-300/90 text-black"
                       }`}>
-                        {w.review_status === "approved" ? "Terbit" : w.review_status === "rejected" ? "Ditolak" : "Review"}
+                        {w.is_published ? "Terbit" : w.review_status === "approved" ? "ACC · Tunggu Ch" : w.review_status === "rejected" ? "Ditolak" : "Review"}
                       </span>
                       {w.chapters ? (
                         <span className="absolute right-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[8.5px] font-bold text-white/80">{w.chapters} ch</span>

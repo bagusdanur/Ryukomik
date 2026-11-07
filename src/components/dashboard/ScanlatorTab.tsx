@@ -135,7 +135,7 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
       if (!res.ok || !json?.success) { setNotice(json?.error || "Gagal."); return; }
       setNotice(
         action === "approve_series"
-          ? `Seri “${work.title}” disetujui. Chapter di-ACC satu per satu.`
+          ? `Seri “${work.title}” sudah di-ACC. Menunggu chapter pertama untuk terbit.`
           : action === "reject_series"
             ? `Seri “${work.title}” ditolak.`
             : action === "approve_chapter"
@@ -305,7 +305,9 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
                     </div>
                   ) : (
                     <p className="mt-2 rounded-md border border-emerald-400/20 bg-emerald-400/[.06] px-2.5 py-1.5 text-[10px] font-semibold text-emerald-300/85">
-                      Seri sudah terbit — tinggal ACC chapter baru di bawah.
+                      {w.chapters?.some((chapter) => chapter.is_published)
+                        ? "Seri sudah terbit — tinggal ACC chapter baru di bawah."
+                        : "Seri sudah di-ACC · menunggu chapter pertama untuk terbit."}
                     </p>
                   )}
 
