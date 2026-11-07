@@ -1,16 +1,42 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { FiEyeOff } from "react-icons/fi";
 
 type Props = {
   adult?: boolean;
+  revealKey?: string;
   children: ReactNode;
   className?: string;
 };
 
-export default function AdultCoverGuard({ adult = false, children, className = "" }: Props) {
+const revealStorageKey = (key: string) => "rk-adult-cover-reveal:" + key + ":" + new Date().toLocaleDateString("en-CA");
+
+function wasRevealedToday(key?: string): boolean {
+  if (!key) return false;
+  try {
+    const stored = localStorage.getItem(revealStorageKey(key));
+    return stored !== null && Number(stored) > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+function rememberRevealToday(key?: string) {
+  if (!key) return;
+  try {
+    const now = new Date();
+    const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    localStorage.setItem(revealStorageKey(key), String(midnight.getTime()));
+  } catch {}
+}
+
+export default function AdultCoverGuard({ adult = false, revealKey, children, className = "" }: Props) {
   const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    if (revealKey && wasRevealedToday(revealKey)) setRevealed(true);
+  }, [revealKey]);
 
   if (!adult || revealed) return <>{children}</>;
 
@@ -22,6 +48,7 @@ export default function AdultCoverGuard({ adult = false, children, className = "
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          rememberRevealToday(revealKey);
           setRevealed(true);
         }}
         className="absolute inset-0 z-10 flex min-h-10 flex-col items-center justify-center gap-1 bg-black/25 px-2 text-center text-white"

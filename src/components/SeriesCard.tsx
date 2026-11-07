@@ -75,7 +75,7 @@ export default function SeriesCard({
       className={`rk-cover-card group ${className}`}
     >
       <div className="rk-cover-frame">
-        <AdultCoverGuard adult={adult}>
+        <AdultCoverGuard adult={adult} revealKey={isAdultSource(detectedSource) ? detectedSource : undefined}>
           <FallbackImage
             referrerPolicy="no-referrer"
             loading={priority ? "eager" : "lazy"}
