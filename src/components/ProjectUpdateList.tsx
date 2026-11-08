@@ -1,8 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import SeriesCard from "@/components/SeriesCard";
 import { setPendingSource } from "@/store/pendingSource";
+import { isAdultHidden, ADULT_PREF_EVENT } from "@/utils/adultFilter";
 import type { UpdateItem } from "@/types/content";
 
 const typeBadge = (typeGenre?: string) => {
@@ -20,6 +22,15 @@ export default function ProjectUpdateList({
   list?: UpdateItem[];
 }) {
   const router = useRouter();
+  const [hideAdult, setHideAdult] = useState(false);
+  const visibleList = hideAdult ? list.filter((item) => item.is_adult !== true) : list;
+
+  useEffect(() => {
+    const sync = () => setHideAdult(isAdultHidden());
+    sync();
+    window.addEventListener(ADULT_PREF_EVENT, sync);
+    return () => window.removeEventListener(ADULT_PREF_EVENT, sync);
+  }, []);
 
   return (
     <section className="mt-6 px-3">
@@ -42,14 +53,14 @@ export default function ProjectUpdateList({
         </button>
       </div>
 
-      {list.length === 0 ? (
+      {visibleList.length === 0 ? (
         <div className="rk-state rounded-2xl px-4 py-8 text-center text-sm">
           Belum ada project update.
         </div>
       ) : (
         <div className="overflow-x-auto pb-3 no-scrollbar">
           <div className="grid auto-cols-[118px] grid-flow-col gap-3 sm:auto-cols-[138px] md:auto-cols-[150px]">
-            {list.map((item) => (
+            {visibleList.map((item) => (
               <SeriesCard
                 key={item.slug}
                 href={`/komik/project/${item.slug}`}
