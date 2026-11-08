@@ -243,7 +243,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
                 {data.type || "Manhua"}
               </span>
               <span className="text-white/60 truncate">
-                {data.Pengarang || data.author || (source === "project" ? "Karya Scanlator" : "—")}
+                {data.Pengarang || data.author || (source === "project" ? "Author tidak disebutkan" : "—")}
               </span>
             </div>
             <div className="flex gap-3 mt-1.5 text-xs font-medium">
