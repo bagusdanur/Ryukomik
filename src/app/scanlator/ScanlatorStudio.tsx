@@ -55,6 +55,7 @@ export default function ScanlatorStudio() {
   const [savingProfile, setSavingProfile] = useState(false);
 
   const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState("Manhwa");
@@ -86,6 +87,7 @@ export default function ScanlatorStudio() {
   const [chapterBytes, setChapterBytes] = useState(0);
   const [topChapter, setTopChapter] = useState<{ chapter_number: number; views: number } | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [editAuthor, setEditAuthor] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editType, setEditType] = useState("Manhwa");
   const [editGenres, setEditGenres] = useState("");
@@ -276,7 +278,7 @@ export default function ScanlatorStudio() {
         method: "POST",
         headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          title, cover_url: coverUrl, description, type, is_adult: isAdult,
+          title, author, cover_url: coverUrl, description, type, is_adult: isAdult,
           rights_confirmed: rightsConfirmed,
           genres: genres.split(",").map((g) => g.trim()).filter(Boolean),
         }),
@@ -284,7 +286,7 @@ export default function ScanlatorStudio() {
       const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
       if (!res.ok || !json?.success) { setError(json?.error || "Gagal membuat seri."); return; }
       setNotice("Seri terkirim — menunggu review admin.");
-      setTitle(""); setCoverUrl(""); setDescription(""); setGenres(""); setIsAdult(false); setRightsConfirmed(false);
+      setTitle(""); setAuthor(""); setCoverUrl(""); setDescription(""); setGenres(""); setIsAdult(false); setRightsConfirmed(false);
       await load();
     } finally { setBusySeries(false); }
   };
@@ -392,10 +394,11 @@ export default function ScanlatorStudio() {
       const res = await fetch(`/api/scanlator/series/${encodeURIComponent(slug)}`, { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" });
       if (res.ok) {
         const json = (await res.json()) as {
-          project: { title: string; description: string | null; type: string | null; genres: unknown; is_adult: boolean };
+          project: { title: string; author: string | null; description: string | null; type: string | null; genres: unknown; is_adult: boolean };
           chapters: Array<{ id: string; chapter_number: number; title: string | null; is_published: boolean; pages: number }>;
         };
         setEditTitle(json.project.title || "");
+        setEditAuthor(json.project.author || "");
         setEditDesc(json.project.description || "");
         setEditType(json.project.type || "Manhwa");
         setEditGenres(Array.isArray(json.project.genres) ? (json.project.genres as string[]).join(", ") : "");
@@ -429,7 +432,7 @@ export default function ScanlatorStudio() {
         method: "PATCH",
         headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: editTitle, description: editDesc, type: editType, is_adult: editAdult,
+          title: editTitle, author: editAuthor, description: editDesc, type: editType, is_adult: editAdult,
           genres: editGenres.split(",").map((g) => g.trim()).filter(Boolean),
         }),
       });
@@ -781,6 +784,9 @@ export default function ScanlatorStudio() {
                     <Field label="Judul seri" htmlFor="s-title">
                       <input id="s-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} required placeholder="Judul seri" className={inputClass} />
                     </Field>
+                    <Field label="Author komik (opsional)" htmlFor="s-author">
+                      <input id="s-author" value={author} onChange={(e) => setAuthor(e.target.value)} maxLength={100} placeholder="Nama author / kreator asli" className={inputClass} />
+                    </Field>
 
                     <div>
                       <div className="mb-1.5 flex items-center justify-between">
@@ -1086,6 +1092,7 @@ export default function ScanlatorStudio() {
                             {projectTab === "detail" && (
                             <div className="space-y-3">
                             <Field label="Judul project"><input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className={inputClass} /></Field>
+                            <Field label="Author komik (opsional)"><input value={editAuthor} onChange={(e) => setEditAuthor(e.target.value)} maxLength={100} placeholder="Nama author / kreator asli" className={inputClass} /></Field>
                             <Field label="Deskripsi"><textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={3} className={inputClass} /></Field>
                             <div className="grid grid-cols-2 gap-2.5">
                               <Field label="Tipe">

@@ -41,6 +41,7 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
         project: {
           slug,
           title: owned.manga.title,
+          author: owned.manga.author,
           description: owned.manga.description,
           type: owned.manga.type,
           genres: owned.manga.genres,
@@ -79,6 +80,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     const patch: Record<string, unknown> = {};
     if (typeof body?.title === "string" && body.title.trim().length >= 2) patch.title = body.title.trim().slice(0, 200);
+    if (typeof body?.author === "string") {
+      const author = body.author.trim();
+      if (author.length >= 2) patch.author = author.slice(0, 100);
+      else if (author.length === 0) patch.author = null;
+    }
     if (typeof body?.description === "string") patch.description = body.description.trim().slice(0, 3000);
     if (typeof body?.type === "string" && body.type.trim()) patch.type = body.type.trim().slice(0, 30);
     if (Array.isArray(body?.genres)) patch.genres = body.genres.filter((g): g is string => typeof g === "string").slice(0, 10);

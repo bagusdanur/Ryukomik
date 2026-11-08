@@ -79,6 +79,7 @@ export async function POST(request: Request) {
 
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     const title = typeof body?.title === "string" ? body.title.trim().slice(0, 200) : "";
+    const author = typeof body?.author === "string" ? body.author.trim().slice(0, 100) : "";
     const coverUrl = typeof body?.cover_url === "string" ? body.cover_url.trim().slice(0, 500) : "";
     const description = typeof body?.description === "string" ? body.description.trim().slice(0, 3000) : "";
     const type = typeof body?.type === "string" ? body.type.trim().slice(0, 30) : "Manhwa";
@@ -125,6 +126,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         slug,
         title,
+        author: author || null,
         cover_url: coverUrl,
         description: description || null,
         status: statusSeries,
