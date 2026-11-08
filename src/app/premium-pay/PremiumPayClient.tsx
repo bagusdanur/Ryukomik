@@ -20,6 +20,7 @@ import {
 import { RiVipCrownLine } from "react-icons/ri";
 import { TbLayersLinked, TbBadge } from "react-icons/tb";
 import { HiOutlineSparkles } from "react-icons/hi2";
+import { FaBookmark } from "react-icons/fa";
 import { MdOutlineDownloadForOffline, MdOutlineOndemandVideo } from "react-icons/md";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
@@ -59,6 +60,13 @@ const features = [
     desc: "Gratis bisa download satuan; Premium hingga 5 chapter sekaligus",
     basic: null,
     premium: "5 Chapter",
+  },
+  {
+    icon: <FaBookmark size={16} />,
+    title: "Bookmark Lebih Banyak",
+    desc: "User biasa dapat menyimpan 200 bookmark; Premium dapat 1.000.",
+    basic: "200 Bookmark",
+    premium: "1.000 Bookmark",
   },
   {
     icon: <TbBadge size={16} />,

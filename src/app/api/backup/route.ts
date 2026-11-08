@@ -5,10 +5,16 @@ import { socialQuery } from "@/lib/social/db";
 
 export const runtime = "nodejs";
 
-const ITEM_LIMIT = 500;
+import { BOOKMARK_HARD_LIMIT } from "@/lib/bookmarkLimits";
 
-function limitArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value.slice(0, ITEM_LIMIT) : [];
+const HISTORY_LIMIT = 500;
+
+function limitArray(value: unknown, limit = HISTORY_LIMIT): unknown[] {
+  return Array.isArray(value) ? value.slice(0, limit) : [];
+}
+
+function limitBookmarks(value: unknown): unknown[] {
+  return Array.isArray(value) ? value.slice(0, BOOKMARK_HARD_LIMIT) : [];
 }
 
 /** Baca backup milik user (riwayat + bookmark). */
@@ -22,7 +28,7 @@ export async function GET(request: Request) {
     if (!rows[0]) return NextResponse.json({ backup: null });
 
     return NextResponse.json(
-      { backup: { history: limitArray(rows[0].history), bookmarks: limitArray(rows[0].bookmarks), updatedAt: rows[0].updated_at } },
+      { backup: { history: limitArray(rows[0].history), bookmarks: limitBookmarks(rows[0].bookmarks), updatedAt: rows[0].updated_at } },
       { headers: { "Cache-Control": "private, no-store" } },
     );
   } catch (error) {
@@ -38,7 +44,7 @@ export async function POST(request: Request) {
     const userId = await requireUserId(request);
     const body = (await request.json().catch(() => null)) as { history?: unknown; bookmarks?: unknown } | null;
     const history = limitArray(body?.history);
-    const bookmarks = limitArray(body?.bookmarks);
+    const bookmarks = limitBookmarks(body?.bookmarks);
 
     await socialQuery(
       `insert into user_backup (user_id, history, bookmarks, updated_at)

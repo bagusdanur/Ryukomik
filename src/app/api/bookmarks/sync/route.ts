@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/social/auth";
 import { authErrorResponse } from "@/lib/social/authResponse";
-import { socialTransaction } from "@/lib/social/db";
+import { activePremium } from "@/lib/chapterAccessPolicy";
+import { socialQuery, socialTransaction } from "@/lib/social/db";
+import { bookmarkLimitForPremium } from "@/lib/bookmarkLimits";
 
 export const runtime = "nodejs";
 
@@ -12,7 +14,10 @@ type IncomingBookmark = {
   image?: unknown;
 };
 
-const MAX_BOOKMARKS = 500;
+type PremiumAccessRow = {
+  is_premium?: boolean | null;
+  premium_until?: string | null;
+};
 
 /**
  * Sinkronisasi penuh bookmark user dari localStorage ke Postgres lokal.
@@ -28,11 +33,32 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => null)) as { bookmarks?: unknown } | null;
     const raw = Array.isArray(body?.bookmarks) ? (body.bookmarks as IncomingBookmark[]) : [];
 
+    const { rows: profileRows } = await socialQuery<PremiumAccessRow>(
+      "select is_premium, premium_until from social_profiles where user_id = $1",
+      [userId],
+    );
+    const isPremium = activePremium(profileRows[0] || null);
+    const limit = bookmarkLimitForPremium(isPremium);
+    const { rows: existingRows } = await socialQuery<{ n: string }>(
+      "select count(*)::text as n from bookmark_sync where user_id = $1",
+      [userId],
+    );
+    const existingCount = Number(existingRows[0]?.n || 0);
+    // User yang sudah punya bookmark lama tidak dihapus paksa. Namun daftar
+    // tidak boleh membesar melewati batas berlaku kecuali premium.
+    const effectiveLimit = Math.max(limit, existingCount);
+
+    if (raw.length > effectiveLimit) {
+      return NextResponse.json(
+        { error: "Batas bookmark tercapai.", limit, isPremium },
+        { status: 413 },
+      );
+    }
+
     const rows = raw
-      .slice(0, MAX_BOOKMARKS)
       .map((item) => ({
         comic_slug: typeof item?.comic_slug === "string" ? item.comic_slug.trim().slice(0, 300) : "",
-        source: typeof item?.source === "string" ? item.source.trim().slice(0, 60) || null : null,
+        source: typeof item?.source === "string" ? item.source.trim().slice(0, 60) || "komiku" : "komiku",
         title: typeof item?.title === "string" ? item.title.trim().slice(0, 300) || null : null,
         image: typeof item?.image === "string" && item.image.startsWith("https://") ? item.image.slice(0, 2000) : null,
       }))
@@ -44,7 +70,7 @@ export async function POST(request: Request) {
       await client.query(
         `insert into bookmark_sync (user_id, comic_slug, source, title, image)
          select $1, * from unnest($2::text[], $3::text[], $4::text[], $5::text[])
-         on conflict (user_id, comic_slug) do update
+         on conflict (user_id, source, comic_slug) do update
            set source = excluded.source, title = excluded.title, image = excluded.image, synced_at = now()`,
         [
           userId,

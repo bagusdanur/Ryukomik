@@ -7,6 +7,7 @@ import { scheduleBookmarkSync } from "@/utils/bookmarkSync";
 
 type BookmarkItem = {
   slug: string;
+  source?: string;
   image?: string;
   title?: string;
 };
@@ -43,8 +44,9 @@ export default function BookmarkPage() {
     }
   }, []);
 
-  const handleRemove = (slug: string) => {
-    const updated = bookmarks.filter((b) => b.slug !== slug);
+  const handleRemove = (slug: string, source?: string) => {
+    const expectedSource = source || "komiku";
+    const updated = bookmarks.filter((b) => !(b.slug === slug && (b.source || "komiku") === expectedSource));
     setBookmarks(updated);
     localStorage.setItem("bookmarks", JSON.stringify(updated));
     window.dispatchEvent(new Event("bookmark-updated"));
@@ -77,15 +79,15 @@ export default function BookmarkPage() {
       <div className="my-4 h-px bg-white/10" />
 
       <div className="rk-card-soft mb-6 rounded-2xl p-3 text-sm text-white/70">
-        Anda dapat menyimpan daftar judul komik di sini hingga 100. Daftar manga
+        Anda dapat menyimpan daftar judul komik di sini hingga 200. Daftar manga
         disimpan di browser yang dapat Anda gunakan saat ini.
       </div>
 
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7">
         {bookmarks.map((item) => (
-          <div key={item.slug} className="relative group">
+          <div key={`${item.source || "komiku"}:${item.slug}`} className="relative group">
             <button
-              onClick={() => handleRemove(item.slug)}
+              onClick={() => handleRemove(item.slug, item.source)}
               className="absolute left-2 top-2 z-10 rounded-full bg-rose-500/90 px-2 py-1 text-xs font-bold opacity-90 transition-opacity duration-200 group-hover:opacity-100"
             >
               hapus

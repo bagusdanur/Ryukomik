@@ -5,6 +5,8 @@ import { FaBell, FaBookmark, FaRegBookmark, FaTimes } from "react-icons/fa";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { getExistingSubscription, subscribePush } from "@/utils/pushSubscription";
 import { scheduleBookmarkSync, syncBookmarks } from "@/utils/bookmarkSync";
+import { getProfile, isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
+import { bookmarkLimitForPremium } from "@/lib/bookmarkLimits";
 import LoginModal from "@/components/LoginModal";
 
 type BookmarkButtonProps = {
@@ -47,9 +49,9 @@ export default function BookmarkButton({
   useEffect(() => {
     const list = readBookmarks();
     queueMicrotask(() => {
-      setSaved(list.some((item) => item.slug === slug));
+      setSaved(list.some((item) => item.slug === slug && (item.source || "komiku") === (source || "komiku")));
     });
-  }, [slug]);
+  }, [slug, source]);
 
   // Cek apakah push notification aktif di perangkat ini
   useEffect(() => {
@@ -78,11 +80,25 @@ export default function BookmarkButton({
     let list = readBookmarks();
 
     if (saved) {
-      list = list.filter((item) => item.slug !== slug);
+      const expectedSource = source || "komiku";
+      list = list.filter((item) => !(item.slug === slug && (item.source || "komiku") === expectedSource));
       localStorage.setItem("bookmarks", JSON.stringify(list));
       setSaved(false);
       window.dispatchEvent(new Event("bookmark-updated"));
       syncToServer();
+      return;
+    }
+
+    const profile = user ? await loadCachedProfile(user.id).catch(() => getProfile(user.id)) : null;
+    const limit = bookmarkLimitForPremium(user ? isActivePremiumProfile(profile) : false);
+    if (list.length >= limit) {
+      setNotification({
+        type: "error",
+        title: "Batas bookmark tercapai",
+        message: user
+          ? `Akun kamu mencapai ${limit.toLocaleString("id-ID")} bookmark. Hapus salah satu dulu untuk menyimpan yang baru.`
+          : `Pengunjung dapat menyimpan maksimal ${limit.toLocaleString("id-ID")} bookmark.`,
+      });
       return;
     }
 

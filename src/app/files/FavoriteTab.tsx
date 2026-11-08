@@ -124,8 +124,9 @@ export default function FavoriteTab({ search = "" }: FavoriteTabProps) {
     };
   }, [data, meta]);
 
-  const handleRemove = (slug: string) => {
-    const updated = data.filter((i) => i.slug !== slug);
+  const handleRemove = (slug: string, source?: string) => {
+    const expectedSource = source || "komiku";
+    const updated = data.filter((i) => !(i.slug === slug && (i.source || "komiku") === expectedSource));
     setData(updated);
     localStorage.setItem("bookmarks", JSON.stringify(updated));
   };
@@ -178,10 +179,10 @@ export default function FavoriteTab({ search = "" }: FavoriteTabProps) {
             ? Math.max(1, Math.floor(latest - lastRead))
             : null;
         return (
-          <div key={item.slug} className="relative group">
+          <div key={`${item.source || "komiku"}:${item.slug}`} className="relative group">
             {/* HAPUS */}
             <button
-              onClick={() => handleRemove(item.slug)}
+              onClick={() => handleRemove(item.slug, item.source)}
               className="absolute left-2 top-2 z-10 rounded-full bg-rose-500/90 p-2 text-xs text-white"
             >
               <FiTrash2 />

@@ -1,8 +1,10 @@
 import { supabase } from "@/lib/supabaseClient";
 import { getSession } from "@/lib/auth/getSession";
+import { BOOKMARK_HARD_LIMIT } from "@/lib/bookmarkLimits";
 
 type BackupPayload = unknown[];
-const BACKUP_ITEM_LIMIT = 500;
+const HISTORY_BACKUP_LIMIT = 500;
+const BOOKMARK_BACKUP_LIMIT = BOOKMARK_HARD_LIMIT;
 
 function readArrayFromStorage(key: string): BackupPayload {
   try {
@@ -30,8 +32,8 @@ export async function createBackup(userId?: string | null): Promise<boolean> {
     let bookmarks = readArrayFromStorage("bookmarks");
 
     // 🔥 Batasi biar tidak over besar
-    history = history.slice(0, BACKUP_ITEM_LIMIT);
-    bookmarks = Array.isArray(bookmarks) ? bookmarks.slice(0, BACKUP_ITEM_LIMIT) : [];
+    history = history.slice(0, HISTORY_BACKUP_LIMIT);
+    bookmarks = Array.isArray(bookmarks) ? bookmarks.slice(0, BOOKMARK_BACKUP_LIMIT) : [];
 
     // Backup disimpan di Postgres lokal lewat API kita.
     const { data } = await getSession();
@@ -69,7 +71,7 @@ export async function restoreBackup(userId?: string | null): Promise<boolean> {
     const data = payload.backup;
     if (!data) return false;
 
-    const historyData = Array.isArray(data.history) ? data.history.slice(0, BACKUP_ITEM_LIMIT) : [];
+    const historyData = Array.isArray(data.history) ? data.history.slice(0, HISTORY_BACKUP_LIMIT) : [];
     localStorage.setItem(
       "rk_history_zustand",
       JSON.stringify({
@@ -81,7 +83,7 @@ export async function restoreBackup(userId?: string | null): Promise<boolean> {
     localStorage.setItem(
       "bookmarks",
       JSON.stringify(
-        Array.isArray(data.bookmarks) ? data.bookmarks.slice(0, BACKUP_ITEM_LIMIT) : [],
+        Array.isArray(data.bookmarks) ? data.bookmarks.slice(0, BOOKMARK_BACKUP_LIMIT) : [],
       )
     );
 
