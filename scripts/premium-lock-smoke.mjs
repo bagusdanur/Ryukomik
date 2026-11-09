@@ -5,13 +5,27 @@ dotenv.config({ path: '.env', quiet: true });
 const base = process.env.SMOKE_BASE_URL || 'http://127.0.0.1:3002';
 const backend = process.env.PROJECT_API_URL || 'http://127.0.0.1:4101';
 const backendHeaders = { authorization: `Bearer ${process.env.PROJECT_API_INTERNAL_TOKEN}` };
-const list = await (await fetch(backend + '/projects?limit=1')).json();
-assert.ok(list.data?.[0]);
-const slug = list.data[0].slug;
-const detail = await (await fetch(backend + '/projects/' + slug)).json();
-const chapter = detail.data.chapters[0];
+const list = await (await fetch(backend + '/projects?limit=20')).json();
+assert.ok(list.data?.length);
+// Pilih chapter project yang gambarnya di /chapters/ (bukan pipeline
+// scanlator /scanlator/), sebab lock premium hanya berlaku di sana.
+let picked = null;
+for (const project of list.data) {
+  const detail = await (await fetch(backend + '/projects/' + project.slug)).json();
+  for (const item of detail.data.chapters) {
+    const chapterPath = `/projects/${project.slug}/chapters/${item.chapter_number}`;
+    const content = await (await fetch(backend + chapterPath, { headers: backendHeaders })).json();
+    const urls = content.data?.image_urls || [];
+    if (urls.some((url) => typeof url === 'string' && url.includes('/chapters/'))) {
+      picked = { slug: project.slug, chapter: item, chapterPath };
+      break;
+    }
+  }
+  if (picked) break;
+}
+assert.ok(picked, 'tidak ada chapter project dengan gambar /chapters/');
+const { slug, chapter, chapterPath } = picked;
 assert.ok(Object.hasOwn(chapter, 'premium_lock_until'));
-const chapterPath = `/projects/${slug}/chapters/${chapter.chapter_number}`;
 assert.equal((await fetch(backend + chapterPath)).status, 401);
 const content = await (await fetch(backend + chapterPath, { headers: backendHeaders })).json();
 assert.ok(content.data.image_urls.length);
@@ -29,7 +43,11 @@ assert.equal(session.status, 200); assert.match(session.headers.get('set-cookie'
 if (process.env.CHECK_WORKER === 'true') {
   const guard = await fetch('https://storage.ryukomik.my.id/__ryukomik/image-guard', { headers: { authorization: `Bearer ${process.env.IMAGE_ACCESS_SECRET}` } });
   assert.equal(guard.status, 200); assert.equal((await guard.json()).premiumLockProtection, true);
-  const proxy = await fetch(base + '/api/image?url=' + encodeURIComponent(payload.images[0]));
+  const altGuard = await fetch('https://storage.komano.my.id/__ryukomik/image-guard', { headers: { authorization: `Bearer ${process.env.IMAGE_ACCESS_SECRET}` } });
+  assert.equal(altGuard.status, 200); assert.equal((await altGuard.json()).premiumLockProtection, true);
+  const guardedImage = payload.images.find((url) => typeof url === 'string' && url.includes('/chapters/'));
+  assert.ok(guardedImage, 'reader payload tidak punya gambar /chapters/');
+  const proxy = await fetch(base + '/api/image?url=' + encodeURIComponent(guardedImage));
   assert.equal(proxy.status, 200); assert.match(proxy.headers.get('cache-control'), /no-store/); assert.ok((await proxy.arrayBuffer()).byteLength > 1024);
 }
 console.log('PASS: backend isolation, reader, admin authorization, metadata, image-session' + (process.env.CHECK_WORKER === 'true' ? ', deployed worker and image proxy' : ''));
