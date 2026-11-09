@@ -15,24 +15,12 @@
 		{
 			"pattern": "storage.ryukomik.my.id/__ryukomik/image-guard*",
 			"zone_name": "ryukomik.my.id"
-		},
-		{
-			"pattern": "storage.komano.my.id/chapters/*",
-			"zone_name": "komano.my.id"
-		},
-		{
-			"pattern": "storage.komano.my.id/__ryukomik/image-guard*",
-			"zone_name": "komano.my.id"
 		}
 	],
 	"r2_buckets": [
 		{
 			"binding": "COMICS",
 			"bucket_name": "ryukomik-project"
-		},
-		{
-			"binding": "COMICS_ALT",
-			"bucket_name": "ryukomik-project-alt"
 		}
 	],
 	"rules": [

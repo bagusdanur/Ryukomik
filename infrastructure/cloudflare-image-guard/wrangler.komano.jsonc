@@ -1,0 +1,45 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "ryukomik-image-guard-komano",
+	"main": "src/index.js",
+	"compatibility_date": "2026-09-07",
+	"account_id": "1f08cfbdaf0feab5d640736a656dd059",
+	"vars": {
+		"REQUIRE_SIGNED_COOKIE": "true"
+	},
+	"routes": [
+		{
+			"pattern": "storage.komano.my.id/chapters/*",
+			"zone_name": "komano.my.id"
+		},
+		{
+			"pattern": "storage.komano.my.id/__ryukomik/image-guard*",
+			"zone_name": "komano.my.id"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "COMICS_ALT",
+			"bucket_name": "project"
+		},
+		{
+			"binding": "COMICS",
+			"bucket_name": "project"
+		}
+	],
+	"rules": [
+		{
+			"type": "Data",
+			"globs": [
+				"**/*.png"
+			],
+			"fallthrough": true
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "HOTLINK_CONFIG",
+			"id": "8dfe5a9b296c45ffb270eba62a1690dd"
+		}
+	]
+}
