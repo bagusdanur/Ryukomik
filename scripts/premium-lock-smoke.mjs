@@ -16,7 +16,7 @@ for (const project of list.data) {
     const chapterPath = `/projects/${project.slug}/chapters/${item.chapter_number}`;
     const content = await (await fetch(backend + chapterPath, { headers: backendHeaders })).json();
     const urls = content.data?.image_urls || [];
-    if (urls.some((url) => typeof url === 'string' && url.includes('/chapters/'))) {
+    if (urls.some((url) => typeof url === "string" && url.includes("/chapters/")) && !content.data?.premium_lock_until) {
       picked = { slug: project.slug, chapter: item, chapterPath };
       break;
     }
