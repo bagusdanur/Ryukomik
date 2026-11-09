@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     domain: process.env.NODE_ENV === "production" ? ".ryukomik.my.id" : undefined,
-    path: chapter.scope,
+    path: "/",
     maxAge: Math.max(0, expires - Math.floor(Date.now() / 1000)),
   });
   response.headers.set("cache-control", "private, no-store, max-age=0");
