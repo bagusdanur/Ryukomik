@@ -40,14 +40,23 @@ export default function DraftPreviewImages({ images, chapter, previewToken }: { 
     );
   }
 
-  return images.map((url, index) => (
-    <img
-      key={`${url}:${index}`}
-      src={url}
-      alt={`Halaman ${index + 1}`}
-      className="block h-auto w-full"
-      loading={index < 2 ? "eager" : "lazy"}
-      referrerPolicy="no-referrer"
-    />
-  ));
+  return images.map((url, index) => {
+    let src = url;
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname === 'storage.ryukomik.my.id' || parsed.hostname === 'storage.komano.my.id') {
+        src = `/api/image?url=${encodeURIComponent(url)}`;
+      }
+    } catch {}
+    return (
+      <img
+        key={`${url}:${index}`}
+        src={src}
+        alt={`Halaman ${index + 1}`}
+        className="block h-auto w-full"
+        loading={index < 2 ? "eager" : "lazy"}
+        referrerPolicy="no-referrer"
+      />
+    );
+  });
 }
