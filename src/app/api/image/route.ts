@@ -3,7 +3,7 @@ import { request as httpsRequest } from "node:https";
 import { request as httpRequest } from "node:http";
 import { bearerToken, getChapterAccess } from "@/lib/chapterAccess";
 import { parseProjectImageScope } from "@/lib/chapterAccessPolicy";
-import { signImageAccessCookie } from "@/lib/imageAccessCookie";
+import { parseImageAccessCookie, signImageAccessCookie } from "@/lib/imageAccessCookie";
 
 const IMAGE_TTL = 60 * 60 * 24 * 7;
 const MAX_BYTES = 12 * 1024 * 1024; // 12 MB guard
@@ -150,7 +150,14 @@ export async function GET(req: Request) {
     let cookie: string | null = null;
     if (guarded) {
       try {
-        const access = await getChapterAccess(guarded.slug, guarded.chapter, bearerToken(req));
+        // `<img>` can't send Authorization, but the reader already holds a
+        // signed image cookie on this origin (from /api/image-session). A
+        // valid signature+scope in that cookie is the same proof the worker
+        // checks, so it can stand in for a bearer token here.
+        const cookieGrant = parseImageAccessCookie(req.headers.get("cookie"), guarded.scope);
+        const access = cookieGrant
+          ? { allowed: true as const, grant: cookieGrant.grant, lockVersion: cookieGrant.lockVersion, expires: cookieGrant.expires, lockUntil: null as string | null }
+          : await getChapterAccess(guarded.slug, guarded.chapter, bearerToken(req));
         if (!access.allowed) return new NextResponse('Premium aktif diperlukan.', { status: bearerToken(req) ? 403 : 401, headers: { 'Cache-Control': 'no-store' } });
         cookie = `ryu_image_access=${signImageAccessCookie(guarded.scope, access.grant, access.lockVersion, access.expires)}`;
       } catch { return new NextResponse('Layanan akses chapter belum tersedia.', { status: 503, headers: { 'Cache-Control': 'no-store' } }); }

@@ -116,7 +116,8 @@ export default {
 
     const key = decodeURIComponent(url.pathname.slice(1));
     const range = request.headers.get("range");
-    const object = await env.COMICS.get(key, range ? { range: request.headers } : undefined);
+    const bucket = url.hostname === "storage.komano.my.id" ? env.COMICS_ALT : env.COMICS;
+    const object = await bucket.get(key, range ? { range: request.headers } : undefined);
     if (!object) {
       return new Response("Not Found", { status: 404, headers: { "cache-control": "no-store" } });
     }

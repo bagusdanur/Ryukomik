@@ -97,6 +97,22 @@ export function getChapterImageCandidates(source: string, url?: string) {
     return [originalUrl];
   }
 
+  // Image project di storage.komano.my.id dijaga Worker, tapi cookie akses
+  // di-set untuk origin Ryukomik (domain .ryukomik.my.id) sehingga browser
+  // tidak mengirimkannya ke host komano. Lewatkan /api/image agar cookie
+  // first-party dipakai; proxy akan meneruskan cookie signed ke Worker.
+  if (source === "project") {
+    try {
+      const parsed = new URL(originalUrl);
+      if (parsed.hostname === "storage.komano.my.id" && parsed.pathname.startsWith("/chapters/")) {
+        const proxied = `/api/image?url=${encodeURIComponent(originalUrl)}`;
+        return [proxied, originalUrl];
+      }
+    } catch {
+      // jatuh ke perilaku default di bawah
+    }
+  }
+
   if (!shouldUsePublicChapterProxy(source, originalUrl)) return [originalUrl];
 
   return [
