@@ -29,6 +29,9 @@ type CommentRow = {
   chapter?: string | null;
   content: string;
   parent_id: string | number | null;
+  reply_to_id: string | number | null;
+  reply_to_name: string | null;
+  reply_to_user_id: string | null;
   author_name: string | null;
   user_id: string | null;
   avatar_url: string | null;
@@ -102,7 +105,8 @@ async function fetchComments(
   values.push(limit);
 
   const { rows } = await socialQuery<CommentRow>(
-    `select id, content, parent_id, author_name, user_id, avatar_url, is_spoiler, image_url,
+    `select id, content, parent_id, reply_to_id, reply_to_name, reply_to_user_id,
+            author_name, user_id, avatar_url, is_spoiler, image_url,
             created_at, edited_at, deleted_at
        from comments
       where ${conditions.join(" and ")}
@@ -122,6 +126,9 @@ async function fetchComments(
       id: num(item.id),
       content: item.content,
       parent_id: num(item.parent_id),
+      reply_to_id: num(item.reply_to_id),
+      reply_to_name: item.reply_to_name,
+      reply_to_user_id: item.reply_to_user_id,
       author_name: item.author_name,
       user_id: item.user_id,
       avatar_url: item.avatar_url,
@@ -316,7 +323,7 @@ export async function PATCH(req: NextRequest) {
         `update comments
             set content = $2, is_spoiler = $3, edited_at = now(), edit_count = edit_count + 1
           where id = $1
-          returning id, content, parent_id, author_name, user_id, avatar_url, is_spoiler, created_at, edited_at, deleted_at`,
+          returning id, content, parent_id, reply_to_id, reply_to_name, reply_to_user_id, author_name, user_id, avatar_url, is_spoiler, created_at, edited_at, deleted_at`,
         [id, content, body?.is_spoiler ?? row.is_spoiler],
       );
       return result.rows[0];
@@ -379,8 +386,9 @@ export async function POST(req: NextRequest) {
     // Balasan-ke-balasan: tempel ke komentar utama + mention penulis aslinya,
     // supaya thread tetap 2 tingkat dan balasan tidak "hilang" dari UI.
     let parentId = parent_id ? Number(parent_id) : null;
-    let replyToUserId: string | null = null;
     let replyToId: number | null = null;
+    let replyToUserId: string | null = null;
+    let replyToName: string | null = null;
     let mention = "";
 
     if (parentId && Number.isFinite(parentId)) {
@@ -394,6 +402,7 @@ export async function POST(req: NextRequest) {
       } else {
         replyToId = Number(row.id);
         replyToUserId = row.user_id;
+        replyToName = row.author_name;
         if (row.parent_id) parentId = Number(row.parent_id);
         if (row.author_name) mention = `@${row.author_name} `;
       }
@@ -404,15 +413,18 @@ export async function POST(req: NextRequest) {
     const finalContent = `${mention}${content}`.slice(0, MAX_CONTENT);
 
     const inserted = await socialQuery<CommentRow>(
-      `insert into comments (id, type, slug, chapter, content, parent_id, author_name, user_id, avatar_url, is_spoiler, image_url)
-       values (nextval('comments_id_seq'), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       returning id, type, slug, chapter, content, parent_id, author_name, user_id, avatar_url, is_spoiler, image_url, created_at, edited_at, deleted_at`,
+      `insert into comments (id, type, slug, chapter, content, parent_id, reply_to_id, reply_to_name, reply_to_user_id, author_name, user_id, avatar_url, is_spoiler, image_url)
+       values (nextval('comments_id_seq'), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       returning id, type, slug, chapter, content, parent_id, reply_to_id, reply_to_name, reply_to_user_id, author_name, user_id, avatar_url, is_spoiler, image_url, created_at, edited_at, deleted_at`,
       [
         type,
         slug || null,
         chapter || null,
         finalContent,
         parentId,
+        replyToId,
+        replyToName,
+        replyToUserId,
         profile?.username || author_name || "Anonim",
         user_id,
         profile?.avatar_url || avatar_url || null,

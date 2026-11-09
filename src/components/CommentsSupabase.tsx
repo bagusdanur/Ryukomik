@@ -49,6 +49,9 @@ type CommentRow = {
   avatar_border?: string | null;
   user_id?: string | null;
   parent_id?: string | null;
+  reply_to_id?: string | null;
+  reply_to_name?: string | null;
+  reply_to_user_id?: string | null;
   profiles?: Profile | null;
   replies?: CommentRow[];
   edited_at?: string | null;
@@ -73,8 +76,10 @@ type StickerPickerProps = {
 };
 
 type CommentContentProps = {
-  text?: string | null;
-  isSpoiler?: boolean | null;
+  text: string;
+  replyTarget?: string | null;
+  knownNames?: string[];
+  isSpoiler?: boolean;
   openSpoiler: boolean;
   onOpenSpoiler: () => void;
 };
@@ -103,6 +108,7 @@ type CommentItemProps = {
   titleRushRank?: number | null;
   xpRank?: number | null;
   isReply?: boolean;
+  knownNames?: string[];
   isAdmin?: boolean;
   onChanged?: () => void;
 };
@@ -240,10 +246,37 @@ const StickerPicker = memo(({ onSelect, onClose }: StickerPickerProps) => {
 });
 StickerPicker.displayName = "StickerPicker";
 
-const CommentContent = memo(({ text, isSpoiler, openSpoiler, onOpenSpoiler }: CommentContentProps) => {
+const CommentContent = memo(({ text, replyTarget: replyTargetProp, knownNames, isSpoiler, openSpoiler, onOpenSpoiler }: CommentContentProps) => {
+  const { replyTarget, bodyText } = useMemo(() => {
+    const raw = text || "";
+    // Sumber utama: reply_to_name dari server (kolom komentar).
+    const exactTarget = replyTargetProp?.trim();
+    if (exactTarget) {
+      const exactPrefix = `@${exactTarget} `;
+      if (raw.startsWith(exactPrefix)) {
+        return { replyTarget: exactTarget, bodyText: raw.slice(exactPrefix.length) };
+      }
+    }
+    // Fallback untuk komentar lama: cari nama penulis yang dikenal persis
+    // di awal konten (mendukung spasi & unicode karena dicocokkan utuh).
+    const candidate = [...(knownNames || [])]
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length)
+      .find((name) => raw.startsWith(`@${name} `));
+    if (candidate) {
+      return { replyTarget: candidate, bodyText: raw.slice(candidate.length + 2) };
+    }
+    // Fallback terakhir: mention satu token.
+    const match = raw.match(/^\s*@([^\s]+)\s+/);
+    if (match) {
+      return { replyTarget: match[1], bodyText: raw.slice(match[0].length) };
+    }
+    return { replyTarget: null as string | null, bodyText: raw };
+  }, [text, replyTargetProp, knownNames]);
+
   const parsed = useMemo(() => {
-    if (!text) return { texts: [], images: [] };
-    const parts = text.split(/(\[https?:\/\/[^\]]+\])/g);
+    if (!bodyText) return { texts: [], images: [] };
+    const parts = bodyText.split(/(\[https?:\/\/[^\]]+\])/g);
     const texts: string[] = [];
     const images: string[] = [];
     parts.forEach((part) => {
@@ -256,7 +289,7 @@ const CommentContent = memo(({ text, isSpoiler, openSpoiler, onOpenSpoiler }: Co
       }
     });
     return { texts, images };
-  }, [text]);
+  }, [bodyText]);
 
   if (isSpoiler && !openSpoiler) {
     return (
@@ -276,6 +309,17 @@ const CommentContent = memo(({ text, isSpoiler, openSpoiler, onOpenSpoiler }: Co
 
   return (
     <div className={isSpoiler ? "text-orange-200 bg-orange-500/5 p-2 rounded-lg border border-orange-500/10" : ""}>
+      {replyTarget && (
+        <p className="mb-1.5 text-[11px] leading-relaxed text-white/45">
+          Membalas{" "}
+          <a
+            href={`/u/${encodeURIComponent(replyTarget)}`}
+            className="font-black text-cyan-300 hover:text-cyan-200"
+          >
+            @{replyTarget}
+          </a>
+        </p>
+      )}
       {parsed.texts.join(" ").trim() && <p className="mb-2">{parsed.texts.join(" ")}</p>}
       {parsed.images.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -342,6 +386,7 @@ const CommentItem = memo(({
   titleRushRank,
   xpRank,
   isReply = false,
+  knownNames: knownNamesProp,
   isAdmin = false,
   onChanged,
 }: CommentItemProps) => {
@@ -365,8 +410,16 @@ const CommentItem = memo(({
       ? "premium"
       : "normal";
   const xpPercentage = (profile.xp ?? 0) % 100;
-  const hasReplies = (data.replies?.length ?? 0) > 0;
+  const replyItems = data.replies || [];
+  const hasReplies = replyItems.length > 0;
   const isReplying = replying === data.id;
+  const knownNames =
+    knownNamesProp && knownNamesProp.length > 0
+      ? Array.from(new Set([...knownNamesProp, displayName || ""]))
+      : [
+          displayName || "",
+          ...replyItems.map((r) => r.profiles?.username || r.author_name || ""),
+        ].filter(Boolean);
 
   const handleReplyToggle = useCallback(() => {
     setReplying(isReplying ? null : data.id);
@@ -515,8 +568,10 @@ const CommentItem = memo(({
               ) : (
                 <>
                   <CommentContent
-                    text={data.content}
-                    isSpoiler={data.is_spoiler}
+                    text={data.content || ""}
+                    replyTarget={data.reply_to_name}
+                    knownNames={knownNames}
+                    isSpoiler={Boolean(data.is_spoiler)}
                     openSpoiler={openSpoiler}
                     onOpenSpoiler={() => setOpenSpoiler(true)}
                   />
@@ -582,10 +637,13 @@ const CommentItem = memo(({
 
       {isReplying && (
         <div className="mt-3 ml-4">
+          <p className="mb-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-bold text-white/55">
+            Membalas <span className="font-black text-cyan-300">@{displayName}</span>
+          </p>
           <textarea
             value={replyContent}
             onChange={(e) => setReplyContent(e.target.value)}
-            placeholder="Ketik balasan..."
+            placeholder={`Balas @${displayName}...`}
             className="rk-input w-full rounded-2xl p-3 text-xs"
           />
           <div className="flex justify-end mt-2 gap-2">
@@ -607,11 +665,12 @@ const CommentItem = memo(({
 
       {showReplies && hasReplies && (
         <div className="mt-2 space-y-2">
-          {data.replies?.map((r) => (
+          {replyItems.map((r) => (
             <CommentItem
               key={r.id}
               data={r}
               isReply={true}
+              knownNames={knownNames}
               user={user}
               titleRushRank={titleRushRank}
               xpRank={xpRank}
