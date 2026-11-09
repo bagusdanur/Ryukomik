@@ -36,6 +36,8 @@ type Post = {
   id: string;
   author_id: string;
   parent_id?: string | null;
+  reply_to_id?: string | null;
+  reply_to_name?: string | null;
   content: string;
   image_url?: string | null;
   visibility: string;
@@ -251,7 +253,7 @@ function Composer({
     setError("");
 
     try {
-      const result = await socialFetch<{ post: { id: string; author_id: string; created_at: string; profiles: Author } }>("/api/social/posts", {
+      const result = await socialFetch<{ post: { id: string; author_id: string; created_at: string; reply_to_name?: string | null; profiles: Author } }>("/api/social/posts", {
         method: "POST",
         body: JSON.stringify({
           content: submittedContent === "[sticker]" ? "" : submittedContent,
@@ -264,6 +266,9 @@ function Composer({
       const createdPost: Post = {
         id: result.post.id,
         author_id: result.post.author_id,
+        parent_id: parentId || null,
+        reply_to_id: replyToId || parentId || null,
+        reply_to_name: result.post.reply_to_name || replyToName || undefined,
         content: submittedContent,
         image_url: submittedImage,
         visibility,
@@ -300,6 +305,11 @@ function Composer({
           <p className="mt-0.5 text-xs text-white/40">
             Bagikan kabar atau rekomendasi komik ke komunitas.
           </p>
+        </div>
+      )}
+      {parentId && replyToName && (
+        <div className="mb-3 flex items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.06] px-3 py-2 text-xs text-cyan-100/85">
+          <span className="min-w-0 truncate">Membalas <strong>@{replyToName}</strong></span>
         </div>
       )}
       <textarea
@@ -507,6 +517,11 @@ function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post
               {post.pending ? <FiRefreshCw className="animate-spin" size={14} /> : post.viewer_owns ? <FiTrash2 size={14} /> : <FiMoreHorizontal />}
             </button>
           </div>
+          {post.reply_to_name && (
+            <p className="mt-1 text-xs text-white/45">
+              Membalas <Link href={`/u/${encodeURIComponent(post.reply_to_name)}`} className="font-bold text-cyan-200/90 hover:underline">@{post.reply_to_name}</Link>
+            </p>
+          )}
           {comic ? (
             <ComicLinkCard content={post.content} imageUrl={post.image_url} />
           ) : (
