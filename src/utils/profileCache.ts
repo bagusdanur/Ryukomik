@@ -138,20 +138,27 @@ export function isProfileStale(userId?: string | null, now: number = Date.now())
 
 export function clearCachedProfile(userId?: string | null) {
   if (!userId) return;
-  profileCache.delete(userId);
-  profileRequests.delete(userId);
-  if (typeof window !== "undefined") {
-    try {
-      window.sessionStorage.removeItem(STORAGE_PREFIX + userId);
-    } catch {
-      // ignore
+  // Tandai stale (jangan siarkan null): subscriber premium akan jatuh ke
+  // "Basic" kalau dikasih null — iklan ter-inject lagi, badge VIP/frame
+  // premium hilang, dan jejak iklan dari tag.min.js tidak bisa dibersihkan
+  // penuh. Dengan entry dipertahankan (at=0): getProfile() masih balikin tier
+  // terakhir, isProfileStale() → true memaksa loading=true (iklan tidak
+  // load), lalu fetch ulang mempublish nilai baru.
+  const entry = profileCache.get(userId);
+  if (entry) {
+    entry.at = 0;
+    writeStored(userId, entry);
+  } else {
+    profileCache.delete(userId);
+    if (typeof window !== "undefined") {
+      try {
+        window.sessionStorage.removeItem(STORAGE_PREFIX + userId);
+      } catch {
+        // ignore
+      }
     }
   }
-  publishProfile(userId, null);
-  // Siaran null membuat semua subscriber (badge VIP, iklan, frame premium)
-  // jatuh ke "Basic". Dulu tidak ada yang memicu fetch ulang, jadi status
-  // premium hilang sampai halaman di-reload. Ambil ulang di background agar
-  // subscriber segera menerima data yang benar.
+  profileRequests.delete(userId);
   void loadCachedProfile(userId, { force: true }).catch(() => {});
 }
 
@@ -185,15 +192,23 @@ function fetchProfile(userId: string): Promise<CachedProfile | null> {
 }
 
 export function refreshProfile(userId: string) {
-  profileCache.delete(userId);
-  profileRequests.delete(userId);
-  if (typeof window !== "undefined") {
-    try {
-      window.sessionStorage.removeItem(STORAGE_PREFIX + userId);
-    } catch {
-      // ignore
+  // Tandai stale, jangan hapus: menghapus cache membuat getProfile() balikin
+  // null ke subscriber baru → premium flash ke Basic. Lihat clearCachedProfile.
+  const entry = profileCache.get(userId);
+  if (entry) {
+    entry.at = 0;
+    writeStored(userId, entry);
+  } else {
+    profileCache.delete(userId);
+    if (typeof window !== "undefined") {
+      try {
+        window.sessionStorage.removeItem(STORAGE_PREFIX + userId);
+      } catch {
+        // ignore
+      }
     }
   }
+  profileRequests.delete(userId);
   return loadCachedProfile(userId, { force: true });
 }
 
