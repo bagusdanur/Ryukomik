@@ -5,20 +5,92 @@ import { usePathname } from "next/navigation";
 import { FiMessageCircle, FiX } from "react-icons/fi";
 
 const YUKI_EMBED_URL = "https://yuki.ryukomik.web.id/embed.html";
+const YUKI_ORIGIN = "https://yuki.ryukomik.web.id";
+const YUKI_CTX_MAX = 200;
+
+type StorageAccessDocument = Document & {
+  requestStorageAccessForOrigin?: (origin: string) => Promise<void>;
+};
+
+function cleanPageTitle(value: string | null | undefined) {
+  return (value || "")
+    .replace(/\s+/g, " ")
+    .replace(/\s*\|\s*Ryukomik\s*$/i, "")
+    .replace(/\s*[–—-]\s*Ryukomik\s*$/i, "")
+    .replace(/\s+Bahasa Indonesia(?:\s*[–—-].*)?$/i, "")
+    .replace(/^Baca\s+/i, "")
+    .replace(/^(Ryukomik\s*[-|]\s*)/i, "")
+    .trim();
+}
+
+function humanizeSlug(value: string | null | undefined) {
+  return decodeURIComponent(value || "")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function chapterLabelFromPath(pathname: string) {
+  const normalizedPath = decodeURIComponent(pathname);
+  const match = /(?:^|\/)(?:chapter|ch)[-_/ ]?(\d+(?:\.\d+)?)(?:$|\/)/i.exec(normalizedPath);
+  if (!match) return "";
+  return `Chapter ${match[1]}`;
+}
+
+function resolveYukiContext(pathname: string) {
+  const heading = document.querySelector("h1")?.textContent?.trim();
+  const cleanTitle = cleanPageTitle(heading) || cleanPageTitle(document.title);
+
+  // Detail komik memakai judul dari metadata/h1. Kalau hasilnya kosong/generik,
+  // pakai slug terakhir dari URL agar konteks tetap berguna.
+  const segments = pathname.split("/").filter(Boolean);
+  const slug = segments[segments.length - 1];
+  let title = cleanTitle;
+  if (!title || /^ryukomik$/i.test(title)) {
+    title = humanizeSlug(slug);
+  }
+
+  const chapterLabel = chapterLabelFromPath(pathname);
+  if (
+    chapterLabel &&
+    pathname.startsWith("/chapter/") &&
+    !new RegExp(chapterLabel.replace(".", "\\."), "i").test(title)
+  ) {
+    title = `${title} ${chapterLabel}`.trim();
+  }
+
+  return title.slice(0, YUKI_CTX_MAX).trim();
+}
 
 export default function YukiChatEmbed() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [embedContext, setEmbedContext] = useState("");
   const hasMobileCommunityComposer = pathname === "/feed" || pathname === "/files";
 
   useEffect(() => {
     if (!open) return;
+    setEmbedContext(resolveYukiContext(pathname));
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [open]);
+  }, [open, pathname]);
+
+  const openChat = () => {
+    // Hitung konteks sebelum iframe dimuat agar tidak perlu reload tambahan.
+    setEmbedContext(resolveYukiContext(pathname));
+    // Panggil sebelumnya iframe dimuat agar sesi Yuki yang sudah ada bisa langsung terlihat.
+    const storageDocument = document as StorageAccessDocument;
+    storageDocument.requestStorageAccessForOrigin?.(YUKI_ORIGIN).catch(() => {});
+    setOpen(true);
+  };
+
+  const embedUrl = embedContext
+    ? `${YUKI_EMBED_URL}?ctx=${encodeURIComponent(embedContext)}`
+    : YUKI_EMBED_URL;
 
   // Sembunyikan di halaman baca dan semua halaman Scanlator/aturan —
   // widget menutupi tombol simpan & tab di layar kecil.
@@ -76,7 +148,7 @@ export default function YukiChatEmbed() {
             </div>
             <div className="absolute inset-0 z-[1] overflow-hidden bg-[var(--background)]">
               <iframe
-                src={YUKI_EMBED_URL}
+                src={embedUrl}
                 title="Yuki"
                 loading="lazy"
                 allow="clipboard-write"
@@ -88,7 +160,7 @@ export default function YukiChatEmbed() {
       ) : (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={openChat}
           aria-label="Buka chat Yuki"
           aria-expanded="false"
           className="group flex h-12 items-center gap-2 rounded-full border border-violet-300/25 bg-[color-mix(in_srgb,var(--surface-1)_92%,transparent)] p-1.5 pr-3 text-white shadow-[0_14px_38px_rgba(0,0,0,0.42)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-cyan-200/35 hover:bg-[var(--surface-2)] active:translate-y-0"
