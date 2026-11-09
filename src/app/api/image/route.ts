@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { request as httpsRequest } from "node:https";
 import { request as httpRequest } from "node:http";
-import { bearerToken, getChapterAccess } from "@/lib/chapterAccess";
+import { bearerToken, getChapterAccess, getChapterLock } from "@/lib/chapterAccess";
 import { parseProjectImageScope } from "@/lib/chapterAccessPolicy";
 import { parseImageAccessCookie, signImageAccessCookie } from "@/lib/imageAccessCookie";
 
@@ -155,9 +155,14 @@ export async function GET(req: Request) {
         // valid signature+scope in that cookie is the same proof the worker
         // checks, so it can stand in for a bearer token here.
         const cookieGrant = parseImageAccessCookie(req.headers.get("cookie"), guarded.scope);
-        const access = cookieGrant
-          ? { allowed: true as const, grant: cookieGrant.grant, lockVersion: cookieGrant.lockVersion, expires: cookieGrant.expires, lockUntil: null as string | null }
-          : await getChapterAccess(guarded.slug, guarded.chapter, bearerToken(req));
+        let access: { allowed: boolean; grant: "public" | "premium" | "preview"; lockVersion: string; expires: number; lockUntil: string | null };
+        const lock = await getChapterLock(guarded.slug, guarded.chapter);
+        const locked = Boolean(lock.premium_lock_until && Date.parse(lock.premium_lock_until) > Date.now());
+        if (cookieGrant && !(cookieGrant.grant === "public" && locked)) {
+          access = { allowed: true as const, grant: cookieGrant.grant, lockVersion: cookieGrant.lockVersion, expires: cookieGrant.expires, lockUntil: null as string | null };
+        } else {
+          access = await getChapterAccess(guarded.slug, guarded.chapter, bearerToken(req));
+        }
         if (!access.allowed) return new NextResponse('Premium aktif diperlukan.', { status: bearerToken(req) ? 403 : 401, headers: { 'Cache-Control': 'no-store' } });
         cookie = `ryu_image_access=${signImageAccessCookie(guarded.scope, access.grant, access.lockVersion, access.expires)}`;
       } catch { return new NextResponse('Layanan akses chapter belum tersedia.', { status: 503, headers: { 'Cache-Control': 'no-store' } }); }

@@ -1,6 +1,6 @@
 import 'server-only';
 import { unstable_cache, revalidateTag } from 'next/cache';
-import { getVerifiedUserId } from '@/lib/serverRoleCache';
+import { getVerifiedUserId, getRoleFromBearerToken } from '@/lib/serverRoleCache';
 import { socialQuery } from '@/lib/social/db';
 import { projectApiFetch } from '@/lib/projectApiServer';
 import { evaluateChapterAccess, type ChapterLock, type PremiumAccessProfile } from './chapterAccessPolicy';
@@ -37,6 +37,11 @@ export async function getPremiumAccess(token: string, force = false): Promise<Pr
   if (!token) return null;
   let userId: string;
   try { userId = await getVerifiedUserId(token); } catch { return null; }
+  // Admin/staff bypass premium lock (consistent with avatar border & profile rules).
+  try {
+    const role = await getRoleFromBearerToken(token);
+    if (role.isAdmin || role.isStaff) return { is_premium: true, premium_until: null };
+  } catch {}
   if (force && Date.now() - (forcedAt.get(userId) || 0) > 10_000) {
     invalidatePremiumAccess(userId);
     if (forcedAt.size > 1000) forcedAt.clear();
