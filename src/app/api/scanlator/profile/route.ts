@@ -7,19 +7,42 @@ import { socialQuery } from "@/lib/social/db";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const HOST_RE = /^(https?:\/\/)?(dana\.link|link\.dana|gopay\.co\.id|go\.gopay|trakteer\.id|tako\.id|lynk\.id|id\.lynk|ko-fi\.com|buymeacoffee\.com|saweria\.co)/i;
+// Hanya platform donasi yang dikenal. Pencocokan memakai hostname (bukan regex
+// pada string URL), supaya `trakteer.id.evil.com` tidak lolos seperti dulu.
+const DONATION_HOSTS = [
+  "dana.link",
+  "link.dana",
+  "gopay.co.id",
+  "go.gopay",
+  "trakteer.id",
+  "tako.id",
+  "lynk.id",
+  "id.lynk",
+  "ko-fi.com",
+  "buymeacoffee.com",
+  "saweria.co",
+  "sociabuzz.com",
+  "nyawer.co",
+  "bagibagi.co",
+  "tip.id",
+  "karyakarsa.com",
+  "patreon.com",
+];
 
 function cleanLink(value: unknown): string | null {
   const v = typeof value === "string" ? value.trim().slice(0, 300) : "";
   if (!v) return null;
-  let url: string;
+  let url: URL;
   try {
-    url = new URL(v.includes("://") ? v : `https://${v}`).toString();
+    url = new URL(v.includes("://") ? v : `https://${v}`);
   } catch {
     return null;
   }
-  if (!HOST_RE.test(url)) return null;
-  return url;
+  if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+  const host = url.hostname.toLowerCase();
+  const allowed = DONATION_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
+  if (!allowed) return null;
+  return url.toString();
 }
 
 function phoneOf(value: unknown): string | null {
@@ -118,17 +141,17 @@ export async function PATCH(request: Request) {
     const trakteer = cleanLink(body?.support_trakteer);
     const tako = cleanLink(body?.support_tako);
     const rawLain = typeof body?.support_url_lain === "string" ? body.support_url_lain.trim().slice(0, 300) : "";
-    let lain: string | null = null;
-    if (rawLain) {
-      try {
-        const url = new URL(rawLain.includes("://") ? rawLain : `https://${rawLain}`);
-        if (!["http:", "https:"].includes(url.protocol) || ["localhost", "127.0.0.1"].includes(url.hostname)) {
-          return NextResponse.json({ error: "Tautan donate lain tidak valid." }, { status: 400 });
-        }
-        lain = url.toString();
-      } catch {
-        return NextResponse.json({ error: "Tautan donate lain tidak valid." }, { status: 400 });
-      }
+    // Tautan ini dirender sebagai tombol di halaman publik (kartu atribusi
+    // halaman seri) → wajib platform donasi yang dikenal, bukan URL bebas.
+    const lain: string | null = rawLain ? cleanLink(rawLain) : null;
+    if (rawLain && !lain) {
+      return NextResponse.json(
+        {
+          error:
+            "Tautan dukungan harus dari platform donasi (DANA, Trakteer, Tako, Saweria, Sociabuzz, Lynk, Nyawer, Ko-fi, Patreon).",
+        },
+        { status: 400 },
+      );
     }
 
     const rawAvatar = typeof body?.avatar_url === "string" ? body.avatar_url.trim().slice(0, 500) : "";

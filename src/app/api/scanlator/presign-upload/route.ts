@@ -8,6 +8,7 @@ import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { getScanlatorUsage, SCANLATOR_QUOTA_BYTES, formatBytes } from "@/lib/scanlatorQuota";
 import { rateLimitResponse } from "@/lib/rateLimit";
+import { isSafeImageType } from "@/lib/imageTypes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,8 +47,11 @@ export async function POST(request: Request) {
     const slug = String(body?.slug || me.handle).replace(/[^a-zA-Z0-9\-_]/g, "").slice(0, 80) || me.handle;
 
     if (!filename) return NextResponse.json({ error: "Nama file tidak valid." }, { status: 400 });
-    if (!contentType.startsWith("image/")) {
-      return NextResponse.json({ error: "File harus berupa gambar." }, { status: 400 });
+    if (!isSafeImageType(contentType)) {
+      return NextResponse.json(
+        { error: "Format harus JPG, PNG, WebP, AVIF, atau GIF." },
+        { status: 400 },
+      );
     }
 
     const MAX_BYTES = 30 * 1024 * 1024;

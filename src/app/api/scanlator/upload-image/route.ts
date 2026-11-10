@@ -9,6 +9,7 @@ import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { rateLimitResponse } from "@/lib/rateLimit";
 import { socialQuery } from "@/lib/social/db";
+import { isSafeImageType } from "@/lib/imageTypes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
   const slugRaw = typeof formData?.get("slug") === "string" ? String(formData.get("slug")) : "";
 
   if (!file) return NextResponse.json({ error: "File gambar tidak ditemukan." }, { status: 400 });
-  if (!file.type.startsWith("image/")) return NextResponse.json({ error: "File harus berupa gambar." }, { status: 400 });
+  if (!isSafeImageType(file.type)) return NextResponse.json({ error: "Format harus JPG, PNG, WebP, AVIF, atau GIF." }, { status: 400 });
   if (file.size > MAX_BYTES) return NextResponse.json({ error: "Maksimal 30 MB per gambar." }, { status: 400 });
   console.log(`[scanlator/upload-image] file="${file.name}" type="${file.type}" size=${file.size} kind=${kind} slug=${slugRaw} user=${userId}`);
 

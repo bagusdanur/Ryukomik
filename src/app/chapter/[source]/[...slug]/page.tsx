@@ -14,6 +14,7 @@ import {
   normalizeChapterSlug,
   normalizeSource,
 } from "@/lib/canonicalUrl";
+import { jsonLdScript } from "@/lib/jsonLd";
 
 const CHAPTER_JSON_TTL = 60 * 60 * 24 * 7;
 
@@ -384,12 +385,12 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: jsonLdScript({
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             "itemListElement": [

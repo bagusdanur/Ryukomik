@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { socialQuery } from "@/lib/social/db";
+import { jsonLdScript } from "@/lib/jsonLd";
 import ScanlatorPublicProfile from "./ScanlatorPublicProfile";
 
 type GroupRow = {
@@ -85,8 +86,8 @@ export default async function Page({ params }: { params: Promise<{ handle: strin
       {jsonLd && (
         <script
           type="application/ld+json"
-          // JSON-LD statis dari data server, bukan input mentah pengguna.
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          // Nama tim & bio berasal dari input Scanlator → wajib di-escape.
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
         />
       )}
       <ScanlatorPublicProfile handle={handle} />

@@ -6,6 +6,7 @@ import type { Dict } from "@/types/common";
 import type { Chapter, Series } from "@/types/content";
 import { projectApiFetch, ProjectApiError } from "@/lib/projectApiServer";
 import { formatRelativeDate } from "@/lib/projectUpdates";
+import { jsonLdScript } from "@/lib/jsonLd";
 import {
   buildComicUrl,
   normalizeComicSlug,
@@ -238,12 +239,12 @@ export default async function DetailPage({ params }: DetailPageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: jsonLdScript({
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             "itemListElement": [
