@@ -4,6 +4,7 @@ import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { projectApiFetch } from "@/lib/projectApiServer";
+import { CHAPTER_BANNER_URL } from "@/lib/chapterBanner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,13 +50,21 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
           review_status: owned.manga.review_status,
           cover_url: owned.manga.cover_url,
         },
-        chapters: (chapters.data || []).map((c) => ({
-          id: (c as { id?: string }).id,
-          chapter_number: (c as { chapter_number?: number }).chapter_number,
-          title: (c as { title?: string | null }).title,
-          is_published: (c as { is_published?: boolean }).is_published,
-          pages: Array.isArray((c as { image_urls?: unknown[] }).image_urls) ? ((c as { image_urls: unknown[] }).image_urls.length) : 0,
-        })),
+        chapters: (chapters.data || []).map((c) => {
+          const images = Array.isArray((c as { image_urls?: unknown[] }).image_urls)
+            ? ((c as { image_urls: unknown[] }).image_urls as unknown[])
+            : [];
+          return {
+            id: (c as { id?: string }).id,
+            chapter_number: (c as { chapter_number?: number }).chapter_number,
+            title: (c as { title?: string | null }).title,
+            is_published: (c as { is_published?: boolean }).is_published,
+            // Banner promosi bukan halaman karya — jangan ikut dihitung.
+            pages: images.filter((url) => typeof url === "string" && url !== CHAPTER_BANNER_URL).length,
+            review_status: (c as { review_status?: string | null }).review_status ?? null,
+            review_note: (c as { review_note?: string | null }).review_note ?? null,
+          };
+        }),
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );

@@ -81,7 +81,7 @@ export default function ScanlatorStudio() {
   // Kelola project (Tahap 2): buka detail, edit, hapus
   const [openSlug, setOpenSlug] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [chapters, setChapters] = useState<Array<{ id: string; chapter_number: number; title: string | null; is_published: boolean; pages: number }>>([]);
+  const [chapters, setChapters] = useState<Array<{ id: string; chapter_number: number; title: string | null; is_published: boolean; pages: number; review_status?: string | null; review_note?: string | null }>>([]);
   const [chapterViews, setChapterViews] = useState<Record<number, number>>({});
   const [cleaning, setCleaning] = useState(false);
   const [chapterBytes, setChapterBytes] = useState(0);
@@ -1193,12 +1193,21 @@ export default function ScanlatorStudio() {
                                       <p className="min-w-0 truncate text-[11px] text-white/70">
                                         Ch. {c.chapter_number} · {c.title || "Tanpa judul"} · {c.pages} gambar
                                         <span className="ml-1 text-[10px] text-white/35">· 👁 {chapterViews[c.chapter_number] ?? 0}</span>
-                                        {!c.is_published && <span className="ml-1 text-[10px] text-amber-300">(belum terbit)</span>}
+                                        {!c.is_published && (
+                                          <span className={`ml-1 text-[10px] ${c.review_status === "rejected" ? "text-rose-300" : "text-amber-300"}`}>
+                                            {c.review_status === "rejected" ? "(ditolak)" : "(belum terbit)"}
+                                          </span>
+                                        )}
                                       </p>
                                       <button type="button" onClick={() => void removeChapter(c.id, c.chapter_number)} aria-label={`Hapus chapter ${c.chapter_number}`} className="shrink-0 rounded p-1 text-rose-300/70 transition-colors hover:text-rose-300">
                                         <FiTrash2 size={12} />
                                       </button>
                                     </div>
+                                    {!c.is_published && c.review_status === "rejected" && c.review_note && (
+                                      <p className="mt-1.5 rounded-md border border-rose-400/20 bg-rose-400/[.06] px-2 py-1 text-[10px] leading-snug text-rose-200/90">
+                                        Ditolak: {c.review_note}
+                                      </p>
+                                    )}
                                     <div className="mt-1.5 grid grid-cols-3 gap-1.5">
                                       <button
                                         type="button"
