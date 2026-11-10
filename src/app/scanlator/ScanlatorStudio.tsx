@@ -92,6 +92,8 @@ export default function ScanlatorStudio() {
   const [editType, setEditType] = useState("Manhwa");
   const [editGenres, setEditGenres] = useState("");
   const [editAdult, setEditAdult] = useState(false);
+  const [editCover, setEditCover] = useState("");
+  const [editCoverUploading, setEditCoverUploading] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [chapterDraft, setChapterDraft] = useState<Record<string, string>>({});
   const [projectTab, setProjectTab] = useState<"detail" | "chapter">("detail");
@@ -325,6 +327,16 @@ export default function ScanlatorStudio() {
     finally { setUploadingCover(false); }
   };
 
+  /** Ganti cover dari tab Detail project (project yang sudah ada). */
+  const onEditCoverFile = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setEditCoverUploading(true); setError("");
+    try { setEditCover(await uploadImage(file, "cover", profile?.handle || "cover")); }
+    catch (err) { setError(err instanceof Error ? err.message : "Upload cover gagal."); }
+    finally { setEditCoverUploading(false); }
+  };
+
   const formatSize = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 
   const onChapterFiles = (files: FileList | null) => {
@@ -409,7 +421,7 @@ export default function ScanlatorStudio() {
       const res = await fetch(`/api/scanlator/series/${encodeURIComponent(slug)}`, { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" });
       if (res.ok) {
         const json = (await res.json()) as {
-          project: { title: string; author: string | null; description: string | null; type: string | null; genres: unknown; is_adult: boolean };
+          project: { title: string; author: string | null; description: string | null; type: string | null; genres: unknown; is_adult: boolean; cover_url: string | null };
           chapters: Array<{ id: string; chapter_number: number; title: string | null; is_published: boolean; pages: number }>;
         };
         setEditTitle(json.project.title || "");
@@ -418,6 +430,7 @@ export default function ScanlatorStudio() {
         setEditType(json.project.type || "Manhwa");
         setEditGenres(Array.isArray(json.project.genres) ? (json.project.genres as string[]).join(", ") : "");
         setEditAdult(Boolean(json.project.is_adult));
+        setEditCover(typeof json.project.cover_url === "string" ? json.project.cover_url : "");
         setChapters(json.chapters || []);
       }
 
@@ -448,6 +461,7 @@ export default function ScanlatorStudio() {
         headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           title: editTitle, author: editAuthor, description: editDesc, type: editType, is_adult: editAdult,
+          cover_url: editCover,
           genres: editGenres.split(",").map((g) => g.trim()).filter(Boolean),
         }),
       });
@@ -1106,6 +1120,30 @@ export default function ScanlatorStudio() {
 
                             {projectTab === "detail" && (
                             <div className="space-y-3">
+                            <div>
+                              <div className="mb-1.5 flex items-center justify-between">
+                                <p className="text-[11px] font-semibold text-white/55">Cover</p>
+                                <span className={`text-[10px] ${editCover ? "text-emerald-300/80" : "text-white/30"}`}>
+                                  {editCoverUploading ? "mengunggah…" : editCover ? "siap" : "belum ada"}
+                                </span>
+                              </div>
+                              <label className="flex items-center gap-3 rounded-lg border border-dashed border-white/[.14] bg-white/[.02] p-3 transition-colors hover:border-[var(--accent)]/50 hover:bg-white/[.04]">
+                                {editCover ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={editCover} alt="Cover" className="h-16 w-12 shrink-0 rounded border border-white/[.08] object-cover" />
+                                ) : (
+                                  <span className="flex h-16 w-12 shrink-0 items-center justify-center rounded border border-white/[.08] bg-white/[.04] text-white/25">
+                                    <FiImage size={16} />
+                                  </span>
+                                )}
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-[11.5px] font-semibold text-white/75">{editCover ? "Ganti cover" : "Pilih cover"}</span>
+                                  <span className="mt-0.5 block text-[10px] leading-snug text-white/35">JPG/PNG/WebP · otomatis jadi WebP 95 · maks 30 MB</span>
+                                </span>
+                                <input type="file" accept="image/*" disabled={editCoverUploading} onChange={(e) => { void onEditCoverFile(e.target.files); e.currentTarget.value = ""; }} className="hidden" />
+                                <span className="shrink-0 rounded-md border border-white/[.12] px-2.5 py-1.5 text-[10.5px] font-bold text-white/70">{editCoverUploading ? "…" : "Pilih"}</span>
+                              </label>
+                            </div>
                             <Field label="Judul project"><input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className={inputClass} /></Field>
                             <Field label="Author komik (opsional)"><input value={editAuthor} onChange={(e) => setEditAuthor(e.target.value)} maxLength={100} placeholder="Nama author / kreator asli" className={inputClass} /></Field>
                             <Field label="Deskripsi"><textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={3} className={inputClass} /></Field>
