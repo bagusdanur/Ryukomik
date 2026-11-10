@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ReadHistoryItem } from "@/types/user";
+import { getCurrentUserId } from "@/utils/currentUserId";
+import { getProfile, isActivePremiumProfile } from "@/utils/profileCache";
+import { FREE_HISTORY_LIMIT, historyLimitForPremium } from "@/lib/historyLimits";
 
 interface HistoryState {
   history: ReadHistoryItem[];
@@ -17,7 +20,18 @@ interface HistoryState {
   updateHistoryThumbs: (entries: { comicSlug: string; thumbnail: string }[]) => void;
 }
 
-const MAX_HISTORY = 500;
+const MAX_HISTORY = FREE_HISTORY_LIMIT;
+
+/**
+ * Limit riwayat yang berlaku untuk user saat ini. Premium 2000, free 500.
+ * Kalau profil belum ter-resolve (mis. saat pertama mount), pakai limit free
+ * sebagai nilai konservatif — server tetap memakai limit yang benar.
+ */
+function currentHistoryLimit() {
+  const userId = getCurrentUserId();
+  const profile = userId ? getProfile(userId) : null;
+  return historyLimitForPremium(isActivePremiumProfile(profile));
+}
 
 /** Judul chapter ("Chapter 1") bukan judul komik — jangan dipakai. */
 function isBadTitle(title?: string | null) {
@@ -94,7 +108,7 @@ export const useHistoryStore = create<HistoryState>()(
           filtered.unshift(item);
           const deleted = { ...state.deleted };
           delete deleted[item.comicSlug];
-          return { history: filtered.slice(0, MAX_HISTORY), deleted };
+          return { history: filtered.slice(0, currentHistoryLimit()), deleted };
         }),
       mergeHistory: (items) =>
         set((state) => {
@@ -131,7 +145,7 @@ export const useHistoryStore = create<HistoryState>()(
             }
           }
           const merged = [...map.values()].sort((a, b) => b.updatedAt - a.updatedAt);
-          return { history: merged.slice(0, MAX_HISTORY), deleted };
+          return { history: merged.slice(0, currentHistoryLimit()), deleted };
         }),
       removeHistory: (comicSlug) => {
         set((state) => ({

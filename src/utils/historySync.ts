@@ -57,6 +57,15 @@ export async function syncHistory(): Promise<boolean> {
       headers,
       body: JSON.stringify({ history: toServerRows(items) }),
     });
+    if (res.status === 413) {
+      // Batas tercapai: jangan buang data lokal, cukup beri tahu di console.
+      // UI bisa menampilkan limit lewat GET /api/history/sync (field `limit`).
+      const detail = (await res.json().catch(() => null)) as { limit?: number; isPremium?: boolean } | null;
+      console.warn(
+        `[historySync] batas riwayat tercapai (${detail?.limit ?? "?"}, premium=${detail?.isPremium ?? "?"})`,
+      );
+      return false;
+    }
     return res.ok;
   } catch (err) {
     console.error("Gagal sync riwayat:", err);

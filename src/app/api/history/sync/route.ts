@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireUserId } from "@/lib/social/auth";
 import { authErrorResponse } from "@/lib/social/authResponse";
 import { socialQuery, socialTransaction } from "@/lib/social/db";
+import { activePremium } from "@/lib/chapterAccessPolicy";
+import { historyLimitForPremium } from "@/lib/historyLimits";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +18,19 @@ type IncomingHistory = {
   read_at?: unknown;
 };
 
-const MAX_HISTORY = 500;
+type PremiumAccessRow = {
+  is_premium?: boolean | null;
+  premium_until?: string | null;
+};
+
+async function historyLimitForUser(userId: string): Promise<{ limit: number; isPremium: boolean }> {
+  const { rows } = await socialQuery<PremiumAccessRow>(
+    "select is_premium, premium_until from social_profiles where user_id = $1",
+    [userId],
+  );
+  const isPremium = activePremium(rows[0] || null);
+  return { limit: historyLimitForPremium(isPremium), isPremium };
+}
 
 function textField(value: unknown, max: number): string | null {
   return typeof value === "string" ? value.trim().slice(0, max) || null : null;
@@ -35,6 +49,7 @@ function httpsField(value: unknown, max: number): string | null {
 export async function GET(request: Request) {
   try {
     const userId = await requireUserId(request);
+    const { limit } = await historyLimitForUser(userId);
     const { rows } = await socialQuery<{
       comic_slug: string;
       last_chapter_slug: string | null;
@@ -46,9 +61,9 @@ export async function GET(request: Request) {
     }>(
       `select comic_slug, last_chapter_slug, last_chapter, title, source, thumbnail, read_at
          from history_sync where user_id = $1 order by read_at desc limit $2`,
-      [userId, MAX_HISTORY],
+      [userId, limit],
     );
-    return NextResponse.json({ success: true, history: rows }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ success: true, history: rows, limit }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;
@@ -87,8 +102,25 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => null)) as { history?: unknown } | null;
     const raw = Array.isArray(body?.history) ? (body.history as IncomingHistory[]) : [];
 
+    const { limit, isPremium } = await historyLimitForUser(userId);
+    // User yang sudah punya riwayat lama tidak dihapus paksa (sama seperti
+    // bookmark): daftar tidak boleh membesar melewati batas, tapi isi lama
+    // tetap aman.
+    const { rows: existingRows } = await socialQuery<{ n: string }>(
+      "select count(*)::text as n from history_sync where user_id = $1",
+      [userId],
+    );
+    const existingCount = Number(existingRows[0]?.n || 0);
+    const effectiveLimit = Math.max(limit, existingCount);
+    if (raw.length > effectiveLimit) {
+      return NextResponse.json(
+        { error: "Batas riwayat tercapai.", limit, isPremium },
+        { status: 413 },
+      );
+    }
+
     const rows = raw
-      .slice(0, MAX_HISTORY)
+      .slice(0, effectiveLimit)
       .map((item) => {
         const readAtRaw = typeof item.read_at === "string" ? Date.parse(item.read_at) : NaN;
         return {

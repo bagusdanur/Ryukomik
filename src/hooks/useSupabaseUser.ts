@@ -5,6 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import { clearLocalSessionCache, getSession } from "@/lib/auth/getSession";
 import { pullAndMergeHistory } from "@/utils/historySync";
+import { setCurrentUserId } from "@/utils/currentUserId";
 
 type Listener = (user: User | null) => void;
 
@@ -16,6 +17,7 @@ const listeners = new Set<Listener>();
 
 function emit(user: User | null) {
   currentUser = user;
+  setCurrentUserId(user?.id ?? null);
   listeners.forEach((listener) => listener(user));
 }
 
