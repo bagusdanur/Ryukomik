@@ -5,6 +5,7 @@ import { projectApiFetch } from "@/lib/projectApiServer";
 import { notifyScanlator } from "@/lib/scanlatorNotify";
 import { socialQuery } from "@/lib/social/db";
 import { logChapterRevision } from "@/lib/scanlatorAudit";
+import { withChapterBanner } from "@/lib/chapterBanner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -115,11 +116,14 @@ export async function POST(request: Request) {
 
         // Publikasi chapter pertama sekaligus membuka seri. Endpoint project-db
         // menjalankan keduanya dalam satu transaksi agar seri tidak pernah tayang kosong.
+        // Banner Scanlator ditempel di halaman terakhir saat terbit.
+        const chapterDetail = await projectApiFetch<{ data?: { image_urls?: string[] } }>(`/admin/chapters/${body.chapter_id}`).catch(() => null);
         await projectApiFetch(`/admin/chapters/${body.chapter_id}`, {
           method: "PATCH",
           body: JSON.stringify({
             is_published: action === "approve_chapter",
             publish_parent_if_first: action === "approve_chapter",
+            ...(action === "approve_chapter" ? { image_urls: withChapterBanner(chapterDetail?.data?.image_urls) } : {}),
           }),
         });
         await logChapterRevision({
@@ -203,7 +207,7 @@ export async function POST(request: Request) {
         await projectApiFetch(`/admin/chapters/${body.chapter_id}`, {
           method: "PATCH",
           body: JSON.stringify({
-            image_urls: pending,
+            image_urls: withChapterBanner(pending),
             pending_image_urls: null,
             review_status: "approved",
             review_note: null,

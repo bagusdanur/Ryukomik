@@ -5,6 +5,7 @@ import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { enqueueProjectDiscordEvent } from "@/lib/projectDiscordEvents";
 import { projectApiFetch, projectApiUrl } from "@/lib/projectApiServer";
+import { withChapterBanner } from "@/lib/chapterBanner";
 
 function revalidateProjectContent(mangaSlug: string) {
   revalidateTag("source-project-pustaka", { expire: 0 });
@@ -127,7 +128,13 @@ export async function PATCH(request: Request) {
     if (!projectApiUrl(`/admin/chapters/${id}`)) throw new Error("PROJECT_API_URL is not configured");
     if (projectApiUrl(`/admin/chapters/${id}`)) {
       const existing = await projectApiFetch<{data:any}>(`/admin/chapters/${id}`);
-      const result = await projectApiFetch<{data:any}>(`/admin/chapters/${id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+      // Tempel banner Scanlator di halaman terakhir begitu chapter dipublikasikan
+      // (bukan overlay web) supaya ikut saat chapter di-mirror ke web lain.
+      const payload = { ...body };
+      if (body?.is_published === true && !existing.data?.is_published) {
+        payload.image_urls = withChapterBanner(existing.data?.image_urls);
+      }
+      const result = await projectApiFetch<{data:any}>(`/admin/chapters/${id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
       const oldUrls:string[]=existing.data.image_urls||[], newUrls:string[]=result.data.image_urls||[];
       await Promise.all(oldUrls.filter((url)=>!newUrls.includes(url)).map(async(url)=>{try{const key=new URL(url).pathname.substring(1);if(key.startsWith("chapters/"))await deleteR2File(key);}catch{}}));
       if(!existing.data.is_published&&result.data.is_published){const manga=await projectApiFetch<{data:any}>(`/projects/${encodeURIComponent(result.data.manga_slug)}`).catch(()=>null);if(manga?.data&&!['dropped','cancelled'].includes(manga.data.status||''))await enqueueProjectDiscordEvent('chapter_published',manga.data,{chapter_number:result.data.chapter_number,chapter_title:result.data.title||''});}
