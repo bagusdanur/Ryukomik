@@ -195,7 +195,6 @@ export default function ScanlatorStudio() {
     rawFile: File,
     kind: "cover" | "chapter" | "avatar",
     slug: string,
-    watermark = false,
     onPrepared?: (savedBytes: number) => void,
   ) => {
     const t = await token();
@@ -204,10 +203,9 @@ export default function ScanlatorStudio() {
     const file = webp.file;
     if (webp.converted) onPrepared?.(webp.originalBytes - webp.bytes);
 
-    // Watermark digambar di server (bukan saat upload langsung), jadi halaman
-    // terakhir chapter tetap lewat jalur server.
+    // Watermark tidak lagi ditambahkan sistem — tim Scanlator mengedit
+    // watermark mereka sendiri. Semua gambar lewat presigned URL.
     try {
-      if (watermark) throw new Error("server-path");
       const presignRes = await fetch("/api/scanlator/presign-upload", {
         method: "POST",
         headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
@@ -243,7 +241,6 @@ export default function ScanlatorStudio() {
     fd.append("file", file);
     fd.append("kind", kind);
     fd.append("slug", slug);
-    if (watermark) fd.append("watermark", "true");
     const res = await fetch("/api/scanlator/upload-image", { method: "POST", headers: { Authorization: `Bearer ${t}` }, body: fd });
     const json = (await res.json().catch(() => null)) as { success?: boolean; url?: string; error?: string } | null;
     if (!res.ok || !json?.success || !json.url) throw new Error(json?.error || "Upload gagal.");
@@ -332,7 +329,6 @@ export default function ScanlatorStudio() {
           original,
           "chapter",
           chapterSlug || profile?.handle || "chapter",
-          i === list.length - 1,
           (saved) => setProgress((p) => (p ? { ...p, savedBytes: p.savedBytes + saved } : p)),
         );
         setChapterImages((prev) => [...prev, url]);
@@ -698,7 +694,7 @@ export default function ScanlatorStudio() {
                 {[
                   ["Ajukan Akun Translation", "Sekali saja, menunggu ACC admin."],
                   ["Upload seri", "Judul, cover, genre, tandai 18+ bila perlu."],
-                  ["Upload chapter", "Gambar banyak sekaligus, watermark otomatis."],
+                  ["Upload chapter", "Gambar banyak sekaligus, otomatis jadi WebP."],
                   ["Review admin", "Disetujui → seri & chapter terbit."],
                   ["Dapat donasi", "Tautan donate tampil di halaman serimu."],
                 ].map(([t, d], i) => (

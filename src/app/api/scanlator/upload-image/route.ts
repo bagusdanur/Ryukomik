@@ -18,8 +18,8 @@ const MAX_BYTES = 30 * 1024 * 1024; // 30 MB per file (aturan S&K)
 
 /**
  * Upload gambar Scanlator (cover/chapter) ke R2 bucket project.
- * Kompresi otomatis via sharp; halaman terakhir chapter diberi watermark
- * nama tim bila `watermark=true` (aturan S&K 8.3).
+ * Kompresi otomatis via sharp (WebP q95). Watermark tidak lagi ditambahkan —
+ * tim Scanlator mengedit watermark mereka sendiri.
  */
 export async function POST(request: Request) {
   let userId: string;
@@ -31,8 +31,8 @@ export async function POST(request: Request) {
     return authErrorResponse(error) ?? NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
   }
 
-  const profile = await socialQuery<{ handle: string; team_name: string; storage_handle: string | null; status: string }>(
-    "select handle, team_name, storage_handle, status from scanlator_profiles where user_id = $1 limit 1",
+  const profile = await socialQuery<{ handle: string; storage_handle: string | null; status: string }>(
+    "select handle, storage_handle, status from scanlator_profiles where user_id = $1 limit 1",
     [userId],
   );
   const me = profile.rows[0];
@@ -44,12 +44,11 @@ export async function POST(request: Request) {
   const rawKind = String(formData?.get("kind") || "chapter");
   const kind = rawKind === "cover" || rawKind === "avatar" ? rawKind : "chapter";
   const slugRaw = typeof formData?.get("slug") === "string" ? String(formData.get("slug")) : "";
-  const doWatermark = formData?.get("watermark") === "true";
 
   if (!file) return NextResponse.json({ error: "File gambar tidak ditemukan." }, { status: 400 });
   if (!file.type.startsWith("image/")) return NextResponse.json({ error: "File harus berupa gambar." }, { status: 400 });
   if (file.size > MAX_BYTES) return NextResponse.json({ error: "Maksimal 30 MB per gambar." }, { status: 400 });
-  console.log(`[scanlator/upload-image] file="${file.name}" type="${file.type}" size=${file.size} kind=${kind} slug=${slugRaw} watermark=${doWatermark} user=${userId}`);
+  console.log(`[scanlator/upload-image] file="${file.name}" type="${file.type}" size=${file.size} kind=${kind} slug=${slugRaw} user=${userId}`);
 
   const slug = slugRaw.replace(/[\\/]+/g, "-").replace(/\.+/g, ".").replace(/[^\w.\- ]+/g, "").trim().slice(0, 80) || me.handle;
   // Kuota 2 GB per Scanlator (dihitung dari prefix R2 miliknya).
@@ -77,19 +76,13 @@ export async function POST(request: Request) {
     // 4 MB) dan memicu timeout. Halaman scanlation opakat, jadi latar putih
     // aman dan hampir selalu tidak terlihat.
     let pipeline = sharp(input).rotate().flatten({ background: "#ffffff" });
-    if (doWatermark) {
-      const meta = await pipeline.metadata();
-      const w = Math.max(1, Math.floor((meta.width || 800) * 0.06));
-      const svg = `<svg width="${meta.width || 800}" height="${meta.height || 1200}" xmlns="http://www.w3.org/2000/svg"><text x="50%" y="97%" font-size="${w}" fill="rgba(255,255,255,0.55)" font-family="sans-serif" text-anchor="middle">${escapeXml(me.team_name)}</text></svg>`;
-      pipeline = pipeline.composite([{ input: Buffer.from(svg), gravity: "south" }]);
-    }
     // Kualitas 95 + effort 6, sama seperti converter RyukomikBot (dimensi tetap).
     buffer = await pipeline.webp({ quality: 95, effort: 6 }).toBuffer();
   } catch (err) {
-    console.error("[scanlator/upload-image] sharp gagal:", err instanceof Error ? err.message : err, err instanceof Error ? err.stack : "", `file="${file.name}" type="${file.type}" size=${file.size} watermark=${doWatermark}`);
+    console.error("[scanlator/upload-image] sharp gagal:", err instanceof Error ? err.message : err, err instanceof Error ? err.stack : "", `file="${file.name}" type="${file.type}" size=${file.size}`);
     // Cadangan: kalau sharp tidak bisa memproses gambar ini (format langka /
-    // korup), unggah file aslinya supaya Scanlator tidak mentok. WebP/watermark
-    // dilewati — lebih baik gambar ada daripada gagal upload.
+    // korup), unggah file aslinya supaya Scanlator tidak mentok. WebP dilewati
+    // — lebih baik gambar ada daripada gagal upload.
     try {
       const raw = Buffer.from(await file.arrayBuffer());
       const ext = ((file.name.split(".").pop() || "img").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "img");
@@ -125,8 +118,4 @@ export async function POST(request: Request) {
 
   const url = `${target.publicBase}/${key}`;
   return NextResponse.json({ success: true, url });
-}
-
-function escapeXml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
