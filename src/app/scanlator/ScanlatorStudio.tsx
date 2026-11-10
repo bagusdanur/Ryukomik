@@ -217,11 +217,19 @@ export default function ScanlatorStudio() {
       if (!presignRes.ok) throw new Error(presign?.error || `Gagal menyiapkan upload (${presignRes.status}).`);
 
       if (presign?.presignedUrl && presign.publicUrl) {
-        const put = await fetch(presign.presignedUrl, {
-          method: "PUT",
-          headers: { "Content-Type": file.type || "image/webp" },
-          body: file,
-        }).catch(() => null);
+        // Koneksi mobile bisa terputus di tengah — coba beberapa kali sebelum
+        // menyerah dan turun ke jalur server.
+        let put: Response | null = null;
+        for (let attempt = 0; attempt < 3 && !(put && put.ok); attempt += 1) {
+          put = await fetch(presign.presignedUrl, {
+            method: "PUT",
+            headers: { "Content-Type": file.type || "image/webp" },
+            body: file,
+          }).catch(() => null);
+          if ((!put || !put.ok) && attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+          }
+        }
         if (put?.ok) {
           // Lepas slot reservasi kuota (kalau gagal, slot kedaluwarsa sendiri 30 menit).
           void fetch("/api/scanlator/upload-commit", {
@@ -237,14 +245,25 @@ export default function ScanlatorStudio() {
       if (err instanceof Error && /Kuota storage habis/i.test(err.message)) throw err;
     }
 
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("kind", kind);
-    fd.append("slug", slug);
-    const res = await fetch("/api/scanlator/upload-image", { method: "POST", headers: { Authorization: `Bearer ${t}` }, body: fd });
-    const json = (await res.json().catch(() => null)) as { success?: boolean; url?: string; error?: string } | null;
-    if (!res.ok || !json?.success || !json.url) throw new Error(json?.error || "Upload gagal.");
-    return json.url;
+    // Jalur cadangan: unggah lewat server. Dicoba 2x karena "Failed to fetch"
+    // biasanya koneksi terputus, bukan file yang bermasalah.
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("kind", kind);
+        fd.append("slug", slug);
+        const res = await fetch("/api/scanlator/upload-image", { method: "POST", headers: { Authorization: `Bearer ${t}` }, body: fd });
+        const json = (await res.json().catch(() => null)) as { success?: boolean; url?: string; error?: string } | null;
+        if (!res.ok || !json?.success || !json.url) throw new Error(json?.error || "Upload gagal.");
+        return json.url;
+      } catch (err) {
+        lastError = err;
+        if (attempt < 1) await new Promise((resolve) => setTimeout(resolve, 600));
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error("Upload gagal.");
   };
 
   const cleanupStorage = async () => {
