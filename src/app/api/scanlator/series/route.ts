@@ -4,6 +4,7 @@ import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { projectApiFetch } from "@/lib/projectApiServer";
+import { rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -75,6 +76,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId(request);
+    const limited = rateLimitResponse(`series-create:${userId}`, 10, 10 * 60 * 1000);
+    if (limited) return limited;
     const profile = await requireScanlator(userId);
     if (!profile) return NextResponse.json({ error: "Kamu belum Scanlator aktif. Ajukan dulu di /scanlator/daftar." }, { status: 403 });
     const blocked = blockedMessage(profile.status);

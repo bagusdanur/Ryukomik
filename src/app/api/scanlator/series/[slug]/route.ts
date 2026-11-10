@@ -5,6 +5,7 @@ import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { projectApiFetch } from "@/lib/projectApiServer";
 import { CHAPTER_BANNER_URL } from "@/lib/chapterBanner";
+import { rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -74,6 +75,8 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
 export async function PATCH(request: Request, context: { params: Promise<{ slug: string }> }) {
   try {
     const userId = await requireUserId(request);
+    const limited = rateLimitResponse(`series-edit:${userId}`, 30, 10 * 60 * 1000);
+    if (limited) return limited;
     const { slug } = await context.params;
     const owned = await ownedBy(userId, slug);
     if ("error" in owned) return NextResponse.json({ error: owned.error }, { status: owned.status });
@@ -117,6 +120,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
 export async function DELETE(request: Request, context: { params: Promise<{ slug: string }> }) {
   try {
     const userId = await requireUserId(request);
+    const limited = rateLimitResponse(`series-delete:${userId}`, 10, 10 * 60 * 1000);
+    if (limited) return limited;
     const { slug } = await context.params;
     const owned = await ownedBy(userId, slug);
     if ("error" in owned) return NextResponse.json({ error: owned.error }, { status: owned.status });

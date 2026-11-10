@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
+import { rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -127,6 +128,8 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const userId = await requireUserId(request);
+    const limited = rateLimitResponse(`profile-edit:${userId}`, 20, 10 * 60 * 1000);
+    if (limited) return limited;
     const current = await socialQuery<{ status: string }>("select status from scanlator_profiles where user_id = $1 limit 1", [userId]);
     const me = current.rows[0];
     if (!me) return NextResponse.json({ error: "Kamu belum Scanlator aktif." }, { status: 403 });

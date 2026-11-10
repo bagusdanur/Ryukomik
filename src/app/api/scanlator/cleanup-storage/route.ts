@@ -6,6 +6,7 @@ import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { projectApiFetch } from "@/lib/projectApiServer";
+import { rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +18,8 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId(request);
+    const limited = rateLimitResponse(`cleanup-storage:${userId}`, 3, 60 * 60 * 1000);
+    if (limited) return limited;
     const profile = await socialQuery<{ handle: string; storage_handle: string | null; status: string }>(
       "select handle, storage_handle, status from scanlator_profiles where user_id = $1 limit 1",
       [userId],
@@ -27,23 +30,31 @@ export async function POST(request: Request) {
     const storage = me.storage_handle || me.handle;
     const target = targetById(undefined);
 
-    // Semua URL gambar yang masih dipakai.
-    const list = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>("/admin/projects?limit=100&page=1").catch(() => ({ data: [] }));
-    const mine = (list.data || []).filter((m) => String((m as { owner_user_id?: string }).owner_user_id || "") === userId);
+    // Semua URL gambar yang masih dipakai. WAJIB lengkap: kalau daftar ini
+    // terpotong (dulu `limit=100` project + chapter 100 pertama), file chapter
+    // yang tidak terbaca dianggap yatim lalu DIHAPUS dari R2.
+    const list = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
+      `/admin/projects-by-owner/${encodeURIComponent(userId)}`,
+    ).catch(() => ({ data: [] }));
+    const mine = list.data || [];
 
     const used = new Set<string>();
     for (const m of mine) {
       const slug = String((m as { slug?: string }).slug || "");
       if (!slug) continue;
-      const chapters = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
-        `/admin/chapters?manga_slug=${encodeURIComponent(slug)}&limit=200&page=1`,
-      ).catch(() => ({ data: [] }));
-      for (const c of chapters.data || []) {
-        const rows = [
-          ...((c as { image_urls?: string[] }).image_urls || []),
-          ...((c as { pending_image_urls?: string[] }).pending_image_urls || []),
-        ];
-        for (const url of rows) if (typeof url === "string" && url) used.add(url);
+      for (let page = 1; page <= 20; page += 1) {
+        const chapters = await projectApiFetch<{ data?: Array<Record<string, unknown>>; total?: number }>(
+          `/admin/chapters?manga_slug=${encodeURIComponent(slug)}&limit=100&page=${page}`,
+        ).catch(() => null);
+        const batch = chapters?.data || [];
+        for (const c of batch) {
+          const rows = [
+            ...((c as { image_urls?: string[] }).image_urls || []),
+            ...((c as { pending_image_urls?: string[] }).pending_image_urls || []),
+          ];
+          for (const url of rows) if (typeof url === "string" && url) used.add(url);
+        }
+        if (batch.length < 100 || page * 100 >= Number(chapters?.total || 0)) break;
       }
     }
 

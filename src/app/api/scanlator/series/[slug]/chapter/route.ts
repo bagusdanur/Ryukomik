@@ -4,6 +4,7 @@ import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { projectApiFetch } from "@/lib/projectApiServer";
+import { rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,8 @@ export async function POST(
 ) {
   try {
     const userId = await requireUserId(request);
+    const limited = rateLimitResponse(`chapter-create:${userId}`, 40, 10 * 60 * 1000);
+    if (limited) return limited;
     const { slug } = await context.params;
 
     const profile = await socialQuery<{ handle: string; storage_handle: string | null; status: string }>(

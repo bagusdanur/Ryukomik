@@ -6,6 +6,7 @@ import { socialQuery } from "@/lib/social/db";
 import { projectApiFetch } from "@/lib/projectApiServer";
 import { deleteR2File } from "@/lib/r2Storage";
 import { logChapterRevision, revisionSnapshot } from "@/lib/scanlatorAudit";
+import { rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,6 +91,8 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
 export async function PATCH(request: Request, context: { params: Promise<{ slug: string; chapterId: string }> }) {
   try {
     const userId = await requireUserId(request);
+    const limited = rateLimitResponse(`chapter-edit:${userId}`, 60, 10 * 60 * 1000);
+    if (limited) return limited;
     const { slug, chapterId } = await context.params;
     const owned = await ownChapter(userId, slug, chapterId);
     if ("error" in owned) return NextResponse.json({ error: owned.error }, { status: owned.status });
@@ -184,6 +187,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
 export async function DELETE(request: Request, context: { params: Promise<{ slug: string; chapterId: string }> }) {
   try {
     const userId = await requireUserId(request);
+    const limited = rateLimitResponse(`chapter-delete:${userId}`, 30, 10 * 60 * 1000);
+    if (limited) return limited;
     const { slug, chapterId } = await context.params;
     const owned = await ownChapter(userId, slug, chapterId);
     if ("error" in owned) return NextResponse.json({ error: owned.error }, { status: owned.status });
@@ -225,12 +230,15 @@ export async function DELETE(request: Request, context: { params: Promise<{ slug
         usedElsewhere.add(url);
       }
     }
+    const ownPrefix = `scanlator/${owned.me.storage_handle || owned.me.handle}/`;
     const keys = [...new Set(ownUrls)]
       .filter((url) => !usedElsewhere.has(url))
       .map((url) => {
         try {
           const key = new URL(url).pathname.replace(/^\//, "");
-          return key.startsWith("scanlator/") ? key : null;
+          // Hanya folder tim ini: URL lama (data grandfaher) bisa menunjuk file
+          // milik tim lain, dan R2 tidak punya versioning.
+          return key.startsWith(ownPrefix) ? key : null;
         } catch {
           return null;
         }

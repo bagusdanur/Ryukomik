@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
+import { rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,6 +39,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId(request);
+    const limited = rateLimitResponse(`follow:${userId}`, 60, 10 * 60 * 1000);
+    if (limited) return limited;
     const body = (await request.json().catch(() => null)) as { handle?: unknown; follow?: unknown } | null;
     const handle = cleanHandle(body?.handle);
     const follow = body?.follow !== false;
