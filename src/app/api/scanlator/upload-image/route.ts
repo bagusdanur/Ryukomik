@@ -49,9 +49,9 @@ export async function POST(request: Request) {
   if (!file) return NextResponse.json({ error: "File gambar tidak ditemukan." }, { status: 400 });
   if (!file.type.startsWith("image/")) return NextResponse.json({ error: "File harus berupa gambar." }, { status: 400 });
   if (file.size > MAX_BYTES) return NextResponse.json({ error: "Maksimal 30 MB per gambar." }, { status: 400 });
+  console.log(`[scanlator/upload-image] file="${file.name}" type="${file.type}" size=${file.size} kind=${kind} slug=${slugRaw} watermark=${doWatermark} user=${userId}`);
 
-  const slug = slugRaw.replace(/[\\/]+/g, "-").replace(/\.\.+/g, ".").replace(/[^\w.\- ]+/g, "").trim().slice(0, 80) || me.handle;
-
+  const slug = slugRaw.replace(/[\\/]+/g, "-").replace(/\.+/g, ".").replace(/[^\w.\- ]+/g, "").trim().slice(0, 80) || me.handle;
   // Kuota 2 GB per Scanlator (dihitung dari prefix R2 miliknya).
   const storage = me.storage_handle || me.handle;
   const usage = await getScanlatorUsage(storage);
@@ -72,7 +72,11 @@ export async function POST(request: Request) {
   let buffer: Buffer;
   try {
     const input = Buffer.from(await file.arrayBuffer());
-    let pipeline = sharp(input).rotate();
+    // flatten: gambar hasil kanvas browser selalu RGBA; mengenkode WebP
+    // ber-alpha dengan effort 6 bisa 30x lebih lambat (75s vs 2.4s untuk
+    // 4 MB) dan memicu timeout. Halaman scanlation opakat, jadi latar putih
+    // aman dan hampir selalu tidak terlihat.
+    let pipeline = sharp(input).rotate().flatten({ background: "#ffffff" });
     if (doWatermark) {
       const meta = await pipeline.metadata();
       const w = Math.max(1, Math.floor((meta.width || 800) * 0.06));
@@ -81,8 +85,28 @@ export async function POST(request: Request) {
     }
     // Kualitas 95 + effort 6, sama seperti converter RyukomikBot (dimensi tetap).
     buffer = await pipeline.webp({ quality: 95, effort: 6 }).toBuffer();
-  } catch {
-    return NextResponse.json({ error: "Gambar tidak valid atau tidak bisa diproses." }, { status: 400 });
+  } catch (err) {
+    console.error("[scanlator/upload-image] sharp gagal:", err instanceof Error ? err.message : err, err instanceof Error ? err.stack : "", `file="${file.name}" type="${file.type}" size=${file.size} watermark=${doWatermark}`);
+    // Cadangan: kalau sharp tidak bisa memproses gambar ini (format langka /
+    // korup), unggah file aslinya supaya Scanlator tidak mentok. WebP/watermark
+    // dilewati — lebih baik gambar ada daripada gagal upload.
+    try {
+      const raw = Buffer.from(await file.arrayBuffer());
+      const ext = ((file.name.split(".").pop() || "img").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "img");
+      const key = `scanlator/${storage}/${slug}/${kind}/${randomUUID()}.${ext}`;
+      await target.client.send(new PutObjectCommand({
+        Bucket: target.bucket,
+        Key: key,
+        Body: raw,
+        ContentType: file.type || "application/octet-stream",
+        CacheControl: "public, max-age=31536000, immutable",
+      }));
+      console.warn(`[scanlator/upload-image] fallback asli terpakai: ${key}`);
+      return NextResponse.json({ success: true, url: `${target.publicBase}/${key}` });
+    } catch (err2) {
+      console.error("[scanlator/upload-image] fallback asli gagal:", err2 instanceof Error ? err2.message : err2);
+      return NextResponse.json({ error: "Gambar tidak valid atau tidak bisa diproses." }, { status: 400 });
+    }
   }
 
   const key = `scanlator/${storage}/${slug}/${kind}/${randomUUID()}.webp`;
