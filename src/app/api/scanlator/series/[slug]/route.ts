@@ -95,12 +95,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
 
     if (Object.keys(patch).length === 0) return NextResponse.json({ error: "Tidak ada perubahan." }, { status: 400 });
 
-    // Konten yang sudah terbit tetap tayang, tapi masuk antrean review lagi.
-    patch.review_status = "pending";
-
+    // Edit metadata project (cover, judul, author, dll.) TIDAK masuk antrean
+    // review lagi — review hanya untuk perubahan chapter. Memaksa pending di
+    // sini membuat project hilang dari antrean/beranda dan bikin bug.
     const id = owned.manga.id as string;
     await projectApiFetch(`/admin/projects/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
-    return NextResponse.json({ success: true, status: "pending" });
+    return NextResponse.json({ success: true, status: "saved" });
   } catch (error) {
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;

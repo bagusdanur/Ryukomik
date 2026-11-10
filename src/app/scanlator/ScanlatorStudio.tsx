@@ -467,7 +467,7 @@ export default function ScanlatorStudio() {
       });
       const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
       if (!res.ok || !json?.success) { setError(json?.error || "Gagal menyimpan."); return; }
-      setNotice("Perubahan tersimpan — project masuk review admin lagi.");
+      setNotice("Perubahan tersimpan.");
       await load();
     } finally { setSavingEdit(false); }
   };
