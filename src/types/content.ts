@@ -45,6 +45,8 @@ export interface ReaderChapter {
   mangaId?: string;
   currentChapter?: string;
   images: string[];
+  /** Daftar chapter seri (untuk modal "Daftar Chapter" di akhir reader). */
+  chapters?: Array<{ slug: string; title: string }>;
   /** Cover series (untuk riwayat baca) — diambil dari endpoint detail. */
   thumbnail?: string;
   prev?: string;

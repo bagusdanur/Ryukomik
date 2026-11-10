@@ -77,6 +77,39 @@ const getProjectTitle = cache(async (slug: string): Promise<string | null> => {
   }
 });
 
+type ChapterListItem = { slug: string; title: string };
+
+/**
+ * Daftar chapter seri untuk modal "Daftar Chapter" di akhir reader.
+ * Project: API internal. Sumber lain: endpoint detail backend (cached 5 menit).
+ */
+const getChapterList = cache(async (source: string, mangaSlug: string): Promise<ChapterListItem[]> => {
+  try {
+    if (source === "project") {
+      const json = await projectApiFetch<{ data?: { chapters?: Array<{ chapter_number: number; title?: string }> } }>(
+        `/projects/${encodeURIComponent(mangaSlug)}`,
+        { next: { revalidate: 300 } } as RequestInit,
+      );
+      return (json.data?.chapters || []).map((c) => ({
+        slug: `${mangaSlug}/chapter-${c.chapter_number}`,
+        title: c.title || `Chapter ${c.chapter_number}`,
+      }));
+    }
+    const res = await fetch(
+      `https://api.ryukomik.web.id/${source}/detail/${encodeURIComponent(mangaSlug)}`,
+      { next: { revalidate: 300 }, headers: { Accept: "application/json" } },
+    );
+    if (!res.ok) return [];
+    const json = await res.json() as { data?: { chapters?: Array<{ slug?: string; title?: string }> } };
+    const chapters = Array.isArray(json.data?.chapters) ? json.data!.chapters : [];
+    return chapters
+      .map((c) => ({ slug: String(c.slug || ""), title: String(c.title || "") }))
+      .filter((c) => c.slug && c.title);
+  } catch {
+    return [];
+  }
+});
+
 const prettySlug = (slug: string) =>
   slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -106,6 +139,7 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
         title: seriesTitle,
         mangaId: mangaSlug,
         currentChapter: `Chapter ${data.chapter_number}`,
+        chapters: await getChapterList("project", mangaSlug),
         prev: data.prev, next: data.next,
         locked: !access.allowed, lockUntil: access.lockUntil,
         accessRequirement: access.locked ? 'premium' : null,
@@ -187,6 +221,7 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
       ...json,
       title: String(json.title || ""),
       mangaId,
+      chapters: await getChapterList(source, mangaId || apiSlug),
       thumbnail,
       currentChapter: String(json.currentChapter || json.title || ""),
       images: Array.isArray(json.images) ? json.images : [],

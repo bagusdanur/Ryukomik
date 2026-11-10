@@ -236,7 +236,8 @@ export default function ChapterClient({ data, error, source, slugStr, imageAcces
       {showUI && (
         <>
           <ReaderBottomNav
-            data={data}
+            data={{ ...data, chapters: data.chapters }}
+            currentSlug={slugStr}
             source={source}
             router={router}
             onSettings={() => setShowSetting(true)}

@@ -53,8 +53,11 @@ export default function ProjectChapterGate({ initialData, source, slugStr }: Pro
       if (!response.ok || !payload.success) throw new Error(payload.error || 'Chapter gagal dibuka.');
       if (!abort.signal.aborted) {
         const justUnlocked = lockedRef.current && !payload.locked;
-        setData(payload); setToken(accessToken); setError('');
-        if (justUnlocked && user?.id) void refreshProfile(user.id);
+        // Respons reader API tidak membawa `chapters` — pertahankan daftar
+        // chapter dari data awal supaya modal "Daftar Chapter" tidak kosong.
+        setData((current) => ({ ...payload, chapters: payload.chapters ?? current.chapters }));
+        setToken(accessToken); setError('');
+        if (justUnlocked && user?.id) void refreshProfile(user?.id);
       }
     } catch (cause) {
       if (!abort.signal.aborted) { setError(cause instanceof Error ? cause.message : 'Chapter gagal dibuka.'); setData(current => ({ ...current, locked: true, images: [] })); }
