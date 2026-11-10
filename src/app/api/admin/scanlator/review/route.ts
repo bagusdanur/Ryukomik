@@ -118,12 +118,24 @@ export async function POST(request: Request) {
         // menjalankan keduanya dalam satu transaksi agar seri tidak pernah tayang kosong.
         // Banner Scanlator ditempel di halaman terakhir saat terbit.
         const chapterDetail = await projectApiFetch<{ data?: { image_urls?: string[] } }>(`/admin/chapters/${body.chapter_id}`).catch(() => null);
+        const sourceImages = Array.isArray(chapterDetail?.data?.image_urls)
+          ? chapterDetail.data.image_urls.filter((url): url is string => typeof url === "string" && /^https?:\/\//i.test(url))
+          : [];
+        // Jangan pernah menimpa halaman chapter dengan banner saja. Kalau detail
+        // chapter gagal dimuat, `withChapterBanner(undefined)` menghasilkan array
+        // berisi 1 banner → semua halaman asli hilang.
+        if (action === "approve_chapter" && sourceImages.length === 0) {
+          return NextResponse.json(
+            { error: "Gagal memuat halaman chapter. Coba lagi sebelum menerbitkan." },
+            { status: 409 },
+          );
+        }
         await projectApiFetch(`/admin/chapters/${body.chapter_id}`, {
           method: "PATCH",
           body: JSON.stringify({
             is_published: action === "approve_chapter",
             publish_parent_if_first: action === "approve_chapter",
-            ...(action === "approve_chapter" ? { image_urls: withChapterBanner(chapterDetail?.data?.image_urls) } : {}),
+            ...(action === "approve_chapter" ? { image_urls: withChapterBanner(sourceImages) } : {}),
           }),
         });
         await logChapterRevision({
@@ -276,9 +288,17 @@ export async function POST(request: Request) {
     if (action === "approve" || action === "approve_series") {
       // ACC seri hanya menyetujui identitas/project. Seri tetap tersembunyi sampai
       // chapter pertamanya disetujui, agar pembaca tidak melihat seri kosong.
+      // TAPI seri yang sudah punya chapter terbit tidak boleh diturunkan ke draft:
+      // itu membuat semua chapter hilang dari pembaca.
+      const seriesChapters = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
+        `/admin/chapters?manga_slug=${encodeURIComponent(String(manga.data.slug || ""))}&limit=200&page=1`,
+      ).catch(() => ({ data: [] }));
+      const hasPublishedChapter = (seriesChapters.data || []).some((c) =>
+        Boolean((c as { is_published?: boolean }).is_published),
+      );
       await projectApiFetch(`/admin/projects/${body.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ review_status: "approved", is_published: false, review_note: null }),
+        body: JSON.stringify({ review_status: "approved", is_published: hasPublishedChapter, review_note: null }),
       });
       if (owner) {
         await notifyScanlator(owner, {

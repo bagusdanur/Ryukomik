@@ -94,28 +94,33 @@ export async function PATCH(request: Request) {
       revalidateProjectContent(result.data.slug);
       return NextResponse.json(result);
     }
-    const { id, slug, title, cover_url, description, author, status, type, genres, is_published, is_spotlight } = body;
+    const { id, slug, title, cover_url, description, author, status, type, genres, is_published, is_spotlight, is_adult } = body;
+
+    // Whitelist ketat. Form dashboard mengirim balik objek utuh (hasil
+    // `setMangaForm(manga)`), jadi `review_status`/`review_note` dari list yang
+    // mungkin basi ikut terkirim dan bisa menurunkan project kembali ke antrean
+    // review atau ke draft. Field itu hanya boleh diubah lewat jalur review.
+    const payload = Object.fromEntries(
+      Object.entries({ slug, title, cover_url, description, author, status, type, genres, is_published, is_spotlight, is_adult })
+        .filter(([, value]) => value !== undefined),
+    );
 
     if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
+    if (Object.keys(payload).length === 0) {
+      return NextResponse.json({ error: "Tidak ada perubahan untuk disimpan" }, { status: 400 });
+    }
     if (!projectApiUrl(`/admin/projects/${id}`)) throw new Error("PROJECT_API_URL is not configured");
     if (projectApiUrl(`/admin/projects/${id}`)) {
       const existing = await projectApiFetch<{data:any}>(`/admin/projects/${id}`);
-      const result = await projectApiFetch<{data:any}>(`/admin/projects/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const result = await projectApiFetch<{data:any}>(`/admin/projects/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!existing.data.is_published && result.data.is_published) await enqueueProjectDiscordEvent("project_published", result.data);
       else if (existing.data.is_published && result.data.is_published && status !== existing.data.status && ["dropped","cancelled"].includes(status || "")) await enqueueProjectDiscordEvent("project_status_changed", result.data, { previous_status: existing.data.status || "", status });
       revalidateProjectContent(existing.data.slug); revalidateProjectContent(result.data.slug); return NextResponse.json(result);
     }
 
-    const update = Object.fromEntries(
-      Object.entries({ slug, title, cover_url, description, author, status, type, genres, is_published, is_spotlight })
-        .filter(([, value]) => value !== undefined),
-    );
-
-    if (Object.keys(update).length === 0) {
-      return NextResponse.json({ error: "Tidak ada perubahan untuk disimpan" }, { status: 400 });
-    }
+    const update = payload;
 
     const { data: existingManga, error: existingMangaError } = await supabaseAdmin
       .from("project_manga")

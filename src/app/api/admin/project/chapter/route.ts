@@ -128,15 +128,34 @@ export async function PATCH(request: Request) {
     if (!projectApiUrl(`/admin/chapters/${id}`)) throw new Error("PROJECT_API_URL is not configured");
     if (projectApiUrl(`/admin/chapters/${id}`)) {
       const existing = await projectApiFetch<{data:any}>(`/admin/chapters/${id}`);
+      // Whitelist ketat: form dashboard mengirim objek chapter utuh dari state,
+      // jadi `review_status` / `pending_image_urls` tidak boleh ikut tersimpan.
+      const payload: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries({ manga_slug, chapter_number, title, image_urls, is_published })) {
+        if (value !== undefined) payload[key] = value;
+      }
       // Tempel banner Scanlator di halaman terakhir begitu chapter dipublikasikan
       // (bukan overlay web) supaya ikut saat chapter di-mirror ke web lain.
-      const payload = { ...body };
-      if (body?.is_published === true && !existing.data?.is_published) {
-        payload.image_urls = withChapterBanner(existing.data?.image_urls);
+      if (is_published === true && !existing.data?.is_published) {
+        const provided = Array.isArray(image_urls)
+          ? (image_urls as unknown[]).filter((url): url is string => typeof url === "string")
+          : [];
+        const source = provided.length
+          ? provided
+          : Array.isArray(existing.data?.image_urls)
+            ? (existing.data.image_urls as string[])
+            : [];
+        // Tanpa guard ini, `withChapterBanner(undefined)` menghasilkan 1 banner
+        // saja dan seluruh halaman chapter hilang.
+        if (source.length === 0) {
+          return NextResponse.json({ error: "Chapter tanpa gambar tidak dapat dipublikasikan." }, { status: 409 });
+        }
+        payload.image_urls = withChapterBanner(source);
       }
       const result = await projectApiFetch<{data:any}>(`/admin/chapters/${id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
-      const oldUrls:string[]=existing.data.image_urls||[], newUrls:string[]=result.data.image_urls||[];
-      await Promise.all(oldUrls.filter((url)=>!newUrls.includes(url)).map(async(url)=>{try{const key=new URL(url).pathname.substring(1);if(key.startsWith("chapters/"))await deleteR2File(key);}catch{}}));
+      // File R2 TIDAK dihapus berdasarkan diff di sini: `image_urls` bisa berasal
+      // dari state basi, sehingga gambar yang sedang tayang ikut terhapus.
+      // Pembersihan file orphan ditangani cleanup-storage.
       if(!existing.data.is_published&&result.data.is_published){const manga=await projectApiFetch<{data:any}>(`/projects/${encodeURIComponent(result.data.manga_slug)}`).catch(()=>null);if(manga?.data&&!['dropped','cancelled'].includes(manga.data.status||''))await enqueueProjectDiscordEvent('chapter_published',manga.data,{chapter_number:result.data.chapter_number,chapter_title:result.data.title||''});}
       revalidateProjectContent(result.data.manga_slug);revalidateProjectChapter(existing.data.manga_slug,existing.data.chapter_number);revalidateProjectChapter(result.data.manga_slug,result.data.chapter_number);return NextResponse.json(result);
     }

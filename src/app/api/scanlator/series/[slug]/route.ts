@@ -66,7 +66,7 @@ export async function GET(_request: Request, context: { params: Promise<{ slug: 
   }
 }
 
-/** Edit project milik sendiri. Setelah diedit → masuk review ulang (pending). */
+/** Edit project milik sendiri. Metadata (cover/judul/author) TIDAK memicu review ulang. */
 export async function PATCH(request: Request, context: { params: Promise<{ slug: string }> }) {
   try {
     const userId = await requireUserId(request);

@@ -845,13 +845,31 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     try {
       const token = await getAdminToken();
       const method = mangaForm.id ? "PATCH" : "POST";
+      // Kirim hanya field yang diedit. Kalau objek form dikirim utuh, nilai
+      // is_published / review_status hasil list yang basi bisa menimpa status
+      // asli project (project balik ke draft atau masuk antrean review lagi).
+      const payload = mangaForm.id
+        ? {
+            id: mangaForm.id,
+            slug: mangaForm.slug,
+            title: mangaForm.title,
+            cover_url: mangaForm.cover_url,
+            description: mangaForm.description,
+            author: mangaForm.author,
+            status: mangaForm.status,
+            type: mangaForm.type,
+            genres: mangaForm.genres,
+            is_spotlight: mangaForm.is_spotlight,
+            is_adult: mangaForm.is_adult,
+          }
+        : mangaForm;
       const res = await fetch("/api/admin/project/manga", {
         method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(mangaForm),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Gagal menyimpan manga");
       if (!mangaForm.id) localStorage.removeItem("ryukomik:project:manga-draft");
