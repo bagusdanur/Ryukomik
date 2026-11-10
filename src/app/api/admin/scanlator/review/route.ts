@@ -5,7 +5,7 @@ import { projectApiFetch } from "@/lib/projectApiServer";
 import { notifyScanlator } from "@/lib/scanlatorNotify";
 import { socialQuery } from "@/lib/social/db";
 import { logChapterRevision } from "@/lib/scanlatorAudit";
-import { withChapterBanner } from "@/lib/chapterBanner";
+import { CHAPTER_BANNER_URL, withChapterBanner } from "@/lib/chapterBanner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +18,7 @@ type PendingChapter = {
   is_published: boolean;
   review_status: string;
   pending_pages: number;
+  review_note?: string | null;
 };
 
 /**
@@ -30,51 +31,49 @@ export async function GET(request: Request) {
     const admin = await verifyAdminRequest(request);
     if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
-    const data = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>("/admin/projects?limit=100&page=1");
-    // Sertakan seri yang masih pending ATAU punya chapter yang belum terbit —
-    // supaya chapter baru pada seri yang sudah di-ACC tetap masuk antrean.
-    const candidates = (data.data || []).filter((m) => Boolean((m as { owner_user_id?: string }).owner_user_id));
-
-    const works = await Promise.all(
-      candidates.map(async (raw) => {
-        const m = raw as Record<string, unknown>;
-        const slug = String(m.slug || "");
-        const chapterRes = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
-          `/admin/chapters?manga_slug=${encodeURIComponent(slug)}&limit=200&page=1`,
-        ).catch(() => ({ data: [] }));
-
-        const chapters: PendingChapter[] = (chapterRes.data || [])
-          .map((c) => ({
-            id: String((c as { id?: string }).id || ""),
-            chapter_number: Number((c as { chapter_number?: number }).chapter_number || 0),
-            title: ((c as { title?: string | null }).title ?? null) as string | null,
-            pages: Array.isArray((c as { image_urls?: unknown[] }).image_urls) ? ((c as { image_urls: unknown[] }).image_urls.length) : 0,
-            is_published: Boolean((c as { is_published?: boolean }).is_published),
-            review_status: String((c as { review_status?: string }).review_status || "approved"),
-            pending_pages: Array.isArray((c as { pending_image_urls?: unknown[] }).pending_image_urls)
-              ? ((c as { pending_image_urls: unknown[] }).pending_image_urls.length)
-              : 0,
-          }))
-          .sort((a, b) => a.chapter_number - b.chapter_number);
-
-        const pendingChapters = chapters.filter((c) => !c.is_published);
-
-        return {
-          id: String(m.id || ""),
-          slug,
-          title: String(m.title || ""),
-          cover_url: (m.cover_url as string | null) || null,
-          type: (m.type as string | null) || null,
-          is_adult: Boolean(m.is_adult),
-          scanlator_handle: (m.scanlator_handle as string | null) || null,
-          scanlator_team: (m.scanlator_team as string | null) || null,
-          chapters,
-          pendingChapters,
-          revisions: chapters.filter((c) => c.is_published && c.review_status === "pending"),
-          review_status: (m.review_status as string | null) || null,
-        };
-      }),
+    // Satu request ke project-db (bukan N+1 per project) dan tanpa batas 100
+    // project: dulu seri di halaman berikutnya tidak pernah muncul di antrean,
+    // dan satu fetch chapter yang gagal membuat seri tampak "tanpa chapter".
+    // Hitungan `pages`/`pending_pages` sudah mengecualikan banner Scanlator.
+    const data = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
+      `/admin/review-queue?banner=${encodeURIComponent(CHAPTER_BANNER_URL)}`,
     );
+
+    const works = (data.data || []).map((raw) => {
+      const m = raw as Record<string, unknown>;
+      const chapterRows = Array.isArray(m.chapters) ? (m.chapters as Array<Record<string, unknown>>) : [];
+
+      const chapters: PendingChapter[] = chapterRows
+        .map((c) => ({
+          id: String(c.id || ""),
+          chapter_number: Number(c.chapter_number || 0),
+          title: ((c.title ?? null) as string | null),
+          pages: Number(c.pages || 0),
+          is_published: Boolean(c.is_published),
+          review_status: String(c.review_status || "approved"),
+          pending_pages: Number(c.pending_pages || 0),
+          review_note: ((c.review_note ?? null) as string | null),
+        }))
+        .sort((a, b) => a.chapter_number - b.chapter_number);
+
+      const pendingChapters = chapters.filter((c) => !c.is_published);
+
+      return {
+        id: String(m.id || ""),
+        slug: String(m.slug || ""),
+        title: String(m.title || ""),
+        cover_url: (m.cover_url as string | null) || null,
+        type: (m.type as string | null) || null,
+        is_adult: Boolean(m.is_adult),
+        scanlator_handle: (m.scanlator_handle as string | null) || null,
+        scanlator_team: (m.scanlator_team as string | null) || null,
+        chapters,
+        pendingChapters,
+        revisions: chapters.filter((c) => c.is_published && c.review_status === "pending"),
+        review_status: (m.review_status as string | null) || null,
+        review_note: (m.review_note as string | null) || null,
+      };
+    });
 
     const filtered = works.filter(
       (w) =>
@@ -135,6 +134,10 @@ export async function POST(request: Request) {
           body: JSON.stringify({
             is_published: action === "approve_chapter",
             publish_parent_if_first: action === "approve_chapter",
+            // Simpan hasil keputusan di baris chapter: alasan tolak dulu hanya
+            // ikut notifikasi sehingga tidak terlihat lagi setelah dibaca.
+            review_status: action === "approve_chapter" ? "approved" : "rejected",
+            review_note: action === "approve_chapter" ? null : note,
             ...(action === "approve_chapter" ? { image_urls: withChapterBanner(sourceImages) } : {}),
           }),
         });
