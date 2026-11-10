@@ -11,8 +11,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 async function ownChapter(userId: string, slug: string, chapterId: string) {
-  const profile = await socialQuery<{ status: string }>(
-    "select status from scanlator_profiles where user_id = $1 limit 1",
+  const profile = await socialQuery<{ status: string; handle: string; storage_handle: string | null }>(
+    "select status, handle, storage_handle from scanlator_profiles where user_id = $1 limit 1",
     [userId],
   );
   const me = profile.rows[0];
@@ -35,7 +35,12 @@ async function ownChapter(userId: string, slug: string, chapterId: string) {
   if (!chapter || String(chapter.manga_slug || "") !== slug) {
     return { error: "Chapter tidak ditemukan.", status: 404 as const };
   }
-  return { chapter, manga: manga.data };
+  return { chapter, manga: manga.data, me };
+}
+
+/** Ambil daftar URL gambar dari kolom jsonb apa pun. */
+function urlList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((u): u is string => typeof u === "string") : [];
 }
 
 /** Semua chapter satu seri (dipakai cek hapus: file bersama & chapter terbit lain). */
@@ -108,6 +113,31 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
       if (urls.length === 0) return NextResponse.json({ error: "Chapter minimal punya 1 gambar." }, { status: 400 });
       if (urls.length > 100) return NextResponse.json({ error: "Maksimal 100 gambar per chapter." }, { status: 400 });
 
+      // Gambar wajib dari folder tim sendiri, KECUALI URL yang sudah ada di
+      // chapter ini (data lama dipertahankan). Tanpa guard ini, chapter bisa
+      // diisi hotlink dari situs lain: kuota 2 GB tidak terpakai dan isi chapter
+      // bisa berubah setelah ACC admin.
+      const storage = owned.me.storage_handle || owned.me.handle;
+      const allowedPrefix = `/scanlator/${storage}/`;
+      const current = new Set<string>([...urlList(before.image_urls), ...urlList(before.pending_image_urls)]);
+      const isAllowed = (url: string) => {
+        if (current.has(url)) return true;
+        try {
+          return new URL(url).pathname.startsWith(allowedPrefix);
+        } catch {
+          return false;
+        }
+      };
+      const foreign = urls.filter((url) => !isAllowed(url));
+      if (foreign.length > 0) {
+        return NextResponse.json(
+          {
+            error: `${foreign.length} gambar berasal dari luar folder tim. Unggah ulang gambar itu lewat Studio.`,
+          },
+          { status: 400 },
+        );
+      }
+
       if (published) {
         // Chapter sudah tayang: simpan sebagai revisi, pembaca tetap lihat versi lama.
         patch.pending_image_urls = urls;
@@ -173,9 +203,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ slug
       );
     }
 
-    const urlsOf = (value: unknown) =>
-      Array.isArray(value) ? value.filter((u): u is string => typeof u === "string") : [];
-    const ownUrls = [...urlsOf(chapter.image_urls), ...urlsOf(chapter.pending_image_urls)];
+    const ownUrls = [...urlList(chapter.image_urls), ...urlList(chapter.pending_image_urls)];
 
     const others = (await allChapters(slug)).filter((c) => c.id !== chapterId);
 
@@ -193,7 +221,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ slug
     // dan hanya di prefix scanlator (banner promosi tidak ikut).
     const usedElsewhere = new Set<string>();
     for (const other of others) {
-      for (const url of [...urlsOf(other.image_urls), ...urlsOf(other.pending_image_urls)]) {
+      for (const url of [...urlList(other.image_urls), ...urlList(other.pending_image_urls)]) {
         usedElsewhere.add(url);
       }
     }

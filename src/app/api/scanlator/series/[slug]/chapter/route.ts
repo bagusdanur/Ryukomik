@@ -22,8 +22,8 @@ export async function POST(
     const userId = await requireUserId(request);
     const { slug } = await context.params;
 
-    const profile = await socialQuery<{ handle: string; status: string }>(
-      "select handle, status from scanlator_profiles where user_id = $1 limit 1",
+    const profile = await socialQuery<{ handle: string; storage_handle: string | null; status: string }>(
+      "select handle, storage_handle, status from scanlator_profiles where user_id = $1 limit 1",
       [userId],
     );
     if (!profile.rows[0] || profile.rows[0].status === "revoked") {
@@ -45,15 +45,35 @@ export async function POST(
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     const chapterNumber = Number(body?.chapter_number);
     const title = typeof body?.title === "string" ? body.title.trim().slice(0, 200) : "";
-    const imageUrls = Array.isArray(body?.image_urls)
-      ? body.image_urls.filter((u): u is string => typeof u === "string" && u.startsWith("https://")).slice(0, MAX_IMAGES)
+    const rawUrls = Array.isArray(body?.image_urls)
+      ? body.image_urls.filter((u): u is string => typeof u === "string" && u.startsWith("https://"))
       : [];
+    const imageUrls = rawUrls.slice(0, MAX_IMAGES);
 
     if (!Number.isFinite(chapterNumber) || chapterNumber <= 0) {
       return NextResponse.json({ error: "Nomor chapter tidak valid." }, { status: 400 });
     }
     if (imageUrls.length < 1) {
       return NextResponse.json({ error: "Unggah minimal 1 gambar chapter dulu." }, { status: 400 });
+    }
+
+    // Gambar wajib dari folder tim sendiri (scanlator/<storage_handle>/).
+    // Tanpa guard ini chapter bisa diisi hotlink: kuota tidak terpakai dan isi
+    // chapter bisa diganti setelah ACC admin.
+    const storage = profile.rows[0].storage_handle || profile.rows[0].handle;
+    const allowedPrefix = `/scanlator/${storage}/`;
+    const foreign = imageUrls.filter((url) => {
+      try {
+        return !new URL(url).pathname.startsWith(allowedPrefix);
+      } catch {
+        return true;
+      }
+    });
+    if (foreign.length > 0) {
+      return NextResponse.json(
+        { error: `${foreign.length} gambar bukan dari upload Studio tim ini. Unggah ulang gambarnya.` },
+        { status: 400 },
+      );
     }
 
     const created = await projectApiFetch<{ data?: Record<string, unknown> }>("/admin/chapters", {
