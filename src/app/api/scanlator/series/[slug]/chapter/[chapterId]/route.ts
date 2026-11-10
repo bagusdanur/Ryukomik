@@ -87,7 +87,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ slug:
     if (Array.isArray(body?.image_urls)) {
       const urls = body.image_urls.filter((u): u is string => typeof u === "string" && /^https?:\/\//i.test(u));
       if (urls.length === 0) return NextResponse.json({ error: "Chapter minimal punya 1 gambar." }, { status: 400 });
-      if (urls.length > 60) return NextResponse.json({ error: "Maksimal 60 gambar per chapter." }, { status: 400 });
+      if (urls.length > 100) return NextResponse.json({ error: "Maksimal 100 gambar per chapter." }, { status: 400 });
 
       if (published) {
         // Chapter sudah tayang: simpan sebagai revisi, pembaca tetap lihat versi lama.

@@ -898,7 +898,7 @@ export default function ScanlatorStudio() {
                     <div>
                       <div className="mb-1.5 flex items-center justify-between">
                         <p className="text-[11px] font-semibold text-white/55">Gambar chapter</p>
-                        <span className="text-[10px] text-white/30">{chapterImages.length}/60</span>
+                        <span className="text-[10px] text-white/30">{chapterImages.length}/100</span>
                       </div>
                       <label
                         onDragOver={(e) => e.preventDefault()}

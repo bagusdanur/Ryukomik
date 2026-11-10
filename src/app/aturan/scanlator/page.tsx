@@ -44,7 +44,7 @@ const SECTIONS: Array<{ title: string; items: React.ReactNode[] }> = [
       <>Tanpa watermark situs lain, iklan, atau banner pihak ketiga.</>,
       <>Judul chapter sopan, tanpa kata kasar atau spam.</>,
       <>Chapter terbit tidak bisa diganti isinya.</>,
-      <>Batas teknis: maks 30 MB per gambar, maks 60 gambar per chapter, kuota storage 2 GB per user.</>,
+      <>Batas teknis: maks 30 MB per gambar, maks 100 gambar per chapter, kuota storage 2 GB per user.</>,
     ],
   },
   {

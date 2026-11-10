@@ -8,7 +8,7 @@ import { projectApiFetch } from "@/lib/projectApiServer";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_IMAGES = 60;
+const MAX_IMAGES = 100;
 
 /**
  * Upload chapter karya Scanlator. Chapter dibuat is_published=false;
