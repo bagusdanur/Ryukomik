@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
-import { scheduleBookmarkSync } from "@/utils/bookmarkSync";
+import { scheduleBookmarkSync, pullAndMergeBookmarks, removeBookmarkLocal, clearBookmarksLocal } from "@/utils/bookmarkSync";
 
 type BookmarkItem = {
   slug: string;
@@ -33,30 +33,25 @@ export default function BookmarkPage() {
     if (user) scheduleBookmarkSync(user.id);
   };
 
-  // Load bookmarks safely
+  // Load bookmarks safely + tarik dari server saat login (device baru /
+  // localStorage kosong) supaya tidak kosong dan tidak menimpa server.
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = readBookmarks();
-      if (saved.length > 0) {
-        const id = requestAnimationFrame(() => setBookmarks(saved));
-        return () => cancelAnimationFrame(id);
-      }
-    }
-  }, []);
+    const saved = readBookmarks();
+    setBookmarks(saved);
+    if (user) void pullAndMergeBookmarks(user.id).then((ok) => {
+      if (ok) setBookmarks(readBookmarks());
+    });
+  }, [user?.id]);
 
   const handleRemove = (slug: string, source?: string) => {
-    const expectedSource = source || "komiku";
-    const updated = bookmarks.filter((b) => !(b.slug === slug && (b.source || "komiku") === expectedSource));
+    const updated = removeBookmarkLocal(slug, source);
     setBookmarks(updated);
-    localStorage.setItem("bookmarks", JSON.stringify(updated));
-    window.dispatchEvent(new Event("bookmark-updated"));
     syncToServer();
   };
 
   const handleClear = () => {
+    clearBookmarksLocal();
     setBookmarks([]);
-    localStorage.removeItem("bookmarks");
-    window.dispatchEvent(new Event("bookmark-updated"));
     syncToServer();
   };
 

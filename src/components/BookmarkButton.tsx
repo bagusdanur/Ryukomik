@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { FaBell, FaBookmark, FaRegBookmark, FaTimes } from "react-icons/fa";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { getExistingSubscription, subscribePush } from "@/utils/pushSubscription";
-import { scheduleBookmarkSync, syncBookmarks } from "@/utils/bookmarkSync";
+import { scheduleBookmarkSync, syncBookmarks, pullAndMergeBookmarks, removeBookmarkLocal } from "@/utils/bookmarkSync";
 import { getProfile, isActivePremiumProfile, loadCachedProfile } from "@/utils/profileCache";
 import { bookmarkLimitForPremium } from "@/lib/bookmarkLimits";
 import LoginModal from "@/components/LoginModal";
@@ -77,14 +77,16 @@ export default function BookmarkButton({
   };
 
   const toggleBookmark = async () => {
+    // Pull dulu supaya item dari device lain ada di lokal — kalau tidak,
+    // sync full-replace akan menimpa server dengan daftar yang tidak lengkap.
+    if (user) await pullAndMergeBookmarks(user.id).catch(() => {});
     let list = readBookmarks();
 
     if (saved) {
       const expectedSource = source || "komiku";
-      list = list.filter((item) => !(item.slug === slug && (item.source || "komiku") === expectedSource));
-      localStorage.setItem("bookmarks", JSON.stringify(list));
+      // Tomstone supaya item yang dihapus tidak "balik" dari server saat pull.
+      removeBookmarkLocal(slug, expectedSource);
       setSaved(false);
-      window.dispatchEvent(new Event("bookmark-updated"));
       syncToServer();
       return;
     }

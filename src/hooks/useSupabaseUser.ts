@@ -5,12 +5,14 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 import { clearLocalSessionCache, getSession } from "@/lib/auth/getSession";
 import { pullAndMergeHistory } from "@/utils/historySync";
+import { pullAndMergeBookmarks } from "@/utils/bookmarkSync";
 import { setCurrentUserId } from "@/utils/currentUserId";
 
 type Listener = (user: User | null) => void;
 
 let currentUser: User | null = null;
 const pulledHistoryFor = new Set<string>();
+const pulledBookmarksFor = new Set<string>();
 let initialized = false;
 let initPromise: Promise<User | null> | null = null;
 const listeners = new Set<Listener>();
@@ -29,10 +31,16 @@ export function initSupabaseUser() {
     .then(({ data }) => {
       const user = (data?.session?.user as User | undefined) || null;
       emit(user);
-      // Setelah login: tarik riwayat server + merge ke perangkat ini (sekali per user).
+      // Setelah login: tarik riwayat + bookmark server lalu merge ke perangkat ini
+      // (sekali per user). Tanpa ini, device baru/localStorage kosong akan
+      // menimpa data server saat sync (bookmark sempat "hilang semua").
       if (user && !pulledHistoryFor.has(user.id)) {
         pulledHistoryFor.add(user.id);
         void pullAndMergeHistory();
+      }
+      if (user && !pulledBookmarksFor.has(user.id)) {
+        pulledBookmarksFor.add(user.id);
+        void pullAndMergeBookmarks(user.id);
       }
 
       if (!initialized) {
@@ -45,6 +53,10 @@ export function initSupabaseUser() {
             if (!pulledHistoryFor.has(session.user.id)) {
               pulledHistoryFor.add(session.user.id);
               void pullAndMergeHistory();
+            }
+            if (!pulledBookmarksFor.has(session.user.id)) {
+              pulledBookmarksFor.add(session.user.id);
+              void pullAndMergeBookmarks(session.user.id);
             }
           } else void getSession().then(({ data: next }) => emit((next?.session?.user as User | undefined) || null));
         });

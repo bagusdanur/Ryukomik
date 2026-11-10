@@ -27,6 +27,30 @@ type PremiumAccessRow = {
  * isi tabel selalu sama dengan localStorage (perilaku sama seperti versi
  * Supabase sebelumnya).
  */
+export async function GET(request: Request) {
+  try {
+    const userId = await requireUserId(request);
+    const { rows } = await socialQuery<{
+      comic_slug: string;
+      source: string;
+      title: string | null;
+      image: string | null;
+    }>(
+      "select comic_slug, source, title, image from bookmark_sync where user_id = $1 order by comic_slug",
+      [userId],
+    );
+    return NextResponse.json(
+      { success: true, bookmarks: rows },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) return authResponse;
+    console.error("[bookmark-sync GET] gagal:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Gagal memuat bookmark." }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId(request);

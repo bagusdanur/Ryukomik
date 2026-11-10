@@ -46,11 +46,38 @@ function fromServerRows(rows: ServerHistoryRow[]): ReadHistoryItem[] {
     }));
 }
 
-/** Full-replace sync: server = persis localStorage (meniru bookmark_sync). */
+/**
+ * Tarik riwayat server lalu merge per comicSlug (updatedAt terbaru menang).
+ * Tanpa push — dipakai di awal syncHistory supaya item device lain tidak
+ * tertimpa oleh full-replace.
+ */
+async function pullHistoryOnly(): Promise<boolean> {
+  try {
+    const headers = await authHeaders();
+    if (!headers) return false;
+    const res = await fetch("/api/history/sync", { headers, cache: "no-store" });
+    if (!res.ok) return false;
+    const json = (await res.json()) as { history?: ServerHistoryRow[] };
+    const serverItems = fromServerRows(json.history || []);
+    if (serverItems.length) {
+      useHistoryStore.getState().mergeHistory(serverItems);
+    }
+    return true;
+  } catch (err) {
+    console.error("Gagal tarik riwayat:", err);
+    return false;
+  }
+}
+
+/**
+ * Pull-then-push: tarik dulu (merge), baru push. Kalau pull gagal, tetap push
+ * data lokal — server mungkin tersedia tapi GET gagal sesaat.
+ */
 export async function syncHistory(): Promise<boolean> {
   try {
     const headers = await authHeaders();
     if (!headers) return false;
+    await pullHistoryOnly();
     const items = useHistoryStore.getState().history;
     const res = await fetch("/api/history/sync", {
       method: "POST",
@@ -74,27 +101,11 @@ export async function syncHistory(): Promise<boolean> {
 }
 
 /**
- * Tarik riwayat server lalu merge per comicSlug (updatedAt terbaru menang),
- * simpan ke store lokal, lalu push hasil merge. Dipakai saat login supaya
- * perangkat baru langsung dapat riwayat lama tanpa menimpa yang di server.
+ * Dipakai saat login: tarik + merge + push. Implementasi sama dengan
+ * syncHistory (yang sudah pull-then-push).
  */
 export async function pullAndMergeHistory(): Promise<boolean> {
-  try {
-    const headers = await authHeaders();
-    if (!headers) return false;
-    const res = await fetch("/api/history/sync", { headers, cache: "no-store" });
-    if (!res.ok) return false;
-    const json = (await res.json()) as { history?: ServerHistoryRow[] };
-    const serverItems = fromServerRows(json.history || []);
-    if (serverItems.length) {
-      useHistoryStore.getState().mergeHistory(serverItems);
-    }
-    await syncHistory();
-    return true;
-  } catch (err) {
-    console.error("Gagal tarik riwayat:", err);
-    return false;
-  }
+  return syncHistory();
 }
 
 const SYNC_DEBOUNCE_MS = 3000;
