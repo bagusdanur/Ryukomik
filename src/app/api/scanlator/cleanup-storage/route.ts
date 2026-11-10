@@ -58,6 +58,10 @@ export async function POST(request: Request) {
       );
       for (const obj of page.Contents || []) {
         if (!obj.Key) continue;
+        // Jangan sentuh aset non-chapter (cover & avatar). Cover dipakai
+        // project yang belum punya chapter, jadi tidak ada di image_urls
+        // mana pun — kalau dihapus, cover project hilang.
+        if (/\/(cover|avatar)\//.test(obj.Key)) continue;
         totalFiles += 1;
         const publicUrl = `${target.publicBase}/${obj.Key}`;
         if (used.has(publicUrl)) continue;
