@@ -101,10 +101,19 @@ export async function POST(request: Request) {
     if (!coverUrl.startsWith("https://")) return NextResponse.json({ error: "Cover wajib diunggah dulu (URL https dari upload)." }, { status: 400 });
 
     // Anti-duplikat: judul yang sama/mirip dengan project yang sudah ada ditolak.
+    // Baca SEMUA halaman (bukan hanya 100 pertama) supaya duplikat tidak lolos
+    // begitu jumlah project melewati 100.
     const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
-    const existing = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
-      "/admin/projects?limit=100&page=1",
-    ).catch(() => ({ data: [] }));
+    const allProjects: Array<Record<string, unknown>> = [];
+    for (let page = 1; page <= 20; page += 1) {
+      const res = await projectApiFetch<{ data?: Array<Record<string, unknown>>; total?: number }>(
+        `/admin/projects?limit=100&page=${page}`,
+      ).catch(() => null);
+      const batch = res?.data || [];
+      allProjects.push(...batch);
+      if (batch.length < 100 || allProjects.length >= Number(res?.total || 0)) break;
+    }
+    const existing = { data: allProjects };
     const wanted = normalize(title);
     const clash = (existing.data || []).find((row) => {
       const t = normalize(String((row as { title?: string }).title || ""));

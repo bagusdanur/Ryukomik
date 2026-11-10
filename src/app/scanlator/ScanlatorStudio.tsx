@@ -507,6 +507,9 @@ export default function ScanlatorStudio() {
       if (!res.ok || !json?.success) { setError(json?.error || "Gagal menghapus."); return; }
       setNotice("Project dihapus.");
       setOpenSlug(null);
+      setChapters([]);
+      setChapterViews({});
+      setTopChapter(null);
       await load();
     } catch { setError("Gagal menghapus project."); }
   };
@@ -640,7 +643,7 @@ export default function ScanlatorStudio() {
   const saveChapterTitle = async (chapterId: string) => {
     if (!openSlug) return;
     const title = (chapterDraft[chapterId] || "").trim();
-    if (!title) return;
+    if (!title) { setError("Judul chapter tidak boleh kosong."); return; }
     setError(""); setNotice("");
     try {
       const t = await token();
