@@ -37,16 +37,19 @@ export async function GET(request: Request) {
     const profile = await requireScanlator(userId);
     if (!profile) return NextResponse.json({ error: "Kamu belum Scanlator aktif." }, { status: 403 });
 
+    // Ambil project MILIK user ini langsung dari project-db. Dulu memakai
+    // /admin/projects?limit=100 lalu memfilter owner di sini — seri tim yang
+    // lebih lama hilang dari Studio begitu total project melewati 100.
     const data = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
-      `/admin/projects?limit=100&search=&page=1`,
+      `/admin/projects-by-owner/${encodeURIComponent(userId)}`,
     ).catch(() => ({ data: [] }));
-    const owned = (data.data || []).filter((m) => (m as { owner_user_id?: string }).owner_user_id === userId);
+    const owned = data.data || [];
     const mine = await Promise.all(
       owned.map(async (m) => {
         const row = m as Record<string, unknown>;
         const slug = String(row.slug || "");
         const chapterRows = await projectApiFetch<{ data?: unknown[] }>(
-          `/admin/chapters?manga_slug=${encodeURIComponent(slug)}&limit=200&page=1`,
+          `/admin/chapter-index?manga_slug=${encodeURIComponent(slug)}`,
         ).catch(() => ({ data: [] }));
         return {
           slug: row.slug,

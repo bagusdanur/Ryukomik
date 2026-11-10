@@ -7,6 +7,7 @@ import {
   FiChevronDown, FiChevronLeft, FiChevronRight, FiPlus, FiSave, FiSend, FiTrash2, FiUser, FiX,
 } from "react-icons/fi";
 import { getSession } from "@/lib/auth/getSession";
+import { CHAPTER_BANNER_URL } from "@/lib/chapterBanner";
 import { toWebp } from "@/utils/toWebp";
 import { Button, Field, Panel, PanelHead, Row, Stat, StatusDot, Tabs, inputClass } from "@/components/scanlator/ui";
 
@@ -124,6 +125,12 @@ export default function ScanlatorStudio() {
         fetch("/api/scanlator/profile", { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" }),
         fetch("/api/scanlator/series", { headers: { Authorization: `Bearer ${t}` }, cache: "no-store" }),
       ]);
+      if (pRes.status === 401) {
+        // Sesi kedaluwarsa: jangan biarkan data lama tampil seolah masih login.
+        setProfile(null); setWorks([]); setChapters([]); setStats(null); setQuota(null);
+        setNeedLogin(true);
+        return;
+      }
       if (pRes.status === 403) { setNotScanlator(true); setProfile(null); setWorks([]); return; }
       if (pRes.ok) {
         const json = (await pRes.json()) as { profile?: Profile | null };
@@ -368,8 +375,26 @@ export default function ScanlatorStudio() {
       } catch (err) {
         const reason = err instanceof Error ? err.message : "Gagal upload";
         setProgress((p) => (p ? { ...p, failed: [...p.failed, { name: original.name, reason }], failedFiles: [...p.failedFiles, original] } : p));
-        // Kuota habis: hentikan sisa antrean, tidak ada gunanya lanjut.
-        if (/kuota/i.test(reason)) break;
+        // Kuota habis: hentikan sisa antrean, tapi catat sisanya sebagai gagal
+        // supaya progress tidak macet di "17/27" dan tombol Ulangi memuat semua.
+        if (/kuota/i.test(reason)) {
+          const rest = list.slice(i + 1);
+          if (rest.length) {
+            setProgress((p) =>
+              p
+                ? {
+                    ...p,
+                    failed: [
+                      ...p.failed,
+                      ...rest.map((f) => ({ name: f.name, reason: "Dilewati — kuota storage habis" })),
+                    ],
+                    failedFiles: [...p.failedFiles, ...rest],
+                  }
+                : p,
+            );
+          }
+          break;
+        }
       }
     }
     setUploadingChapter(false);
@@ -498,15 +523,26 @@ export default function ScanlatorStudio() {
 
   const removeChapter = async (chapterId: string, number: number) => {
     if (!openSlug) return;
-    if (!window.confirm(`Hapus chapter ${number}?`)) return;
+    const target = chapters.find((c) => c.id === chapterId);
+    const publishedNow = Boolean(target?.is_published);
+    const message = publishedNow
+      ? `Chapter ${number} SUDAH TERBIT.\n\nKalau dihapus: pembaca kehilangan chapter ini, gambarnya dihapus permanen dari storage, dan kalau ini chapter terbit terakhir, seri otomatis diturunkan jadi draft.\n\nLanjut hapus?`
+      : `Hapus chapter ${number}? Gambar chapter ini ikut dihapus dari storage.`;
+    if (!window.confirm(message)) return;
     setError(""); setNotice("");
     try {
       const t = await token();
-      const res = await fetch(`/api/scanlator/series/${encodeURIComponent(openSlug)}/chapter/${chapterId}`, { method: "DELETE", headers: { Authorization: `Bearer ${t}` } });
-      const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string } | null;
+      const suffix = publishedNow ? "?confirm=published" : "";
+      const res = await fetch(`/api/scanlator/series/${encodeURIComponent(openSlug)}/chapter/${chapterId}${suffix}`, { method: "DELETE", headers: { Authorization: `Bearer ${t}` } });
+      const json = (await res.json().catch(() => null)) as { success?: boolean; error?: string; seriesUnpublished?: boolean; imagesDeleted?: number } | null;
       if (!res.ok || !json?.success) { setError(json?.error || "Gagal menghapus chapter."); return; }
       setChapters((prev) => prev.filter((c) => c.id !== chapterId));
-      setNotice(`Chapter ${number} dihapus.`);
+      setNotice(
+        json.seriesUnpublished
+          ? `Chapter ${number} dihapus. Seri dikembalikan ke draft karena tidak ada chapter terbit tersisa.`
+          : `Chapter ${number} dihapus.`,
+      );
+      if (json.seriesUnpublished) await load();
     } catch { setError("Gagal menghapus chapter."); }
   };
 
@@ -521,7 +557,10 @@ export default function ScanlatorStudio() {
       });
       const json = (await res.json().catch(() => null)) as { success?: boolean; chapter?: { image_urls?: string[] }; error?: string } | null;
       if (!res.ok || !json?.success) { setError(json?.error || "Gagal memuat chapter."); return; }
-      return { id: chapterId, number, titles: title || "", images: json.chapter?.image_urls || [] };
+      // Banner promosi dipasang otomatis saat terbit — jangan tampil di editor
+      // supaya tidak bisa dihapus/dipindah dan jumlah halaman tetap benar.
+      const images = (json.chapter?.image_urls || []).filter((url) => url !== CHAPTER_BANNER_URL);
+      return { id: chapterId, number, titles: title || "", images };
     } catch {
       setError("Gagal memuat chapter.");
       return null;

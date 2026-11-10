@@ -4,6 +4,7 @@ import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
 import { projectApiFetch } from "@/lib/projectApiServer";
+import { deleteR2File } from "@/lib/r2Storage";
 import { logChapterRevision, revisionSnapshot } from "@/lib/scanlatorAudit";
 
 export const runtime = "nodejs";
@@ -25,12 +26,30 @@ async function ownChapter(userId: string, slug: string, chapterId: string) {
     return { error: "Project tidak ditemukan atau bukan milikmu.", status: 404 as const };
   }
 
-  const chapters = await projectApiFetch<{ data?: Array<Record<string, unknown>> }>(
-    `/admin/chapters?manga_slug=${encodeURIComponent(slug)}&limit=200&page=1`,
-  ).catch(() => ({ data: [] }));
-  const chapter = (chapters.data || []).find((c) => (c as { id?: string }).id === chapterId);
-  if (!chapter) return { error: "Chapter tidak ditemukan.", status: 404 as const };
-  return { chapter };
+  // Ambil chapter langsung by id (bukan daftar 100 pertama) supaya chapter lama
+  // pada seri panjang tetap bisa dibuka/diedit/dihapus.
+  const chapterRow = await projectApiFetch<{ data?: Record<string, unknown> }>(
+    `/admin/chapters/${encodeURIComponent(chapterId)}`,
+  ).catch(() => null);
+  const chapter = chapterRow?.data;
+  if (!chapter || String(chapter.manga_slug || "") !== slug) {
+    return { error: "Chapter tidak ditemukan.", status: 404 as const };
+  }
+  return { chapter, manga: manga.data };
+}
+
+/** Semua chapter satu seri (dipakai cek hapus: file bersama & chapter terbit lain). */
+async function allChapters(slug: string) {
+  const rows: Array<Record<string, unknown>> = [];
+  for (let page = 1; page <= 20; page += 1) {
+    const res = await projectApiFetch<{ data?: Array<Record<string, unknown>>; total?: number }>(
+      `/admin/chapters?manga_slug=${encodeURIComponent(slug)}&limit=100&page=${page}`,
+    ).catch(() => null);
+    const batch = res?.data || [];
+    rows.push(...batch);
+    if (batch.length < 100 || rows.length >= Number(res?.total || 0)) break;
+  }
+  return rows;
 }
 
 /** Detail satu chapter (dipakai editor & pratinjau studio). */
@@ -139,6 +158,27 @@ export async function DELETE(request: Request, context: { params: Promise<{ slug
     const owned = await ownChapter(userId, slug, chapterId);
     if ("error" in owned) return NextResponse.json({ error: owned.error }, { status: owned.status });
 
+    const chapter = owned.chapter as Record<string, unknown>;
+    const isPublished = Boolean(chapter.is_published);
+
+    // Chapter yang sudah terbit tidak boleh hilang tanpa konfirmasi eksplisit
+    // (pembaca kehilangan akses dan gambarnya ikut dibersihkan dari R2).
+    if (isPublished && new URL(request.url).searchParams.get("confirm") !== "published") {
+      return NextResponse.json(
+        {
+          error: `Chapter ${Number(chapter.chapter_number || 0)} sudah terbit. Hapus permanen?`,
+          requiresConfirm: true,
+        },
+        { status: 409 },
+      );
+    }
+
+    const urlsOf = (value: unknown) =>
+      Array.isArray(value) ? value.filter((u): u is string => typeof u === "string") : [];
+    const ownUrls = [...urlsOf(chapter.image_urls), ...urlsOf(chapter.pending_image_urls)];
+
+    const others = (await allChapters(slug)).filter((c) => c.id !== chapterId);
+
     await projectApiFetch(`/admin/chapters/${chapterId}`, { method: "DELETE" });
 
     await logChapterRevision({
@@ -146,13 +186,48 @@ export async function DELETE(request: Request, context: { params: Promise<{ slug
       mangaSlug: slug,
       actorId: userId,
       action: "delete",
-      before: revisionSnapshot(owned.chapter as Record<string, unknown>),
+      before: revisionSnapshot(chapter),
     });
 
-    return NextResponse.json({ success: true });
+    // Hapus objek R2 milik chapter ini — hanya yang tidak dipakai chapter lain,
+    // dan hanya di prefix scanlator (banner promosi tidak ikut).
+    const usedElsewhere = new Set<string>();
+    for (const other of others) {
+      for (const url of [...urlsOf(other.image_urls), ...urlsOf(other.pending_image_urls)]) {
+        usedElsewhere.add(url);
+      }
+    }
+    const keys = [...new Set(ownUrls)]
+      .filter((url) => !usedElsewhere.has(url))
+      .map((url) => {
+        try {
+          const key = new URL(url).pathname.replace(/^\//, "");
+          return key.startsWith("scanlator/") ? key : null;
+        } catch {
+          return null;
+        }
+      })
+      .filter((key): key is string => Boolean(key));
+    await Promise.all(keys.map((key) => deleteR2File(key).catch(() => undefined)));
+
+    // Seri tidak boleh tetap terbit tanpa satu pun chapter terbit.
+    const stillPublished = others.some((c) => Boolean(c.is_published));
+    let seriesUnpublished = false;
+    if (isPublished && !stillPublished) {
+      const mangaId = String((owned.manga as Record<string, unknown>).id || "");
+      if (mangaId) {
+        await projectApiFetch(`/admin/projects/${mangaId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ is_published: false }),
+        }).catch(() => undefined);
+        seriesUnpublished = true;
+      }
+    }
+
+    return NextResponse.json({ success: true, imagesDeleted: keys.length, seriesUnpublished });
   } catch (error) {
     const authResponse = authErrorResponse(error);
-    if (authResponse) return NextResponse.json({ error: "Gagal menghapus chapter." }, { status: 500 });
+    if (authResponse) return authResponse;
     return NextResponse.json({ error: "Gagal menghapus chapter." }, { status: 500 });
   }
 }
