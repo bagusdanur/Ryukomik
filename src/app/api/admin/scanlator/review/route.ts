@@ -5,7 +5,8 @@ import { projectApiFetch } from "@/lib/projectApiServer";
 import { notifyScanlator } from "@/lib/scanlatorNotify";
 import { socialQuery } from "@/lib/social/db";
 import { logChapterRevision } from "@/lib/scanlatorAudit";
-import { CHAPTER_BANNER_URL, withChapterBanner } from "@/lib/chapterBanner";
+import { CHAPTER_BANNER_URL } from "@/lib/chapterBanner";
+import { withChapterBannerMerged } from "@/lib/chapterBannerMerge";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -129,6 +130,9 @@ export async function POST(request: Request) {
             { status: 409 },
           );
         }
+        // Banner digabung ke bawah halaman terakhir supaya ikut saat chapter
+        // di-mirror situs lain (mereka membuang gambar terakhir / beda host).
+        const publishedImages = action === "approve_chapter" ? await withChapterBannerMerged(sourceImages) : null;
         await projectApiFetch(`/admin/chapters/${body.chapter_id}`, {
           method: "PATCH",
           body: JSON.stringify({
@@ -138,7 +142,7 @@ export async function POST(request: Request) {
             // ikut notifikasi sehingga tidak terlihat lagi setelah dibaca.
             review_status: action === "approve_chapter" ? "approved" : "rejected",
             review_note: action === "approve_chapter" ? null : note,
-            ...(action === "approve_chapter" ? { image_urls: withChapterBanner(sourceImages) } : {}),
+            ...(publishedImages ? { image_urls: publishedImages } : {}),
           }),
         });
         await logChapterRevision({
@@ -222,7 +226,7 @@ export async function POST(request: Request) {
         await projectApiFetch(`/admin/chapters/${body.chapter_id}`, {
           method: "PATCH",
           body: JSON.stringify({
-            image_urls: withChapterBanner(pending),
+            image_urls: await withChapterBannerMerged(pending),
             pending_image_urls: null,
             review_status: "approved",
             review_note: null,

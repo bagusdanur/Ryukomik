@@ -5,7 +5,7 @@ import { verifyAdminRequest, adminErrorResponse } from "@/lib/adminApi";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { enqueueProjectDiscordEvent } from "@/lib/projectDiscordEvents";
 import { projectApiFetch, projectApiUrl } from "@/lib/projectApiServer";
-import { withChapterBanner } from "@/lib/chapterBanner";
+import { withChapterBannerMerged } from "@/lib/chapterBannerMerge";
 
 function revalidateProjectContent(mangaSlug: string) {
   revalidateTag("source-project-pustaka", { expire: 0 });
@@ -150,7 +150,7 @@ export async function PATCH(request: Request) {
         if (source.length === 0) {
           return NextResponse.json({ error: "Chapter tanpa gambar tidak dapat dipublikasikan." }, { status: 409 });
         }
-        payload.image_urls = withChapterBanner(source);
+        payload.image_urls = await withChapterBannerMerged(source);
       }
       const result = await projectApiFetch<{data:any}>(`/admin/chapters/${id}`, { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
       // File R2 TIDAK dihapus berdasarkan diff di sini: `image_urls` bisa berasal
