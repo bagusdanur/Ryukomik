@@ -26,7 +26,8 @@ function quotaPayload(access: AccessRow, quota: QuotaRow) {
 async function accessFor(userId: string) {
   await ensureSocialProfile(userId);
   const result = await socialQuery<AccessRow>(
-    "select is_premium,role from social_profiles where user_id=$1",
+    `select (is_premium and (premium_until is null or premium_until > now())) as is_premium, role
+       from social_profiles where user_id=$1`,
     [userId],
   );
   return result.rows[0] || { is_premium: false, role: null };

@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
+import { grantScanlatorPremium } from "@/lib/scanlatorPremium";
+import { invalidatePremiumAccess } from "@/lib/chapterAccess";
 import { rateLimitResponse } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -107,12 +109,12 @@ export async function GET(request: Request) {
         await socialQuery(
           `update social_profiles
               set role = case when role in ('admin','staff') then role else 'scanlator' end,
-                  premium_until = case when premium_until is not null and premium_until > now() then premium_until else now() + interval '365 days' end,
-                  premium_source = case when premium_until is not null and premium_until > now() then premium_source else 'scanlator' end,
                   updated_at = now()
             where user_id = $1`,
           [userId],
         );
+        await grantScanlatorPremium(userId);
+        invalidatePremiumAccess(userId);
         ({ rows } = await socialQuery(`select ${PROFILE_FIELDS} from scanlator_profiles where user_id = $1 limit 1`, [userId]));
       }
     }

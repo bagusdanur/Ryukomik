@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { adminErrorResponse, verifyAdminRequest } from "@/lib/adminApi";
 import { socialQuery, socialTransaction } from "@/lib/social/db";
+import { grantScanlatorPremium, revokeScanlatorPremium } from "@/lib/scanlatorPremium";
+import { invalidatePremiumAccess } from "@/lib/chapterAccess";
 import { notifyScanlator } from "@/lib/scanlatorNotify";
 import { projectApiFetch } from "@/lib/projectApiServer";
 
@@ -121,8 +123,6 @@ async function reviewApplication(id: string | undefined, action: "approve" | "re
     await client.query(
       `update social_profiles
           set role = case when role in ('admin','staff') then role else 'scanlator' end,
-              premium_until = case when premium_until is not null and premium_until > now() then premium_until else now() + interval '365 days' end,
-              premium_source = case when premium_until is not null and premium_until > now() then premium_source else 'scanlator' end,
               updated_at = now()
         where user_id = $1`,
       [row.user_id],
@@ -130,14 +130,7 @@ async function reviewApplication(id: string | undefined, action: "approve" | "re
     // ACC baru membatalkan tombstone (tim dihidupkan lagi).
     await client.query("delete from scanlator_deleted where user_id = $1 or handle = $2", [row.user_id, row.handle]);
     // Benefit: premium aktif selama status Scanlator aktif.
-    await client.query(
-      `update social_profiles
-          set premium_until = case when premium_until is not null and premium_until > now() then premium_until else now() + interval '365 days' end,
-              premium_source = case when premium_until is not null and premium_until > now() then premium_source else 'scanlator' end,
-              updated_at = now()
-        where user_id = $1`,
-      [row.user_id],
-    );
+    await grantScanlatorPremium(row.user_id, client);
     await client.query(
       `insert into scanlator_profiles (user_id, handle, team_name, contact_wa, contact_telegram, contact_discord, status)
        values ($1, $2, $3, $4, $5, $6, 'active')
@@ -149,6 +142,8 @@ async function reviewApplication(id: string | undefined, action: "approve" | "re
       [row.user_id, row.handle, row.team_name, row.contact_wa, row.contact_telegram, row.contact_discord],
     );
   });
+
+  invalidatePremiumAccess(row.user_id);
 
   await notifyScanlator(row.user_id, {
     type: "project_approved",
@@ -205,12 +200,11 @@ async function moderate(
       await client.query(
         `update social_profiles
             set role = case when role = 'scanlator' then 'user' else role end,
-                premium_until = case when premium_source = 'scanlator' then null else premium_until end,
-                premium_source = case when premium_source = 'scanlator' then null else premium_source end,
                 updated_at = now()
           where user_id = $1`,
         [userId],
       );
+      await revokeScanlatorPremium(userId, client);
       // Hapus pengajuan supaya handle bebas dipakai lagi (unique per handle),
       // dan catat tombstone agar profil tidak dibuat ulang otomatis.
       await client.query(
@@ -223,6 +217,8 @@ async function moderate(
         [userId, reason || "Tim dihapus admin", note ? `${note} · tim: ${team}` : `tim: ${team}`, adminId],
       );
     });
+
+    invalidatePremiumAccess(userId);
 
     // Seri milik tim disembunyikan (bukan dihapus) supaya atribusi tidak menggantung.
     let hidden = 0;
@@ -292,18 +288,18 @@ async function moderate(
       await client.query(
         `update social_profiles
             set role = case when role = 'scanlator' then 'user' else role end,
-                premium_until = case when premium_source = 'scanlator' then null else premium_until end,
-                premium_source = case when premium_source = 'scanlator' then null else premium_source end,
                 updated_at = now()
           where user_id = $1`,
         [userId],
       );
+      await revokeScanlatorPremium(userId, client);
       await client.query("delete from scanlator_applications where user_id = $1", [userId]);
       await client.query(
         "insert into scanlator_moderation (user_id, action, reason, note, admin_id) values ($1, 'revoke', $2, $3, $4)",
         [userId, reason, note, adminId],
       );
     });
+    invalidatePremiumAccess(userId);
     await notifyScanlator(userId, {
       type: "revoke",
       title: "Akses Scanlator dicabut",
@@ -322,17 +318,17 @@ async function moderate(
     await client.query(
       `update social_profiles
           set role = case when role in ('admin','staff') then role else 'scanlator' end,
-              premium_until = case when premium_until is not null and premium_until > now() then premium_until else now() + interval '365 days' end,
-              premium_source = case when premium_until is not null and premium_until > now() then premium_source else 'scanlator' end,
               updated_at = now()
         where user_id = $1`,
       [userId],
     );
+    await grantScanlatorPremium(userId, client);
     await client.query(
       "insert into scanlator_moderation (user_id, action, reason, note, admin_id) values ($1, 'restore', $2, $3, $4)",
       [userId, reason, note, adminId],
     );
   });
+  invalidatePremiumAccess(userId);
   await notifyScanlator(userId, {
     type: "restore",
     title: "Akses Scanlator dipulihkan",
