@@ -5,6 +5,7 @@ import { projectApiFetch } from "@/lib/projectApiServer";
 import { notifyScanlator } from "@/lib/scanlatorNotify";
 import { socialQuery } from "@/lib/social/db";
 import { logChapterRevision } from "@/lib/scanlatorAudit";
+import { enqueueProjectDiscordEvent } from "@/lib/projectDiscordEvents";
 import { CHAPTER_BANNER_URL } from "@/lib/chapterBanner";
 import { withChapterBannerMerged } from "@/lib/chapterBannerMerge";
 
@@ -117,7 +118,9 @@ export async function POST(request: Request) {
         // Publikasi chapter pertama sekaligus membuka seri. Endpoint project-db
         // menjalankan keduanya dalam satu transaksi agar seri tidak pernah tayang kosong.
         // Banner Scanlator ditempel di halaman terakhir saat terbit.
-        const chapterDetail = await projectApiFetch<{ data?: { image_urls?: string[] } }>(`/admin/chapters/${body.chapter_id}`).catch(() => null);
+        const chapterDetail = await projectApiFetch<{
+          data?: { image_urls?: string[]; chapter_number?: number; title?: string | null };
+        }>(`/admin/chapters/${body.chapter_id}`).catch(() => null);
         const sourceImages = Array.isArray(chapterDetail?.data?.image_urls)
           ? chapterDetail.data.image_urls.filter((url): url is string => typeof url === "string" && /^https?:\/\//i.test(url))
           : [];
@@ -133,7 +136,7 @@ export async function POST(request: Request) {
         // Banner digabung ke bawah halaman terakhir supaya ikut saat chapter
         // di-mirror situs lain (mereka membuang gambar terakhir / beda host).
         const publishedImages = action === "approve_chapter" ? await withChapterBannerMerged(sourceImages) : null;
-        await projectApiFetch(`/admin/chapters/${body.chapter_id}`, {
+        const patchResult = await projectApiFetch<{ parent_published?: boolean }>(`/admin/chapters/${body.chapter_id}`, {
           method: "PATCH",
           body: JSON.stringify({
             is_published: action === "approve_chapter",
@@ -152,6 +155,30 @@ export async function POST(request: Request) {
           action: action === "approve_chapter" ? "approve" : "reject",
           after: { is_published: action === "approve_chapter", note },
         });
+        // Pengumuman Discord: chapter baru (dan seri baru saat pertama terbit).
+        // Best-effort — kegagalan Discord tidak boleh menggagalkan ACC.
+        if (action === "approve_chapter") {
+          const snapshot = {
+            slug: String(manga.data.slug || ""),
+            title: String(manga.data.title || ""),
+            cover_url: (manga.data.cover_url as string | null) || "",
+            type: (manga.data.type as string | null) || "",
+            status: (manga.data.status as string | null) || "",
+            genres: Array.isArray(manga.data.genres) ? (manga.data.genres as string[]) : [],
+          };
+          const team = {
+            scanlator_team: String(manga.data.scanlator_team || manga.data.scanlator_handle || ""),
+            scanlator_handle: String(manga.data.scanlator_handle || ""),
+          };
+          await enqueueProjectDiscordEvent("scanlator_chapter_published", snapshot, {
+            chapter_number: chapterDetail?.data?.chapter_number ?? null,
+            chapter_title: String(chapterDetail?.data?.title || ""),
+            ...team,
+          }).catch(() => undefined);
+          if (patchResult?.parent_published) {
+            await enqueueProjectDiscordEvent("scanlator_series_published", snapshot, team).catch(() => undefined);
+          }
+        }
         const owner = manga?.data?.owner_user_id as string | undefined;
 
         // Notifikasi pembaca yang mengikuti grup — hanya saat chapter benar-benar terbit.

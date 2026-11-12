@@ -7,6 +7,37 @@ import { enqueueProjectDiscordEvent } from "@/lib/projectDiscordEvents";
 import { projectApiFetch, projectApiUrl } from "@/lib/projectApiServer";
 import { withChapterBannerMerged } from "@/lib/chapterBannerMerge";
 
+/**
+ * Kirim pengumuman Discord untuk chapter yang baru terbit.
+ * Chapter milik Scanlator masuk event `scanlator_*` (channel khusus + atribusi
+ * tim); project admin tetap `chapter_published`. Satu sumber per aksi supaya
+ * tidak ada pengumuman dobel.
+ */
+async function enqueueChapterEvent(slug: string, chapterNumber: number | null, chapterTitle: string) {
+  const manga = await projectApiFetch<{ data?: Record<string, unknown> }>(
+    `/admin/projects/by-slug/${encodeURIComponent(slug)}`,
+  ).catch(() => null);
+  const data = manga?.data;
+  if (!data) return;
+  if (["dropped", "cancelled"].includes(String(data.status || ""))) return;
+  const snapshot = {
+    slug: String(data.slug || slug),
+    title: String(data.title || ""),
+    cover_url: (data.cover_url as string | null) || "",
+    type: (data.type as string | null) || "",
+    status: (data.status as string | null) || "",
+    genres: Array.isArray(data.genres) ? (data.genres as string[]) : [],
+  };
+  const extra: Record<string, unknown> = { chapter_number: chapterNumber, chapter_title: chapterTitle };
+  if (data.owner_user_id) {
+    extra.scanlator_team = String(data.scanlator_team || data.scanlator_handle || "");
+    extra.scanlator_handle = String(data.scanlator_handle || "");
+    await enqueueProjectDiscordEvent("scanlator_chapter_published", snapshot, extra);
+    return;
+  }
+  await enqueueProjectDiscordEvent("chapter_published", snapshot, extra);
+}
+
 function revalidateProjectContent(mangaSlug: string) {
   revalidateTag("source-project-pustaka", { expire: 0 });
   revalidateTag(`project-detail:${mangaSlug}`, { expire: 0 });
@@ -66,7 +97,9 @@ export async function POST(request: Request) {
     }
     if (projectApiUrl("/admin/chapters")) {
       const result = await projectApiFetch<{data:any}>("/admin/chapters", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (result.data.is_published) { const manga = await projectApiFetch<{data:any}>(`/projects/${encodeURIComponent(manga_slug)}`).catch(()=>null); if (manga?.data?.is_published !== false && !["dropped","cancelled"].includes(manga?.data?.status || "")) await enqueueProjectDiscordEvent("chapter_published", manga!.data, { chapter_number: result.data.chapter_number, chapter_title: result.data.title || "" }); }
+      if (result.data.is_published) {
+        await enqueueChapterEvent(manga_slug, result.data.chapter_number ?? null, result.data.title || "").catch(() => undefined);
+      }
       revalidateProjectContent(manga_slug); revalidateProjectChapter(manga_slug,result.data.chapter_number); return NextResponse.json(result, {status:201});
     }
 
@@ -156,7 +189,7 @@ export async function PATCH(request: Request) {
       // File R2 TIDAK dihapus berdasarkan diff di sini: `image_urls` bisa berasal
       // dari state basi, sehingga gambar yang sedang tayang ikut terhapus.
       // Pembersihan file orphan ditangani cleanup-storage.
-      if(!existing.data.is_published&&result.data.is_published){const manga=await projectApiFetch<{data:any}>(`/projects/${encodeURIComponent(result.data.manga_slug)}`).catch(()=>null);if(manga?.data&&!['dropped','cancelled'].includes(manga.data.status||''))await enqueueProjectDiscordEvent('chapter_published',manga.data,{chapter_number:result.data.chapter_number,chapter_title:result.data.title||''});}
+      if(!existing.data.is_published&&result.data.is_published){await enqueueChapterEvent(result.data.manga_slug, result.data.chapter_number ?? null, result.data.title || "").catch(()=>undefined);}
       revalidateProjectContent(result.data.manga_slug);revalidateProjectChapter(existing.data.manga_slug,existing.data.chapter_number);revalidateProjectChapter(result.data.manga_slug,result.data.chapter_number);return NextResponse.json(result);
     }
 

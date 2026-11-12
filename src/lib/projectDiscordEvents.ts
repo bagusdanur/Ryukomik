@@ -3,7 +3,9 @@ import { projectApiFetch } from "@/lib/projectApiServer";
 export type ProjectDiscordEventType =
   | "project_published"
   | "chapter_published"
-  | "project_status_changed";
+  | "project_status_changed"
+  | "scanlator_chapter_published"
+  | "scanlator_series_published";
 
 type MangaSnapshot = {
   slug: string;
