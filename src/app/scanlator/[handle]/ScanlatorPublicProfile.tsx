@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FiArrowLeft, FiCalendar, FiCheckCircle, FiExternalLink, FiHeart, FiUser } from "react-icons/fi";
 import UserBadges from "@/components/UserBadges";
+import AdultCoverGuard from "@/components/adult/AdultCoverGuard";
 import { getSession } from "@/lib/auth/getSession";
 
 type Profile = {
@@ -294,13 +295,15 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
               <Link key={p.slug} href={`/komik/project/${p.slug}`} className="group min-w-0">
                 <div className="aspect-[3/4] overflow-hidden rounded-lg border border-white/[.06] bg-white/[.03]">
                   {p.cover_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={p.cover_url}
-                      alt={p.title}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-opacity group-hover:opacity-85"
-                    />
+                    <AdultCoverGuard adult revealKey="scanlator">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.cover_url}
+                        alt={p.title}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-opacity group-hover:opacity-85"
+                      />
+                    </AdultCoverGuard>
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-[10px] text-white/20">Tanpa cover</div>
                   )}
