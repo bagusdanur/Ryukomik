@@ -107,9 +107,19 @@ export default function ScanlatorApplyPage() {
                 <Panel>
                   <PanelHead title={mine ? "Ajukan ulang" : "Formulir pengajuan"} desc="Semua field bertanda * wajib diisi." />
                   <div className="space-y-3 p-4">
-                    <Field label="Nama user *"><input value={teamName} onChange={(e) => setTeamName(e.target.value)} maxLength={80} required placeholder="Scan Baca Seru" className={inputClass} /></Field>
-                    <Field label="Handle *" hint="huruf kecil, angka, strip">
-                      <input value={handle} onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} maxLength={30} required placeholder="user-baca-seru" className={inputClass} />
+                    <Field label="Nama tim *" hint="tampil di halaman publik & kartu project">
+                      <input value={teamName} onChange={(e) => setTeamName(e.target.value)} maxLength={80} required placeholder="Scan Baca Seru" className={inputClass} />
+                    </Field>
+                    <Field label="Alamat halaman tim (handle) *" hint="huruf kecil, angka, strip">
+                      <input value={handle} onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} maxLength={30} required placeholder="contoh: scan-baca-seru" className={inputClass} />
+                      <p className="mt-1.5 break-all rounded-md border border-white/[.06] bg-white/[.02] px-2.5 py-1.5 text-[10.5px] text-white/50">
+                        Halaman tim kamu nanti:{" "}
+                        <span className="font-semibold text-white/75">ryukomik.my.id/scanlator/{handle || "nama-tim"}</span>
+                      </p>
+                      <p className="mt-1 text-[10.5px] leading-relaxed text-white/35">
+                        Ini <span className="font-semibold text-white/55">bukan</span> username medsos, Discord, atau Telegram — ini alamat
+                        halaman tim di Ryukomik. Pilih yang gampang diingat; setelah dibuat hanya admin yang bisa mengubahnya.
+                      </p>
                     </Field>
                     <Field label="Deskripsi"><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} maxLength={1000} placeholder="Pengalaman, genre, dsb." className={inputClass} /></Field>
                     <Field label="Contoh hasil TL *" hint="satu per baris, maks 3">
