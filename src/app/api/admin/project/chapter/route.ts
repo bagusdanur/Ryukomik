@@ -24,6 +24,7 @@ async function enqueueChapterEvent(slug: string, chapterNumber: number | null, c
     slug: String(data.slug || slug),
     title: String(data.title || ""),
     cover_url: (data.cover_url as string | null) || "",
+    description: String(data.description || ""),
     type: (data.type as string | null) || "",
     status: (data.status as string | null) || "",
     genres: Array.isArray(data.genres) ? (data.genres as string[]) : [],

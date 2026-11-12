@@ -162,6 +162,7 @@ export async function POST(request: Request) {
             slug: String(manga.data.slug || ""),
             title: String(manga.data.title || ""),
             cover_url: (manga.data.cover_url as string | null) || "",
+            description: String(manga.data.description || ""),
             type: (manga.data.type as string | null) || "",
             status: (manga.data.status as string | null) || "",
             genres: Array.isArray(manga.data.genres) ? (manga.data.genres as string[]) : [],

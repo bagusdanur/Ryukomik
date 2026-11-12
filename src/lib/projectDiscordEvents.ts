@@ -11,6 +11,7 @@ type MangaSnapshot = {
   slug: string;
   title: string;
   cover_url?: string | null;
+  description?: string | null;
   type?: string | null;
   status?: string | null;
   genres?: string[] | null;
@@ -28,6 +29,7 @@ export async function enqueueProjectDiscordEvent(
       slug: manga.slug,
       title: manga.title,
       cover_url: manga.cover_url || "",
+      description: String(manga.description || "").slice(0, 800),
       type: manga.type || "",
       status: manga.status || "",
       genres: manga.genres || [],
