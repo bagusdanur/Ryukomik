@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { parseComicPost } from "@/lib/social/comicLink";
 import { relativeTime } from "@/lib/social/relativeTime";
 import ComicLinkCard from "@/components/social/ComicLinkCard";
+import SensitiveMedia from "@/components/social/SensitiveMedia";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
 import UserAvatar from "@/components/UserAvatar";
@@ -26,6 +27,7 @@ type Post = {
   id: string;
   content: string;
   image_url?: string | null;
+  is_sensitive?: boolean;
   likes_count: number;
   replies_count: number;
   created_at: string;
@@ -101,7 +103,15 @@ export default function PublicProfilePosts({ username }: { username: string }) {
               ) : (
                 <>
                   {post.content !== "[sticker]" && <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed text-white/90">{post.content}</p>}
-                  {post.image_url && <img src={post.image_url} alt="Lampiran posting" className={`mt-3 border border-white/10 object-contain ${post.content === "[sticker]" ? "mx-auto max-h-24 max-w-24 rounded-xl" : "max-h-80 w-full rounded-2xl"}`} loading="lazy" referrerPolicy="no-referrer" />}
+                  {post.image_url && (
+                    <SensitiveMedia
+                      postId={post.id}
+                      sensitive={post.is_sensitive === true}
+                      className={post.content === "[sticker]" ? "mx-auto mt-3 max-h-24 max-w-24 rounded-xl" : "mt-3 w-full rounded-2xl"}
+                    >
+                      <img src={post.image_url} alt="Lampiran posting" className={`border border-white/10 object-contain ${post.content === "[sticker]" ? "max-h-24 w-24 rounded-xl" : "max-h-80 w-full rounded-2xl"}`} loading="lazy" referrerPolicy="no-referrer" />
+                    </SensitiveMedia>
+                  )}
                 </>
               )}
               <div className="mt-3 flex gap-8 text-xs text-white/50">

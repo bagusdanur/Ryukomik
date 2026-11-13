@@ -10,6 +10,7 @@ import {
   FiHeart,
   FiImage,
   FiLink,
+  FiAlertTriangle,
   FiMessageCircle,
   FiMoreHorizontal,
   FiRefreshCw,
@@ -19,6 +20,7 @@ import {
 } from "react-icons/fi";
 import { RiEmojiStickerLine } from "react-icons/ri";
 import { socialFetch } from "@/lib/social/client";
+import SensitiveMedia from "@/components/social/SensitiveMedia";
 import { supabase } from "@/lib/supabaseClient";
 import { uploadImageToImgbb } from "@/utils/uploadImage";
 import { parseComicPost } from "@/lib/social/comicLink";
@@ -40,6 +42,7 @@ type Post = {
   reply_to_name?: string | null;
   content: string;
   image_url?: string | null;
+  is_sensitive?: boolean;
   visibility: string;
   likes_count: number;
   replies_count: number;
@@ -223,6 +226,7 @@ function Composer({
   const [error, setError] = useState("");
   const [showMediaPicker, setShowMediaPicker] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [sensitive, setSensitive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   async function uploadToImgbb(file: File) {
@@ -261,6 +265,7 @@ function Composer({
           visibility,
           parent_id: parentId || null,
           reply_to_id: replyToId || null,
+          is_sensitive: submittedImage ? sensitive : false,
         }),
       });
       const createdPost: Post = {
@@ -271,6 +276,7 @@ function Composer({
         reply_to_name: result.post.reply_to_name || replyToName || undefined,
         content: submittedContent,
         image_url: submittedImage,
+        is_sensitive: submittedImage ? sensitive : false,
         visibility,
         likes_count: 0,
         replies_count: 0,
@@ -281,6 +287,7 @@ function Composer({
       };
       setContent("");
       setImage("");
+      setSensitive(false);
       onCreated(createdPost);
     } catch (failure) {
       const message = failure instanceof Error ? failure.message : "Gagal mengirim postingan.";
@@ -334,7 +341,10 @@ function Composer({
           />
           <button
             type="button"
-            onClick={() => setImage("")}
+            onClick={() => {
+              setImage("");
+              setSensitive(false);
+            }}
             className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-1 text-xs"
           >
             Hapus
@@ -380,6 +390,22 @@ function Composer({
               if (file) void uploadToImgbb(file);
             }}
           />
+          <button
+            type="button"
+            onClick={() => setSensitive((value) => !value)}
+            disabled={!image}
+            title={image ? "Gambar akan diblur untuk pengguna yang mengaktifkan filter 18+" : "Lampirkan gambar dulu"}
+            aria-pressed={sensitive && Boolean(image)}
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-2 text-[10px] font-bold transition disabled:cursor-not-allowed disabled:opacity-35 ${
+              sensitive && image ? "bg-rose-500/15 text-rose-300" : "text-[var(--accent-2)] hover:bg-white/5"
+            }`}
+          >
+            <FiAlertTriangle className="text-base" />
+            <span>18+</span>
+          </button>
+          {image && sensitive && (
+            <span className="text-[10px] font-semibold text-rose-300/80">Gambar akan diblur</span>
+          )}
           {!parentId && (
             <select
               value={visibility}
@@ -532,13 +558,20 @@ function PostCard({ post, onChanged, threadRootId, refreshThread }: { post: Post
                 </p>
               )}
               {post.image_url && (
-                <img
-                  src={post.image_url}
-                  alt="Sticker atau gambar posting"
-                  className={`mt-3 border border-white/10 object-contain ${post.content === "[sticker]" ? "mx-auto max-h-24 max-w-24 rounded-xl" : "max-h-80 w-full rounded-2xl"}`}
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
+                <SensitiveMedia
+                  postId={post.id}
+                  sensitive={post.is_sensitive === true}
+                  owned={post.viewer_owns === true}
+                  className={post.content === "[sticker]" ? "mx-auto mt-3 max-h-24 max-w-24 rounded-xl" : "mt-3 w-full rounded-2xl"}
+                >
+                  <img
+                    src={post.image_url}
+                    alt="Sticker atau gambar posting"
+                    className={`border border-white/10 object-contain ${post.content === "[sticker]" ? "max-h-24 w-24 rounded-xl" : "max-h-80 w-full rounded-2xl"}`}
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                </SensitiveMedia>
               )}
             </>
           )}

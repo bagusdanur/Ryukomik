@@ -19,6 +19,7 @@ import {
 import { socialFetch } from "@/lib/social/client";
 import { parseComicPost } from "@/lib/social/comicLink";
 import ComicLinkCard from "@/components/social/ComicLinkCard";
+import SensitiveMedia from "@/components/social/SensitiveMedia";
 import ExclusiveCommentWallpaper from "@/components/ExclusiveCommentWallpaper";
 import UserBadges from "@/components/UserBadges";
 import UserAvatar from "@/components/UserAvatar";
@@ -41,6 +42,7 @@ type Post = {
   reply_to_name?: string | null;
   content: string;
   image_url?: string | null;
+  is_sensitive?: boolean;
   visibility: string;
   likes_count: number;
   replies_count: number;
@@ -246,7 +248,16 @@ export default function PostDetailClient({ id }: { id: string }) {
             {editing ? <textarea value={content} onChange={(event) => setContent(event.target.value.slice(0, 500))} className="rk-input min-h-36 w-full rounded-xl p-4" /> : parseComicPost(post.content) ? null : post.content !== "[sticker]" && <p className="whitespace-pre-wrap break-words text-[16px] leading-relaxed text-white/90 sm:text-[17px]">{post.content}</p>}
             {parseComicPost(post.content) ? (
               <ComicLinkCard content={post.content} imageUrl={post.image_url} />
-            ) : post.image_url && <img src={post.image_url} alt="Media postingan" className={`mt-4 border border-white/10 object-contain ${post.content === "[sticker]" ? "mx-auto max-h-24 max-w-24 rounded-xl" : "max-h-[34rem] w-full rounded-2xl"}`} referrerPolicy="no-referrer" />}
+            ) : post.image_url && (
+              <SensitiveMedia
+                postId={post.id}
+                sensitive={post.is_sensitive === true}
+                owned={post.viewer_owns === true}
+                className={post.content === "[sticker]" ? "mx-auto mt-4 max-h-24 max-w-24 rounded-xl" : "mt-4 w-full rounded-2xl"}
+              >
+                <img src={post.image_url} alt="Media postingan" className={`border border-white/10 object-contain ${post.content === "[sticker]" ? "max-h-24 w-24 rounded-xl" : "max-h-[34rem] w-full rounded-2xl"}`} referrerPolicy="no-referrer" />
+              </SensitiveMedia>
+            )}
           </div>
 
           <div className="mt-6 flex items-center justify-around border-y border-white/[0.08] py-2 text-white/45">
