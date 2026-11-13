@@ -24,9 +24,17 @@ const limitIdx = process.argv.indexOf("--limit");
 const LIMIT = limitIdx >= 0 ? Number(process.argv[limitIdx + 1]) : 0;
 const CONCURRENCY = 12;
 
+const argVal = (name, fallback) => {
+  const i = process.argv.indexOf(name);
+  return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
+};
+
 const payload = JSON.stringify({
-  title: "Ryukomik pindah domain",
-  body: "Sekarang di ryukomik.web.id. Domain lama sudah tidak bisa dibuka — ketuk untuk lanjut baca.",
+  title: argVal("--title", "Ryukomik pindah domain"),
+  body: argVal(
+    "--body",
+    "Sekarang di ryukomik.web.id. Domain lama sudah tidak bisa dibuka — ketuk untuk lanjut baca.",
+  ),
   url: "https://ryukomik.web.id/",
   tag: "domain-move",
 });
