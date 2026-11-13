@@ -15,6 +15,7 @@ import { getTitleRushEventStatus } from "@/lib/titleRushEvent";
 import ProjectUpdateList from "@/components/ProjectUpdateList";
 import ScanlatorHomeSection from "@/components/scanlator/ScanlatorHomeSection";
 import { getProjectUpdates } from "@/lib/projectUpdates";
+import FirstRunOnboarding from "@/components/onboarding/FirstRunOnboarding";
 
 // Update Komiku harus tetap segar; backend memakai stale-while-refresh agar
 // revalidasi singkat tidak membuat homepage kosong saat sumber sedang lambat.
@@ -32,6 +33,7 @@ export default async function Home() {
 
   return (
     <main className="rk-page rk-app-surface text-white">
+      <FirstRunOnboarding />
       <LoginNotice />
       <div className="rk-shell min-h-screen pb-24 text-white md:px-6">
         <h1 className="sr-only">Ryukomik - Baca Manga, Manhwa, dan Manhua Bahasa Indonesia Terbaru</h1>
