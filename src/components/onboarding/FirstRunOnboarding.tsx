@@ -111,6 +111,12 @@ function OnboardingInner() {
   // Tampil sekali. Penanda ditulis SEBELUM overlay dirender.
   useEffect(() => {
     try {
+      // Bersihkan penanda versi lama (onboarding yang memblokir baca).
+      try {
+        localStorage.removeItem("rk-onboarding-v1");
+      } catch {
+        /* abaikan */
+      }
       if (localStorage.getItem(STORAGE_KEY) === "1") {
         setStatus("done");
         return;
