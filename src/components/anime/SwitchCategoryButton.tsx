@@ -26,17 +26,6 @@ const CATEGORIES = [
     badgeColor: "#061018",
     desc: "Animasi China",
   },
-  {
-    key: "hentai",
-    label: "Hentai",
-    path: "/hentai/terbaru",
-    letter: "18",
-    color: "#f43f5e",
-    badge: "18+",
-    badgeBg: "#f43f5e",
-    badgeColor: "#fff",
-    desc: "Konten Dewasa",
-  },
 ] as const;
 
 type Category = (typeof CATEGORIES)[number];

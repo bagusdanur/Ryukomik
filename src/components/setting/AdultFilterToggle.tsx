@@ -54,7 +54,7 @@ export default function AdultFilterToggle() {
             Sembunyikan konten 18+
           </span>
           <span className="mt-0.5 block text-xs text-white/45">
-            Sumber dewasa dan tab Hentai tidak ditampilkan selama filter aktif.
+            Sumber komik dewasa (18+) tidak ditampilkan selama filter aktif.
           </span>
         </span>
       </span>

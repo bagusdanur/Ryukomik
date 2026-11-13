@@ -8,22 +8,12 @@ import { ADULT_PREF_EVENT, isAdultHidden } from "@/utils/adultFilter";
 const TABS = [
   { label: "Anime", href: "/anime/terbaru", color: "#22d3ee" },
   { label: "Donghua", href: "/donghua/terbaru", color: "#ff9f1c" },
-  { label: "Dewasa", href: "/hentai/terbaru", color: "#ff5078" },
 ];
 
 /** Header halaman /tonton — gaya sama dengan AnimeHeader/DonghuaHeader. */
 export default function TontonHeader() {
   const pathname = usePathname();
-  const [hideAdult, setHideAdult] = useState(false);
-
-  useEffect(() => {
-    setHideAdult(isAdultHidden());
-    const sync = () => setHideAdult(isAdultHidden());
-    window.addEventListener(ADULT_PREF_EVENT, sync);
-    return () => window.removeEventListener(ADULT_PREF_EVENT, sync);
-  }, []);
-
-  const tabs = hideAdult ? TABS.filter((tab) => tab.label !== "Dewasa") : TABS;
+  const tabs = TABS;
 
   return (
     <header className="sticky top-0 z-50 bg-[var(--background)]">
@@ -38,7 +28,7 @@ export default function TontonHeader() {
             <span className="block text-[16px] font-black tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>
               Tonton<span className="text-cyan-200">.</span>
             </span>
-            <span className="text-[9px] uppercase tracking-widest text-white/30">{hideAdult ? "Anime · Donghua" : "Anime · Donghua · 18+"}</span>
+            <span className="text-[9px] uppercase tracking-widest text-white/30">Anime · Donghua</span>
           </div>
         </Link>
 
@@ -54,7 +44,7 @@ export default function TontonHeader() {
         </Link>
       </div>
 
-      <div className="mx-auto grid w-full max-w-lg grid-cols-3 gap-2 px-4 pb-3">
+      <div className="mx-auto grid w-full max-w-lg grid-cols-2 gap-2 px-4 pb-3">
         {tabs.map((tab) => {
           const active = pathname.startsWith(tab.href.split("/").slice(0, 2).join("/"));
           return (

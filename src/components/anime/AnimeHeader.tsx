@@ -208,24 +208,6 @@ export default function AnimeHeader() {
               Donghua →
             </span>
           </Link>
-
-          {/* link ke hentai */}
-          <Link
-            href="/hentai/terbaru"
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#ff5078]/8 border border-transparent active:scale-95 transition-colors duration-200"
-          >
-            <div
-              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ background: "#ff5078" }}
-            />
-            <span
-              className="text-[13px] font-bold text-white/30 hover:text-[#ffb3c6] transition-colors duration-200"
-              style={{ fontFamily: "'Syne', sans-serif" }}
-            >
-              Hentai →
-            </span>
-          </Link>
         </nav>
 
         {/* drawer footer */}

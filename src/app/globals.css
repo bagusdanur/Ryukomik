@@ -434,3 +434,41 @@ img {
   }
 }
 
+
+@layer components {
+  /* Toggle onboarding — gaya Ryukomik (accent violet). */
+  .rk-switch {
+    position: relative;
+    width: 48px;
+    height: 28px;
+    flex: 0 0 auto;
+    appearance: none;
+    border: 0;
+    padding: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .14);
+    cursor: pointer;
+    transition: background 220ms ease;
+  }
+  .rk-switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 220ms ease;
+  }
+  .rk-switch:checked {
+    background: var(--accent);
+  }
+  .rk-switch:checked::after {
+    transform: translateX(20px);
+  }
+  .rk-switch:focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 2px;
+  }
+}

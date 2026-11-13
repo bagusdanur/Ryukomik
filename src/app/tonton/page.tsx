@@ -8,9 +8,9 @@ import { nekoImg } from "@/utils/neko";
 export const revalidate = 120;
 
 export const metadata: Metadata = {
-  title: "Tonton Anime, Donghua & Anime Dewasa Sub Indo - Ryukomik",
+  title: "Tonton Anime & Donghua Sub Indo - Ryukomik",
   description:
-    "Pusat tontonan Ryukomik: anime terbaru, donghua (animasi China), dan anime dewasa sub indo dalam satu halaman.",
+    "Pusat tontonan Ryukomik: anime terbaru dan donghua (animasi China) sub indo dalam satu halaman.",
   alternates: { canonical: "https://ryukomik.web.id/tonton" },
 };
 
@@ -107,11 +107,9 @@ function CardGrid({ section }: { section: SectionConfig }) {
 }
 
 export default async function TontonPage() {
-  const hideAdult = await adultContentHidden();
-  const [anime, donghua, dewasa] = await Promise.all([
+  const [anime, donghua] = await Promise.all([
     fetchLatest("https://apiv2.ryukomik.web.id/animeid/terbaru"),
     fetchLatest("https://apiv2.ryukomik.web.id/anichin/terbaru"),
-    fetchLatest("https://apiv2.ryukomik.web.id/nekopoi/terbaru?page=1"),
   ]);
 
   const sections: SectionConfig[] = [
@@ -134,15 +132,6 @@ export default async function TontonPage() {
       badgeBg: "#ff9f1c",
       items: donghua,
     },
-    {
-      key: "dewasa",
-      label: "Dewasa",
-      caption: "Anime dewasa sub indo (18+)",
-      href: "/hentai/terbaru",
-      episodeBase: "/hentai/episode",
-      badgeBg: "#ff5078",
-      items: dewasa,
-    },
   ];
 
   return (
@@ -150,13 +139,13 @@ export default async function TontonPage() {
       <div className="px-5 pt-4">
         <h1 className="text-xl font-black tracking-tight">Tonton</h1>
         <p className="mt-1 text-[11px] text-white/40">
-          Anime, donghua, dan anime dewasa — update terbaru dalam satu tempat.
+          Anime dan donghua — update terbaru dalam satu tempat.
         </p>
       </div>
 
       <ContinueWatching />
 
-      {(hideAdult ? sections.filter((section) => section.key !== "dewasa") : sections).map((section) => {
+      {sections.map((section) => {
         const block = (
           <section key={section.key} id={section.key} className="mt-7 scroll-mt-28">
             <div className="mb-3 flex items-end justify-between gap-3 px-5">
