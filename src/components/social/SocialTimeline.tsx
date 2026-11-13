@@ -198,6 +198,7 @@ function Composer({
   replyToId,
   replyToName,
   compact = false,
+  hideHeading = false,
   onCreated,
   optimisticAuthor,
 }: {
@@ -205,6 +206,8 @@ function Composer({
   replyToId?: string;
   replyToName?: string;
   compact?: boolean;
+  /** Sembunyikan judul "Buat postingan" (dipakai saat sudah ada header sheet). */
+  hideHeading?: boolean;
   onCreated: (post?: Post, replaceId?: string) => void;
   optimisticAuthor?: ViewerProfile;
 }) {
@@ -292,10 +295,12 @@ function Composer({
       className={
         compact
           ? "relative z-[1] border-t border-white/[0.08] bg-[#0a0e19]/95 p-3 backdrop-blur-sm"
-          : "rounded-2xl border border-white/[0.1] bg-[linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.018))] p-4 shadow-[inset_0_1px_rgba(255,255,255,.025)] sm:p-5"
+          : hideHeading
+            ? "p-0"
+            : "rounded-2xl border border-white/[0.1] bg-[linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.018))] p-3 shadow-[inset_0_1px_rgba(255,255,255,.025)] sm:p-5"
       }
     >
-      {!compact && (
+      {!compact && !hideHeading && (
         <div className="mb-4">
           <p className="text-base font-black">Buat postingan</p>
           <p className="mt-0.5 text-xs text-white/40">
@@ -341,8 +346,8 @@ function Composer({
         </div>
       )}
       {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
           <div className="relative">
             <button
               type="button"
@@ -393,7 +398,7 @@ function Composer({
             <span>18+</span>
           </button>
           {image && sensitive && (
-            <span className="text-[10px] font-semibold text-rose-300/80">Gambar akan diblur</span>
+            <span className="hidden text-[10px] font-semibold text-rose-300/80 sm:inline">Gambar akan diblur</span>
           )}
           {!parentId && (
             <select
@@ -405,13 +410,13 @@ function Composer({
               <option value="followers">Pengikut</option>
             </select>
           )}
-          <span className="text-[10px] text-white/30">
+          <span className="ml-auto text-[10px] text-white/30 sm:ml-0">
             {content.length}/500
           </span>
         </div>
         <button
           disabled={(!content.trim() && !image) || sending}
-          className="flex items-center gap-2 rounded-full bg-[var(--accent-2)] px-4 py-2.5 text-xs font-black text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--accent-2)] px-4 py-2.5 text-xs font-black text-black transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 sm:w-auto"
         >
           {sending ? <FiRefreshCw className="animate-spin" /> : <FiSend />}
           {sending ? "Sedang mengirim..." : parentId ? "Balas" : "Posting"}
@@ -804,6 +809,7 @@ function SocialTimelineEnabled({ viewerProfile = null }: { viewerProfile?: Viewe
             </div>
             <Composer
               optimisticAuthor={viewer}
+              hideHeading
               onCreated={(post, replaceId) => {
                 handleCreated(post, replaceId);
                 if (!replaceId) setComposerOpen(false);
