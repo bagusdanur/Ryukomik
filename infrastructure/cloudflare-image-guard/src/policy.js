@@ -1,4 +1,6 @@
 export const ALLOWED_HOSTS = new Set([
+  "ryukomik.web.id",
+  "www.ryukomik.web.id",
   "ryukomik.my.id",
   "www.ryukomik.my.id",
 ]);

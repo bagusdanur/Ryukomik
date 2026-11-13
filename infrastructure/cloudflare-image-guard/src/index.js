@@ -20,7 +20,7 @@ const lockCache = new Map();
 async function chapterLock(scope, env) {
   const cached = lockCache.get(scope);
   if (cached && Date.now() - cached.at < 15_000) return cached.lock;
-  const response = await fetch(`https://ryukomik.my.id/api/internal/chapter-access?scope=${encodeURIComponent(scope)}`, {
+  const response = await fetch(`https://ryukomik.web.id/api/internal/chapter-access?scope=${encodeURIComponent(scope)}`, {
     headers: { authorization: `Bearer ${env.IMAGE_ACCESS_SECRET}` }, cache: 'no-store',
   });
   if (!response.ok) throw new Error('Chapter access unavailable');
