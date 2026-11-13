@@ -220,7 +220,7 @@ self.addEventListener("fetch", (event) => {
 
   if (sameOrigin && url.pathname.startsWith("/api/image")) {
     try {
-      if (new URL(url.searchParams.get('url')).hostname === 'storage.ryukomik.my.id') return;
+      if (['storage.ryukomik.my.id', 'storage.ryukomik.web.id'].includes(new URL(url.searchParams.get('url')).hostname)) return;
     } catch { /* Not a Project image proxy request. */ }
     event.respondWith(cacheFirst(request, IMAGE_CACHE));
     return;
