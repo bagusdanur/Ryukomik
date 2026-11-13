@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   ],
 
   alternates: {
-    canonical: "https://ryukomik.my.id/hentai/terbaru",
+    canonical: "https://ryukomik.web.id/hentai/terbaru",
   },
 
   robots: {
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     description:
       "Update anime dewasa terbaru sub indo kualitas HD di Ryukomik.",
 
-    url: "https://ryukomik.my.id/hentai/terbaru",
+    url: "https://ryukomik.web.id/hentai/terbaru",
 
     siteName: "Ryukomik",
 
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
 
     images: [
       {
-        url: "https://ryukomik.my.id/og-hentai.jpg",
+        url: "https://ryukomik.web.id/og-hentai.jpg",
         width: 1200,
         height: 630,
         alt: "Anime Dewasa Ryukomik",
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     description:
       "Update anime dewasa terbaru sub indo di Ryukomik.",
 
-    images: ["https://ryukomik.my.id/og-hentai.jpg"],
+    images: ["https://ryukomik.web.id/og-hentai.jpg"],
   },
 };
 

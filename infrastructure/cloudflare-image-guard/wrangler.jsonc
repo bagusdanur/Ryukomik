@@ -9,6 +9,14 @@
 	},
 	"routes": [
 		{
+			"pattern": "storage.ryukomik.web.id/chapters/*",
+			"zone_name": "ryukomik.web.id"
+		},
+		{
+			"pattern": "storage.ryukomik.web.id/__ryukomik/image-guard*",
+			"zone_name": "ryukomik.web.id"
+		},
+		{
 			"pattern": "storage.ryukomik.my.id/chapters/*",
 			"zone_name": "ryukomik.my.id"
 		},

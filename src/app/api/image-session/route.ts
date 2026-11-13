@@ -8,7 +8,7 @@ import { signImageAccessCookie } from '@/lib/imageAccessCookie';
 export const dynamic = "force-dynamic";
 const COOKIE_NAME = "ryu_image_access";
 const MAX_AGE_SECONDS = 2 * 60 * 60;
-const ALLOWED_HOSTS = new Set(["ryukomik.my.id", "www.ryukomik.my.id"]);
+const ALLOWED_HOSTS = new Set(["ryukomik.web.id", "www.ryukomik.web.id"]);
 
 function requestIsOfficial(request: Request) {
   const source = request.headers.get("origin") || request.headers.get("referer");
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   response.cookies.set(COOKIE_NAME, "", {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    domain: process.env.NODE_ENV === "production" ? ".ryukomik.my.id" : undefined,
+    domain: process.env.NODE_ENV === "production" ? ".ryukomik.web.id" : undefined,
     path: "/",
     maxAge: 0,
   });
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    domain: process.env.NODE_ENV === "production" ? ".ryukomik.my.id" : undefined,
+    domain: process.env.NODE_ENV === "production" ? ".ryukomik.web.id" : undefined,
     path: "/",
     maxAge: Math.max(0, expires - Math.floor(Date.now() / 1000)),
   });

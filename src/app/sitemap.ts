@@ -20,7 +20,7 @@ async function fetchSource(source: string): Promise<MetadataRoute.Sitemap> {
   for (let page = 1; page <= 3; page += 1) {
     try {
       const endpoint = source === "project"
-        ? `https://ryukomik.my.id/api/project/pustaka?page=${page}`
+        ? `https://ryukomik.web.id/api/project/pustaka?page=${page}`
         : `https://api.ryukomik.web.id/${source}/pustaka-filter?page=${page}&orderby=modified`;
       const response = await fetch(endpoint, {
         next: { revalidate: 3600 },
@@ -55,7 +55,7 @@ async function fetchSource(source: string): Promise<MetadataRoute.Sitemap> {
     const chapterGroups = await Promise.all(projectSlugs.map(async (slug) => {
       try {
         const response = await fetch(
-          `https://ryukomik.my.id/api/project/${encodeURIComponent(slug)}`,
+          `https://ryukomik.web.id/api/project/${encodeURIComponent(slug)}`,
           { next: { revalidate: 3600 }, signal: AbortSignal.timeout(4_000) },
         );
         if (!response.ok) return [];

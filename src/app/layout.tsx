@@ -27,7 +27,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ryukomik.my.id"),
+  metadataBase: new URL("https://ryukomik.web.id"),
   title: {
     default: "Baca Manga, Manhwa & Manhua Bahasa Indonesia Terbaru | Ryukomik",
     template: "%s | Ryukomik",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Baca Manga, Manhwa & Manhua Bahasa Indonesia Terbaru | Ryukomik",
     description: "Baca manga, manhwa, dan manhua bahasa Indonesia dengan daftar chapter terbaru dan informasi komik lengkap di Ryukomik.",
-    url: "https://ryukomik.my.id",
+    url: "https://ryukomik.web.id",
     siteName: "Ryukomik",
     images: [
       {
@@ -78,12 +78,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               "@context": "https://schema.org",
               "@type": "WebSite",
               "name": "Ryukomik",
-              "url": "https://ryukomik.my.id",
+              "url": "https://ryukomik.web.id",
               "potentialAction": {
                 "@type": "SearchAction",
                 "target": {
                   "@type": "EntryPoint",
-                  "urlTemplate": "https://ryukomik.my.id/search?q={search_term_string}"
+                  "urlTemplate": "https://ryukomik.web.id/search?q={search_term_string}"
                 },
                 "query-input": "required name=search_term_string"
               }

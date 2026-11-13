@@ -44,7 +44,7 @@ const execute = args.includes("--execute");
 const targetBytes = Number((args.find((a) => a.startsWith("--target-bytes=")) || "").split("=")[1] || 1_700_000_000);
 const onlySlug = (args.find((a) => a.startsWith("--slug=")) || "").split("=")[1];
 
-const PRIMARY_BASE = (env.NEXT_PUBLIC_TRANSLATE_CDN || "https://storage.ryukomik.my.id").replace(/\/+$/, "");
+const PRIMARY_BASE = (env.NEXT_PUBLIC_TRANSLATE_CDN || "https://storage.ryukomik.web.id").replace(/\/+$/, "");
 const ALT_BASE = (env.R2_ALT_PUBLIC_BASE || "https://storage.komano.my.id").replace(/\/+$/, "");
 
 const primary = new S3Client({

@@ -14,7 +14,7 @@ let content = execFileSync('sudo', ['-n', 'cat', config], { encoding: 'utf8' });
 const marker = '# premium-lock metadata route';
 if (phase === 'prepare-worker') {
   if (content.includes(marker)) throw new Error('Metadata route is already prepared.');
-  const anchor = '    server_name ryukomik.my.id;';
+  const anchor = '    server_name ryukomik.web.id;';
   if (content.split(anchor).length !== 2) throw new Error('Unexpected primary virtual host.');
   content = content.replace(anchor, anchor + `
 

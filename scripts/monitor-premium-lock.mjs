@@ -6,12 +6,12 @@ const duration = 48 * 60 * 60 * 1000;
 const output = '/home/ryukomik/ryukomik/data/premium-lock-monitor-20261004.jsonl';
 async function check() {
   const entry = { at: new Date().toISOString() };
-  for (const [name, url] of [['site', 'https://ryukomik.my.id/'], ['backend', 'http://127.0.0.1:4101/health']]) {
+  for (const [name, url] of [['site', 'https://ryukomik.web.id/'], ['backend', 'http://127.0.0.1:4101/health']]) {
     try { const response = await fetch(url, { signal: AbortSignal.timeout(15_000) }); entry[name] = response.status; await response.body?.cancel(); }
     catch { entry[name] = 'unreachable'; }
   }
   try {
-    const response = await fetch('https://storage.ryukomik.my.id/__ryukomik/image-guard', { headers: { authorization: `Bearer ${process.env.IMAGE_ACCESS_SECRET}` }, signal: AbortSignal.timeout(15_000) });
+    const response = await fetch('https://storage.ryukomik.web.id/__ryukomik/image-guard', { headers: { authorization: `Bearer ${process.env.IMAGE_ACCESS_SECRET}` }, signal: AbortSignal.timeout(15_000) });
     entry.worker = response.ok && (await response.json()).premiumLockProtection === true;
   } catch { entry.worker = false; }
   try {

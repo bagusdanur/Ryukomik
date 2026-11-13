@@ -252,7 +252,7 @@ export default async function DetailPage({ params }: DetailPageProps) {
                 "@type": "ListItem",
                 "position": 1,
                 "name": "Beranda",
-                "item": "https://ryukomik.my.id"
+                "item": "https://ryukomik.web.id"
               },
               {
                 "@type": "ListItem",

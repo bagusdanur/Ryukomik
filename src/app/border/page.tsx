@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: "Koleksi Border Avatar - Ryukomik",
   description:
     "Semua border avatar Ryukomik: ring warna, frame klasik, frame premium, dan frame juara marathon. Pilih dan pakai langsung dari profilmu.",
-  alternates: { canonical: "https://ryukomik.my.id/border" },
+  alternates: { canonical: "https://ryukomik.web.id/border" },
   openGraph: {
     title: "Koleksi Border Avatar - Ryukomik",
     description: "Pilih border avatar yang tampil di komentar, leaderboard, dan profil publik.",

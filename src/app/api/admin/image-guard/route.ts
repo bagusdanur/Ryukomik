@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminErrorResponse, verifyAdminRequest } from "@/lib/adminApi";
 
-const CONTROL_URL = "https://storage.ryukomik.my.id/__ryukomik/image-guard";
+const CONTROL_URL = "https://storage.ryukomik.web.id/__ryukomik/image-guard";
 
 async function guardRequest(method: "GET" | "PUT", enabled?: boolean) {
   const token = process.env.IMAGE_ACCESS_SECRET;

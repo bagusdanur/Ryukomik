@@ -33,8 +33,8 @@ const env = loadEnv();
 const TOKEN = env.TELEGRAM_PREMIUM_BOT_TOKEN || "";
 const CHAT_ID = process.env.UPTIME_CHAT_ID || "8706658046";
 const TARGETS = [
-  { name: "Website", url: "https://ryukomik.my.id/" },
-  { name: "API project", url: "https://ryukomik.my.id/api/project/pustaka?page=1" },
+  { name: "Website", url: "https://ryukomik.web.id/" },
+  { name: "API project", url: "https://ryukomik.web.id/api/project/pustaka?page=1" },
 ];
 
 function readState() {

@@ -1575,7 +1575,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                     className={`flex-1 rounded-md px-2 py-1 font-bold transition ${
                       storageAccount === acc ? "bg-[#7c5cfc] text-white" : "text-white/40 hover:text-white/70"
                     }`}
-                    title={acc === "primary" ? "storage.ryukomik.my.id" : "storage.komano.my.id"}
+                    title={acc === "primary" ? "storage.ryukomik.web.id" : "storage.komano.my.id"}
                   >
                     {acc === "primary" ? "Akun 1" : "Akun 2"}
                   </button>
@@ -2335,7 +2335,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             let src = url;
             try {
               const parsed = new URL(url);
-              if (parsed.hostname === 'storage.ryukomik.my.id' || parsed.hostname === 'storage.komano.my.id') {
+              if (parsed.hostname === 'storage.ryukomik.web.id' || parsed.hostname === 'storage.komano.my.id') {
                 src = `/api/image?url=${encodeURIComponent(url)}`;
               }
             } catch {}
@@ -2419,7 +2419,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                       className={`rounded-md px-2 py-1 font-bold transition ${
                         storageAccount === acc ? "bg-emerald-400/20 text-emerald-200" : "text-white/40 hover:text-white/70"
                       }`}
-                      title={acc === "primary" ? "storage.ryukomik.my.id" : "storage.komano.my.id"}
+                      title={acc === "primary" ? "storage.ryukomik.web.id" : "storage.komano.my.id"}
                     >
                       {acc === "primary" ? "Akun 1" : "Akun 2"}
                     </button>

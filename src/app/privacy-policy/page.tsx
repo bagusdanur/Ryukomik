@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
           <p>
             Aplikasi Ryukomik didistribusikan melalui Google Play dan
             menggunakan teknologi Trusted Web Activity (TWA) untuk menampilkan
-            versi web resmi dari https://www.ryukomik.my.id.
+            versi web resmi dari https://www.ryukomik.web.id.
           </p>
 
           {/* ================= INFO DATA ================= */}
@@ -172,7 +172,7 @@ export default function PrivacyPolicyPage() {
 
             <p className="mt-2">
               Email: ryuzunime17@gmail.com <br />
-              Website: https://www.ryukomik.my.id
+              Website: https://www.ryukomik.web.id
             </p>
           </div>
 

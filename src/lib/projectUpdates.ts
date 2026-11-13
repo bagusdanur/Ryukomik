@@ -29,7 +29,7 @@ export async function getProjectUpdates(): Promise<UpdateItem[]> {
   const projectApiUrl = process.env.PROJECT_API_URL?.replace(/\/$/, "");
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://ryukomik.my.id";
+    "https://ryukomik.web.id";
 
   try {
     if (projectApiUrl) {

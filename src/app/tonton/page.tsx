@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: "Tonton Anime, Donghua & Anime Dewasa Sub Indo - Ryukomik",
   description:
     "Pusat tontonan Ryukomik: anime terbaru, donghua (animasi China), dan anime dewasa sub indo dalam satu halaman.",
-  alternates: { canonical: "https://ryukomik.my.id/tonton" },
+  alternates: { canonical: "https://ryukomik.web.id/tonton" },
 };
 
 type WatchItem = {

@@ -38,10 +38,10 @@ assert.equal((await fetch(base + '/api/internal/chapter-access?scope=/chapters/t
 const scope = `/chapters/${slug}/${chapter.chapter_number}/`;
 const metadata = await fetch(base + '/api/internal/chapter-access?scope=' + encodeURIComponent(scope), { headers: { authorization: `Bearer ${process.env.IMAGE_ACCESS_SECRET}` } });
 assert.equal(metadata.status, 200); assert.equal((await metadata.json()).premium_lock_until, null);
-const session = await fetch(base + '/api/image-session', { method: 'POST', headers: { Origin: 'https://ryukomik.my.id', 'Content-Type': 'application/json' }, body: JSON.stringify({ chapter: `${slug}/chapter-${chapter.chapter_number}` }) });
+const session = await fetch(base + '/api/image-session', { method: 'POST', headers: { Origin: 'https://ryukomik.web.id', 'Content-Type': 'application/json' }, body: JSON.stringify({ chapter: `${slug}/chapter-${chapter.chapter_number}` }) });
 assert.equal(session.status, 200); assert.match(session.headers.get('set-cookie'), /v3\./);
 if (process.env.CHECK_WORKER === 'true') {
-  const guard = await fetch('https://storage.ryukomik.my.id/__ryukomik/image-guard', { headers: { authorization: `Bearer ${process.env.IMAGE_ACCESS_SECRET}` } });
+  const guard = await fetch('https://storage.ryukomik.web.id/__ryukomik/image-guard', { headers: { authorization: `Bearer ${process.env.IMAGE_ACCESS_SECRET}` } });
   assert.equal(guard.status, 200); assert.equal((await guard.json()).premiumLockProtection, true);
   const altGuard = await fetch('https://storage.komano.my.id/__ryukomik/image-guard', { headers: { authorization: `Bearer ${process.env.IMAGE_ACCESS_SECRET}` } });
   assert.equal(altGuard.status, 200); assert.equal((await altGuard.json()).premiumLockProtection, true);

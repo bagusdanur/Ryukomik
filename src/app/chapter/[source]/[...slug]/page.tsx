@@ -394,7 +394,7 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             "itemListElement": [
-              { "@type": "ListItem", "position": 1, "name": "Beranda", "item": "https://ryukomik.my.id" },
+              { "@type": "ListItem", "position": 1, "name": "Beranda", "item": "https://ryukomik.web.id" },
               { "@type": "ListItem", "position": 2, "name": mangaSlug.replace(/-/g, " "), "item": comicUrl },
               { "@type": "ListItem", "position": 3, "name": title, "item": canonicalUrl }
             ]
@@ -404,7 +404,7 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
       <nav aria-label="Breadcrumb" className="sr-only">
         <Link href="/">Beranda</Link>
         <span aria-hidden="true"> / </span>
-        <Link href={comicUrl.replace("https://ryukomik.my.id", "")}>{mangaSlug.replace(/-/g, " ")}</Link>
+        <Link href={comicUrl.replace("https://ryukomik.web.id", "")}>{mangaSlug.replace(/-/g, " ")}</Link>
         <span aria-hidden="true"> / </span>
         <span>{title}</span>
       </nav>

@@ -4,21 +4,21 @@ import React, { memo } from "react";
 export const DEFAULT_MARQUEE_COVERS: string[][] = [
   // Kolom 1
   [
-    "https://storage.ryukomik.my.id/covers/is-it-bad-that-the-main-character-s-a-roleplayer/cover.webp",
-    "https://storage.ryukomik.my.id/covers/beast-saga/cover.webp",
-    "https://storage.ryukomik.my.id/covers/let-s-do-it-after-work/cover.jpg",
+    "https://storage.ryukomik.web.id/covers/is-it-bad-that-the-main-character-s-a-roleplayer/cover.webp",
+    "https://storage.ryukomik.web.id/covers/beast-saga/cover.webp",
+    "https://storage.ryukomik.web.id/covers/let-s-do-it-after-work/cover.jpg",
   ],
   // Kolom 2
   [
-    "https://storage.ryukomik.my.id/covers/get-out/cover.jpg",
-    "https://storage.ryukomik.my.id/covers/affair-agency/cover.webp",
-    "https://storage.ryukomik.my.id/covers/i-m-the-hero-but-the-main-heroines-are-trying-to-kill-me/cover.webp",
+    "https://storage.ryukomik.web.id/covers/get-out/cover.jpg",
+    "https://storage.ryukomik.web.id/covers/affair-agency/cover.webp",
+    "https://storage.ryukomik.web.id/covers/i-m-the-hero-but-the-main-heroines-are-trying-to-kill-me/cover.webp",
   ],
   // Kolom 3
   [
-    "https://storage.ryukomik.my.id/covers/sicario/cover.png",
-    "https://storage.ryukomik.my.id/covers/the-old-man-vows-revenge-against-his-demon-wife/cover.png",
-    "https://storage.ryukomik.my.id/covers/rebirth-of-the-immortal-supreme-in-the-city/cover.png",
+    "https://storage.ryukomik.web.id/covers/sicario/cover.png",
+    "https://storage.ryukomik.web.id/covers/the-old-man-vows-revenge-against-his-demon-wife/cover.png",
+    "https://storage.ryukomik.web.id/covers/rebirth-of-the-immortal-supreme-in-the-city/cover.png",
   ],
 ];
 

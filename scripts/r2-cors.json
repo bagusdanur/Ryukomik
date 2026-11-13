@@ -1,6 +1,6 @@
 [
   {
-    "AllowedOrigins": ["https://ryukomik.my.id"],
+    "AllowedOrigins": ["https://ryukomik.web.id"],
     "AllowedMethods": ["PUT", "GET", "HEAD"],
     "AllowedHeaders": ["*"],
     "MaxAgeSeconds": 3600

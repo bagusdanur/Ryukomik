@@ -67,7 +67,7 @@ export async function notifyPremiumRequest(item: PremiumRequestNotification): Pr
         { text: "ACC", callback_data: `prem:approve:${item.id}` },
         { text: "Tolak", callback_data: `prem:reject:${item.id}` },
       ],
-      [{ text: "Buka Dashboard Premium", url: "https://ryukomik.my.id/dashboard?page=requests" }],
+      [{ text: "Buka Dashboard Premium", url: "https://ryukomik.web.id/dashboard?page=requests" }],
     ],
   };
 

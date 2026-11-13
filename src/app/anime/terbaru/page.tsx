@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   ],
 
   alternates: {
-    canonical: "https://ryukomik.my.id/anime/terbaru",
+    canonical: "https://ryukomik.web.id/anime/terbaru",
   },
 
   robots: {
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     description:
       "Update anime terbaru sub indo dan ongoing setiap hari di Ryukomik.",
 
-    url: "https://ryukomik.my.id/anime/terbaru",
+    url: "https://ryukomik.web.id/anime/terbaru",
 
     siteName: "Ryukomik",
 
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
 
     images: [
       {
-        url: "https://ryukomik.my.id/og-anime.jpg",
+        url: "https://ryukomik.web.id/og-anime.jpg",
         width: 1200,
         height: 630,
         alt: "Anime Terbaru Ryukomik",
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
     description:
       "Nonton dan update anime terbaru sub indo kualitas HD di Ryukomik.",
 
-    images: ["https://ryukomik.my.id/og-anime.jpg"],
+    images: ["https://ryukomik.web.id/og-anime.jpg"],
   },
 };
 

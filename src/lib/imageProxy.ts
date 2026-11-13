@@ -41,8 +41,8 @@ export function getOriginalImageUrl(url?: string): string {
     if (isDoujindesuBackendImageUrl(parsed.href)) return parsed.href;
 
     const isFrontendProxy =
-      parsed.origin === "https://proxy.ryukomik.my.id" ||
-      parsed.origin === "https://cdn.ryukomik.my.id" ||
+      parsed.origin === "https://proxy.ryukomik.web.id" ||
+      parsed.origin === "https://cdn.ryukomik.web.id" ||
       parsed.pathname === "/api/image-proxy" ||
       parsed.pathname === "/api/image" ||
       parsed.pathname === "/image";
@@ -98,7 +98,7 @@ export function getChapterImageCandidates(source: string, url?: string) {
   }
 
   // Image project di storage.komano.my.id dijaga Worker, tapi cookie akses
-  // di-set untuk origin Ryukomik (domain .ryukomik.my.id) sehingga browser
+  // di-set untuk origin Ryukomik (domain .ryukomik.web.id) sehingga browser
   // tidak mengirimkannya ke host komano. Lewatkan /api/image agar cookie
   // first-party dipakai; proxy akan meneruskan cookie signed ke Worker.
   if (source === "project") {

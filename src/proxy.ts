@@ -19,8 +19,8 @@ export function proxy(request: NextRequest) {
   }
   let changed = false;
 
-  if (url.hostname === "www.ryukomik.my.id") {
-    url.hostname = "ryukomik.my.id";
+  if (url.hostname === "www.ryukomik.web.id") {
+    url.hostname = "ryukomik.web.id";
     changed = true;
   }
 

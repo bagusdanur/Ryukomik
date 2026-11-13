@@ -10,7 +10,7 @@ function parseChapterInput(input: unknown) {
 
   const url = value.startsWith("http://") || value.startsWith("https://")
     ? new URL(value)
-    : new URL(value.startsWith("/") ? value : `/${value}`, "https://www.ryukomik.my.id");
+    : new URL(value.startsWith("/") ? value : `/${value}`, "https://www.ryukomik.web.id");
 
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts[0] !== "chapter" || !parts[1] || parts.length < 3) return null;

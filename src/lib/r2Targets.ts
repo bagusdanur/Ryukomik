@@ -4,7 +4,7 @@ import { S3Client } from "@aws-sdk/client-s3";
 
 /**
  * Dua akun R2:
- *  - akun utama  : bucket lama (file yang sudah ada, host storage.ryukomik.my.id)
+ *  - akun utama  : bucket lama (file yang sudah ada, host storage.ryukomik.web.id)
  *  - akun kedua  : bucket "project" (upload baru, host storage.komano.my.id)
  *
  * Upload baru diarahkan ke akun kedua kalau kredensialnya lengkap; kalau tidak,
@@ -37,7 +37,7 @@ const primary: R2Target = {
     process.env.R2_SECRET_ACCESS_KEY || "",
   ),
   bucket: process.env.R2_BUCKET_NAME || "ryukomik-translate",
-  publicBase: (process.env.NEXT_PUBLIC_TRANSLATE_CDN || "https://storage.ryukomik.my.id").replace(/\/+$/, ""),
+  publicBase: (process.env.NEXT_PUBLIC_TRANSLATE_CDN || "https://storage.ryukomik.web.id").replace(/\/+$/, ""),
 };
 
 const altConfigured =

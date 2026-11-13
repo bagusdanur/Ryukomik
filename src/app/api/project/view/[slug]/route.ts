@@ -20,7 +20,7 @@ export async function POST(
     }
 
     const origin = request.headers.get("origin");
-    const allowedHosts = ["ryukomik.my.id", "www.ryukomik.my.id"];
+    const allowedHosts = ["ryukomik.web.id", "www.ryukomik.web.id"];
     if (origin && !allowedHosts.includes(new URL(origin).host)) {
       return NextResponse.json({ error: "Origin tidak diizinkan" }, { status: 403 });
     }

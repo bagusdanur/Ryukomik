@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
     const origin = configuredOrigin && !/^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/i.test(configuredOrigin)
       ? configuredOrigin
-      : "https://ryukomik.my.id";
+      : "https://ryukomik.web.id";
     return NextResponse.json({
       url: `${origin}/preview/project/${encodeURIComponent(token)}`,
       expiresInDays: 7,

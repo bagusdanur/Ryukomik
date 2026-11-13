@@ -720,7 +720,7 @@ const PremiumPromoComment = memo(() => {
           </p>
 
           <a
-            href="https://ryukomik.my.id/premium-pay"
+            href="https://ryukomik.web.id/premium-pay"
             className="rk-btn-primary mt-3 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-wide"
           >
             <span>✦</span> Lihat Premium

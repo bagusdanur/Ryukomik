@@ -5,7 +5,7 @@ import { projectApiFetch, ProjectApiError } from '@/lib/projectApiServer';
 import { invalidateChapterAccess } from '@/lib/chapterAccess';
 
 const CONTROL_URLS = [
-  'https://storage.ryukomik.my.id/__ryukomik/image-guard',
+  'https://storage.ryukomik.web.id/__ryukomik/image-guard',
   'https://storage.komano.my.id/__ryukomik/image-guard',
 ];
 type Changed = { id: string; manga_slug: string; chapter_number: string | number; premium_lock_started_at: string | null; premium_lock_until: string | null };

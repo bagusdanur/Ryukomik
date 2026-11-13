@@ -180,7 +180,7 @@ export default function ApkSettingsTab({
             </p>
           </div>
           <a
-            href={settings.enabled ? settings.downloadUrl || "/apk" : "https://ryukomik.my.id"}
+            href={settings.enabled ? settings.downloadUrl || "/apk" : "https://ryukomik.web.id"}
             target="_blank"
             rel="noopener noreferrer"
             className="w-9 h-9 rounded-lg bg-white/[.05] border border-white/[.08] flex items-center justify-center text-white/45 hover:text-white transition-colors"

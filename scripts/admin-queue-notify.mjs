@@ -35,7 +35,7 @@ const SOCIAL_DB = env.SOCIAL_DATABASE_URL;
 const PROJECT_DB = projectEnv.PROJECT_DATABASE_URL;
 const TOKEN = env.TELEGRAM_PREMIUM_BOT_TOKEN || "";
 const CHAT_ID = process.env.ADMIN_QUEUE_CHAT_ID || "8706658046";
-const DASHBOARD_URL = "https://ryukomik.my.id/dashboard";
+const DASHBOARD_URL = "https://ryukomik.web.id/dashboard";
 
 const force = process.argv.includes("--force");
 

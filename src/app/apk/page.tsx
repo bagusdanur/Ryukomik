@@ -5,7 +5,7 @@ import { getApkSettings } from "@/lib/apkSettings";
 import ApkDownloadButton from "./ApkDownloadButton";
 import ApkScreenshotGallery from "./ApkScreenshotGallery";
 
-const WEB_READER_URL = "https://ryukomik.my.id";
+const WEB_READER_URL = "https://ryukomik.web.id";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

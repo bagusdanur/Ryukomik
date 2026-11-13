@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/dashboard/", "/files/", "/bookmark/", "/history/", "/setting/"],
       },
     ],
-    sitemap: "https://ryukomik.my.id/sitemap.xml",
+    sitemap: "https://ryukomik.web.id/sitemap.xml",
   };
 }
