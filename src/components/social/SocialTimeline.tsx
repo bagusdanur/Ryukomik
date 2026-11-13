@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   FiBookmark,
@@ -81,17 +81,6 @@ function MediaPicker({
   const [error, setError] = useState("");
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  // Panel bisa kebablasan keluar viewport kalau tombol Sticker berada di
-  // composer balasan yang di-indent (ml-8) — clamp lebarnya ke sisa layar.
-  useLayoutEffect(() => {
-    const node = panelRef.current;
-    if (!node) return;
-    const available = window.innerWidth - node.getBoundingClientRect().left - 16;
-    if (available < node.offsetWidth) {
-      node.style.width = `${Math.max(200, available)}px`;
-    }
-  }, [tab]);
-
   function addManualUrl() {
     const value = manualUrl.trim();
     try {
@@ -105,7 +94,7 @@ function MediaPicker({
   }
 
   return (
-    <div ref={panelRef} className="absolute bottom-12 left-0 z-30 w-[min(21rem,calc(100vw-2.5rem))] overflow-hidden rounded-2xl border border-white/10 bg-[var(--surface-2)] p-3 shadow-2xl">
+    <div ref={panelRef} className="fixed bottom-24 left-1/2 z-[60] w-[min(21rem,calc(100vw-1.5rem))] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/10 bg-[var(--surface-2)] p-3 shadow-2xl sm:absolute sm:bottom-12 sm:left-0 sm:translate-x-0">
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="grid flex-1 grid-cols-2 rounded-xl bg-black/25 p-1">
           {(["sticker", "link"] as const).map((item) => (
