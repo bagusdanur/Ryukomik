@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { FiArrowDown, FiRefreshCw } from "react-icons/fi";
 import { getChapterImageCandidates } from "@/lib/imageProxy";
 import type { ImageScaling, PageSpacing, ReadingMode } from "@/store/readerStore";
-import RecruitmentBanner from "./RecruitmentBanner";
+import ScanlatorNoticeBanner from "@/components/ScanlatorNoticeBanner";
+import CommunityBanner from "@/components/CommunityBanner";
 import PremiumBanner from "./PremiumBanner";
 
 const BOTTOM_ZONE = 0.35;
@@ -360,7 +361,8 @@ export default function ReaderImages({
         ))}
       </div>
 
-      <RecruitmentBanner />
+      <ScanlatorNoticeBanner />
+      <CommunityBanner />
 
       <div
         data-no-tap
