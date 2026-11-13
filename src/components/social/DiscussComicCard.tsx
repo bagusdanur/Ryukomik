@@ -5,15 +5,18 @@ import Link from "next/link";
 import { FiArrowRight, FiCheck, FiMessageCircle, FiSend, FiX } from "react-icons/fi";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { socialFetch } from "@/lib/social/client";
+import AdultCoverGuard from "@/components/adult/AdultCoverGuard";
 
 type Props = {
   title: string;
   source: string;
   slug: string;
   thumbnail?: string | null;
+  /** Komik bertanda 18+ → postingan diskusi ikut diblur. */
+  isAdult?: boolean;
 };
 
-export default function DiscussComicCard({ title, source, slug, thumbnail }: Props) {
+export default function DiscussComicCard({ title, source, slug, thumbnail, isAdult = false }: Props) {
   const { user, loading: userLoading } = useSupabaseUser();
   const [open, setOpen] = useState(false);
   const [opinion, setOpinion] = useState("");
@@ -36,7 +39,7 @@ export default function DiscussComicCard({ title, source, slug, thumbnail }: Pro
     try {
       const result = await socialFetch<{ post: { id: string } }>("/api/social/posts", {
         method: "POST",
-        body: JSON.stringify({ content, image_url: mediaUrl, visibility: "public" }),
+        body: JSON.stringify({ content, image_url: mediaUrl, visibility: "public", is_sensitive: isAdult }),
       });
       setCreatedId(result.post.id);
     } catch (failure) {
@@ -54,7 +57,9 @@ export default function DiscussComicCard({ title, source, slug, thumbnail }: Pro
           <div className="relative flex items-center gap-4">
             {thumbnail && (
               <div className="hidden h-24 w-16 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/20 sm:block">
-                <img src={thumbnail} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                <AdultCoverGuard adult={isAdult} revealKey={`discuss-${source}-${slug}`}>
+                  <img src={thumbnail} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                </AdultCoverGuard>
               </div>
             )}
             <div className="min-w-0 flex-1">
@@ -101,7 +106,7 @@ export default function DiscussComicCard({ title, source, slug, thumbnail }: Pro
             ) : user ? (
               <form onSubmit={publish} className="p-4">
                 <div className="flex gap-3 rounded-2xl border border-white/10 bg-black/15 p-3">
-                  {thumbnail && <img src={thumbnail} alt="" className="h-20 w-14 shrink-0 rounded-lg object-cover" referrerPolicy="no-referrer" />}
+                  {thumbnail && <img src={thumbnail} alt="" className={`h-20 w-14 shrink-0 rounded-lg object-cover ${isAdult ? "blur-md brightness-[.5]" : ""}`} referrerPolicy="no-referrer" />}
                   <div className="min-w-0"><p className="line-clamp-2 text-sm font-black">{title}</p><p className="mt-1 text-[10px] uppercase tracking-wider text-cyan-200/50">{source}</p></div>
                 </div>
                 <textarea
@@ -114,6 +119,11 @@ export default function DiscussComicCard({ title, source, slug, thumbnail }: Pro
                   className="rk-input mt-3 w-full resize-none rounded-2xl p-4 text-sm"
                 />
                 <div className="mt-1 flex justify-between text-[10px] text-white/30"><span>Judul dan tautan komik ditambahkan otomatis</span><span>{opinion.length}/360</span></div>
+                {isAdult && (
+                  <p className="mt-3 rounded-xl border border-rose-400/25 bg-rose-500/10 p-3 text-[11px] leading-relaxed text-rose-200">
+                    Komik ini bertanda <b>18+</b> — gambar diskusi otomatis diblur untuk pembaca yang mengaktifkan filter 18+.
+                  </p>
+                )}
                 {error && <p className="mt-3 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs text-red-200">{error}</p>}
                 <button disabled={sending} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-sm font-black text-black disabled:opacity-50"><FiSend className={sending ? "animate-pulse" : ""} />{sending ? "Menerbitkan..." : "Terbitkan diskusi"}</button>
               </form>

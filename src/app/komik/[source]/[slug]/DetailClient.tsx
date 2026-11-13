@@ -414,6 +414,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
         source={source}
         slug={slug}
         thumbnail={data.thumbnail}
+        isAdult={data.is_adult === true}
       />
 
       <div className="rk-shell px-4 mt-10 border-t border-white/10 pt-10">
