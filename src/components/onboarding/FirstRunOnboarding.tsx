@@ -117,7 +117,16 @@ function OnboardingInner() {
       } catch {
         /* abaikan */
       }
-      if (localStorage.getItem(STORAGE_KEY) === "1") {
+      // Mode pratinjau: /?onboarding=1 memaksa slide tampil walau penanda sudah ada.
+      let forced = false;
+      try {
+        const flag = new URLSearchParams(window.location.search).get("onboarding");
+        forced = flag === "1" || flag === "force" || flag === "preview";
+      } catch {
+        forced = false;
+      }
+
+      if (!forced && localStorage.getItem(STORAGE_KEY) === "1") {
         setStatus("done");
         return;
       }
