@@ -8,6 +8,8 @@ import type { Metadata } from "next";
 import type { ReaderChapter } from "@/types/content";
 import { projectApiFetch, ProjectApiError } from "@/lib/projectApiServer";
 import { evaluateChapterAccess, type ChapterLock } from "@/lib/chapterAccessPolicy";
+import { ADULT_ENABLED } from "@/config/siteMode";
+import { isAdultGroupSource } from "@/config/sources";
 import {
   buildChapterUrl,
   buildComicUrl,
@@ -123,7 +125,7 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
       
       const number = chapter.match(/^(?:chapter-)?(\d+(?:\.\d+)?)$/i)?.[1];
       if (!number) return null;
-      const json = await projectApiFetch<{ data?: ChapterLock & { chapter_number: number; title?: string; image_urls?: string[]; prev?: string; next?: string } }>(`/projects/${encodeURIComponent(mangaSlug)}/chapters/${encodeURIComponent(number)}`, {
+      const json = await projectApiFetch<{ data?: ChapterLock & { chapter_number: number; title?: string; image_urls?: string[]; prev?: string; next?: string; is_adult?: boolean } }>(`/projects/${encodeURIComponent(mangaSlug)}/chapters/${encodeURIComponent(number)}`, {
         cache: "no-store",
         headers: { Accept: "application/json" }
       });
@@ -316,6 +318,8 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
   const { source, slug } = await params;
   const canonicalSource = normalizeSource(source);
   if (!canonicalSource) notFound();
+  // Mode SFW: chapter dari sumber dewasa tidak dirender sama sekali.
+  if (isAdultGroupSource(canonicalSource)) notFound();
   const incomingSlug = parseSlug(slug);
   const normalizedSlug = normalizeChapterSlug(canonicalSource, incomingSlug);
   const slugStr = canonicalSource === "kiryuu"
@@ -329,6 +333,8 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
   const data = await getChapter(canonicalSource, slugStr);
 
   if (!data) notFound();
+  // Chapter milik seri Project dewasa tidak boleh dirender di situs SFW.
+  if (!ADULT_ENABLED && (data as { is_adult?: boolean }).is_adult === true) notFound();
 
   if (data.blocked) {
     return (

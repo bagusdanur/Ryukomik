@@ -1,3 +1,5 @@
+import { ADULT_ENABLED } from "@/config/siteMode";
+
 export type SourceGroup = "manga" | "adult" | "novel" | "legacy" | "project";
 export type ActiveColor = "accent" | "accent-2" | "accent-3" | "emerald-500";
 
@@ -40,9 +42,12 @@ export const SOURCE_IDS = SOURCES.map(s => s.id);
 // Kalau memakai urutan deklarasi, hasil tukar slot (Komikid <-> Komiku) jadi
 // tampil acak seperti 4, 2, 3, 1, 5.
 const byOrder = (a: SourceConfig, b: SourceConfig) => a.order - b.order;
-export const VISIBLE_SOURCES = SOURCES.filter(s => s.group !== "legacy").sort(byOrder);
+// Mode SFW: sumber dewasa tidak pernah ditawarkan ke UI. Definisinya tetap ada
+// supaya URL lama tetap dikenali (lalu ditolak di lapisan halaman), dan supaya
+// situs dewasa bisa memakai daftar yang sama hanya dengan mengganti env.
+export const VISIBLE_SOURCES = SOURCES.filter(s => s.group !== "legacy" && (ADULT_ENABLED || s.group !== "adult")).sort(byOrder);
 export const MANGA_SOURCES = SOURCES.filter(s => s.group === "manga").sort(byOrder);
-export const ADULT_SOURCES = SOURCES.filter(s => s.group === "adult").sort(byOrder);
+export const ADULT_SOURCES = (ADULT_ENABLED ? SOURCES.filter(s => s.group === "adult") : []).sort(byOrder);
 export const NOVEL_SOURCES = SOURCES.filter(s => s.group === "novel").sort(byOrder);
 export const PROJECT_SOURCES = SOURCES.filter(s => s.group === "project").sort(byOrder);
 export const ADULT_SOURCE_IDS = new Set(ADULT_SOURCES.map(s => s.id));
@@ -61,6 +66,18 @@ export function getSourceConfig(id: string): SourceConfig | undefined {
   return SOURCES.find(s => s.id === id);
 }
 
+/**
+ * Di mode SFW selalu `false`. Dipakai untuk MENAWARKAN/menampilkan sumber,
+ * bukan untuk memblokir.
+ */
 export function isAdultSource(id: string): boolean {
-  return ADULT_SOURCE_IDS.has(id);
+  return ADULT_ENABLED && ADULT_SOURCE_IDS.has(id);
+}
+
+/**
+ * Apakah id ini sumber dewasa menurut definisi, terlepas dari mode situs.
+ * Ini yang dipakai halaman untuk menolak URL sumber dewasa di mode SFW.
+ */
+export function isAdultGroupSource(id: string): boolean {
+  return SOURCES.some(s => s.id === id && s.group === "adult");
 }

@@ -1,4 +1,5 @@
 import { optimizedCoverUrl } from "@/lib/coverImage";
+import { ADULT_ENABLED } from "@/config/siteMode";
 import { fetchContentJson } from "@/lib/contentApi";
 import type { UpdateItem } from "@/types/content";
 
@@ -38,8 +39,12 @@ export async function getProjectUpdates(): Promise<UpdateItem[]> {
       });
       if (!response.ok) throw new Error(`Project API failed with status ${response.status}`);
       const json = (await response.json()) as ProjectUpdatesResponse;
-      return Array.isArray(json.data)
-        ? json.data.map((item) => {
+      const rows = Array.isArray(json.data) ? json.data : [];
+      // Mode SFW: saring di server. Kalau disaring di klien, HTML pertama yang
+      // dikirim ke browser (dan ke Googlebot) masih memuat seri dewasa.
+      const allowed = ADULT_ENABLED ? rows : rows.filter((item) => (item as { is_adult?: boolean }).is_adult !== true);
+      return allowed.length
+        ? allowed.map((item) => {
             const source = item as UpdateItem & { cover_url?: string; type?: string; latest_chapter?: number | string; latest_chapter_uploaded_at?: string };
             return {
               ...item,
@@ -56,7 +61,8 @@ export async function getProjectUpdates(): Promise<UpdateItem[]> {
       `${siteUrl}/api/project/pustaka?page=1&limit=12`,
       { revalidate: 600, tags: ["source-project-pustaka"] },
     );
-    return Array.isArray(response.data) ? response.data : [];
+    const rows = Array.isArray(response.data) ? response.data : [];
+    return ADULT_ENABLED ? rows : rows.filter((item) => (item as { is_adult?: boolean }).is_adult !== true);
   } catch (error) {
     console.error("getProjectUpdates error:", error);
     return [];

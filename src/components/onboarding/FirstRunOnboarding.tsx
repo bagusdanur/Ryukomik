@@ -9,13 +9,10 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiLock,
-  FiShield,
   FiX,
 } from "react-icons/fi";
 import { AuthContext } from "@/components/auth/AuthProvider";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
-import { setAdultHidden } from "@/utils/adultFilter";
-import { grantAdultConsent, revokeAdultConsent } from "@/utils/adultConsent";
 import { isPushSupported, subscribePush } from "@/utils/pushSubscription";
 
 /**
@@ -44,7 +41,7 @@ type Slide = {
 
 const SLIDES: Slide[] = [
   {
-    step: "Langkah 1 dari 4",
+    step: "Langkah 1 dari 3",
     icon: FiBookOpen,
     tone: "violet",
     title: "Selamat datang di Ryukomik",
@@ -56,21 +53,14 @@ const SLIDES: Slide[] = [
     ),
   },
   {
-    step: "Langkah 2 dari 4",
+    step: "Langkah 2 dari 3",
     icon: FiBell,
     tone: "cyan",
     title: "Aktifkan Notifikasi",
     body: <>Dapat info chapter baru dari seri yang kamu ikuti.</>,
   },
   {
-    step: "Langkah 3 dari 4",
-    icon: FiShield,
-    tone: "rose",
-    title: "Konten 18+",
-    body: <>Pilih mau menyembunyikan atau mengizinkan sumber komik 18+.</>,
-  },
-  {
-    step: "Langkah 4 dari 4",
+    step: "Langkah 3 dari 3",
     icon: FiLock,
     tone: "violet",
     title: "Masuk untuk Simpan",
@@ -103,7 +93,6 @@ function OnboardingInner() {
   const [status, setStatus] = useState<"idle" | "visible" | "done">("idle");
   const [slide, setSlide] = useState(0);
   const [notif, setNotif] = useState(false);
-  const [adultAllowed, setAdultAllowed] = useState(false);
   const [note, setNote] = useState("");
   const drag = useRef({ start: 0, delta: 0, active: false });
   const idleTimer = useRef<number | null>(null);
@@ -135,11 +124,6 @@ function OnboardingInner() {
       if (typeof window !== "undefined" && "Notification" in window) {
         setNotif(Notification.permission === "granted");
       }
-      try {
-        setAdultAllowed(localStorage.getItem("rk-hide-adult") === "0");
-      } catch {
-        /* abaikan */
-      }
     } catch {
       // Storage diblokir → jangan pernah memblokir pengguna.
       setStatus("done");
@@ -168,18 +152,6 @@ function OnboardingInner() {
   const go = useCallback((next: number) => {
     resetIdle();
     setSlide(Math.max(0, Math.min(SLIDES.length - 1, next)));
-  }, [resetIdle]);
-
-  const applyAdult = useCallback((allow: boolean) => {
-    resetIdle();
-    setAdultAllowed(allow);
-    try {
-      setAdultHidden(!allow);
-      if (allow) grantAdultConsent();
-      else revokeAdultConsent();
-    } catch {
-      /* abaikan */
-    }
   }, [resetIdle]);
 
   const askNotif = useCallback(async () => {
@@ -404,43 +376,8 @@ function OnboardingInner() {
                     </div>
                   )}
 
-                  {index === 2 && (
-                    <div className="w-full max-w-[300px] flex flex-col gap-2 mt-1">
-                      <div className="flex gap-2 w-full">
-                        <button
-                          type="button"
-                          onClick={() => applyAdult(false)}
-                          className="flex-1 h-10 rounded-[13px] font-extrabold text-[12.5px]"
-                          style={
-                            !adultAllowed
-                              ? { background: "var(--accent)", color: "#fff" }
-                              : { background: "var(--surface-1)", color: "var(--muted)", border: "1px solid var(--line-soft)" }
-                          }
-                        >
-                          Sembunyikan 18+
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => applyAdult(true)}
-                          className="flex-1 h-10 rounded-[13px] font-extrabold text-[12.5px]"
-                          style={
-                            adultAllowed
-                              ? { background: "var(--accent)", color: "#fff" }
-                              : { background: "var(--surface-1)", color: "var(--muted)", border: "1px solid var(--line-soft)" }
-                          }
-                        >
-                          Saya 18+
-                        </button>
-                      </div>
-                      <p className="text-[11px] m-0 text-left" style={{ color: "var(--muted)" }}>
-                        {adultAllowed
-                          ? "Sumber komik 18+ ditampilkan (cover tetap diblur)."
-                          : "Mode aman: sumber komik 18+ disembunyikan."}
-                      </p>
-                    </div>
-                  )}
 
-                  {index === 3 && (
+                  {index === 2 && (
                     <div className="w-full max-w-[300px] flex flex-col gap-2 mt-1">
                       {user ? (
                         <button

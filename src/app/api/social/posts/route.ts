@@ -1,4 +1,5 @@
 import { revalidateTag } from "next/cache";
+import { ADULT_ENABLED } from "@/config/siteMode";
 import { assertSameOrigin, requireUserId } from "@/lib/social/auth";
 import { decodeSocialCursor, encodeSocialCursor } from "@/lib/social/cursor";
 import { socialQuery, socialTransaction } from "@/lib/social/db";
@@ -38,10 +39,11 @@ export async function GET(request: Request) {
       and ($3 not in ('public','explore') or p.visibility='public')
       and (p.visibility='public' or p.author_id=$1 or exists(select 1 from social_follows f where f.follower_id=$1 and f.following_id=p.author_id))
       and (($7::text is null and p.context_type is null) or (p.context_type=$7 and p.context_id=$8))
+      and (p.is_sensitive = false or $9::boolean)
       and not exists(select 1 from social_mutes m where m.user_id=$1 and m.muted_id=p.author_id)
       and not exists(select 1 from social_blocks b where (b.blocker_id=$1 and b.blocked_id=p.author_id) or (b.blocker_id=p.author_id and b.blocked_id=$1))
       and ($5::timestamptz is null or (p.created_at,p.id) ${direction} ($5::timestamptz,$6::uuid)) order by p.created_at ${order},p.id ${order} limit 21`,
-      [viewerId,parentId||null,scope,profileId||null,cursor?.createdAt||null,cursor?.id||null,contextType,contextId]);
+      [viewerId,parentId||null,scope,profileId||null,cursor?.createdAt||null,cursor?.id||null,contextType,contextId,ADULT_ENABLED]);
     const items=result.rows.slice(0,20);
     return socialJson({items,nextCursor:result.rows.length>20?encodeSocialCursor(items.at(-1)?.created_at as string,items.at(-1)?.id as string):null},{headers:{"Cache-Control":"private, no-store, max-age=0",Vary:"Authorization"}});
   } catch(error){return socialError(error);}
@@ -59,7 +61,7 @@ export async function POST(request: Request) {
     if(contextType&&!contextId)return socialJson({error:"Konteks tidak lengkap."},{status:400});
     const media=validMedia(body.image_url), content=body.content?.trim().slice(0,500)||(media?"[sticker]":"");
     // Penanda 18+ hanya bermakna kalau ada gambar; post teks tidak bisa ditandai.
-    const sensitive = media ? body.is_sensitive === true : false;
+    const sensitive = media && ADULT_ENABLED ? body.is_sensitive === true : false;
     if(!content)return socialJson({error:"Posting tidak boleh kosong."},{status:400});
     const visibility=contextType?"public":body.visibility==="followers"?"followers":"public";
     let parent:{id:string;author_id:string;context_id?:string|null;username?:string}|undefined, replyTarget:{id:string;author_id:string;parent_id:string|null;username?:string}|undefined;

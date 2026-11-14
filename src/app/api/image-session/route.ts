@@ -8,7 +8,7 @@ import { signImageAccessCookie } from '@/lib/imageAccessCookie';
 export const dynamic = "force-dynamic";
 const COOKIE_NAME = "ryu_image_access";
 const MAX_AGE_SECONDS = 2 * 60 * 60;
-const ALLOWED_HOSTS = new Set(["ryukomik.com", "www.ryukomik.com", "ryukomik.web.id", "www.ryukomik.web.id"]);
+const ALLOWED_HOSTS = new Set(["ryukomik.com", "www.ryukomik.com", "ryukomik.com", "www.ryukomik.com"]);
 
 function requestIsOfficial(request: Request) {
   const source = request.headers.get("origin") || request.headers.get("referer");

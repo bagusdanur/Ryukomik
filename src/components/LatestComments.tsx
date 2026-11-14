@@ -2,6 +2,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import { socialQuery } from "@/lib/social/db";
+import { ADULT_ENABLED } from "@/config/siteMode";
+import { isAdultGroupSource } from "@/config/sources";
+import { getAdultProjectSlugs } from "@/lib/adultProjectSlugs";
 import { listAwardedTitleRushWinners } from "@/lib/social/titleRushStore";
 import { getSocialProfiles } from "@/lib/social/profileLookup";
 import { getXpLeadersCached, type XpLeaderRow } from "@/lib/profileServerCache";
@@ -188,16 +191,35 @@ function compactContent(content?: string | null) {
 // DATA FETCHING
 // ============================================
 
+/**
+ * Komentar yang membahas chapter 18+ tidak boleh tampil di beranda mode SFW —
+ * tautannya saja sudah membocorkan judul seri dewasa. `sekte`/`doujindesu`
+ * dikenali dari prefix slug; seri Project dicek lewat daftar is_adult.
+ */
+function isAdultComment(slug: string | null | undefined, adultSlugs: Set<string>): boolean {
+  const raw = String(slug || "");
+  if (!raw) return false;
+  const { source, realSlug } = parseSlug(raw);
+  if (isAdultGroupSource(source)) return true;
+  if (source === "project") {
+    const series = realSlug.replace(/^project-/, "").split("/")[0].replace(/-chapter-.*$/, "");
+    return adultSlugs.has(series);
+  }
+  return false;
+}
+
 const getLatestCommentsCached = unstable_cache(
   async () => {
     // Komentar dibaca dari Postgres lokal (migrasi komentar).
-    const { rows } = await socialQuery<LatestComment>(
+    const { rows: allRows } = await socialQuery<LatestComment>(
       `select id, user_id, slug, content, created_at, is_spoiler, author_name, avatar_url
          from comments
         where parent_id is null and deleted_at is null
         order by created_at desc
         limit 10`,
     );
+    const adultSlugs = ADULT_ENABLED ? new Set<string>() : new Set(await getAdultProjectSlugs());
+    const rows = ADULT_ENABLED ? allRows : allRows.filter((comment) => !isAdultComment(comment.slug, adultSlugs));
     // Identitas + border avatar dari PostgreSQL lokal: satu query per halaman,
     // menggantikan join profiles di Supabase (payload lebih kecil, nol egress).
     const people = await getSocialProfiles(rows.map((comment) => comment.user_id));

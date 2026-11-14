@@ -7,6 +7,8 @@ import type { Chapter, Series } from "@/types/content";
 import { projectApiFetch, ProjectApiError } from "@/lib/projectApiServer";
 import { formatRelativeDate } from "@/lib/projectUpdates";
 import { jsonLdScript } from "@/lib/jsonLd";
+import { ADULT_ENABLED } from "@/config/siteMode";
+import { isAdultGroupSource } from "@/config/sources";
 import {
   buildComicUrl,
   normalizeComicSlug,
@@ -211,6 +213,9 @@ export default async function DetailPage({ params }: DetailPageProps) {
   const { slug, source } = await params;
   const canonicalSource = normalizeSource(source);
   if (!canonicalSource) notFound();
+  // Mode SFW: sumber dewasa tidak punya halaman sama sekali, walau URL-nya
+  // ditebak langsung. 410/404 dikirim lewat notFound().
+  if (isAdultGroupSource(canonicalSource)) notFound();
   const cleanSlug = normalizeComicSlug(canonicalSource, slug);
 
   if (canonicalSource !== source || cleanSlug !== slug) {
@@ -219,6 +224,8 @@ export default async function DetailPage({ params }: DetailPageProps) {
 
   const data = await getDetail(canonicalSource, cleanSlug);
   if (!data) notFound();
+  // Seri Project bertanda is_adult hanya hidup di situs dewasa.
+  if (!ADULT_ENABLED && data.is_adult === true) notFound();
   const canonicalUrl = buildComicUrl(canonicalSource, cleanSlug);
 
   const jsonLd = {
