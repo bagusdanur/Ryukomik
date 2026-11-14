@@ -3,6 +3,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { targetById } from "@/lib/r2Targets";
+import { readableObjectKey } from "@/lib/objectKeyName";
 import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
 import { socialQuery } from "@/lib/social/db";
@@ -80,9 +81,16 @@ export async function POST(request: Request) {
     }
 
     const target = targetById(undefined);
-    const ext = (filename.split(".").pop() || "webp").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5);
-    const unique = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-    const key = `scanlator/${storage}/${slug}/${kind}/${unique}.${ext}`;
+    const ext = (filename.split(".").pop() || "webp").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "webp";
+    // Nama asli file dipakai supaya staf bisa mengenali halamannya; akhiran
+    // revisi otomatis hanya muncul kalau nama itu sudah ada di bucket.
+    const key = await readableObjectKey({
+      client: target.client,
+      bucket: target.bucket,
+      prefix: `scanlator/${storage}/${slug}/${kind}`,
+      name: filename,
+      ext,
+    });
 
     const command = new PutObjectCommand({
       Bucket: target.bucket,

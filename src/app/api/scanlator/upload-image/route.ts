@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
-import { randomUUID } from "node:crypto";
 
 import { targetById } from "@/lib/r2Targets";
+import { readableObjectKey } from "@/lib/objectKeyName";
 import { getScanlatorUsage, SCANLATOR_QUOTA_BYTES, formatBytes } from "@/lib/scanlatorQuota";
 import { authErrorResponse } from "@/lib/social/authResponse";
 import { requireUserId } from "@/lib/social/auth";
@@ -87,7 +87,13 @@ export async function POST(request: Request) {
     try {
       const raw = Buffer.from(await file.arrayBuffer());
       const ext = ((file.name.split(".").pop() || "img").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "img");
-      const key = `scanlator/${storage}/${slug}/${kind}/${randomUUID()}.${ext}`;
+      const key = await readableObjectKey({
+        client: target.client,
+        bucket: target.bucket,
+        prefix: `scanlator/${storage}/${slug}/${kind}`,
+        name: file.name,
+        ext,
+      });
       await target.client.send(new PutObjectCommand({
         Bucket: target.bucket,
         Key: key,
@@ -103,7 +109,13 @@ export async function POST(request: Request) {
     }
   }
 
-  const key = `scanlator/${storage}/${slug}/${kind}/${randomUUID()}.webp`;
+  const key = await readableObjectKey({
+    client: target.client,
+    bucket: target.bucket,
+    prefix: `scanlator/${storage}/${slug}/${kind}`,
+    name: file.name,
+    ext: "webp",
+  });
   try {
     await target.client.send(new PutObjectCommand({
       Bucket: target.bucket,

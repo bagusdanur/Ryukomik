@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { targetById } from "@/lib/r2Targets";
-import { randomUUID } from "node:crypto";
+import { readableExt, readableObjectKey } from "@/lib/objectKeyName";
 import { verifyAdminRequest } from "@/lib/adminApi";
 
 // Paksa route ini selalu dynamic (tidak di-cache)
@@ -73,9 +73,15 @@ export async function POST(request: Request) {
       filename = `cover.${ext}`;
       uploadPath = `covers/${safeSegment(mangaSlug)}/${filename}`;
     } else {
-      // Path revisi unik memastikan browser/CDN tidak memakai gambar lama saat
-      // sebuah halaman dikoreksi dan diunggah ulang dengan nama file yang sama.
-      uploadPath = `chapters/${safeSegment(mangaSlug)}/${safeSegment(chapterNumber)}/${randomUUID()}-${safeSegment(filename) || "image"}`;
+      // Nama asli halaman dipakai supaya mudah dilacak; kalau halaman yang sama
+      // diunggah ulang, akhiran -v2/-v3 muncul otomatis (cache tetap aman).
+      uploadPath = await readableObjectKey({
+        client: target.client,
+        bucket: target.bucket,
+        prefix: `chapters/${safeSegment(mangaSlug)}/${safeSegment(chapterNumber)}`,
+        name: filename,
+        ext: readableExt(filename, "webp"),
+      });
     }
 
     console.log(`[upload-image] Uploading ${type}: ${uploadPath} (${file.type}, ${buffer.length} bytes) → bucket: ${bucketName}`);
