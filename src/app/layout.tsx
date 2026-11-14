@@ -70,6 +70,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
+        {/* Dua properti Monetag diverifikasi di domain yang sama. Token yang
+            diminta user ditaruh paling depan supaya verifikator yang membaca
+            tag pertama tetap mendapat token yang benar. */}
+        <meta name="monetag" content="40840f50f2fb91bdd2abf4aed6f3be2b"/>
         <meta name="monetag" content="877aaf28ef34bd5088aeab32ec2f5b5b"/>
         <script
           type="application/ld+json"
