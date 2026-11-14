@@ -4,7 +4,7 @@ import { parseProxyImageUrl, resolveProxyImageUrl } from "./imageProxyPolicy";
 const PUBLIC_PROXY_IMAGE_SOURCES = ADULT_SOURCE_IDS;
 const PUBLIC_PROXY_IMAGE_HOSTS = new Set(["desu.photos"]);
 const DOUJINDESU_IMAGE_WORKER = "/api/image-proxy";
-const DOUJINDESU_BACKEND_HOST = "api.ryukomik.web.id";
+const DOUJINDESU_BACKEND_HOST = "api.ryukomik.com";
 const DOUJINDESU_BACKEND_IMAGE_PATH = "/doujindesu/image";
 // Proxy gambar backend untuk Kiryuu: dipakai sebagai kandidat CADANGAN saat
 // direct ke v7.kiryuu.to gagal (403 di browser/WebView tertentu).
@@ -41,15 +41,15 @@ export function getOriginalImageUrl(url?: string): string {
     if (isDoujindesuBackendImageUrl(parsed.href)) return parsed.href;
 
     const isFrontendProxy =
-      parsed.origin === "https://proxy.ryukomik.web.id" ||
-      parsed.origin === "https://cdn.ryukomik.web.id" ||
+      parsed.origin === "https://proxy.ryukomik.com" ||
+      parsed.origin === "https://cdn.ryukomik.com" ||
       parsed.pathname === "/api/image-proxy" ||
       parsed.pathname === "/api/image" ||
       parsed.pathname === "/image";
 
     let shouldExtract = isFrontendProxy;
 
-    if (!shouldExtract && parsed.origin === "https://api.ryukomik.web.id") {
+    if (!shouldExtract && parsed.origin === "https://api.ryukomik.com") {
       const pathParts = parsed.pathname.split("/").filter(Boolean);
       const urlSource = pathParts[0];
       if (urlSource && isAdultSource(urlSource)) {
@@ -98,7 +98,7 @@ export function getChapterImageCandidates(source: string, url?: string) {
   }
 
   // Image project di storage.komano.my.id dijaga Worker, tapi cookie akses
-  // di-set untuk origin Ryukomik (domain .ryukomik.web.id) sehingga browser
+  // di-set untuk origin Ryukomik (domain .ryukomik.com) sehingga browser
   // tidak mengirimkannya ke host komano. Lewatkan /api/image agar cookie
   // first-party dipakai; proxy akan meneruskan cookie signed ke Worker.
   if (source === "project") {

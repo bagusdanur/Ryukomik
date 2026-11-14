@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "ryukomik",
   ],
   alternates: {
-    canonical: "https://ryukomik.web.id/search",
+    canonical: "https://ryukomik.com/search",
   },
   robots: {
     index: false,
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     title: "Cari Manga, Manhwa & Manhua - Ryukomik",
     description:
       "Cari manga, manhwa, dan manhua bahasa Indonesia terbaru di Ryukomik.",
-    url: "https://ryukomik.web.id/search",
+    url: "https://ryukomik.com/search",
     siteName: "Ryukomik",
     locale: "id_ID",
     type: "website",

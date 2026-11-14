@@ -29,7 +29,7 @@ type SearchParams = {
 async function getGameItems(page: number): Promise<GameItem[]> {
   try {
     const res = await fetch(
-      `https://api.ryukomik.web.id/komikid/pustaka?page=${page}`,
+      `https://api.ryukomik.com/komikid/pustaka?page=${page}`,
       { cache: "no-store" },
     );
     const json = await res.json();

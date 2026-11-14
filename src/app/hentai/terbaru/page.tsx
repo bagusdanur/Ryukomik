@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   ],
 
   alternates: {
-    canonical: "https://ryukomik.web.id/hentai/terbaru",
+    canonical: "https://ryukomik.com/hentai/terbaru",
   },
 
   robots: {
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     description:
       "Update anime dewasa terbaru sub indo kualitas HD di Ryukomik.",
 
-    url: "https://ryukomik.web.id/hentai/terbaru",
+    url: "https://ryukomik.com/hentai/terbaru",
 
     siteName: "Ryukomik",
 
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
 
     images: [
       {
-        url: "https://ryukomik.web.id/og-hentai.jpg",
+        url: "https://ryukomik.com/og-hentai.jpg",
         width: 1200,
         height: 630,
         alt: "Anime Dewasa Ryukomik",
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     description:
       "Update anime dewasa terbaru sub indo di Ryukomik.",
 
-    images: ["https://ryukomik.web.id/og-hentai.jpg"],
+    images: ["https://ryukomik.com/og-hentai.jpg"],
   },
 };
 
@@ -97,7 +97,7 @@ type HentaiTerbaruProps = {
 };
 
 async function getData(page = 1): Promise<HentaiUpdateResponse> {
-  const res = await fetch(`https://apiv2.ryukomik.web.id/nekopoi/terbaru?page=${page}`, {
+  const res = await fetch(`https://apiv2.ryukomik.com/nekopoi/terbaru?page=${page}`, {
     next: { revalidate: 120 },
   });
   if (!res.ok) throw new Error("Gagal fetch data");

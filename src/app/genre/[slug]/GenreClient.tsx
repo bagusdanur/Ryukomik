@@ -125,7 +125,7 @@ export default function GenreClient({ initialData, slug, title }: GenreClientPro
       }
     });
 
-    fetch(`https://api.ryukomik.web.id/genre/${slug}?page=${currentPage}`)
+    fetch(`https://api.ryukomik.com/genre/${slug}?page=${currentPage}`)
       .then((res) => {
         if (!res.ok) throw new Error("Gagal memuat data");
         return res.json();

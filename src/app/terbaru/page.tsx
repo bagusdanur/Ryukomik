@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import type { Dict } from "@/types/common";
 import type { TerbaruFilters, UpdateItem } from "@/types/content";
 
-const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
+const SOURCE_API_BASE_URL = "https://api.ryukomik.com";
 // Sumber awal mengikuti slot 1 (default sumber aktif di src/config/sources.ts).
 const INITIAL_SOURCE = DEFAULT_SOURCE;
 
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   ],
 
   alternates: {
-    canonical: "https://ryukomik.web.id/terbaru",
+    canonical: "https://ryukomik.com/terbaru",
   },
 
   robots: {
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
     description:
       "Update manga, manhwa, dan manhua terbaru bahasa Indonesia setiap hari di Ryukomik.",
 
-    url: "https://ryukomik.web.id/terbaru",
+    url: "https://ryukomik.com/terbaru",
 
     siteName: "Ryukomik",
 
@@ -79,7 +79,7 @@ export const metadata: Metadata = {
 
     images: [
       {
-        url: "https://ryukomik.web.id/og.jpg",
+        url: "https://ryukomik.com/og.jpg",
         width: 1200,
         height: 630,
         alt: "Ryukomik",
@@ -95,7 +95,7 @@ export const metadata: Metadata = {
     description:
       "Baca manga, manhwa, dan manhua terbaru bahasa Indonesia gratis di Ryukomik.",
 
-    images: ["https://ryukomik.web.id/og.jpg"],
+    images: ["https://ryukomik.com/og.jpg"],
   },
 };
 

@@ -40,7 +40,7 @@ async function resolveLegacyKiryuuSlug(slugStr: string): Promise<string> {
   const [, mangaSlug, chapterNumber] = match;
   try {
     const response = await fetch(
-      `https://api.ryukomik.web.id/kiryuu/detail/${encodeURIComponent(mangaSlug)}`,
+      `https://api.ryukomik.com/kiryuu/detail/${encodeURIComponent(mangaSlug)}`,
       { next: { revalidate: 3600 } },
     );
     if (!response.ok) return slugStr;
@@ -97,7 +97,7 @@ const getChapterList = cache(async (source: string, mangaSlug: string): Promise<
       }));
     }
     const res = await fetch(
-      `https://api.ryukomik.web.id/${source}/detail/${encodeURIComponent(mangaSlug)}`,
+      `https://api.ryukomik.com/${source}/detail/${encodeURIComponent(mangaSlug)}`,
       { next: { revalidate: 300 }, headers: { Accept: "application/json" } },
     );
     if (!res.ok) return [];
@@ -181,7 +181,7 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
         // fallback pertama; versi ini memakai domain API publik. Naikkan versi
         // setiap kali BENTUK respons backend berubah.
         const res = await fetch(
-          `https://api.ryukomik.web.id/${apiSource}/chapter/${apiSlug}?v=4`,
+          `https://api.ryukomik.com/${apiSource}/chapter/${apiSlug}?v=4`,
           {
             next: {
               revalidate: CHAPTER_JSON_TTL,
@@ -394,7 +394,7 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
             "@context": "https://schema.org",
             "@type": "BreadcrumbList",
             "itemListElement": [
-              { "@type": "ListItem", "position": 1, "name": "Beranda", "item": "https://ryukomik.web.id" },
+              { "@type": "ListItem", "position": 1, "name": "Beranda", "item": "https://ryukomik.com" },
               { "@type": "ListItem", "position": 2, "name": mangaSlug.replace(/-/g, " "), "item": comicUrl },
               { "@type": "ListItem", "position": 3, "name": title, "item": canonicalUrl }
             ]
@@ -404,7 +404,7 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
       <nav aria-label="Breadcrumb" className="sr-only">
         <Link href="/">Beranda</Link>
         <span aria-hidden="true"> / </span>
-        <Link href={comicUrl.replace("https://ryukomik.web.id", "")}>{mangaSlug.replace(/-/g, " ")}</Link>
+        <Link href={comicUrl.replace("https://ryukomik.com", "")}>{mangaSlug.replace(/-/g, " ")}</Link>
         <span aria-hidden="true"> / </span>
         <span>{title}</span>
       </nav>

@@ -10,7 +10,7 @@ export async function sendPremiumActivatedPush(userId: string, requestId: string
   const publicKey = process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const privateKey = process.env.VAPID_PRIVATE_KEY;
   if (!publicKey || !privateKey) return { sent: 0, skipped: true };
-  webPush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.web.id", publicKey, privateKey);
+  webPush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.com", publicKey, privateKey);
   const data = await listPushSubscriptions(userId);
   const payload = JSON.stringify({
     type: "premium_activated", requestId,

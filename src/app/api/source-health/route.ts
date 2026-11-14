@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const BASE_URL = "https://api.ryukomik.web.id";
+const BASE_URL = "https://api.ryukomik.com";
 
 import { VISIBLE_SOURCES } from "@/config/sources";
 

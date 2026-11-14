@@ -74,7 +74,7 @@ const SLIDES: Slide[] = [
     sub: "Tanya jawab seputar komik dengan asisten AI kami.",
     btn: {
       label: "Coba AI",
-      href: "https://yuki.ryukomik.web.id",
+      href: "https://yuki.ryukomik.com",
       external: true,
       className: "bg-[var(--accent)] hover:bg-[var(--accent-2)] text-white",
       iconKey: "robot",

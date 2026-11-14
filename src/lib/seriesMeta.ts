@@ -40,7 +40,7 @@ export const getSeriesMeta = unstable_cache(
   async (source: string, slug: string): Promise<SeriesMeta> => {
     try {
       const res = await fetch(
-        `https://api.ryukomik.web.id/${source}/detail/${encodeURIComponent(slug)}`,
+        `https://api.ryukomik.com/${source}/detail/${encodeURIComponent(slug)}`,
         { next: { revalidate: 3600 } },
       );
       if (!res.ok) return { thumbnail: null, latestChapter: null, latestChapterAt: null };

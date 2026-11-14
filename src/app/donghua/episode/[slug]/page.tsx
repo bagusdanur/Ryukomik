@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
 
   try {
     const res = await fetch(
-      `https://apiv2.ryukomik.web.id/anichin/episode/${slug}`,
+      `https://apiv2.ryukomik.com/anichin/episode/${slug}`,
       { next: { revalidate: 900 } }
     );
     const json = (await res.json()) as ApiResponse<DonghuaEpisode>;
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
 
 async function getData(slug: string): Promise<DonghuaEpisode | null> {
   const res = await fetch(
-    `https://apiv2.ryukomik.web.id/anichin/episode/${slug}`,
+    `https://apiv2.ryukomik.com/anichin/episode/${slug}`,
     { next: { revalidate: 900 } }
   );
   if (!res.ok) return null;

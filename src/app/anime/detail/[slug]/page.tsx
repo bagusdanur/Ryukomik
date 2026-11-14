@@ -22,7 +22,7 @@ type ApiResponse<T> = {
 async function getDetail(slug: string): Promise<AnimeDetail | null> {
   try {
     const res = await fetch(
-      `https://apiv2.ryukomik.web.id/animeid/detail/${slug}`,
+      `https://apiv2.ryukomik.com/animeid/detail/${slug}`,
       { next: { revalidate: 900 } }
     );
     if (!res.ok) return null;

@@ -276,7 +276,7 @@ export default function ReaderImages({
       source
     );
 
-    let apiPath = `https://api.ryukomik.web.id/${nextSource}/chapter/${nextCleanSlug}`;
+    let apiPath = `https://api.ryukomik.com/${nextSource}/chapter/${nextCleanSlug}`;
     if (nextSource === "project") {
       apiPath = `/api/project/chapter/${nextCleanSlug}`;
     }

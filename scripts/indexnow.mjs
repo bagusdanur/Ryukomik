@@ -5,7 +5,7 @@
  * Pemakaian:
  *   node scripts/indexnow.mjs                 # semua URL dari sitemap
  *   node scripts/indexnow.mjs --limit 50      # 50 URL teratas saja
- *   node scripts/indexnow.mjs https://ryukomik.web.id/chapter/... [url lain...]
+ *   node scripts/indexnow.mjs https://ryukomik.com/chapter/... [url lain...]
  *
  * Kunci dibaca dari public/indexnow-key.txt dan file kunci publik
  * public/<kunci>.txt harus bisa diakses di https://<host>/<kunci>.txt
@@ -18,7 +18,7 @@ import { dirname, join } from "node:path";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 
-const ORIGIN = (process.env.SITE_ORIGIN || "https://ryukomik.web.id").replace(/\/+$/, "");
+const ORIGIN = (process.env.SITE_ORIGIN || "https://ryukomik.com").replace(/\/+$/, "");
 const HOST = new URL(ORIGIN).host;
 
 function readKey() {

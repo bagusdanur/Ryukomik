@@ -114,7 +114,7 @@ export default function ScanlatorApplyPage() {
                       <input value={handle} onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} maxLength={30} required placeholder="contoh: scan-baca-seru" className={inputClass} />
                       <p className="mt-1.5 break-all rounded-md border border-white/[.06] bg-white/[.02] px-2.5 py-1.5 text-[10.5px] text-white/50">
                         Halaman tim kamu nanti:{" "}
-                        <span className="font-semibold text-white/75">ryukomik.web.id/scanlator/{handle || "nama-tim"}</span>
+                        <span className="font-semibold text-white/75">ryukomik.com/scanlator/{handle || "nama-tim"}</span>
                       </p>
                       <p className="mt-1 text-[10.5px] leading-relaxed text-white/35">
                         Ini <span className="font-semibold text-white/55">bukan</span> username medsos, Discord, atau Telegram — ini alamat

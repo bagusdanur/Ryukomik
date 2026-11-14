@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { FiMessageCircle, FiX } from "react-icons/fi";
 
-const YUKI_EMBED_URL = "https://yuki.ryukomik.web.id/embed.html";
-const YUKI_ORIGIN = "https://yuki.ryukomik.web.id";
+const YUKI_EMBED_URL = "https://yuki.ryukomik.com/embed.html";
+const YUKI_ORIGIN = "https://yuki.ryukomik.com";
 const YUKI_CTX_MAX = 200;
 
 type StorageAccessDocument = Document & {

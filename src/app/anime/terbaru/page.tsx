@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   ],
 
   alternates: {
-    canonical: "https://ryukomik.web.id/anime/terbaru",
+    canonical: "https://ryukomik.com/anime/terbaru",
   },
 
   robots: {
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     description:
       "Update anime terbaru sub indo dan ongoing setiap hari di Ryukomik.",
 
-    url: "https://ryukomik.web.id/anime/terbaru",
+    url: "https://ryukomik.com/anime/terbaru",
 
     siteName: "Ryukomik",
 
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
 
     images: [
       {
-        url: "https://ryukomik.web.id/og-anime.jpg",
+        url: "https://ryukomik.com/og-anime.jpg",
         width: 1200,
         height: 630,
         alt: "Anime Terbaru Ryukomik",
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
     description:
       "Nonton dan update anime terbaru sub indo kualitas HD di Ryukomik.",
 
-    images: ["https://ryukomik.web.id/og-anime.jpg"],
+    images: ["https://ryukomik.com/og-anime.jpg"],
   },
 };
 
@@ -85,7 +85,7 @@ type AnimeUpdateResponse = {
 async function getData(): Promise<AnimeUpdateResponse> {
   try {
     const res = await fetch(
-      "https://apiv2.ryukomik.web.id/animeid/terbaru",
+      "https://apiv2.ryukomik.com/animeid/terbaru",
       {
         next: { revalidate: 120 },
       }

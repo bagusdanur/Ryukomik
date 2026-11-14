@@ -95,7 +95,7 @@ export default function HentaiPlayer({ src }: { src?: string }) {
 
     const fetchResolve = async () => {
       try {
-        const res = await fetch(`https://apiv2.ryukomik.web.id/nekopoi/resolve-streampoi?url=${encodeURIComponent(src)}`);
+        const res = await fetch(`https://apiv2.ryukomik.com/nekopoi/resolve-streampoi?url=${encodeURIComponent(src)}`);
         const json = (await res.json()) as ApiResponse<StreamData>;
         if (json.success && json.data) {
           if (isMounted) setStreamData(json.data);

@@ -62,7 +62,7 @@ function getReferers(url: string) {
 // ---------------------------------------------------------------------------
 // Anti-hotlink image guard (Cloudflare Worker `ryukomik-image-guard`).
 //
-// Chapter objects on storage.ryukomik.web.id are served through the guard,
+// Chapter objects on storage.ryukomik.com are served through the guard,
 // which answers with a promo placeholder instead of the real page unless the
 // request carries BOTH an official Ryukomik Referer and a signed
 // `ryu_image_access` cookie scoped to that chapter. The reader satisfies this
@@ -71,8 +71,8 @@ function getReferers(url: string) {
 // Mint the same cookie here (same payload format and IMAGE_ACCESS_SECRET) and
 // send it with an official Referer.
 // ---------------------------------------------------------------------------
-const IMAGE_GUARD_HOST = "storage.ryukomik.web.id";
-const IMAGE_GUARD_REFERER = "https://ryukomik.web.id/";
+const IMAGE_GUARD_HOST = "storage.ryukomik.com";
+const IMAGE_GUARD_REFERER = "https://ryukomik.com/";
 // fetch() bawaan Next.js (undici) memakai verifikasi TLS ketat dan tidak bisa
 // dilonggarkan per-request. Pakai http(s).request native Node agar bisa.
 function fetchImage(url: string, referer: string, cookie?: string, timeoutMs = 15000): Promise<Fetched> {

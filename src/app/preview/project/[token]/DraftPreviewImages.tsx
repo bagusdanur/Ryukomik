@@ -44,7 +44,7 @@ export default function DraftPreviewImages({ images, chapter, previewToken }: { 
     let src = url;
     try {
       const parsed = new URL(url);
-      if (parsed.hostname === 'storage.ryukomik.web.id' || parsed.hostname === 'storage.komano.my.id') {
+      if (parsed.hostname === 'storage.ryukomik.com' || parsed.hostname === 'storage.komano.my.id') {
         src = `/api/image?url=${encodeURIComponent(url)}`;
       }
     } catch {}

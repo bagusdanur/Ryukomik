@@ -128,7 +128,7 @@ const getDetail = async (source: string, slug: string): Promise<ComicDetail | nu
   }
 
   const apiSource = source;
-  const endpoint = `https://api.ryukomik.web.id/${apiSource}/detail/${encodeURIComponent(slug)}`;
+  const endpoint = `https://api.ryukomik.com/${apiSource}/detail/${encodeURIComponent(slug)}`;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
@@ -252,7 +252,7 @@ export default async function DetailPage({ params }: DetailPageProps) {
                 "@type": "ListItem",
                 "position": 1,
                 "name": "Beranda",
-                "item": "https://ryukomik.web.id"
+                "item": "https://ryukomik.com"
               },
               {
                 "@type": "ListItem",

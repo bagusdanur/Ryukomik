@@ -158,7 +158,7 @@ async function notifyScanlatorApplication(handle: string, teamName: string, wa: 
     body: JSON.stringify({
       chat_id: target,
       text: `Pengajuan Scanlator baru (BETA)\n\nUser: ${teamName}\nHandle: ${handle}\n\nKontak:\n${contacts}\n\nCek dashboard admin → tab Scanlator.`,
-      reply_markup: { inline_keyboard: [[{ text: "Buka Dashboard Scanlator", url: "https://ryukomik.web.id/dashboard?page=scanlator" }]] },
+      reply_markup: { inline_keyboard: [[{ text: "Buka Dashboard Scanlator", url: "https://ryukomik.com/dashboard?page=scanlator" }]] },
     }),
     signal: AbortSignal.timeout(15_000),
   }).catch(() => undefined);

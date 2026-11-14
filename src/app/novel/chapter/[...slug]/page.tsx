@@ -26,7 +26,7 @@ export default async function NovelReaderPage({ params }: RouteProps) {
   let data: NovelChapterResponse | null = null;
   try {
     const res = await fetch(
-      `https://api.ryukomik.web.id/meionovels/chapter/${slugStr}`,
+      `https://api.ryukomik.com/meionovels/chapter/${slugStr}`,
       { next: { revalidate: 900 } }
     );
     const json = (await res.json()) as NovelChapterResponse;

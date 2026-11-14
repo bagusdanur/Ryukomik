@@ -1,6 +1,6 @@
 import { VALID_SOURCE_IDS } from "@/config/sources";
 
-export const SITE_URL = "https://ryukomik.web.id";
+export const SITE_URL = "https://ryukomik.com";
 
 export const PUBLIC_COMIC_SOURCES = [
   "komiku",

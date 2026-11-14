@@ -9,7 +9,7 @@ dotenv.config({ path: ".env.local" });
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.web.id";
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.com";
 
 if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
   console.error("Environment variables belum lengkap!");
@@ -26,7 +26,7 @@ const socialDb = new pg.Client({ connectionString: SOCIAL_DB_URL });
 await socialDb.connect();
 webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-const CONTENT_API_URL = "https://api.ryukomik.web.id";
+const CONTENT_API_URL = "https://api.ryukomik.com";
 // Aplikasi Next berjalan di 3008 (PM2 `ryukomik`). Port 3000 tidak dipakai,
 // jadi source project selalu ECONNREFUSED sebelum ini diperbaiki.
 const LOCAL_APP_URL = process.env.PUSH_NOTIFY_LOCAL_URL || "http://127.0.0.1:3008";

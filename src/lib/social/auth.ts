@@ -36,7 +36,7 @@ export function assertSameOrigin(request: Request) {
   const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
   const host = request.headers.get("host")?.trim();
   const allowedHosts = new Set(
-    [forwardedHost, host, requestUrl.host, "ryukomik.web.id", "www.ryukomik.web.id"]
+    [forwardedHost, host, requestUrl.host, "ryukomik.com", "www.ryukomik.com", "ryukomik.web.id", "www.ryukomik.web.id"]
       .filter((value): value is string => Boolean(value))
       .map((value) => value.toLowerCase()),
   );
@@ -47,7 +47,7 @@ export function assertSameOrigin(request: Request) {
   const expectedProtocol = forwardedProto ? `${forwardedProto}:` : requestUrl.protocol;
   const isCanonicalProductionOrigin =
     originUrl.protocol === "https:" &&
-    ["ryukomik.web.id", "www.ryukomik.web.id"].includes(originUrl.hostname.toLowerCase());
+    ["ryukomik.com", "www.ryukomik.com", "ryukomik.web.id", "www.ryukomik.web.id"].includes(originUrl.hostname.toLowerCase());
 
   if (originUrl.protocol !== expectedProtocol && !isCanonicalProductionOrigin) {
     throw new Error("BAD_ORIGIN");

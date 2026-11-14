@@ -24,7 +24,7 @@ const EMPTY_RESULT = {
 
 async function getData(): Promise<OngoingResult> {
   try {
-    const res = await fetch("https://apiv2.ryukomik.web.id/animeid/ongoing", {
+    const res = await fetch("https://apiv2.ryukomik.com/animeid/ongoing", {
       next: { revalidate: 3600 },
     });
 

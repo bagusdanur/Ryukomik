@@ -463,7 +463,7 @@ export async function POST(req: NextRequest) {
           const webPush = await import("web-push");
           const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY;
           const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
-          const vapidSubject = process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.web.id";
+          const vapidSubject = process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.com";
           if (vapidPublic && vapidPrivate) {
             webPush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
             const notifPayload = JSON.stringify({

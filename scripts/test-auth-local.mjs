@@ -12,7 +12,7 @@
 import { createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
 
-const baseUrl = process.argv[2] || "https://ryukomik.web.id";
+const baseUrl = process.argv[2] || "https://ryukomik.com";
 const userId = process.argv[3] || "5ee78339-b303-48d5-8905-ae8a24d9ebcc";
 
 const env = {};

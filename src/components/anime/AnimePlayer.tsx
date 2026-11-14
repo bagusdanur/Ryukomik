@@ -26,7 +26,7 @@ import {
   FaSpinner,
 } from "react-icons/fa";
 
-const API_BASE = "https://apiv2.ryukomik.web.id";
+const API_BASE = "https://apiv2.ryukomik.com";
 
 type ResolvedStream = {
   success?: boolean;

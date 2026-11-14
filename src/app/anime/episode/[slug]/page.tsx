@@ -26,7 +26,7 @@ type ApiResponse<T> = {
 async function getEpisode(slug: string): Promise<AnimeEpisode | null> {
   try {
     const res = await fetch(
-      `https://apiv2.ryukomik.web.id/animeid/episode/${encodeURIComponent(slug)}`,
+      `https://apiv2.ryukomik.com/animeid/episode/${encodeURIComponent(slug)}`,
       { next: { revalidate: 900 } }
     );
     if (!res.ok) return null;
@@ -41,7 +41,7 @@ async function getAnimeThumbnail(animeSlug?: string): Promise<string | null> {
   if (!animeSlug) return null;
   try {
     const res = await fetch(
-      `https://apiv2.ryukomik.web.id/animeid/detail/${encodeURIComponent(animeSlug)}`,
+      `https://apiv2.ryukomik.com/animeid/detail/${encodeURIComponent(animeSlug)}`,
       { next: { revalidate: 3600 } }
     );
     if (!res.ok) return null;

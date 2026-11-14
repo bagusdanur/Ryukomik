@@ -6,7 +6,7 @@ dotenv.config({ path: ".env.local", quiet: true });
 
 const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
-const SUBJECT = process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.web.id";
+const SUBJECT = process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.com";
 
 if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
   console.error("VAPID tidak lengkap");
@@ -26,8 +26,8 @@ const { rows } = dryRun
 
 const payload = JSON.stringify({
   title: "Ryukomik pindah domain",
-  body: "Domain baru: ryukomik.web.id — klik untuk lanjut baca. Bookmark lama sudah tidak berlaku.",
-  url: "https://ryukomik.web.id/",
+  body: "Domain baru: ryukomik.com — klik untuk lanjut baca. Bookmark lama sudah tidak berlaku.",
+  url: "https://ryukomik.com/",
   tag: "domain-move",
 });
 

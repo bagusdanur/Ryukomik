@@ -23,7 +23,7 @@ export default function DiscussComicCard({ title, source, slug, thumbnail, isAdu
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [createdId, setCreatedId] = useState<string | null>(null);
-  const comicUrl = `https://www.ryukomik.web.id/komik/${encodeURIComponent(source)}/${encodeURIComponent(slug)}`;
+  const comicUrl = `https://www.ryukomik.com/komik/${encodeURIComponent(source)}/${encodeURIComponent(slug)}`;
   const mediaUrl = thumbnail?.startsWith("https://") ? thumbnail : null;
   const content = useMemo(() => {
     const intro = `Lagi baca ${title}`;

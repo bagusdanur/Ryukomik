@@ -1,5 +1,5 @@
-export const CONTENT_API_URL = "https://api.ryukomik.web.id";
-export const CONTENT_API_V2_URL = "https://apiv2.ryukomik.web.id";
+export const CONTENT_API_URL = "https://api.ryukomik.com";
+export const CONTENT_API_V2_URL = "https://apiv2.ryukomik.com";
 
 type ContentFetchOptions = {
   revalidate: number;

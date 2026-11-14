@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: "Tonton Anime & Donghua Sub Indo - Ryukomik",
   description:
     "Pusat tontonan Ryukomik: anime terbaru dan donghua (animasi China) sub indo dalam satu halaman.",
-  alternates: { canonical: "https://ryukomik.web.id/tonton" },
+  alternates: { canonical: "https://ryukomik.com/tonton" },
 };
 
 type WatchItem = {
@@ -108,8 +108,8 @@ function CardGrid({ section }: { section: SectionConfig }) {
 
 export default async function TontonPage() {
   const [anime, donghua] = await Promise.all([
-    fetchLatest("https://apiv2.ryukomik.web.id/animeid/terbaru"),
-    fetchLatest("https://apiv2.ryukomik.web.id/anichin/terbaru"),
+    fetchLatest("https://apiv2.ryukomik.com/animeid/terbaru"),
+    fetchLatest("https://apiv2.ryukomik.com/anichin/terbaru"),
   ]);
 
   const sections: SectionConfig[] = [

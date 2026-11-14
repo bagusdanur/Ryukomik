@@ -68,7 +68,7 @@ export default async function Page({ params, searchParams }: GenrePageProps) {
   let initialData: GenreResponse | null = null;
 
   try {
-    const res = await fetch(`https://api.ryukomik.web.id/genre/${slug}?page=${page}`, {
+    const res = await fetch(`https://api.ryukomik.com/genre/${slug}?page=${page}`, {
       next: { revalidate: 1800 },
       headers: {
         Accept: "application/json",

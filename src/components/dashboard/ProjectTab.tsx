@@ -413,7 +413,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       setCoverSearchLoading(true);
       try {
         const apiSource = importCoverSource === "kiryuu" ? "komikid" : importCoverSource;
-        const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/search?q=${encodeURIComponent(query)}`, {
+        const res = await fetch(`https://api.ryukomik.com/${apiSource}/search?q=${encodeURIComponent(query)}`, {
           signal: controller.signal,
         });
         const json = await res.json();
@@ -518,7 +518,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       setChapterSearchLoading(true);
       try {
         const apiSource = importChapterSource === "kiryuu" ? "komikid" : importChapterSource;
-        const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/search?q=${encodeURIComponent(query)}`, {
+        const res = await fetch(`https://api.ryukomik.com/${apiSource}/search?q=${encodeURIComponent(query)}`, {
           signal: controller.signal,
         });
         const json = await res.json();
@@ -548,7 +548,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       setAutoImportSearchLoading(true);
       try {
         const apiSource = autoImportSource === "kiryuu" ? "komikid" : autoImportSource;
-        const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/search?q=${encodeURIComponent(query)}`, {
+        const res = await fetch(`https://api.ryukomik.com/${apiSource}/search?q=${encodeURIComponent(query)}`, {
           signal: controller.signal,
         });
         const json = await res.json();
@@ -575,7 +575,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     setAutoImportComparing(true);
     try {
       const apiSource = autoImportSource === "kiryuu" ? "komikid" : autoImportSource;
-      const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/detail/${encodeURIComponent(item.slug)}`);
+      const res = await fetch(`https://api.ryukomik.com/${apiSource}/detail/${encodeURIComponent(item.slug)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       const detail = json?.data ?? (json?.success ? json : null);
@@ -655,7 +655,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       setAutoImportProgress({ done: i, total: items.length, success, failed, currentLabel: item.label });
 
       try {
-        const chapRes = await fetch(`https://api.ryukomik.web.id/${apiSource}/chapter/${item.slug}`);
+        const chapRes = await fetch(`https://api.ryukomik.com/${apiSource}/chapter/${item.slug}`);
         if (!chapRes.ok) throw new Error(`HTTP ${chapRes.status}`);
         const chapJson = await chapRes.json();
         if (!chapJson?.success) throw new Error("Chapter tidak ditemukan di source");
@@ -730,7 +730,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     setChapterPickerLoading(true);
     try {
       const apiSource = importChapterSource === "kiryuu" ? "komikid" : importChapterSource;
-      const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/detail/${encodeURIComponent(item.slug)}`);
+      const res = await fetch(`https://api.ryukomik.com/${apiSource}/detail/${encodeURIComponent(item.slug)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       const detail = json?.data ?? (json?.success ? json : null);
@@ -1134,7 +1134,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     setImportingCover(true);
     try {
       const apiSource = parsed.source === "kiryuu" ? "komikid" : parsed.source;
-      const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/detail/${encodeURIComponent(parsed.slug)}`);
+      const res = await fetch(`https://api.ryukomik.com/${apiSource}/detail/${encodeURIComponent(parsed.slug)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       const detail = json?.data ?? (json?.success ? json : null);
@@ -1480,7 +1480,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     setImportingChapterImages(true);
     try {
       const apiSource = parsed.source === "kiryuu" ? "komikid" : parsed.source;
-      const res = await fetch(`https://api.ryukomik.web.id/${apiSource}/chapter/${parsed.slug}`);
+      const res = await fetch(`https://api.ryukomik.com/${apiSource}/chapter/${parsed.slug}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (!json?.success) throw new Error("Chapter tidak ditemukan di source");
@@ -1575,7 +1575,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                     className={`flex-1 rounded-md px-2 py-1 font-bold transition ${
                       storageAccount === acc ? "bg-[#7c5cfc] text-white" : "text-white/40 hover:text-white/70"
                     }`}
-                    title={acc === "primary" ? "storage.ryukomik.web.id" : "storage.komano.my.id"}
+                    title={acc === "primary" ? "storage.ryukomik.com" : "storage.komano.my.id"}
                   >
                     {acc === "primary" ? "Akun 1" : "Akun 2"}
                   </button>
@@ -2335,7 +2335,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
             let src = url;
             try {
               const parsed = new URL(url);
-              if (parsed.hostname === 'storage.ryukomik.web.id' || parsed.hostname === 'storage.komano.my.id') {
+              if (parsed.hostname === 'storage.ryukomik.com' || parsed.hostname === 'storage.komano.my.id') {
                 src = `/api/image?url=${encodeURIComponent(url)}`;
               }
             } catch {}
@@ -2419,7 +2419,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                       className={`rounded-md px-2 py-1 font-bold transition ${
                         storageAccount === acc ? "bg-emerald-400/20 text-emerald-200" : "text-white/40 hover:text-white/70"
                       }`}
-                      title={acc === "primary" ? "storage.ryukomik.web.id" : "storage.komano.my.id"}
+                      title={acc === "primary" ? "storage.ryukomik.com" : "storage.komano.my.id"}
                     >
                       {acc === "primary" ? "Akun 1" : "Akun 2"}
                     </button>

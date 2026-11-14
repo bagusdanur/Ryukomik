@@ -39,7 +39,7 @@ export default function JadwalPage() {
   const [activeHari, setActiveHari] = useState<Hari>(getTodayHari());
 
   useEffect(() => {
-    fetch("https://apiv2.ryukomik.web.id/animeid/jadwal")
+    fetch("https://apiv2.ryukomik.com/animeid/jadwal")
       .then((r) => r.json())
       .then((res: JadwalResponse) => { if (res.success) setData(res.data ?? {}); });
   }, []);

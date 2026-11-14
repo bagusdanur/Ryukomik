@@ -20,7 +20,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function getEpisode(slug: string): Promise<AnimeEpisode | null> {
   try {
-    const res = await fetch(`https://apiv2.ryukomik.web.id/animeid/episode/${encodeURIComponent(slug)}`, {
+    const res = await fetch(`https://apiv2.ryukomik.com/animeid/episode/${encodeURIComponent(slug)}`, {
       next: { revalidate: 900 },
     });
     if (!res.ok) return null;

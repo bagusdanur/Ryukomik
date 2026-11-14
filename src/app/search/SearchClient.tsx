@@ -34,7 +34,7 @@ const PUBLIC_SOURCES = COMIC_SOURCES.filter(
 const ADULT_SOURCES = COMIC_SOURCES.filter((source) => ADULT_SOURCE_IDS.has(source.id));
 // Nomor sumber 18+ ikut config (sekarang 7 & 8), jangan ditulis manual.
 const ADULT_LABELS = ADULT_SOURCES.map((source) => source.label).join(" & ");
-const SOURCE_API_BASE_URL = "https://api.ryukomik.web.id";
+const SOURCE_API_BASE_URL = "https://api.ryukomik.com";
 const SOURCE_PRIORITY = new Map<SearchSourceId, number>([
   ["project", 0],
   ...COMIC_SOURCES.filter((source) => source.id !== "project").map(

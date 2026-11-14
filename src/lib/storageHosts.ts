@@ -1,14 +1,14 @@
 /**
  * Daftar host storage project.
  *
- * File lama berada di bucket akun R2 pertama (storage.ryukomik.web.id), file
+ * File lama berada di bucket akun R2 pertama (storage.ryukomik.com), file
  * baru ditulis ke bucket akun kedua (storage.komano.my.id). Semua pengecekan
  * "apakah URL ini milik storage kita" harus memakai daftar ini, bukan satu
  * host hardcode, supaya chapter premium tetap terkunci dan cover tetap
  * dioptimasi setelah bucket kedua dipakai.
  */
 
-const DEFAULT_PRIMARY = "https://storage.ryukomik.web.id";
+const DEFAULT_PRIMARY = "https://storage.ryukomik.com";
 const DEFAULT_ALT = "https://storage.komano.my.id";
 
 function normalizeBase(value: string | undefined, fallback: string): string {

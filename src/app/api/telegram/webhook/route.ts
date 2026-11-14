@@ -112,7 +112,7 @@ export async function POST(request: Request) {
       message_id: messageId,
       caption,
       reply_markup: {
-        inline_keyboard: [[{ text: "Buka Dashboard Premium", url: "https://ryukomik.web.id/dashboard?page=requests" }]],
+        inline_keyboard: [[{ text: "Buka Dashboard Premium", url: "https://ryukomik.com/dashboard?page=requests" }]],
       },
     });
   }

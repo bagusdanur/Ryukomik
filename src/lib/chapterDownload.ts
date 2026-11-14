@@ -17,7 +17,7 @@ export async function fetchDownloadChapter(
     if (!mangaSlug || !chapter) throw new Error("Slug chapter Project tidak valid");
     url = `/api/project/chapter/${encodeURIComponent(mangaSlug)}/${encodeURIComponent(chapter)}`;
   } else {
-    url = `https://api.ryukomik.web.id/${encodeURIComponent(source)}/chapter/${slug}`;
+    url = `https://api.ryukomik.com/${encodeURIComponent(source)}/chapter/${slug}`;
   }
 
   let headers: HeadersInit | undefined;

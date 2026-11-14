@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://ryukomik.web.id
+Host: https://ryukomik.com
 
 # Sitemaps
-Sitemap: https://ryukomik.web.id/sitemap.xml
+Sitemap: https://ryukomik.com/sitemap.xml

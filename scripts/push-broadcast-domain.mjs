@@ -12,7 +12,7 @@ dotenv.config({ path: ".env.local", quiet: true });
 
 const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
-const SUBJECT = process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.web.id";
+const SUBJECT = process.env.VAPID_SUBJECT || "mailto:contact@ryukomik.com";
 if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
   console.error("VAPID tidak lengkap");
   process.exit(1);
@@ -33,9 +33,9 @@ const payload = JSON.stringify({
   title: argVal("--title", "Ryukomik pindah domain"),
   body: argVal(
     "--body",
-    "Sekarang di ryukomik.web.id. Domain lama sudah tidak bisa dibuka — ketuk untuk lanjut baca.",
+    "Sekarang di ryukomik.com. Domain lama sudah tidak bisa dibuka — ketuk untuk lanjut baca.",
   ),
-  url: "https://ryukomik.web.id/",
+  url: "https://ryukomik.com/",
   tag: "domain-move",
 });
 

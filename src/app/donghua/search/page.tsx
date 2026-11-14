@@ -1,7 +1,7 @@
 import Link from "next/link";
 import SearchBar from "./SearchBar";
 
-const API_BASE = "https://apiv2.ryukomik.web.id";
+const API_BASE = "https://apiv2.ryukomik.com";
 
 type SearchParams = Promise<{
   q?: string | string[];

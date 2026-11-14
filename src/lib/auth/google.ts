@@ -17,7 +17,7 @@ export function googleConfigured(): boolean {
 }
 
 export function authBaseUrl(): string {
-  return (process.env.AUTH_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://ryukomik.web.id").replace(/\/$/, "");
+  return (process.env.AUTH_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || "https://ryukomik.com").replace(/\/$/, "");
 }
 
 export function googleRedirectUri(): string {

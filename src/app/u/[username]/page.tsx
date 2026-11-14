@@ -9,7 +9,7 @@ type RouteProps = {
   params: Promise<{ username: string }>;
 };
 
-const SITE_URL = "https://www.ryukomik.web.id";
+const SITE_URL = "https://www.ryukomik.com";
 
 export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
   const { username: rawUsername } = await params;

@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<{ handle: s
   const title = `${group.team_name} (@${group.handle}) — Scanlator`;
   const description = group.bio?.slice(0, 160) || `Karya terjemahan ${group.team_name} di Ryukomik.`;
   const image = group.avatar_url || group.owner_avatar_url || undefined;
-  const url = `https://ryukomik.web.id/scanlator/${group.handle}`;
+  const url = `https://ryukomik.com/scanlator/${group.handle}`;
 
   return {
     title,
@@ -69,14 +69,14 @@ export default async function Page({ params }: { params: Promise<{ handle: strin
     ? {
         "@context": "https://schema.org",
         "@type": "ProfilePage",
-        url: `https://ryukomik.web.id/scanlator/${group.handle}`,
+        url: `https://ryukomik.com/scanlator/${group.handle}`,
         mainEntity: {
           "@type": "Organization",
           name: group.team_name,
           alternateName: `@${group.handle}`,
           description: group.bio || undefined,
           logo: group.avatar_url || group.owner_avatar_url || undefined,
-          url: `https://ryukomik.web.id/scanlator/${group.handle}`,
+          url: `https://ryukomik.com/scanlator/${group.handle}`,
         },
       }
     : null;
