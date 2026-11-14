@@ -70,7 +70,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
-        <meta name="monetag" content="648210872e70b41aeb3156769958d70b"/>
+        <meta name="monetag" content="40840f50f2fb91bdd2abf4aed6f3be2b"/>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
