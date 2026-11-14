@@ -75,6 +75,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             tag pertama tetap mendapat token yang benar. */}
         <meta name="monetag" content="40840f50f2fb91bdd2abf4aed6f3be2b"/>
         <meta name="monetag" content="877aaf28ef34bd5088aeab32ec2f5b5b"/>
+        <meta name="admaven-placement" content="BpjaGrTk9"/>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
