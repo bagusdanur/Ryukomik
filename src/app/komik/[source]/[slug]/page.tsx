@@ -172,8 +172,12 @@ export async function generateMetadata({ params }: DetailPageProps): Promise<Met
   const { slug, source } = await params;
   const canonicalSource = normalizeSource(source);
   if (!canonicalSource) return { robots: { index: false, follow: false } };
+  // Sumber dewasa tidak boleh membocorkan judul/cover lewat og:title, og:image,
+  // atau canonical — walau isi halamannya sudah notFound().
+  if (isAdultGroupSource(canonicalSource)) return { title: "Tidak ditemukan", robots: { index: false, follow: false } };
   const cleanSlug = normalizeComicSlug(canonicalSource, slug);
   const data = await getDetail(canonicalSource, cleanSlug);
+  if (!ADULT_ENABLED && data?.is_adult === true) return { title: "Tidak ditemukan", robots: { index: false, follow: false } };
 
   const title = data?.title ?? cleanSlug.replace(/-/g, " ");
   const type = data?.type ?? "Komik";

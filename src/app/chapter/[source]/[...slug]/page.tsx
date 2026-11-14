@@ -141,6 +141,7 @@ const getChapter = cache(async (source: string, slugStr: string): Promise<Reader
       return {
         title: seriesTitle,
         mangaId: mangaSlug,
+        isAdult: data.is_adult === true,
         currentChapter: `Chapter ${data.chapter_number}`,
         chapters: await getChapterList("project", mangaSlug),
         prev: data.prev, next: data.next,
@@ -277,11 +278,14 @@ export async function generateMetadata({ params }: ChapterPageProps): Promise<Me
   const { source, slug } = await params;
   const canonicalSource = normalizeSource(source);
   if (!canonicalSource) return { robots: { index: false, follow: false } };
+  // Sumber/chapter dewasa tidak boleh membocorkan judul lewat metadata.
+  if (isAdultGroupSource(canonicalSource)) return { title: "Tidak ditemukan", robots: { index: false, follow: false } };
   const normalizedSlug = normalizeChapterSlug(canonicalSource, parseSlug(slug));
   const slugStr = canonicalSource === "kiryuu"
     ? await resolveLegacyKiryuuSlug(normalizedSlug)
     : normalizedSlug;
   const data = await getChapter(canonicalSource, slugStr);
+  if (!ADULT_ENABLED && (data as { isAdult?: boolean } | null)?.isAdult === true) return { title: "Tidak ditemukan", robots: { index: false, follow: false } };
 
   const title = buildTitle(data, slugStr);
   const description = `Baca ${title} bahasa Indonesia dengan navigasi chapter lengkap dan kualitas gambar yang nyaman dibaca di Ryukomik.`;
@@ -334,7 +338,7 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
 
   if (!data) notFound();
   // Chapter milik seri Project dewasa tidak boleh dirender di situs SFW.
-  if (!ADULT_ENABLED && (data as { is_adult?: boolean }).is_adult === true) notFound();
+  if (!ADULT_ENABLED && (data as { isAdult?: boolean }).isAdult === true) notFound();
 
   if (data.blocked) {
     return (

@@ -2,11 +2,21 @@
 
 import TerbaruClient from "./TerbaruClient";
 import { DEFAULT_SOURCE } from "@/config/sources";
+import { ADULT_ENABLED } from "@/config/siteMode";
 import type { Metadata } from "next";
 import type { Dict } from "@/types/common";
-import type { TerbaruFilters, UpdateItem } from "@/types/content";
+import type { FilterOption, TerbaruFilters, UpdateItem } from "@/types/content";
 
 const SOURCE_API_BASE_URL = "https://api.ryukomik.com";
+
+/** Genre yang tidak boleh muncul sebagai chip filter di situs bersih. */
+const ADULT_GENRE_VALUES = new Set(["hentai", "lolicon", "shotacon"]);
+
+function stripAdultGenres(filters: TerbaruFilters): TerbaruFilters {
+  const keep = (options?: FilterOption[]) =>
+    Array.isArray(options) ? options.filter((option) => !ADULT_GENRE_VALUES.has(String(option.value || "").toLowerCase())) : options;
+  return { ...filters, genre: keep(filters.genre), genre2: keep(filters.genre2) };
+}
 // Sumber awal mengikuti slot 1 (default sumber aktif di src/config/sources.ts).
 const INITIAL_SOURCE = DEFAULT_SOURCE;
 
@@ -105,10 +115,15 @@ export default async function Page() {
     fetchJson("komiku/filters", 86400),
   ]);
 
+  // Mode SFW: buang chip genre dewasa dari filter, walau isinya 0 seri —
+  // memperlihatkan chip "Hentai" di situs bersih itu tidak konsisten.
+  const rawFilters = (initialFiltersJson?.data as TerbaruFilters) || null;
+  const initialFilters = rawFilters && !ADULT_ENABLED ? stripAdultGenres(rawFilters) : rawFilters;
+
   return (
     <TerbaruClient
       initialData={(initialListJson?.data as UpdateItem[]) || []}
-      initialFilters={(initialFiltersJson?.data as TerbaruFilters) || null}
+      initialFilters={initialFilters || null}
       initialSource={INITIAL_SOURCE}
     />
   );

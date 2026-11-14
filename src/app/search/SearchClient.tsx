@@ -12,6 +12,7 @@ type SearchSource = { id: SearchSourceId; label: string };
 type SearchPageResultItem = Omit<SearchResultItem, "source"> & { source: SearchSourceId };
 
 import { isAdultHidden, ADULT_PREF_EVENT } from "@/utils/adultFilter";
+import { ADULT_ENABLED } from "@/config/siteMode";
 import {
   MANGA_SOURCES,
   ADULT_SOURCES as ADULT_SOURCE_CONFIGS,
@@ -352,7 +353,7 @@ export default function SearchClient({
         )}
       </div>
 
-      {q && !hideAdult && (
+      {ADULT_ENABLED && q && !hideAdult && (
         <div className="rk-card mb-5 rounded-2xl p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>

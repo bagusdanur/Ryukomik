@@ -45,6 +45,8 @@ export interface ReaderChapter {
   mangaId?: string;
   currentChapter?: string;
   images: string[];
+  /** Seri Project bertanda 18+ — dipakai menyaring di mode SFW. */
+  isAdult?: boolean;
   /** Daftar chapter seri (untuk modal "Daftar Chapter" di akhir reader). */
   chapters?: Array<{ slug: string; title: string }>;
   /** Cover series (untuk riwayat baca) — diambil dari endpoint detail. */
