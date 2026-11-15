@@ -48,3 +48,6 @@ Thumbs.db
 
 # cache hasil resize cover (dibuat runtime)
 data/cover-cache/
+
+# snapshot sitemap chapter (dibangun scripts/build-chapter-sitemap.mjs)
+.sitemap-cache/
