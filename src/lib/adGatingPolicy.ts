@@ -29,7 +29,7 @@ export function shouldLoadAdScripts(input: AdLoadInput): boolean {
 }
 
 /** Ad containers injected by providers (tag.min.js popunder/vignette etc.). */
-export const AD_PROVIDER_HOSTS = ["al5sm.com", "gaslah.my.id", "omg10.com"];
+export const AD_PROVIDER_HOSTS = ["al5sm.com", "gaslah.my.id", "omg10.com", "abscloud.org"];
 
 /**
  * Selectors that remove EVERY ad trace. Regression guard: an earlier version
