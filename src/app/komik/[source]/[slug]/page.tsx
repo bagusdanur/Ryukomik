@@ -174,7 +174,7 @@ export async function generateMetadata({ params }: DetailPageProps): Promise<Met
   if (!canonicalSource) return { robots: { index: false, follow: false } };
   // Sumber dewasa tidak boleh membocorkan judul/cover lewat og:title, og:image,
   // atau canonical — walau isi halamannya sudah notFound().
-  if (isAdultGroupSource(canonicalSource)) return { title: "Tidak ditemukan", robots: { index: false, follow: false } };
+  if (!ADULT_ENABLED && isAdultGroupSource(canonicalSource)) return { title: "Tidak ditemukan", robots: { index: false, follow: false } };
   const cleanSlug = normalizeComicSlug(canonicalSource, slug);
   const data = await getDetail(canonicalSource, cleanSlug);
   if (!ADULT_ENABLED && data?.is_adult === true) return { title: "Tidak ditemukan", robots: { index: false, follow: false } };
@@ -219,7 +219,7 @@ export default async function DetailPage({ params }: DetailPageProps) {
   if (!canonicalSource) notFound();
   // Mode SFW: sumber dewasa tidak punya halaman sama sekali, walau URL-nya
   // ditebak langsung. 410/404 dikirim lewat notFound().
-  if (isAdultGroupSource(canonicalSource)) notFound();
+  if (!ADULT_ENABLED && isAdultGroupSource(canonicalSource)) notFound();
   const cleanSlug = normalizeComicSlug(canonicalSource, slug);
 
   if (canonicalSource !== source || cleanSlug !== slug) {

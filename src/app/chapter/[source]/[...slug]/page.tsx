@@ -279,7 +279,7 @@ export async function generateMetadata({ params }: ChapterPageProps): Promise<Me
   const canonicalSource = normalizeSource(source);
   if (!canonicalSource) return { robots: { index: false, follow: false } };
   // Sumber/chapter dewasa tidak boleh membocorkan judul lewat metadata.
-  if (isAdultGroupSource(canonicalSource)) return { title: "Tidak ditemukan", robots: { index: false, follow: false } };
+  if (!ADULT_ENABLED && isAdultGroupSource(canonicalSource)) return { title: "Tidak ditemukan", robots: { index: false, follow: false } };
   const normalizedSlug = normalizeChapterSlug(canonicalSource, parseSlug(slug));
   const slugStr = canonicalSource === "kiryuu"
     ? await resolveLegacyKiryuuSlug(normalizedSlug)
@@ -323,7 +323,7 @@ export default async function ChapterPage({ params }: ChapterPageProps) {
   const canonicalSource = normalizeSource(source);
   if (!canonicalSource) notFound();
   // Mode SFW: chapter dari sumber dewasa tidak dirender sama sekali.
-  if (isAdultGroupSource(canonicalSource)) notFound();
+  if (!ADULT_ENABLED && isAdultGroupSource(canonicalSource)) notFound();
   const incomingSlug = parseSlug(slug);
   const normalizedSlug = normalizeChapterSlug(canonicalSource, incomingSlug);
   const slugStr = canonicalSource === "kiryuu"
