@@ -13,7 +13,7 @@ export default function AntiAdblock() {
   const pathname = usePathname();
 
   // Cek jika halaman ini adalah halaman pembaca/chapter
-  const isReaderPage = pathname?.startsWith("/chapter");
+  const isReaderPage = pathname?.startsWith("/chapter") || pathname?.startsWith("/hentai/episode");
 
   useEffect(() => {
     if (typeof window !== "undefined") {

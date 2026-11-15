@@ -46,6 +46,7 @@ export default function InstallPWA() {
   // lain di perangkat ini", yang mengganggu di section 18+.
   // Banner install tidak ditampilkan di halaman yang butuh fokus baca/profil.
   if (
+    pathname?.startsWith("/hentai") ||
     pathname?.startsWith("/tonton") ||
     pathname?.startsWith("/scanlator") ||
     /^\/komik\/[^/]+\/[^/]+\/?$/.test(pathname || "")

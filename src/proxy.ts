@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isStorageHost } from "@/lib/storageHosts";
 import { isAdultGroupSource } from "@/config/sources";
+import { ADULT_ENABLED } from "@/config/siteMode";
 import {
   normalizeChapterSlug,
   normalizeComicSlug,
@@ -9,14 +10,13 @@ import {
 
 export function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
-  // Konten 18+ sudah dipindah ke situs terpisah. 410 (bukan redirect) supaya
-  // Google membuang URL lama dari indeks, bukan terus mengikutinya.
-  if (url.pathname === '/hentai' || url.pathname.startsWith('/hentai/')) {
-    return new NextResponse('Gone', { status: 410, headers: { 'Cache-Control': 'public, max-age=86400' } });
-  }
-  // Sumber dewasa ditolak di edge supaya status aslinya 410 — halaman di bawah
-  // ini memakai ISR `force-static` yang tetap membalas 200 saat notFound().
-  {
+  // Mode SFW saja: seluruh permukaan 18+ dibalas 410 (bukan redirect) supaya
+  // Google membuang URL lama dari indeks. Di mode dewasa (ryukomik.com
+  // sekarang) semua ini hidup normal.
+  if (!ADULT_ENABLED) {
+    if (url.pathname === '/hentai' || url.pathname.startsWith('/hentai/')) {
+      return new NextResponse('Gone', { status: 410, headers: { 'Cache-Control': 'public, max-age=86400' } });
+    }
     const seg = url.pathname.split('/').filter(Boolean);
     if (seg.length >= 2 && (seg[0] === 'komik' || seg[0] === 'chapter')) {
       let source = seg[1];

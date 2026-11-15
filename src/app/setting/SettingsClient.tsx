@@ -24,6 +24,7 @@ import {
 import {
   AccountSection,
   AppearanceSection,
+  ContentFilterSection,
   BackupCloudSection,
   LogoutButton,
   MyStatsSection,
@@ -449,6 +450,7 @@ export default function SettingsClient() {
         <PremiumModal open={showPremium} onClose={() => setShowPremium(false)} />
 
         <AppearanceSection themeColor={themeColor} onOpenTheme={() => setShowThemeModal(true)} />
+        <ContentFilterSection />
         {isLogin && <PushNotificationSection />}
         {isLogin && (
           <PrivacySection
