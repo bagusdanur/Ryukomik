@@ -9,6 +9,7 @@ import ThemeColorProvider from "@/components/ThemeColorProvider";
 
 import MaintenanceBanner from "@/components/MaintenanceBanner";
 import MonetagScript from "@/components/MonetagScript";
+import AdGate from "@/components/AdGate";
 import Navbar from "@/components/Navbar";
 import BanGate from "@/components/BanGate";
 import BanLoginNotice from "@/components/ban/BanLoginNotice";
@@ -133,6 +134,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <NotificationPrompt />
         <YukiChatEmbed />
         
+        <AdGate />
         <AntiAdblock />
         <AdBanner />
         <Footer />

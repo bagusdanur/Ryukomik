@@ -21,33 +21,6 @@ type PublicAdsConfig = {
 
 const PROVIDER_ATTR = "data-ad-provider";
 
-/**
- * Popunder Adsterra (zona milik Ryukomik).
- *
- * Sengaja ditulis di kode, bukan diambil dari config iklan di dashboard:
- * zona ini dipakai tetap dan tidak perlu diubah admin. Gating tetap sama —
- * user premium tidak pernah menerima script ini, dan jejaknya dibersihkan
- * oleh cleanupAds() karena host-nya ada di AD_PROVIDER_HOSTS.
- */
-const ADSTERRA_POPUNDER = {
-  id: "adsterra-popunder",
-  src: "https://abscloud.org/1/bf5e61915aae77769e44658a54b890b0",
-};
-
-function mountAdsterraPopunder() {
-  if (typeof document === "undefined") return;
-  if (document.querySelector(`script[${PROVIDER_ATTR}="${ADSTERRA_POPUNDER.id}"]`)) return;
-  const target = document.body || document.documentElement;
-  if (!target) return;
-  const script = document.createElement("script");
-  script.src = ADSTERRA_POPUNDER.src;
-  script.async = true;
-  script.setAttribute(PROVIDER_ATTR, ADSTERRA_POPUNDER.id);
-  // data-cfasync="false" → Cloudflare Rocket Loader tidak boleh menunda/defer ini
-  script.setAttribute("data-cfasync", "false");
-  target.appendChild(script);
-}
-
 function cleanupAds() {
   for (const selector of AD_REMOVAL_SELECTORS) {
     document.querySelectorAll(selector).forEach((el) => el.remove());
@@ -124,14 +97,6 @@ export default function MonetagScript() {
       }
     };
   }, [premiumLoading, isPremium]);
-
-  // Popunder Adsterra: dipasang begitu user dipastikan bukan premium.
-  useEffect(() => {
-    if (!allowAds) return;
-    // Beri jeda singkat supaya tidak berebut dengan hidrasi halaman.
-    const t = window.setTimeout(mountAdsterraPopunder, 1500);
-    return () => window.clearTimeout(t);
-  }, [allowAds]);
 
   // Pasang iklan setelah status premium diketahui & config diambil.
   useEffect(() => {
