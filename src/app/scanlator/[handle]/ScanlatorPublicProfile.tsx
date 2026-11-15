@@ -17,6 +17,7 @@ type Profile = {
 
 type Project = {
   slug: string; title: string; cover_url: string | null; type: string | null;
+  is_adult?: boolean;
   latest_chapter?: number | null; updated_at?: string | null; latest_chapter_at?: string | null;
 };
 
@@ -295,7 +296,7 @@ export default function ScanlatorPublicProfile({ handle }: { handle: string }) {
               <Link key={p.slug} href={`/komik/project/${p.slug}`} className="group min-w-0">
                 <div className="aspect-[3/4] overflow-hidden rounded-lg border border-white/[.06] bg-white/[.03]">
                   {p.cover_url ? (
-                    <AdultCoverGuard adult revealKey="scanlator">
+                    <AdultCoverGuard adult={p.is_adult === true} revealKey="scanlator">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={p.cover_url}
