@@ -26,8 +26,12 @@ export const SOURCES: readonly SourceConfig[] = [
   { id: "kiryuu",     label: "1",       group: "manga",     order: 1, activeColor: "accent",   hasFilter: true },
   { id: "sekte",      label: "7",       group: "adult",     order: 7, activeColor: "accent-3", gate: "age+login", hasFilter: true },
   { id: "doujindesu", label: "8",       group: "adult",     order: 8, activeColor: "accent-3", gate: "age+login", hasFilter: true },
-  // VoraToon: situs baru, HTML server-rendered, tidak memblokir IP server.
-  { id: "vt",         label: "6",       group: "manga",     order: 6, activeColor: "accent",   hasFilter: true },
+  // VoraToon (slot 6) DIMATIKAN SEMENTARA: upstream menyajikan halaman login,
+  // jadi chapter selalu kosong (server 200 tapi image_urls = []). Grup "legacy"
+  // menyembunyikannya dari pemilih sumber & pencarian, tapi ID-nya tetap valid
+  // supaya URL lama tidak jadi 404 mendadak. Kembalikan ke "manga" kalau login
+  // upstream sudah bisa ditembus.
+  { id: "vt",         label: "6",       group: "legacy",    order: 6, activeColor: "accent",   hasFilter: true },
   { id: "meionovels", label: "Novel",   group: "novel",     order: 9, activeColor: "accent"   },
   { id: "project",  label: "Project", group: "project", order: 9, activeColor: "emerald-500", hasFilter: true },
   // Tetap valid untuk URL, histori, bookmark, dan komentar lama, tetapi tidak ditampilkan di pemilih sumber.
