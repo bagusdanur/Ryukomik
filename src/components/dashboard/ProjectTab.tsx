@@ -113,6 +113,8 @@ type Manga = {
   is_spotlight?: boolean;
   is_adult?: boolean;
   view_count?: number;
+  scanlator_handle?: string | null;
+  scanlator_team?: string | null;
   created_at: string;
   deleted_at?: string | null;
 };
@@ -166,6 +168,10 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
 
   // Data
   const [mangaList, setMangaList] = useState<Manga[]>([]);
+  // Pisahkan project internal Ryukomik dari kiriman Scanlator. Nilainya dikirim
+  // ke server supaya pagination dan hitungan tetap benar per kategori.
+  const [mangaOwner, setMangaOwner] = useState<"ryukomik" | "scanlator">("ryukomik");
+  const [ownerCounts, setOwnerCounts] = useState<{ ryukomik: number; scanlator: number }>({ ryukomik: 0, scanlator: 0 });
   const [activeManga, setActiveManga] = useState<Manga | null>(null);
   const [chapterList, setChapterList] = useState<Chapter[]>([]);
   const [viewStats, setViewStats] = useState<ProjectViewStats>({
@@ -760,7 +766,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     try {
       const token = await getAdminToken();
       const headers = { Authorization: `Bearer ${token}` };
-      const params = new URLSearchParams({ page: String(mangaPage), limit: String(mangaPageSize), status: mangaStatus, sort: mangaSort });
+      const params = new URLSearchParams({ page: String(mangaPage), limit: String(mangaPageSize), status: mangaStatus, sort: mangaSort, owner: mangaOwner });
       if (debouncedMangaSearch) params.set("search", debouncedMangaSearch);
       const [res, statsRes] = await Promise.all([
         fetch(`/api/admin/project/manga?${params}`, { headers }),
@@ -770,6 +776,12 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       if (!res.ok) throw new Error(json?.error || "Gagal memuat project");
       setMangaList(json.data || []);
       setMangaTotal(Number(json.total) || 0);
+      if (json.owners) {
+        setOwnerCounts({
+          ryukomik: Number(json.owners.ryukomik) || 0,
+          scanlator: Number(json.owners.scanlator) || 0,
+        });
+      }
       if (statsRes.ok) {
         setViewStats({
           readersToday: Number(statsJson.readersToday) || 0,
@@ -784,7 +796,7 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
     } finally {
       setLoading(false);
     }
-  }, [getAdminToken, mangaPage, mangaStatus, mangaSort, debouncedMangaSearch]);
+  }, [getAdminToken, mangaPage, mangaStatus, mangaSort, mangaOwner, debouncedMangaSearch]);
 
   useEffect(() => {
     if (view === "mangaList") fetchManga();
@@ -2706,6 +2718,40 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
       </div>
 
       <ProjectStorageCard getAdminToken={getAdminToken} />
+
+      {/* Pemisah project internal Ryukomik dan kiriman Scanlator */}
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/[.06] bg-[#13131a]/80 p-2">
+        {([
+          { key: "ryukomik", label: "Project Ryukomik", count: ownerCounts.ryukomik },
+          { key: "scanlator", label: "Project Scanlator", count: ownerCounts.scanlator },
+        ] as const).map((tab) => {
+          const active = mangaOwner === tab.key;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => { setMangaOwner(tab.key); setMangaPage(1); }}
+              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
+                active
+                  ? "bg-emerald-400/15 text-emerald-200 ring-1 ring-emerald-400/30"
+                  : "text-white/50 hover:bg-white/[.05] hover:text-white/80"
+              }`}
+            >
+              {tab.label}
+              <span className={`rounded-md px-1.5 py-0.5 text-[10px] tabular-nums ${
+                active ? "bg-emerald-400/20 text-emerald-100" : "bg-white/[.07] text-white/45"
+              }`}>
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
+        <p className="ml-auto pr-2 text-[10px] text-white/35">
+          {mangaOwner === "scanlator"
+            ? "Judul kiriman tim Scanlator lewat Studio."
+            : "Judul internal Ryukomik."}
+        </p>
+      </div>
 
       {activityOpen && (
         <div className="rounded-2xl border border-white/[.07] bg-[#13131a] p-4">
