@@ -10,6 +10,7 @@ import ThemeColorProvider from "@/components/ThemeColorProvider";
 import MaintenanceBanner from "@/components/MaintenanceBanner";
 import MonetagScript from "@/components/MonetagScript";
 import AdGate from "@/components/AdGate";
+import HistatsCounter from "@/components/HistatsCounter";
 import Navbar from "@/components/Navbar";
 import BanGate from "@/components/BanGate";
 import BanLoginNotice from "@/components/ban/BanLoginNotice";
@@ -98,25 +99,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="preconnect" href="https://cdn.komiku.co.id" />
         <link rel="dns-prefetch" href="https://cdn.komiku.co.id" />
         <MonetagScript />
-        <Script
-          id="histats-script"
-          strategy="lazyOnload"
-          dangerouslySetInnerHTML={{
-            __html: `
-              var _Hasync = _Hasync || [];
-              _Hasync.push(['Histats.start', '1,4724030,4,600,110,30,00010011']);
-              _Hasync.push(['Histats.fasi', '1']);
-              _Hasync.push(['Histats.track_hits', '']);
-              (function() {
-                var hs = document.createElement('script');
-                hs.type = 'text/javascript';
-                hs.async = true;
-                hs.src = '//s10.histats.com/js15_as.js';
-                (document.getElementsByTagName('head')[0] || document.body).appendChild(hs);
-              })();
-            `,
-          }}
-        />
       </head>
       <body className="antialiased">
         {/* Fase B/C: provider auth lokal; tidak melakukan apa pun sampai
@@ -138,6 +120,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <AntiAdblock />
         <AdBanner />
         <Footer />
+        <HistatsCounter />
         <BanGate />
         <BanLoginNotice />
         <Analytics />
