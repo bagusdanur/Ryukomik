@@ -40,6 +40,7 @@ export default function RawPanel({ getToken }: { getToken: () => Promise<string>
   const [results, setResults] = useState<SearchItem[]>([]);
   const [series, setSeries] = useState<{ slug: string; title: string } | null>(null);
   const [chapters, setChapters] = useState<ChapterItem[]>([]);
+  const [lockedCount, setLockedCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -83,7 +84,8 @@ export default function RawPanel({ getToken }: { getToken: () => Promise<string>
       if (!response.ok) throw new Error(json?.error || "Gagal membuka seri.");
       setSeries({ slug: json.slug, title: json.title });
       setChapters(json.chapters || []);
-      if (!json.chapters?.length) setNotice("Seri ini belum punya chapter di sumber.");
+      setLockedCount(Number(json.lockedCount) || 0);
+      if (!json.chapters?.length) setNotice("Seri ini belum punya chapter gratis di sumber.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal membuka seri.");
     } finally {
@@ -162,12 +164,17 @@ export default function RawPanel({ getToken }: { getToken: () => Promise<string>
       {series ? (
         <div className="rounded-xl border border-white/[.07]">
           <div className="flex items-center gap-2 border-b border-white/[.06] px-3 py-2.5">
-            <button type="button" onClick={() => { setSeries(null); setChapters([]); }} className="rounded-lg p-1 text-white/45 hover:bg-white/[.06] hover:text-white">
+            <button type="button" onClick={() => { setSeries(null); setChapters([]); setLockedCount(0); }} className="rounded-lg p-1 text-white/45 hover:bg-white/[.06] hover:text-white">
               <FiChevronLeft size={15} />
             </button>
             <p className="min-w-0 flex-1 truncate text-[12.5px] font-bold">{series.title}</p>
             <span className="text-[10px] text-white/35">{chapters.length} chapter</span>
           </div>
+          {lockedCount > 0 && (
+            <p className="border-b border-white/[.06] bg-amber-300/[.06] px-3 py-2 text-[10.5px] leading-relaxed text-amber-200/80">
+              {lockedCount} chapter berbayar di sumber ini tidak ditampilkan — hanya chapter gratis yang bisa diunduh.
+            </p>
+          )}
           <div className="max-h-[420px] overflow-y-auto">
             {chapters.map((chapter) => (
               <div key={chapter.slug} className="flex items-center gap-2 border-b border-white/[.04] px-3 py-2 last:border-0">

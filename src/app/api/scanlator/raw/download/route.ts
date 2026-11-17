@@ -97,7 +97,12 @@ export async function GET(request: Request) {
     let images = payload.images || payload.data?.images || [];
     images = images.filter((item) => typeof item === "string" && /^https?:\/\//.test(item));
 
-    if (!images.length) return NextResponse.json({ error: "Chapter ini tidak punya gambar." }, { status: 404 });
+    if (!images.length) {
+      return NextResponse.json(
+        { error: "Chapter ini tidak punya gambar — kemungkinan terkunci atau berbayar di sumber." },
+        { status: 404 },
+      );
+    }
     if (images.length > MAX_IMAGES) images = images.slice(0, MAX_IMAGES);
 
     const zip = new JSZip();

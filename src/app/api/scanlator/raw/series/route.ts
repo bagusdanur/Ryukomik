@@ -6,7 +6,29 @@ import { RawError, isRawSource, rawApi, requireRawAccess } from "@/lib/scanlator
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type ChapterItem = { title?: string; slug?: string; date?: string };
+type ChapterItem = {
+  title?: string;
+  slug?: string;
+  date?: string;
+  locked?: boolean;
+  isLocked?: boolean;
+  is_locked?: boolean;
+  premium?: boolean;
+  is_premium?: boolean;
+  coins?: number | string;
+};
+
+/**
+ * Beberapa sumber (Mist, EvaScan, dan lainnya) menandai chapter berbayar.
+ * Chapter seperti itu tidak bisa diunduh, jadi jangan ditampilkan sama sekali
+ * supaya scanlator tidak menekan tombol yang pasti gagal.
+ */
+function isLockedChapter(chapter: ChapterItem): boolean {
+  if (chapter.locked === true || chapter.isLocked === true || chapter.is_locked === true) return true;
+  if (chapter.premium === true || chapter.is_premium === true) return true;
+  const coins = Number(chapter.coins ?? 0);
+  return Number.isFinite(coins) && coins > 0 && chapter.locked !== false;
+}
 
 /** Daftar chapter sebuah seri di sumber RAW. */
 export async function GET(request: Request) {
@@ -25,7 +47,9 @@ export async function GET(request: Request) {
       data?: { title?: string; thumbnail?: string; chapters?: ChapterItem[] };
     };
     const data = payload.data || {};
-    const chapters = (data.chapters || [])
+    const all = data.chapters || [];
+    const open = all.filter((chapter) => !isLockedChapter(chapter));
+    const chapters = open
       .map((chapter) => ({
         title: String(chapter.title || "").trim(),
         slug: String(chapter.slug || "").trim(),
@@ -42,6 +66,7 @@ export async function GET(request: Request) {
         title: data.title || slug,
         thumbnail: data.thumbnail || null,
         chapters,
+        lockedCount: all.length - open.length,
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );
