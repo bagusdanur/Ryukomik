@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { authErrorResponse } from "@/lib/social/authResponse";
 import { mergeToStrips } from "@/lib/rawImageConvert";
+import { setProgress } from "@/lib/rawProgress";
 import {
   RawError,
   countTodayDownloads,
@@ -64,12 +65,14 @@ async function fetchImage(url: string): Promise<Buffer> {
 
 /** Unduh satu chapter RAW dan kirim sebagai ZIP (tidak disimpan di server). */
 export async function GET(request: Request) {
+  let jobId = "";
   try {
     const url = new URL(request.url);
     const signed = url.searchParams.get("t");
     const fromToken = signed ? verifyRawDownload(signed) : null;
 
     const access = fromToken ? await rawAccessByUserId(fromToken.userId) : await requireRawAccess(request);
+    jobId = fromToken?.jobId || "";
     const source = fromToken ? fromToken.source : url.searchParams.get("source") || "";
     const series = (fromToken ? fromToken.series : url.searchParams.get("slug") || "").trim();
     const chapter = (fromToken ? fromToken.chapter : url.searchParams.get("chapter") || "").trim();
@@ -105,6 +108,7 @@ export async function GET(request: Request) {
       );
     }
     if (images.length > MAX_IMAGES) images = images.slice(0, MAX_IMAGES);
+    setProgress(jobId, { stage: "fetch", done: 0, total: images.length });
 
     // 1. Ambil semua gambar lebih dulu (4 paralel), simpan di memori.
     const collected: Buffer[] = [];
@@ -127,13 +131,17 @@ export async function GET(request: Request) {
         if (sourceBytes > MAX_TOTAL_BYTES) throw new RawError(413, "Chapter terlalu besar untuk diunduh sekaligus.");
         collected.push(buffer);
       }
+      setProgress(jobId, { stage: "fetch", done: collected.length, total: images.length });
     }
 
     if (!collected.length) return NextResponse.json({ error: "Semua gambar gagal diambil dari sumber." }, { status: 502 });
 
     // 2. Gabung jadi strip WebP (maks 12.000 px per strip), seperti converter bot.
     const stem = `${safeName(series)}-${safeName(chapter)}`;
-    const strips = await mergeToStrips(collected, stem, 95);
+    setProgress(jobId, { stage: "convert", done: 0, total: collected.length });
+    const strips = await mergeToStrips(collected, stem, 95, (done, total) =>
+      setProgress(jobId, { stage: "convert", done, total }),
+    );
     if (!strips.length) return NextResponse.json({ error: "Gagal mengonversi gambar chapter ini." }, { status: 502 });
 
     // 3. Bungkus ZIP (STORE — isinya sudah terkompresi WebP).
@@ -160,6 +168,7 @@ export async function GET(request: Request) {
       bytes: nodeBuffer.length,
     }).catch(() => undefined);
 
+    setProgress(jobId, { stage: "done", done: strips.length, total: strips.length });
     return new NextResponse(new Uint8Array(nodeBuffer), {
       status: 200,
       headers: {
@@ -173,6 +182,8 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Gagal mengunduh RAW.";
+    if (jobId) setProgress(jobId, { stage: "error", done: 0, total: 0, message });
     if (error instanceof RawError) return NextResponse.json({ error: error.message }, { status: error.status });
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;

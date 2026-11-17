@@ -115,14 +115,22 @@ function rawSecret(): string {
   );
 }
 
-export function signRawDownload(userId: string, source: string, series: string, chapter: string): string {
+export function signRawDownload(
+  userId: string,
+  source: string,
+  series: string,
+  chapter: string,
+  jobId = "",
+): string {
   const exp = Date.now() + 10 * 60 * 1000;
-  const payload = `${userId}|${source}|${series}|${chapter}|${exp}`;
+  const payload = `${userId}|${source}|${series}|${chapter}|${exp}|${jobId}`;
   const mac = crypto.createHmac("sha256", rawSecret()).update(payload).digest("base64url");
   return Buffer.from(payload).toString("base64url") + "." + mac;
 }
 
-export function verifyRawDownload(token: string): { userId: string; source: string; series: string; chapter: string } | null {
+export function verifyRawDownload(
+  token: string,
+): { userId: string; source: string; series: string; chapter: string; jobId: string } | null {
   const [encoded, mac] = token.split(".");
   if (!encoded || !mac) return null;
   let payload: string;
@@ -133,9 +141,9 @@ export function verifyRawDownload(token: string): { userId: string; source: stri
   }
   const expected = crypto.createHmac("sha256", rawSecret()).update(payload).digest("base64url");
   if (mac.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(mac), Buffer.from(expected))) return null;
-  const [userId, source, series, chapter, exp] = payload.split("|");
+  const [userId, source, series, chapter, exp, jobId] = payload.split("|");
   if (!userId || !source || !series || !chapter || Number(exp) < Date.now()) return null;
-  return { userId, source, series, chapter };
+  return { userId, source, series, chapter, jobId: jobId || "" };
 }
 
 /** Hitung unduhan hari ini (zona Asia/Jakarta) untuk batas harian. */

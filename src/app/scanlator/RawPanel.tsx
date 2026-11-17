@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { FiAlertTriangle, FiChevronLeft, FiDownload, FiSearch, FiX } from "react-icons/fi";
+import { FiAlertTriangle, FiChevronLeft, FiDownload, FiLoader, FiSearch } from "react-icons/fi";
 
 const SOURCES = [
   { id: "asura", label: "Asura" },
@@ -45,6 +45,7 @@ export default function RawPanel({ getToken }: { getToken: () => Promise<string>
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busyChapter, setBusyChapter] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ stage: string; done: number; total: number; message?: string } | null>(null);
 
   const authHeader = useCallback(async () => ({ Authorization: `Bearer ${await getToken()}` }), [getToken]);
 
@@ -95,25 +96,72 @@ export default function RawPanel({ getToken }: { getToken: () => Promise<string>
 
   const download = async (chapter: ChapterItem) => {
     setBusyChapter(chapter.slug); setError(""); setNotice("");
+    setProgress({ stage: "fetch", done: 0, total: 0 });
+
+    const jobId = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`)
+      .replace(/[^a-z0-9-]/gi, "")
+      .slice(0, 36);
+
+    let timer = 0;
+    const stopPolling = () => {
+      if (timer) window.clearInterval(timer);
+      timer = 0;
+    };
+
     try {
       const response = await fetch("/api/scanlator/raw/token", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(await authHeader()) },
-        body: JSON.stringify({ source, slug: series?.slug, chapter: chapter.slug }),
+        body: JSON.stringify({ source, slug: series?.slug, chapter: chapter.slug, jobId }),
       });
       const json = await response.json().catch(() => null);
       if (!response.ok) throw new Error(json?.error || "Gagal menyiapkan unduhan.");
 
+      // Unduhan berjalan di tab ini lewat URL bertanda tangan; progres dipantau terpisah.
       const link = document.createElement("a");
       link.href = json.url;
       link.rel = "noopener";
       document.body.appendChild(link);
       link.click();
       link.remove();
-      setNotice(`Mengunduh ${chapter.title || chapter.slug}. Sisa kuota hari ini: ${json.remaining}.`);
+      setNotice(`Memproses ${chapter.title || chapter.slug}. File tersimpan otomatis setelah siap.`);
+
+      timer = window.setInterval(async () => {
+        try {
+          const res = await fetch(`/api/scanlator/raw/progress?job=${jobId}`, {
+            headers: await authHeader(),
+            cache: "no-store",
+          });
+          if (!res.ok) return;
+          const payload = await res.json().catch(() => null);
+          const current = payload?.progress;
+          if (!current) return;
+          setProgress(current);
+
+          if (current.stage === "done" || current.stage === "error") {
+            stopPolling();
+            if (current.stage === "error") {
+              setError(current.message || "Gagal memproses chapter.");
+            } else {
+              setNotice("Selesai — file ZIP sudah tersimpan.");
+            }
+            setBusyChapter(null);
+            window.setTimeout(() => setProgress(null), 1500);
+          }
+        } catch {
+          /* biarkan, coba lagi di tick berikutnya */
+        }
+      }, 800);
+
+      window.setTimeout(() => {
+        stopPolling();
+        setBusyChapter(null);
+        setProgress((value) => (value && value.stage !== "done" ? null : value));
+      }, 240_000);
     } catch (err) {
+      stopPolling();
+      setProgress(null);
       setError(err instanceof Error ? err.message : "Gagal mengunduh.");
-    } finally {
       setBusyChapter(null);
     }
   };
@@ -217,6 +265,37 @@ export default function RawPanel({ getToken }: { getToken: () => Promise<string>
               </div>
             </button>
           ))}
+        </div>
+      )}
+
+      {progress && progress.stage !== "done" && progress.stage !== "error" && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-6 backdrop-blur-sm">
+          <div className="w-full max-w-xs rounded-2xl border border-white/10 bg-[#13131a] p-5 text-center">
+            <FiLoader className="mx-auto animate-spin text-[var(--accent-2)]" size={20} />
+            <p className="mt-3 text-[13px] font-bold">
+              {progress.stage === "fetch"
+                ? "Mengunduh gambar"
+                : progress.stage === "convert"
+                  ? "Menggabung jadi strip"
+                  : "Membungkus ZIP"}
+            </p>
+            <p className="mt-1 text-[11px] text-white/45">
+              {progress.total > 0
+                ? `${progress.done} dari ${progress.total}`
+                : "Menyiapkan…"}
+            </p>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-[var(--accent)] transition-all"
+                style={{
+                  width: progress.total > 0 ? `${Math.min(100, Math.round((progress.done / progress.total) * 100))}%` : "35%",
+                }}
+              />
+            </div>
+            <p className="mt-3 text-[10px] leading-relaxed text-white/30">
+              Jangan tutup halaman ini. Chapter besar bisa memakan 30–60 detik.
+            </p>
+          </div>
         </div>
       )}
     </div>

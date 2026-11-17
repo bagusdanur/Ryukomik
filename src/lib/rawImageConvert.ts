@@ -14,7 +14,9 @@ import sharp, { type OverlayOptions } from "sharp";
  * tapi jauh lebih cepat untuk kanvas panjang.
  */
 
-export const STRIP_MAX_HEIGHT = 12_000;
+export const STRIP_MAX_HEIGHT = 16_000;
+/** Batas aman libwebp: kanvas 16.000 px kadang gagal encode, jadi ada fallback. */
+export const STRIP_SAFE_HEIGHT = 12_000;
 /** Lebar dibatasi supaya kanvas tidak memakan ratusan MB (EvaScan bisa 16.000 px). */
 export const STRIP_MAX_WIDTH = 2_000;
 export const STRIP_QUALITY = 95;
@@ -71,6 +73,7 @@ export async function mergeToStrips(
   images: Buffer[],
   stem = "raw",
   quality = STRIP_QUALITY,
+  onProgress?: (done: number, total: number) => void,
 ): Promise<Strip[]> {
   const slices: Slice[] = [];
 
@@ -102,27 +105,39 @@ export async function mergeToStrips(
   }
   if (current.length) groups.push(current);
 
-  const strips: Strip[] = [];
-  for (let index = 0; index < groups.length; index += 1) {
-    const group = groups[index];
+  async function encodeGroup(group: Slice[]): Promise<Buffer> {
     const width = Math.max(...group.map((slice) => slice.width));
     const height = group.reduce((sum, slice) => sum + slice.height, 0);
-
     const composites: OverlayOptions[] = [];
     let top = 0;
     for (const slice of group) {
       composites.push({ input: slice.buffer, top, left: Math.round((width - slice.width) / 2) });
       top += slice.height;
     }
-
-    const data = await sharp({
-      create: { width, height, channels: 3, background: { r: 255, g: 255, b: 255 } },
-    })
+    return sharp({ create: { width, height, channels: 3, background: { r: 255, g: 255, b: 255 } } })
       .composite(composites)
       .webp({ quality, effort: 0 })
       .toBuffer();
+  }
 
-    strips.push({ name: `${stem}_part${String(index + 1).padStart(3, "0")}.webp`, data });
+  const strips: Strip[] = [];
+  let part = 0;
+
+  for (const group of groups) {
+    try {
+      const data = await encodeGroup(group);
+      part += 1;
+      strips.push({ name: `${stem}_part${String(part).padStart(3, "0")}.webp`, data });
+      onProgress?.(part, groups.length);
+    } catch {
+      // Kanvas 16.000 px kadang ditolak libwebp. Pecah per potongan supaya
+      // unduhan tetap berhasil, hanya jumlah filenya bertambah.
+      for (const slice of group) {
+        const data = await encodeGroup([slice]);
+        part += 1;
+        strips.push({ name: `${stem}_part${String(part).padStart(3, "0")}.webp`, data });
+      }
+    }
   }
 
   return strips;

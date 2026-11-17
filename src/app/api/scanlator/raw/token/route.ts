@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   try {
     const access = await requireRawAccess(request);
     const body = (await request.json().catch(() => null)) as
-      | { source?: string; slug?: string; chapter?: string }
+      | { source?: string; slug?: string; chapter?: string; jobId?: string }
       | null;
 
     const source = String(body?.source || "");
@@ -38,7 +38,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const token = signRawDownload(access.userId, source, series, chapter);
+    const jobId = /^[a-z0-9-]{8,40}$/i.test(String(body?.jobId || "")) ? String(body?.jobId) : "";
+    const token = signRawDownload(access.userId, source, series, chapter, jobId);
     return NextResponse.json(
       {
         success: true,
