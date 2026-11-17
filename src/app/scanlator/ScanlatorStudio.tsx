@@ -10,6 +10,7 @@ import { getSession } from "@/lib/auth/getSession";
 import { CHAPTER_BANNER_URL } from "@/lib/chapterBanner";
 import { toWebp } from "@/utils/toWebp";
 import { Button, Field, Panel, PanelHead, Row, Stat, StatusDot, Tabs, inputClass } from "@/components/scanlator/ui";
+import RawPanel from "./RawPanel";
 
 type Profile = {
   handle: string; team_name: string; bio: string | null; avatar_url?: string | null;
@@ -17,6 +18,7 @@ type Profile = {
   contact_wa: string | null; contact_telegram: string | null; contact_discord: string | null;
   status: "active" | "suspended" | "revoked";
   warnings: number; suspended_until: string | null; moderation_note: string | null;
+  raw_access?: boolean; raw_daily_limit?: number;
 };
 
 type Work = {
@@ -24,7 +26,7 @@ type Work = {
   review_status: string | null; review_note?: string | null; is_published: boolean; is_adult: boolean; chapters?: number;
 };
 
-type TabId = "ringkasan" | "upload" | "karya" | "profil";
+type TabId = "ringkasan" | "upload" | "karya" | "profil" | "raw";
 
 const TABS: Array<{ id: TabId; label: string }> = [
   { id: "ringkasan", label: "Ringkasan" },
@@ -115,6 +117,9 @@ export default function ScanlatorStudio() {
   }, [editChapter, previewChapter, historyChapter]);
 
   const token = async () => (await getSession()).data.session?.access_token || "";
+
+  // Tab RAW hanya untuk akun yang diizinkan admin; server tetap memeriksa izin.
+  const tabs = profile?.raw_access ? [...TABS, { id: "raw" as TabId, label: "RAW" }] : TABS;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -723,7 +728,7 @@ export default function ScanlatorStudio() {
 
       <div className="-mx-4">
         <Tabs
-          tabs={TABS}
+          tabs={tabs}
           active={tab}
           onChange={(id) => { setTab(id); setError(""); setNotice(""); }}
           trailing={
@@ -1348,6 +1353,12 @@ export default function ScanlatorStudio() {
               </div>
             )}
           </Panel>
+          </div>
+        )}
+
+        {tab === "raw" && profile.raw_access && (
+          <div className="mt-4">
+            <RawPanel getToken={token} />
           </div>
         )}
 

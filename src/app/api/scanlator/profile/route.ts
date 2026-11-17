@@ -60,7 +60,8 @@ function usernameOf(value: unknown): string | null {
 }
 
 const PROFILE_FIELDS = `handle, team_name, bio, avatar_url, support_dana, support_trakteer, support_tako, support_url_lain,
-  contact_wa, contact_telegram, contact_discord, status, warnings, suspended_until, moderation_note, created_at`;
+  contact_wa, contact_telegram, contact_discord, status, warnings, suspended_until, moderation_note, created_at,
+  raw_access, raw_daily_limit`;
 
 /** GET: profil saya (login) atau publik via ?handle=. PATCH: simpan profil & tautan. */
 export async function GET(request: Request) {

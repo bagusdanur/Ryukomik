@@ -10,7 +10,7 @@ import { projectApiFetch } from "@/lib/projectApiServer";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Action = "approve" | "reject" | "warn" | "suspend" | "revoke" | "restore" | "delete" | "verify" | "unverify";
+type Action = "approve" | "reject" | "warn" | "suspend" | "revoke" | "restore" | "delete" | "verify" | "unverify" | "raw-access";
 
 /**
  * Manajemen Scanlator di dashboard admin:
@@ -36,6 +36,7 @@ export async function GET(request: Request) {
       socialQuery(
         `select s.user_id::text as user_id, s.handle, s.team_name, s.bio,
                 s.status, s.verified, s.warnings, s.suspended_until, s.moderation_note,
+                s.raw_access, s.raw_daily_limit,
                 s.contact_wa, s.contact_telegram, s.contact_discord, s.created_at,
                 p.username
            from scanlator_profiles s
@@ -66,10 +67,22 @@ export async function POST(request: Request) {
     if ("error" in admin) return NextResponse.json({ error: admin.error }, { status: admin.status });
 
     const body = (await request.json().catch(() => null)) as
-      | { id?: string; user_id?: string; action?: Action; note?: string; reason?: string; days?: number }
+      | {
+          id?: string;
+          user_id?: string;
+          action?: Action;
+          note?: string;
+          reason?: string;
+          days?: number;
+          raw_access?: boolean;
+          raw_daily_limit?: number;
+        }
       | null;
     const action = body?.action;
-    if (!action || !["approve", "reject", "warn", "suspend", "revoke", "restore", "delete", "verify", "unverify"].includes(action)) {
+    if (
+      !action ||
+      !["approve", "reject", "warn", "suspend", "revoke", "restore", "delete", "verify", "unverify", "raw-access"].includes(action)
+    ) {
       return NextResponse.json({ error: "Aksi tidak valid." }, { status: 400 });
     }
     const note = typeof body?.note === "string" ? body.note.trim().slice(0, 500) || null : null;
@@ -78,6 +91,26 @@ export async function POST(request: Request) {
     if (action === "approve" || action === "reject") {
       return reviewApplication(body?.id, action, note, admin.userId);
     }
+
+    // Sakelar akses RAW per akun. Bukan bagian moderasi (tidak mengubah status akun).
+    if (action === "raw-access") {
+      const userId = typeof body?.user_id === "string" ? body.user_id : "";
+      if (!/^[0-9a-f-]{36}$/i.test(userId)) {
+        return NextResponse.json({ error: "User tidak valid." }, { status: 400 });
+      }
+      const enabled = body?.raw_access === true;
+      const rawLimit = Math.min(50, Math.max(1, Number(body?.raw_daily_limit) || 5));
+      const updated = await socialQuery<{ handle: string }>(
+        `update scanlator_profiles
+            set raw_access = $2, raw_daily_limit = $3, updated_at = now()
+          where user_id = $1
+          returning handle`,
+        [userId, enabled, rawLimit],
+      );
+      if (!updated.rows[0]) return NextResponse.json({ error: "Scanlator tidak ditemukan." }, { status: 404 });
+      return NextResponse.json({ success: true, handle: updated.rows[0].handle, raw_access: enabled, raw_daily_limit: rawLimit });
+    }
+
     return moderate(body?.user_id, action, reason, note, body?.days, admin.userId);
   } catch (error) {
     return adminErrorResponse(error, "Gagal memproses aksi Scanlator.");

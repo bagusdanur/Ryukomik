@@ -16,6 +16,7 @@ type Application = {
 type Scanlator = {
   user_id: string; handle: string; team_name: string; bio: string | null;
   status: string; verified?: boolean; warnings: number; suspended_until: string | null; moderation_note: string | null;
+  raw_access?: boolean; raw_daily_limit?: number;
   contact_wa: string | null; contact_telegram: string | null; contact_discord: string | null;
   created_at: string; username: string | null;
 };
@@ -391,6 +392,44 @@ export default function ScanlatorTab({ getAdminToken }: { getAdminToken: () => P
               </div>
 
               <div className="px-4 pt-2"><Contacts wa={s.contact_wa} tg={s.contact_telegram} dc={s.contact_discord} /></div>
+
+              {/* Akses fitur RAW — hanya downloader, tidak mengubah status akun */}
+              <div className="mx-4 mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-white/[.06] bg-white/[.02] px-2.5 py-2">
+                <span className="text-[10px] font-bold uppercase tracking-wide text-white/35">Fitur RAW</span>
+                <button
+                  type="button"
+                  disabled={busy === s.user_id}
+                  onClick={() =>
+                    void call(
+                      { action: "raw-access", user_id: s.user_id, raw_access: !s.raw_access, raw_daily_limit: s.raw_daily_limit ?? 5 },
+                      s.raw_access ? `Akses RAW ${s.handle} dimatikan.` : `Akses RAW ${s.handle} diaktifkan.`,
+                    )
+                  }
+                  className={`rounded-md px-2 py-1 text-[10.5px] font-bold transition ${
+                    s.raw_access ? "bg-emerald-400/20 text-emerald-200" : "bg-white/[.07] text-white/45"
+                  } disabled:opacity-50`}
+                >
+                  {s.raw_access ? "Hidup" : "Mati"}
+                </button>
+                <label className="flex items-center gap-1 text-[10.5px] text-white/40">
+                  batas/hari
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    defaultValue={s.raw_daily_limit ?? 5}
+                    onBlur={(event) => {
+                      const value = Math.min(50, Math.max(1, Number(event.target.value) || 5));
+                      if (value === (s.raw_daily_limit ?? 5)) return;
+                      void call(
+                        { action: "raw-access", user_id: s.user_id, raw_access: Boolean(s.raw_access), raw_daily_limit: value },
+                        `Batas harian ${s.handle} diatur ke ${value}.`,
+                      );
+                    }}
+                    className="w-14 rounded border border-white/10 bg-black/25 px-1.5 py-1 text-center text-[11px] text-white outline-none"
+                  />
+                </label>
+              </div>
 
               {s.status === "suspended" && s.suspended_until && (
                 <p className="px-4 pt-1.5 text-[10px] font-semibold text-amber-300/80">s.d. {new Date(s.suspended_until).toLocaleDateString("id-ID")}</p>
