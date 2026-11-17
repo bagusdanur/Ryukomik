@@ -29,8 +29,14 @@ export function PanelHead({ title, desc, right }: { title: string; desc?: string
 }
 
 export function Tabs<T extends string>({
-  tabs, active, onChange,
-}: { tabs: Array<{ id: T; label: string }>; active: T; onChange: (id: T) => void }) {
+  tabs, active, onChange, trailing,
+}: {
+  tabs: Array<{ id: T; label: string }>;
+  active: T;
+  onChange: (id: T) => void;
+  /** Elemen tambahan di ujung kanan tab (mis. tautan panduan). */
+  trailing?: ReactNode;
+}) {
   return (
     <div className="overflow-x-auto border-b border-white/[.07] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <div className="flex min-w-max gap-5 px-4">
@@ -46,6 +52,7 @@ export function Tabs<T extends string>({
             {t.label}
           </button>
         ))}
+        {trailing}
       </div>
     </div>
   );

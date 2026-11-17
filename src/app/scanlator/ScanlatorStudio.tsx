@@ -431,7 +431,7 @@ export default function ScanlatorStudio() {
   };
 
   const shell = (children: React.ReactNode) => (
-    <main className="min-h-screen bg-[var(--surface-0)] px-4 pb-20 pt-16 text-white">
+    <main className="min-h-screen bg-[var(--surface-0)] px-4 pb-20 pt-20 text-white">
       <div className="mx-auto w-full max-w-2xl">{children}</div>
     </main>
   );
@@ -716,15 +716,26 @@ export default function ScanlatorStudio() {
             {profile.warnings > 0 && <><span className="text-white/15">·</span>{profile.warnings} SP</>}
           </p>
         </div>
-        <Link href="/scanlator/panduan" aria-label="Panduan scanlator" className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-white/[.08] px-2.5 text-[11px] font-bold text-white/45 transition-colors hover:text-white">
-          <FiBookOpen size={13} /> <span className="hidden sm:inline">Panduan</span>
-        </Link>
         <Link href={`/scanlator/${profile.handle}`} aria-label="Halaman publik" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/[.08] text-white/40 transition-colors hover:text-white">
           <FiArrowRight size={15} />
         </Link>
       </div>
 
-      <div className="-mx-4"><Tabs tabs={TABS} active={tab} onChange={(id) => { setTab(id); setError(""); setNotice(""); }} /></div>
+      <div className="-mx-4">
+        <Tabs
+          tabs={TABS}
+          active={tab}
+          onChange={(id) => { setTab(id); setError(""); setNotice(""); }}
+          trailing={
+            <Link
+              href="/scanlator/panduan"
+              className="ml-auto -mb-px flex items-center gap-1 whitespace-nowrap border-b-2 border-transparent py-3 text-[12px] font-bold text-[var(--accent-2)] hover:text-white"
+            >
+              <FiBookOpen size={12} /> Panduan
+            </Link>
+          }
+        />
+      </div>
 
       {(notice || error) && (
         <p className={`mt-3 rounded-lg px-3 py-2 text-[11px] font-semibold ${error ? "bg-rose-500/10 text-rose-200" : "bg-emerald-500/10 text-emerald-200"}`}>

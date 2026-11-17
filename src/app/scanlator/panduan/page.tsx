@@ -187,7 +187,7 @@ export default function PanduanScanlatorPage() {
           <li className="flex gap-2"><span className="text-white/30">4.</span> Tunggu maksimal 1×24 jam — status berubah jadi “Akun Translation aktif”</li>
         </ol>
         <Screenshot
-          src="/docs/scanlator/01-daftar.png"
+          src="/docs/scanlator/01-daftar-v2.png"
           alt="Halaman pengajuan akun Translation di Ryukomik"
           caption="Halaman pengajuan. Login Google dulu, lalu formulir terbuka."
         />
@@ -351,7 +351,7 @@ export default function PanduanScanlatorPage() {
           tidak disentuh.
         </p>
         <Screenshot
-          src="/docs/scanlator/03-direktori.png"
+          src="/docs/scanlator/03-direktori-v2.png"
           alt="Direktori scanlator Ryukomik"
           caption="Profil tim kamu muncul di direktori scanlator setelah akun aktif."
           height={360}
@@ -383,9 +383,9 @@ export default function PanduanScanlatorPage() {
           kalau kamu mengisinya.
         </p>
         <Screenshot
-          src="/docs/scanlator/02-profil.png"
+          src="/docs/scanlator/02-profil-v2.png"
           alt="Contoh halaman profil publik scanlator"
-          caption="Contoh halaman publik: daftar seri, jumlah chapter, dan info tim."
+          caption="Contoh halaman publik: daftar seri, jumlah chapter, dan info tim. Seri bertanda 18+ tetap diblur sampai diketuk."
           height={460}
         />
       </section>
