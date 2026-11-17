@@ -2,6 +2,7 @@ import JSZip from "jszip";
 import { NextResponse } from "next/server";
 
 import { authErrorResponse } from "@/lib/social/authResponse";
+import { mergeToStrips } from "@/lib/rawImageConvert";
 import {
   RawError,
   countTodayDownloads,
@@ -105,34 +106,47 @@ export async function GET(request: Request) {
     }
     if (images.length > MAX_IMAGES) images = images.slice(0, MAX_IMAGES);
 
-    const zip = new JSZip();
-    let total = 0;
-    let ok = 0;
+    // 1. Ambil semua gambar lebih dulu (4 paralel), simpan di memori.
+    const collected: Buffer[] = [];
+    let sourceBytes = 0;
 
     for (let index = 0; index < images.length; index += 4) {
       const batch = images.slice(index, index + 4);
       const buffers = await Promise.all(
         batch.map(async (imageUrl) => {
           try {
-            return { imageUrl, data: await fetchImage(imageUrl) };
+            return await fetchImage(imageUrl);
           } catch {
             return null;
           }
         }),
       );
-      for (const item of buffers) {
-        if (!item) continue;
-        total += item.data.length;
-        if (total > MAX_TOTAL_BYTES) throw new RawError(413, "Chapter terlalu besar untuk diunduh sekaligus.");
-        ok += 1;
-        zip.file(`${String(ok).padStart(3, "0")}.${extensionOf(item.imageUrl)}`, item.data);
+      for (const buffer of buffers) {
+        if (!buffer) continue;
+        sourceBytes += buffer.length;
+        if (sourceBytes > MAX_TOTAL_BYTES) throw new RawError(413, "Chapter terlalu besar untuk diunduh sekaligus.");
+        collected.push(buffer);
       }
     }
 
-    if (!ok) return NextResponse.json({ error: "Semua gambar gagal diambil dari sumber." }, { status: 502 });
+    if (!collected.length) return NextResponse.json({ error: "Semua gambar gagal diambil dari sumber." }, { status: 502 });
+
+    // 2. Gabung jadi strip WebP (maks 12.000 px per strip), seperti converter bot.
+    const stem = `${safeName(series)}-${safeName(chapter)}`;
+    const strips = await mergeToStrips(collected, stem, 95);
+    if (!strips.length) return NextResponse.json({ error: "Gagal mengonversi gambar chapter ini." }, { status: 502 });
+
+    // 3. Bungkus ZIP (STORE — isinya sudah terkompresi WebP).
+    const zip = new JSZip();
+    let total = 0;
+    for (const strip of strips) {
+      total += strip.data.length;
+      if (total > MAX_TOTAL_BYTES) throw new RawError(413, "Hasil konversi terlalu besar untuk diunduh sekaligus.");
+      zip.file(strip.name, strip.data);
+    }
 
     const nodeBuffer = await zip.generateAsync({ type: "nodebuffer", compression: "STORE" });
-    const filename = `${safeName(series)}-${safeName(chapter)}.zip`;
+    const filename = `${stem}.zip`;
 
     await recordDownload({
       userId: access.userId,
@@ -142,7 +156,7 @@ export async function GET(request: Request) {
       seriesTitle: payload.title || series,
       chapterSlug: chapter,
       chapterTitle: chapter,
-      images: ok,
+      images: collected.length,
       bytes: nodeBuffer.length,
     }).catch(() => undefined);
 
@@ -153,7 +167,8 @@ export async function GET(request: Request) {
         "Content-Disposition": `attachment; filename="${filename}"`,
         "Content-Length": String(nodeBuffer.length),
         "Cache-Control": "private, no-store",
-        "X-Raw-Images": String(ok),
+        "X-Raw-Images": String(collected.length),
+        "X-Raw-Strips": String(strips.length),
         "X-Raw-Bytes": String(nodeBuffer.length),
       },
     });
