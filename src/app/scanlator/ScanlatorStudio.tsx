@@ -665,7 +665,11 @@ export default function ScanlatorStudio() {
   if (needLogin) return shell(
     <Panel className="mt-6 p-6 text-center">
       <p className="text-[13px] text-white/55">Masuk dulu untuk membuka studio.</p>
-      <Link href="/" className="mt-4 inline-flex min-h-[40px] items-center rounded-lg bg-[var(--accent)] px-4 text-[12px] font-bold">Ke beranda</Link>
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+        <Link href="/" className="inline-flex min-h-[40px] items-center rounded-lg bg-[var(--accent)] px-4 text-[12px] font-bold">Ke beranda</Link>
+        <Link href="/scanlator/panduan" className="inline-flex min-h-[40px] items-center rounded-lg border border-white/12 px-4 text-[12px] font-bold text-white/70">Baca panduan</Link>
+        <Link href="/scanlator/daftar" className="inline-flex min-h-[40px] items-center rounded-lg border border-white/12 px-4 text-[12px] font-bold text-white/70">Ajukan akun</Link>
+      </div>
     </Panel>,
   );
 
@@ -678,6 +682,9 @@ export default function ScanlatorStudio() {
       </p>
       <Link href="/scanlator/daftar" className="mt-4 inline-flex min-h-[40px] w-full items-center justify-center rounded-lg bg-[var(--accent)] text-[12px] font-bold">
         Ajukan Akun Translation
+      </Link>
+      <Link href="/scanlator/panduan" className="mt-2 inline-flex min-h-[40px] w-full items-center justify-center rounded-lg border border-white/12 text-[12px] font-bold text-white/70">
+        Baca panduan scanlator
       </Link>
     </Panel>,
   );
@@ -709,6 +716,9 @@ export default function ScanlatorStudio() {
             {profile.warnings > 0 && <><span className="text-white/15">·</span>{profile.warnings} SP</>}
           </p>
         </div>
+        <Link href="/scanlator/panduan" aria-label="Panduan scanlator" className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-white/[.08] px-2.5 text-[11px] font-bold text-white/45 transition-colors hover:text-white">
+          <FiBookOpen size={13} /> <span className="hidden sm:inline">Panduan</span>
+        </Link>
         <Link href={`/scanlator/${profile.handle}`} aria-label="Halaman publik" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/[.08] text-white/40 transition-colors hover:text-white">
           <FiArrowRight size={15} />
         </Link>

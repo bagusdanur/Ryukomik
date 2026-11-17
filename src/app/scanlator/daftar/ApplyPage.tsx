@@ -71,6 +71,9 @@ export default function ScanlatorApplyPage() {
           <p className="mt-1 text-[12px] leading-relaxed text-white/45">
             Unggah hasil TL, dapat atribusi nama user, pasang tautan donate sendiri. Pengajuan diperiksa admin.
           </p>
+          <Link href="/scanlator/panduan" className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-bold text-[var(--accent-2)] hover:underline">
+            Baca panduan lengkapnya dulu <FiArrowRight size={11} />
+          </Link>
         </div>
 
         <div className="mb-4 rounded-xl border border-white/[.07] bg-white/[.02] p-3.5">
