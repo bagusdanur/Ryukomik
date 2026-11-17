@@ -9,10 +9,11 @@ import Script from "next/script";
  * untuk pengunjung tanpa JavaScript. Script dimuat lazyOnload supaya tidak
  * menahan render halaman.
  *
- * Site ID: 5064460 (menggantikan 4724030 yang lama).
+ * Site ID: 4724030 — counter lama dipertahankan supaya angka kunjungan
+ * tidak kembali ke nol setelah pindah domain.
  */
-const HISTATS_SITE_ID = "5064460";
-const HISTATS_CONFIG = "1,5064460,4,600,110,30,00011001";
+const HISTATS_SITE_ID = "4724030";
+const HISTATS_CONFIG = "1,4724030,4,600,110,30,00010011";
 
 export default function HistatsCounter() {
   return (
