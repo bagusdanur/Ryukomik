@@ -139,7 +139,7 @@ export async function GET(request: Request) {
     // 2. Gabung jadi strip WebP (maks 12.000 px per strip), seperti converter bot.
     const stem = `${safeName(series)}-${safeName(chapter)}`;
     setProgress(jobId, { stage: "convert", done: 0, total: collected.length });
-    const strips = await mergeToStrips(collected, stem, 95, (done, total) =>
+    const strips = await mergeToStrips(collected, stem, 100, (done, total) =>
       setProgress(jobId, { stage: "convert", done, total }),
     );
     if (!strips.length) return NextResponse.json({ error: "Gagal mengonversi gambar chapter ini." }, { status: 502 });

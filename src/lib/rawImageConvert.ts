@@ -1,25 +1,28 @@
 import sharp, { type OverlayOptions } from "sharp";
 
 /**
- * Gabungkan halaman RAW menjadi beberapa strip WebP vertikal.
+ * Gabungkan halaman RAW menjadi beberapa strip WebP vertikal — MODE HD.
  *
- * Mengikuti converter RyukomikBot (merge_images_lossless), dengan batas tinggi
- * 12.000 px — batas yang sama dengan alur upload project kita (toWebp melewati
- * konversi kalau tinggi > 12.000), sehingga hasil unduhan bisa langsung dipakai
- * di Studio tanpa terkena batas itu.
+ * Prioritas utama: tidak boleh ada penurunan kualitas, karena hasilnya dipakai
+ * untuk project translasi (TL/TS). Konsekuensinya:
  *
- * Catatan performa: halaman yang sudah memenuhi batas lebar dipakai apa adanya
- * (tanpa encode PNG perantara). Encode ulang hanya dilakukan untuk halaman yang
- * perlu dikecilkan atau dipotong. `effort: 0` sama seperti bot: kualitas tetap,
- * tapi jauh lebih cepat untuk kanvas panjang.
+ *  - WebP LOSSLESS (tanpa kompresi hilang). Piksel sumber dipertahankan persis.
+ *  - Tidak ada resize. Lebar sumber berapa pun dipakai apa adanya, selama masih
+ *    di dalam batas WebP (16.383 px). Tidak ada "kanvas 2.000 px" lagi.
+ *  - Kanvas memakai channel alpha (4), supaya transparansi sumber tidak berubah
+ *    jadi putih. Latar hanya dipakai saat gambar benar-benar perlu di-flatten.
+ *  - Potongan/slice memakai extract langsung, tanpa encode PNG perantara.
+ *
+ * Batas tinggi 16.000 px tetap dipakai agar tiap strip tidak melebihi batas
+ * WebP. Kalau libwebp menolak kanvas, grup dipecah per halaman.
  */
 
+/** Batas tinggi WebP: 16.383 px. Kita pakai 16.000 untuk margin aman. */
 export const STRIP_MAX_HEIGHT = 16_000;
-/** Batas aman libwebp: kanvas 16.000 px kadang gagal encode, jadi ada fallback. */
-export const STRIP_SAFE_HEIGHT = 12_000;
-/** Lebar dibatasi supaya kanvas tidak memakan ratusan MB (EvaScan bisa 16.000 px). */
-export const STRIP_MAX_WIDTH = 2_000;
-export const STRIP_QUALITY = 95;
+/** Batas lebar WebP: 16.383 px. Tidak ada resize di bawah batas ini. */
+export const STRIP_MAX_WIDTH = 16_383;
+/** Mode HD: lossless, quality diabaikan. */
+export const STRIP_LOSSLESS = true;
 
 export type Strip = { name: string; data: Buffer };
 
@@ -31,19 +34,23 @@ async function readPage(input: Buffer): Promise<Page | null> {
     const meta = await sharp(input, { failOn: "none" }).metadata();
     if (!meta.width || !meta.height) return null;
 
-    // Hanya proses ulang kalau perlu: terlalu lebar atau ada rotasi EXIF.
-    if (meta.width > STRIP_MAX_WIDTH || (meta.orientation && meta.orientation !== 1)) {
-      const buffer = await sharp(input, { failOn: "none" })
-        .rotate()
-        .resize({ width: STRIP_MAX_WIDTH, withoutEnlargement: true })
-        .png({ compressionLevel: 3 })
-        .toBuffer();
-      const processed = await sharp(buffer).metadata();
-      if (!processed.width || !processed.height) return null;
-      return { buffer, width: processed.width, height: processed.height };
+    // Putar sesuai EXIF tanpa mengubah piksel. Resize HANYA kalau lebar benar-
+    // benar di atas batas WebP — dan itu pun bukan pengecilan kualitas biasa.
+    const needsRotate = Boolean(meta.orientation && meta.orientation !== 1);
+    const needsWidthFix = meta.width > STRIP_MAX_WIDTH;
+
+    if (!needsRotate && !needsWidthFix) {
+      return { buffer: input, width: meta.width, height: meta.height };
     }
 
-    return { buffer: input, width: meta.width, height: meta.height };
+    const pipeline = sharp(input, { failOn: "none" }).rotate();
+    if (needsWidthFix) pipeline.resize({ width: STRIP_MAX_WIDTH, withoutEnlargement: true });
+
+    // PNG lossless sebagai perantara — tidak menambah kerugian piksel.
+    const buffer = await pipeline.png({ compressionLevel: 1 }).toBuffer();
+    const processed = await sharp(buffer).metadata();
+    if (!processed.width || !processed.height) return null;
+    return { buffer, width: processed.width, height: processed.height };
   } catch {
     return null;
   }
@@ -58,7 +65,7 @@ async function slicePage(page: Page): Promise<Slice[]> {
     const height = Math.min(STRIP_MAX_HEIGHT, page.height - top);
     const buffer = await sharp(page.buffer)
       .extract({ left: 0, top, width: page.width, height })
-      .png({ compressionLevel: 3 })
+      .png({ compressionLevel: 1 })
       .toBuffer();
     slices.push({ buffer, width: page.width, height });
   }
@@ -72,7 +79,7 @@ async function slicePage(page: Page): Promise<Slice[]> {
 export async function mergeToStrips(
   images: Buffer[],
   stem = "raw",
-  quality = STRIP_QUALITY,
+  _quality = 100,
   onProgress?: (done: number, total: number) => void,
 ): Promise<Strip[]> {
   const slices: Slice[] = [];
@@ -114,9 +121,11 @@ export async function mergeToStrips(
       composites.push({ input: slice.buffer, top, left: Math.round((width - slice.width) / 2) });
       top += slice.height;
     }
-    return sharp({ create: { width, height, channels: 3, background: { r: 255, g: 255, b: 255 } } })
+
+    // 4 channel: transparansi sumber dipertahankan, tidak dipaksa putih.
+    return sharp({ create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
       .composite(composites)
-      .webp({ quality, effort: 0 })
+      .webp({ lossless: STRIP_LOSSLESS })
       .toBuffer();
   }
 
@@ -130,8 +139,8 @@ export async function mergeToStrips(
       strips.push({ name: `${stem}_part${String(part).padStart(3, "0")}.webp`, data });
       onProgress?.(part, groups.length);
     } catch {
-      // Kanvas 16.000 px kadang ditolak libwebp. Pecah per potongan supaya
-      // unduhan tetap berhasil, hanya jumlah filenya bertambah.
+      // Kanvas sangat lebar bisa ditolak libwebp. Pecah per halaman supaya
+      // unduhan tetap berhasil — tetap lossless, hanya jumlah file bertambah.
       for (const slice of group) {
         const data = await encodeGroup([slice]);
         part += 1;
