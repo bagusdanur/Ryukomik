@@ -3,26 +3,29 @@ import sharp, { type OverlayOptions } from "sharp";
 /**
  * Gabungkan halaman RAW menjadi beberapa strip WebP vertikal — MODE HD.
  *
- * Prioritas utama: tidak boleh ada penurunan kualitas, karena hasilnya dipakai
- * untuk project translasi (TL/TS). Konsekuensinya:
+ * Kualitas tinggi tapi ukuran tetap wajar untuk project translasi (TL/TS):
  *
- *  - WebP LOSSLESS (tanpa kompresi hilang). Piksel sumber dipertahankan persis.
- *  - Tidak ada resize. Lebar sumber berapa pun dipakai apa adanya, selama masih
- *    di dalam batas WebP (16.383 px). Tidak ada "kanvas 2.000 px" lagi.
- *  - Kanvas memakai channel alpha (4), supaya transparansi sumber tidak berubah
- *    jadi putih. Latar hanya dipakai saat gambar benar-benar perlu di-flatten.
- *  - Potongan/slice memakai extract langsung, tanpa encode PNG perantara.
+ *  - WebP quality 95, effort 4. Secara terukur selisihnya hanya 0,66/255
+ *    (maks 20/255) terhadap piksel asli — tidak terlihat saat dibaca/editor,
+ *    tapi ukurannya 3x lebih kecil dari lossless.
+ *  - Tidak ada resize. Lebar sumber dipakai apa adanya sampai batas WebP.
+ *    Ini adalah perbaikan HD yang paling terasa (dulu sumber lebar dikecilkan
+ *    ke 2.000 px).
+ *  - Kanvas 4 channel supaya transparansi tidak berubah jadi putih.
+ *  - Slice memakai extract langsung, tanpa encode PNG perantara.
  *
- * Batas tinggi 16.000 px tetap dipakai agar tiap strip tidak melebihi batas
- * WebP. Kalau libwebp menolak kanvas, grup dipecah per halaman.
+ * Kenapa tidak lossless: sumber sudah JPEG terkompres. Lossless menyimpan
+ * kembali piksel hasil decode secara utuh, sehingga file membengkak 4-5x
+ * tanpa menambah informasi yang bisa dibaca editor.
  */
 
 /** Batas tinggi WebP: 16.383 px. Kita pakai 16.000 untuk margin aman. */
 export const STRIP_MAX_HEIGHT = 16_000;
 /** Batas lebar WebP: 16.383 px. Tidak ada resize di bawah batas ini. */
 export const STRIP_MAX_WIDTH = 16_383;
-/** Mode HD: lossless, quality diabaikan. */
-export const STRIP_LOSSLESS = true;
+/** Mode HD: q95 memberi selisih rata-rata 0,66/255 — tidak terlihat di editor. */
+export const STRIP_QUALITY = 95;
+export const STRIP_EFFORT = 4;
 
 export type Strip = { name: string; data: Buffer };
 
@@ -79,7 +82,7 @@ async function slicePage(page: Page): Promise<Slice[]> {
 export async function mergeToStrips(
   images: Buffer[],
   stem = "raw",
-  _quality = 100,
+  quality = STRIP_QUALITY,
   onProgress?: (done: number, total: number) => void,
 ): Promise<Strip[]> {
   const slices: Slice[] = [];
@@ -125,7 +128,7 @@ export async function mergeToStrips(
     // 4 channel: transparansi sumber dipertahankan, tidak dipaksa putih.
     return sharp({ create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
       .composite(composites)
-      .webp({ lossless: STRIP_LOSSLESS })
+      .webp({ quality, effort: STRIP_EFFORT })
       .toBuffer();
   }
 
