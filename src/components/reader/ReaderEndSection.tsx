@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { FiBookOpen, FiChevronLeft, FiChevronRight, FiMessageCircle } from "react-icons/fi";
 import CommentsSupabase from "@/components/CommentsSupabase";
 import ProjectUpvoteButton from "@/components/ProjectUpvoteButton";
+import { displayChapterNumber } from "@/utils/chapterNumber";
 
 type ProjectReactionData = {
   upvote_count?: number;
@@ -19,9 +20,8 @@ type Props = {
   nextSlug?: string;
 };
 
-function chapterNumber(value?: string) {
-  const match = value?.match(/(?:chapter[-_])?(\d+(?:\.\d+)?)(?:$|[-_])/i);
-  return match?.[1] ?? null;
+function chapterNumber(value: string | null) {
+  return displayChapterNumber(value);
 }
 
 function chapterHref(source: string, slug?: string) {

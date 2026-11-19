@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { FiX } from "react-icons/fi";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -56,39 +57,32 @@ export default function InstallPWA() {
   if (!show) return null;
 
   return (
-    <div className="fixed top-4 inset-x-0 z-[9999] flex justify-center px-3">
-      <div className="relative w-full max-w-3xl bg-[var(--surface-1)] text-white rounded-xl shadow-lg px-5 py-4 flex items-center gap-4">
-        {/* Icon */}
-        <Image
-          src="/icon.png"
-          alt="Ryukomik"
-          width={40}
-          height={40}
-          className="h-10 w-10 rounded-lg"
-        />
+    <div className="fixed top-3 inset-x-0 z-[9999] flex justify-center px-3">
+      <div className="rk-card relative flex w-full max-w-2xl items-center gap-3 rounded-2xl px-4 py-3 shadow-xl shadow-black/40 sm:gap-4 sm:px-5">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--accent)_16%,transparent)]">
+          <Image src="/icon.png" alt="Ryukomik" width={28} height={28} className="h-7 w-7 rounded-lg" />
+        </span>
 
-        {/* Text */}
-        <div className="flex-1">
-          <p className="font-semibold text-base">Install Ryukomik</p>
-          <p className="text-sm text-gray-300">
-            Baca komik lebih cepat, ringan & tanpa browser
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-black leading-tight text-white sm:text-sm">Install Ryukomik</p>
+          <p className="mt-0.5 truncate text-[11px] text-white/55 sm:text-xs">
+            Baca lebih cepat, ringan & tanpa browser
           </p>
         </div>
 
-        {/* Install Button */}
         <button
           onClick={installApp}
-          className="bg-green-400 text-black px-4 py-2 rounded-lg font-bold hover:bg-green-300 transition"
+          className="rk-btn-primary shrink-0 rounded-xl px-4 py-2 text-xs font-black"
         >
           Install
         </button>
 
-        {/* Close (X) */}
         <button
           onClick={() => setShow(false)}
-          className="absolute top-2 right-3 text-gray-400 hover:text-white"
+          aria-label="Tutup"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white/40 transition hover:bg-white/5 hover:text-white"
         >
-          ✕
+          <FiX size={16} />
         </button>
       </div>
     </div>
