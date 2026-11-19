@@ -146,7 +146,7 @@ export default function DownloadButton({
             }) => Parameters<typeof pdf.setGState>[0];
             pdf.setGState(new GState({ opacity: 1 }));
 
-            pdf.text("Ryukomik.my.id", width / 2, height - 8, {
+            pdf.text("Ryukomik.com", width / 2, height - 8, {
               align: "center",
             });
 

@@ -84,7 +84,7 @@ export default function BatchDownloadButton({ source, chapters, isPremium, user 
               else pdf.addPage([image.width, image.height]);
               pdf.addImage(image.dataUrl, "JPEG", 0, 0, image.width, image.height, undefined, "FAST");
               pdf.setFontSize(22); pdf.setTextColor(0, 0, 0);
-              pdf.text("Ryukomik.my.id", image.width / 2, image.height - 8, { align: "center" });
+              pdf.text("Ryukomik.com", image.width / 2, image.height - 8, { align: "center" });
             }
             const blob = pdf?.output("blob");
             if (blob) zip.file(`${title}.pdf`, blob);

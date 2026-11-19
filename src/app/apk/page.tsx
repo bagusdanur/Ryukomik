@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       title: "APK Ryukomik sedang maintenance",
       description:
-        "APK Ryukomik sementara tidak tersedia. Kamu tetap bisa baca lewat Ryukomik.my.id.",
+        "APK Ryukomik sementara tidak tersedia. Kamu tetap bisa baca lewat Ryukomik.com.",
     };
   }
 
@@ -62,7 +62,7 @@ export default async function ApkPage() {
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/65 sm:text-base">
                   APK Ryukomik sementara tidak tersedia. Kamu tetap bisa baca
-                  lewat Ryukomik.my.id.
+                  lewat Ryukomik.com.
                 </p>
 
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -72,7 +72,7 @@ export default async function ApkPage() {
                     rel="noopener noreferrer"
                   >
                     <FiExternalLink aria-hidden="true" className="h-5 w-5" />
-                    Baca di Ryukomik.my.id
+                    Baca di Ryukomik.com
                   </a>
                   <span className="text-xs font-semibold text-white/45">
                     Download APK akan dibuka kembali setelah maintenance selesai.
