@@ -38,7 +38,7 @@ export default function ChapterLockControls({ chapters, getAdminToken, onChanged
   }
   return <>
     <button type="button" disabled={!canLock} title={!canLock ? 'Pilih chapter yang sudah dipublikasikan (maksimal 100)' : undefined} onClick={() => open('lock')} className="rounded-lg bg-amber-400/10 px-2.5 py-2 text-[10px] font-bold text-amber-300 disabled:opacity-30">{active ? 'Ubah Durasi' : 'Lock Premium'}</button>
-    {chapters.some(chapter => chapter.premium_lock_until) && <button type="button" onClick={() => open('unlock')} className="rounded-lg bg-emerald-400/10 px-2.5 py-2 text-[10px] font-bold text-emerald-300">Buka Lock</button>}
+    {chapters.some(chapter => chapter.premium_lock_until && Date.parse(chapter.premium_lock_until) > now) && <button type="button" onClick={() => open('unlock')} className="rounded-lg bg-emerald-400/10 px-2.5 py-2 text-[10px] font-bold text-emerald-300">Buka Lock</button>}
     {action && <div role="dialog" aria-modal="true" aria-label={action === 'lock' ? 'Lock Premium' : 'Buka Lock'} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 px-4" onClick={() => { if (!saving) setAction(null); }}>
       <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#13131a] p-6 text-white" onClick={event => event.stopPropagation()}>
         <h3 className="text-lg font-bold">{action === 'unlock' ? 'Buka Lock' : active ? 'Ubah Durasi Lock Premium' : 'Lock Premium'}</h3>

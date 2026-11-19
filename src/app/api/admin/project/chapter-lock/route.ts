@@ -21,9 +21,21 @@ export async function POST(request: Request) {
     const secret = process.env.IMAGE_ACCESS_SECRET;
     if (!secret) throw new Error('Proteksi gambar belum siap.');
     const headers = { Authorization: 'Bearer ' + secret, 'Content-Type': 'application/json' };
-    const guards = await Promise.all(CONTROL_URLS.map(url => fetch(url, { cache: 'no-store', headers, signal: AbortSignal.timeout(10_000) })));
-    if (guards.some(guard => !guard.ok)) return NextResponse.json({ error: 'Proteksi premium gambar belum aktif. Lock belum disimpan.' }, { status: 503 });
-    if ((await Promise.all(guards.map(g => g.json().catch(() => null)))).some(body => body?.premiumLockProtection !== true)) {
+    const guardChecks = await Promise.all(CONTROL_URLS.map(async url => {
+      try {
+        const res = await fetch(url, { cache: 'no-store', headers, signal: AbortSignal.timeout(10_000) });
+        // 404 = host ini tidak menjalankan worker guard (legacy pasca-migrasi
+        // domain, worker-nya di akun lain). Lewati host itu; jangan gagalkan
+        // lock untuk host yang memang dikelola dan sehat.
+        if (res.status === 404) return { managed: false, ok: false };
+        const body = await res.json().catch(() => null);
+        return { managed: true, ok: res.ok && body?.premiumLockProtection === true };
+      } catch {
+        return { managed: true, ok: false };
+      }
+    }));
+    const managed = guardChecks.filter(g => g.managed);
+    if (!managed.length || managed.some(g => !g.ok)) {
       return NextResponse.json({ error: 'Proteksi premium gambar belum aktif. Lock belum disimpan.' }, { status: 503 });
     }
     const result = await projectApiFetch<{ data: Changed[] }>('/admin/chapter-lock', { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chapter_ids: ids, action: body.action, duration_days: body.duration_days, actor_id: admin.userId }) });
