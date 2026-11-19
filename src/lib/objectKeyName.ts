@@ -60,16 +60,19 @@ export async function readableObjectKey(options: {
   const base = readableBase(name, options.fallbackBase || "image");
   const ext = options.ext || readableExt(name);
   const dir = prefix.replace(/\/+$/, "");
-  const attempts = Math.max(1, options.maxAttempts ?? 24);
 
-  let key = `${dir}/${base}.${ext}`;
-  if (!(await objectExists(client, bucket, key))) return key;
+  // SELALU unik per unggahan. Dulu key hanya ditambah -v2 bila "sudah ada";
+  // tapi setelah chapter dihapus, key lama dianggap kosong dan dipakai ulang,
+  // sementara CDN/browser masih menyimpan gambar lama (Cache-Control immutable
+  // 1 tahun) → pratinjau menampilkan chapter sebelumnya. Nonce pendek menjaga
+  // nama tetap terbaca (001-<nonce>.webp) sekaligus mustahil bertabrakan.
+  const nonce = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  let key = `${dir}/${base}-${nonce}.${ext}`;
 
-  for (let version = 2; version <= attempts; version += 1) {
-    key = `${dir}/${base}-v${version}.${ext}`;
-    if (!(await objectExists(client, bucket, key))) return key;
+  // Jaring pengaman ekstra bila nonce kebetulan sama (praktis tidak mungkin).
+  const attempts = Math.max(1, options.maxAttempts ?? 4);
+  for (let i = 0; i < attempts && (await objectExists(client, bucket, key)); i += 1) {
+    key = `${dir}/${base}-${nonce}${i + 2}.${ext}`;
   }
-
-  // Jaring pengaman terakhir: tetap unik, tapi masih memuat nama asli.
-  return `${dir}/${base}-${Date.now().toString(36)}.${ext}`;
+  return key;
 }

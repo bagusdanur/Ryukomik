@@ -35,6 +35,18 @@ async function fetchRetry429(
   }
 }
 
+/**
+ * Cache-bust untuk gambar pratinjau/editor.
+ *
+ * Objek R2 disajikan dengan Cache-Control immutable 1 tahun. Kalau sebuah key
+ * pernah dipakai chapter lain (mis. setelah hapus+upload ulang), browser/CDN
+ * bisa menahan byte lama. Menambah query unik memaksa ambil ulang dari origin.
+ */
+function withBust(url: string, token: number): string {
+  if (!token) return url;
+  return `${url}${url.includes("?") ? "&" : "?"}cb=${token}`;
+}
+
 type Profile = {
   handle: string; team_name: string; bio: string | null; avatar_url?: string | null;
   support_dana: string | null; support_trakteer: string | null; support_tako: string | null; support_url_lain: string | null;
@@ -126,6 +138,8 @@ export default function ScanlatorStudio() {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [editChapter, setEditChapter] = useState<{ id: string; number: number; titles: string; images: string[] } | null>(null);
   const [previewChapter, setPreviewChapter] = useState<{ number: number; title: string | null; images: string[] } | null>(null);
+  const [previewBust, setPreviewBust] = useState(0);
+  const [editBust, setEditBust] = useState(0);
   const [savingPages, setSavingPages] = useState(false);
   const [historyChapter, setHistoryChapter] = useState<{ number: number; items: Array<{ id: string; action: string; before: Record<string, unknown> | null; after: Record<string, unknown> | null; created_at: string }> } | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -604,12 +618,12 @@ export default function ScanlatorStudio() {
 
   const openChapterEditor = async (chapterId: string, number: number, title: string | null) => {
     const data = await loadChapter(chapterId, number, title);
-    if (data) setEditChapter(data);
+    if (data) { setEditBust(Date.now()); setEditChapter(data); }
   };
 
   const openChapterPreview = async (chapterId: string, number: number, title: string | null) => {
     const data = await loadChapter(chapterId, number, title);
-    if (data) setPreviewChapter({ number, title, images: data.images });
+    if (data) { setPreviewBust(Date.now()); setPreviewChapter({ number, title, images: data.images }); }
   };
 
   const moveEditImage = (from: number, to: number) => {
@@ -1526,7 +1540,7 @@ export default function ScanlatorStudio() {
                   className={`relative overflow-hidden rounded-md border ${dragIndex === i ? "border-[var(--accent)]" : "border-white/[.08]"}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`Halaman ${i + 1}`} loading="lazy" draggable={false} className="aspect-[3/4] w-full object-cover" />
+                  <img src={withBust(url, editBust)} alt={`Halaman ${i + 1}`} loading="lazy" draggable={false} className="aspect-[3/4] w-full object-cover" />
                   <span className="absolute left-1 top-1 rounded bg-black/75 px-1 text-[9px] font-bold">{i + 1}</span>
                   <button
                     type="button"
@@ -1578,7 +1592,7 @@ export default function ScanlatorStudio() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={`${url}-${i}`}
-                  src={url}
+                  src={withBust(url, previewBust)}
                   alt={`Halaman ${i + 1}`}
                   loading={i < 3 ? "eager" : "lazy"}
                   decoding="async"
