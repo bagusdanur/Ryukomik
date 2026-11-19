@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId(request);
-    const limited = rateLimitResponse(`upload-commit:${userId}`, 400, 10 * 60 * 1000);
+    const limited = rateLimitResponse(`upload-commit:${userId}`, 4000, 10 * 60 * 1000);
     if (limited) return limited;
     // Baris `scanlator_uploads` ditulis presign dengan storage_handle (bukan
     // handle tampilan). Tim yang pernah ganti handle punya keduanya berbeda,

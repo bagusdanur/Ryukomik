@@ -91,7 +91,7 @@ export async function GET(request: Request, context: { params: Promise<{ slug: s
 export async function PATCH(request: Request, context: { params: Promise<{ slug: string; chapterId: string }> }) {
   try {
     const userId = await requireUserId(request);
-    const limited = rateLimitResponse(`chapter-edit:${userId}`, 60, 10 * 60 * 1000);
+    const limited = rateLimitResponse(`chapter-edit:${userId}`, 300, 10 * 60 * 1000);
     if (limited) return limited;
     const { slug, chapterId } = await context.params;
     const owned = await ownChapter(userId, slug, chapterId);

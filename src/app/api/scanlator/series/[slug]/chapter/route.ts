@@ -21,7 +21,7 @@ export async function POST(
 ) {
   try {
     const userId = await requireUserId(request);
-    const limited = rateLimitResponse(`chapter-create:${userId}`, 40, 10 * 60 * 1000);
+    const limited = rateLimitResponse(`chapter-create:${userId}`, 200, 10 * 60 * 1000);
     if (limited) return limited;
     const { slug } = await context.params;
 

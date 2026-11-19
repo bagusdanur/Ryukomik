@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   let userId: string;
   try {
     userId = await requireUserId(request);
-    const limited = rateLimitResponse(`upload-image:${userId}`, 60, 10 * 60 * 1000);
+    const limited = rateLimitResponse(`upload-image:${userId}`, 600, 10 * 60 * 1000);
     if (limited) return limited;
   } catch (error) {
     return authErrorResponse(error) ?? NextResponse.json({ error: "Login diperlukan." }, { status: 401 });

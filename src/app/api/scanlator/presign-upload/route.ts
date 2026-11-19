@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const userId = await requireUserId(request);
-    const limited = rateLimitResponse(`presign:${userId}`, 200, 5 * 60 * 1000);
+    const limited = rateLimitResponse(`presign:${userId}`, 2000, 10 * 60 * 1000);
     if (limited) return limited;
     const profile = await socialQuery<{ handle: string; storage_handle: string | null; status: string }>(
       "select handle, storage_handle, status from scanlator_profiles where user_id = $1 limit 1",

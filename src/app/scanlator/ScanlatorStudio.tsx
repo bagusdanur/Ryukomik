@@ -12,6 +12,29 @@ import { toWebp } from "@/utils/toWebp";
 import { Button, Field, Panel, PanelHead, Row, Stat, StatusDot, Tabs, inputClass } from "@/components/scanlator/ui";
 import RawPanel from "./RawPanel";
 
+/**
+ * Fetch yang sabar terhadap 429 (batas permintaan).
+ *
+ * Upload chapter manga bisa ratusan gambar; kalau server membalas 429 kita
+ * menunggu sesuai Retry-After lalu mencoba lagi, supaya antrean tidak putus
+ * dan pengguna tidak perlu menekan "Ulangi" manual.
+ */
+async function fetchRetry429(
+  url: string,
+  init: RequestInit,
+  onWait?: (seconds: number) => void,
+  tries = 10,
+): Promise<Response> {
+  for (let attempt = 0; ; attempt += 1) {
+    const response = await fetch(url, init);
+    if (response.status !== 429 || attempt >= tries) return response;
+    const retryAfter = Number(response.headers.get("Retry-After") || 0);
+    const waitSeconds = Math.min(60, Math.max(2, retryAfter || (attempt + 1) * 3));
+    onWait?.(waitSeconds);
+    await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000));
+  }
+}
+
 type Profile = {
   handle: string; team_name: string; bio: string | null; avatar_url?: string | null;
   support_dana: string | null; support_trakteer: string | null; support_tako: string | null; support_url_lain: string | null;
@@ -220,11 +243,15 @@ export default function ScanlatorStudio() {
     // Watermark tidak lagi ditambahkan sistem — tim Scanlator mengedit
     // watermark mereka sendiri. Semua gambar lewat presigned URL.
     try {
-      const presignRes = await fetch("/api/scanlator/presign-upload", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: file.name, contentType: file.type || "image/webp", slug, kind, size: file.size }),
-      });
+      const presignRes = await fetchRetry429(
+        "/api/scanlator/presign-upload",
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: file.name, contentType: file.type || "image/webp", slug, kind, size: file.size }),
+        },
+        (seconds) => setProgress((p) => (p ? { ...p, currentName: `menunggu ${seconds}s — batas permintaan, lanjut otomatis…` } : p)),
+      );
       const presign = (await presignRes.json().catch(() => null)) as
         | { presignedUrl?: string; publicUrl?: string; key?: string; error?: string }
         | null;
@@ -246,7 +273,7 @@ export default function ScanlatorStudio() {
         }
         if (put?.ok) {
           // Lepas slot reservasi kuota (kalau gagal, slot kedaluwarsa sendiri 30 menit).
-          void fetch("/api/scanlator/upload-commit", {
+          void fetchRetry429("/api/scanlator/upload-commit", {
             method: "POST",
             headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
             body: JSON.stringify({ key: presign.key }),
@@ -268,7 +295,7 @@ export default function ScanlatorStudio() {
         fd.append("file", file);
         fd.append("kind", kind);
         fd.append("slug", slug);
-        const res = await fetch("/api/scanlator/upload-image", { method: "POST", headers: { Authorization: `Bearer ${t}` }, body: fd });
+        const res = await fetchRetry429("/api/scanlator/upload-image", { method: "POST", headers: { Authorization: `Bearer ${t}` }, body: fd });
         const json = (await res.json().catch(() => null)) as { success?: boolean; url?: string; error?: string } | null;
         if (!res.ok || !json?.success || !json.url) throw new Error(json?.error || "Upload gagal.");
         return json.url;
@@ -416,7 +443,7 @@ export default function ScanlatorStudio() {
     setBusyChapter(true); setError(""); setNotice("");
     try {
       const t = await token();
-      const res = await fetch(`/api/scanlator/series/${encodeURIComponent(chapterSlug)}/chapter`, {
+      const res = await fetchRetry429(`/api/scanlator/series/${encodeURIComponent(chapterSlug)}/chapter`, {
         method: "POST",
         headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
         body: JSON.stringify({ chapter_number: Number(chapterNumber), title: chapterTitle, image_urls: chapterImages }),
