@@ -3,7 +3,7 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 
 import { CHAPTER_BANNER_URL } from "./chapterBanner";
@@ -28,8 +28,6 @@ function bannerBuffer() {
   return bannerBufferPromise;
 }
 
-const FETCH_UA = "Mozilla/5.0 (compatible; RyukomikBanner/1.0)";
-
 function isHttp(value: unknown): value is string {
   return typeof value === "string" && /^https?:\/\//i.test(value);
 }
@@ -51,9 +49,15 @@ export async function withChapterBannerMerged(imageUrls: unknown): Promise<strin
     const key = decodeURIComponent(src.pathname.replace(/^\//, ""));
     if (!key) throw new Error("key kosong");
 
-    const res = await fetch(last, { headers: { "User-Agent": FETCH_UA } });
-    if (!res.ok) throw new Error(`GET halaman ${res.status}`);
-    const pageBuf = Buffer.from(await res.arrayBuffer());
+    // Baca LANGSUNG dari R2, bukan HTTP. Worker proteksi membalas 200 +
+    // gambar promo (bukan 403) untuk request tanpa cookie — dulu hasilnya
+    // dianggap halaman asli sehingga halaman terakhir tertimpa banner promo.
+    const object = await target.client.send(
+      new GetObjectCommand({ Bucket: target.bucket, Key: key }),
+    );
+    if (!object.Body) throw new Error("objek halaman kosong");
+    const pageBuf = Buffer.from(await object.Body.transformToByteArray());
+    if (pageBuf.length < 1024) throw new Error("halaman terlalu kecil / bukan gambar");
 
     const meta = await sharp(pageBuf).metadata();
     const width = meta.width || 0;
@@ -71,7 +75,9 @@ export async function withChapterBannerMerged(imageUrls: unknown): Promise<strin
       .webp({ quality: 95, effort: 6 })
       .toBuffer();
 
-    const outKey = `${key.replace(/\.[a-z0-9]+$/i, "")}-banner.webp`;
+    // Nonce supaya tiap ACC menulis key baru; R2 + CDN memakai cache
+    // immutable 1 tahun, jadi menimpa key lama akan terus menyajikan versi usang.
+    const outKey = `${key.replace(/\.[a-z0-9]+$/i, "")}-banner-${Date.now().toString(36)}.webp`;
     await target.client.send(
       new PutObjectCommand({
         Bucket: target.bucket,
