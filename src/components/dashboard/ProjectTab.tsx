@@ -193,7 +193,11 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
   const [previewImageAccess, setPreviewImageAccess] = useState<"idle" | "loading" | "ready" | "error">("idle");
 
   useEffect(() => {
-    if (view !== "chapterPreview" || !activeManga?.slug || chapterForm.chapter_number === undefined) {
+    if (
+      (view !== "chapterPreview" && view !== "chapterForm") ||
+      !activeManga?.slug ||
+      chapterForm.chapter_number === undefined
+    ) {
       return;
     }
     let stopped = false;
@@ -2618,7 +2622,17 @@ export default function ProjectTab({ getAdminToken }: ProjectTabProps) {
                     </div>
                     <div className="flex items-center gap-1">
                       <a
-                        href={url}
+                        href={(() => {
+                          // URL storage tidak boleh dibuka langsung: worker guard
+                          // membalas gambar promo untuk request tanpa cookie.
+                          try {
+                            const parsed = new URL(url);
+                            if (parsed.hostname === "storage.ryukomik.com" || parsed.hostname === "storage.komano.my.id") {
+                              return `/api/image?url=${encodeURIComponent(url)}`;
+                            }
+                          } catch {}
+                          return url;
+                        })()}
                         target="_blank"
                         rel="noreferrer"
                         className="p-1.5 hover:bg-white/10 rounded text-[var(--accent-2)] opacity-50 hover:opacity-100 transition-opacity"
