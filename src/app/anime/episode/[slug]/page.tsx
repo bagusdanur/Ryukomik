@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   const title = data?.title?.replace(" Sub Indo", "");
 
   return {
-    title: title ? `${title} Sub Indo - Ryukomik` : "Ryukomik",
+    title: title ? `${title} Sub Indo` : "Ryukomik",
     description: title
       ? `Nonton ${title} sub indo gratis. Streaming anime bahasa Indonesia lengkap dan update terbaru hanya di Ryukomik.`
       : "Nonton anime sub indo gratis di Ryukomik.",

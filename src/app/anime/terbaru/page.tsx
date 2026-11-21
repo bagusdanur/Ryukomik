@@ -5,7 +5,7 @@ import NobarCard from "@/components/anime/NobarCard";
 export const revalidate = 120;
 
 export const metadata: Metadata = {
-  title: "Anime Terbaru Sub Indo - Ryukomik",
+  title: "Anime Terbaru Sub Indo",
 
   description:
     "Nonton dan lihat update anime terbaru sub indo lengkap dengan episode terbaru kualitas HD di Ryukomik.",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   },
 
   openGraph: {
-    title: "Anime Terbaru Sub Indo - Ryukomik",
+    title: "Anime Terbaru Sub Indo",
 
     description:
       "Update anime terbaru sub indo dan ongoing setiap hari di Ryukomik.",
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
 
-    title: "Anime Terbaru Sub Indo - Ryukomik",
+    title: "Anime Terbaru Sub Indo",
 
     description:
       "Nonton dan update anime terbaru sub indo kualitas HD di Ryukomik.",

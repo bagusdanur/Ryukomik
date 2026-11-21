@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
     );
     const json = (await res.json()) as ApiResponse<DonghuaEpisode>;
     const title = json.data?.episodeTitle?.replace(" Subtitle Indonesia", "");
-    return { title: `${title} | RyuKomik` };
+    return { title: title || "Donghua" };
   } catch {
     return { title: "RyuKomik" };
   }

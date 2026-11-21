@@ -1,6 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 export const revalidate = 3600;
+
+export const metadata: Metadata = {
+  title: "Anime Ongoing Sub Indo",
+  description:
+    "Daftar anime ongoing sub indo yang sedang tayang, lengkap dengan episode terbaru dan jadwal update di Ryukomik.",
+  alternates: { canonical: "/anime/ongoing" },
+  openGraph: {
+    title: "Anime Ongoing Sub Indo",
+    description: "Anime yang sedang tayang, update episode terbaru setiap hari.",
+    type: "website",
+  },
+};
+
 
 type OngoingAnime = {
   slug?: string;

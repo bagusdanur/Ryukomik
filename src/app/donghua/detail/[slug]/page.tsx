@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
     const title = json.data?.title
       ?.replace("Nonton ", "")
       .replace(" Sub Indo", "");
-    return { title: `${title} | RyuKomik` };
+    return { title: title || "Donghua" };
   } catch {
     return { title: "RyuKomik" };
   }
