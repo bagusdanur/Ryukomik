@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ADULT_PREF_EVENT, isAdultHidden } from "@/utils/adultFilter";
+import { ADULT_ENABLED } from "@/config/siteMode";
 
 const TABS = [
   { label: "Anime", href: "/anime/terbaru", color: "#22d3ee" },
   { label: "Donghua", href: "/donghua/terbaru", color: "#ff9f1c" },
-  { label: "Dewasa", href: "/hentai/terbaru", color: "#ff5078" },
+  ...(ADULT_ENABLED ? [{ label: "Dewasa", href: "/hentai/terbaru", color: "#ff5078" }] : []),
 ];
 
 /** Header halaman /tonton — gaya sama dengan AnimeHeader/DonghuaHeader. */
@@ -38,7 +39,7 @@ export default function TontonHeader() {
             <span className="block text-[16px] font-black tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>
               Tonton<span className="text-cyan-200">.</span>
             </span>
-            <span className="text-[9px] uppercase tracking-widest text-white/30">{hideAdult ? "Anime · Donghua" : "Anime · Donghua · 18+"}</span>
+            <span className="text-[9px] uppercase tracking-widest text-white/30">{!ADULT_ENABLED || hideAdult ? "Anime · Donghua" : "Anime · Donghua · 18+"}</span>
           </div>
         </Link>
 
@@ -54,7 +55,7 @@ export default function TontonHeader() {
         </Link>
       </div>
 
-      <div className="mx-auto grid w-full max-w-lg grid-cols-3 gap-2 px-4 pb-3">
+      <div className={`mx-auto grid w-full max-w-lg gap-2 px-4 pb-3 ${ADULT_ENABLED ? "grid-cols-3" : "grid-cols-2"}`}>
         {tabs.map((tab) => {
           const active = pathname.startsWith(tab.href.split("/").slice(0, 2).join("/"));
           return (

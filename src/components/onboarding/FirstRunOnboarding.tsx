@@ -1,6 +1,7 @@
 "use client";
 
 import { Component, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import type { IconType } from "react-icons";
 import { createPortal } from "react-dom";
 import {
   FiBell,
@@ -17,6 +18,7 @@ import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { setAdultHidden } from "@/utils/adultFilter";
 import { grantAdultConsent, revokeAdultConsent } from "@/utils/adultConsent";
 import { isPushSupported, subscribePush } from "@/utils/pushSubscription";
+import { ADULT_ENABLED } from "@/config/siteMode";
 
 /**
  * Layar awal sekali jalan (gaya aplikasi baru di-install).
@@ -35,16 +37,19 @@ const Z_INDEX = 2147482500;
 const AUTO_CLOSE_MS = 30_000;
 
 type Slide = {
+  id: "welcome" | "notif" | "adult" | "login";
   step: string;
-  icon: typeof FiBookOpen;
+  icon: IconType;
   tone: "violet" | "cyan" | "rose";
   title: string;
   body: ReactNode;
 };
 
-const SLIDES: Slide[] = [
+// Mode SFW: slide 18+ DIBUANG dari daftar — bukan sekadar disembunyikan.
+// Nomor langkah dihitung ulang supaya tidak ada "Langkah 3 dari 4" yang kosong.
+const SLIDES_BASE: Slide[] = [
   {
-    step: "Langkah 1 dari 4",
+    id: "welcome",
     icon: FiBookOpen,
     tone: "violet",
     title: "Selamat datang di Ryukomik",
@@ -56,27 +61,31 @@ const SLIDES: Slide[] = [
     ),
   },
   {
-    step: "Langkah 2 dari 4",
+    id: "notif",
     icon: FiBell,
     tone: "cyan",
     title: "Aktifkan Notifikasi",
     body: <>Dapat info chapter baru dari seri yang kamu ikuti.</>,
   },
+  ...(ADULT_ENABLED
+    ? [{
+        id: "adult" as const,
+        icon: FiShield,
+        tone: "rose" as const,
+        title: "Konten 18+",
+        body: <>Pilih mau menyembunyikan atau mengizinkan sumber komik 18+.</>,
+      }]
+    : []),
   {
-    step: "Langkah 3 dari 4",
-    icon: FiShield,
-    tone: "rose",
-    title: "Konten 18+",
-    body: <>Pilih mau menyembunyikan atau mengizinkan sumber komik 18+.</>,
-  },
-  {
-    step: "Langkah 4 dari 4",
+    id: "login",
     icon: FiLock,
     tone: "violet",
     title: "Masuk untuk Simpan",
     body: <>Login sekali supaya bookmark, riwayat, dan pengaturan tersimpan di akunmu.</>,
   },
-];
+].map((s, i, arr) => ({ ...s, step: `Langkah ${i + 1} dari ${arr.length}` })) as Slide[];
+
+const SLIDES: Slide[] = SLIDES_BASE;
 
 const TONE: Record<Slide["tone"], string> = {
   violet: "rgba(139,92,246,.20)",
@@ -363,7 +372,7 @@ function OnboardingInner() {
                     {item.body}
                   </p>
 
-                  {index === 1 && (
+                  {item.id === "notif" && (
                     <div className="w-full max-w-[300px] flex flex-col gap-2 mt-1">
                       <label
                         className="w-full flex items-center justify-between gap-3 rounded-[13px] px-3.5 py-2.5 cursor-pointer"
@@ -404,7 +413,7 @@ function OnboardingInner() {
                     </div>
                   )}
 
-                  {index === 2 && (
+                  {item.id === "adult" && (
                     <div className="w-full max-w-[300px] flex flex-col gap-2 mt-1">
                       <div className="flex gap-2 w-full">
                         <button
@@ -440,7 +449,7 @@ function OnboardingInner() {
                     </div>
                   )}
 
-                  {index === 3 && (
+                  {item.id === "login" && (
                     <div className="w-full max-w-[300px] flex flex-col gap-2 mt-1">
                       {user ? (
                         <button

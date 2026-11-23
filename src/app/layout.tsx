@@ -81,6 +81,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="id" suppressHydrationWarning>
       <head>
         <meta name="admaven-placement" content="BpjaGrTk9"/>
+        <meta name="monetag" content="1754eeebb4800b0197afdb75756c79d6"/>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

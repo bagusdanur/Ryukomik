@@ -29,6 +29,7 @@ import {
 import { RowLeft, Section, StatCard, ThemePreview } from "./settingUi";
 import PushNotifToggle from "@/components/PushNotifToggle";
 import AdultFilterToggle from "@/components/setting/AdultFilterToggle";
+import { ADULT_ENABLED } from "@/config/siteMode";
 
 type Profile = {
   username?: string | null;
@@ -293,6 +294,8 @@ export function AppearanceSection({
 }
 
 export function ContentFilterSection() {
+  // Mode SFW tidak menyediakan konten dewasa, jadi sakelar filter tidak relevan.
+  if (!ADULT_ENABLED) return null;
   return (
     <Section label="Konten">
       <AdultFilterToggle />
