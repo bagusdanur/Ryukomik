@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
+import { ADULT_ENABLED } from "@/config/siteMode";
+
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import Footer from "@/components/Footer";
 import AutoBackup from "@/components/AutoBackup";
@@ -81,6 +83,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="id" suppressHydrationWarning>
       <head>
         <meta name="admaven-placement" content="BpjaGrTk9"/>
+        {/* Iklan khusus deployment SFW (v1.ryukomik.com). */}
+
         <meta name="monetag" content="1754eeebb4800b0197afdb75756c79d6"/>
         <script
           type="application/ld+json"
@@ -133,7 +137,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <BanGate />
         <BanLoginNotice />
         <Analytics />
-       
+
+        {/* Iklan HANYA untuk deployment SFW (v1.ryukomik.com). */}
+        {process.env.NEXT_PUBLIC_SITE_MODE === "sfw" && (
+          <Script
+            id="ads-al5sm-v1"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `(function(s){s.dataset.zone='12328480',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+            }}
+          />
+        )}
       </body>
     </html>
   );

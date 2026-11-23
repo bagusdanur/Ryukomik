@@ -19,7 +19,9 @@ STAMP=$(date +%s)
 
 echo "== build staging =="
 rm -rf "$STAGE"
-NEXT_DIST_DIR="$STAGE" npm run build
+# Kunci mode eksplisit: jangan pernah warisi NEXT_PUBLIC_SITE_MODE=sfw dari
+# shell (build SFW sebelumnya pernah membuat ryukomik.com ikut jadi SFW).
+NEXT_DIST_DIR="$STAGE" NEXT_PUBLIC_SITE_MODE=adult npm run build
 
 if [ ! -f "$STAGE/BUILD_ID" ]; then
   # Jaga-jaga: cari lokasi build sebenarnya (Next kadang menaruh di .next/…).
