@@ -21,7 +21,9 @@ const AD_LINK = "https://uplcm.com/4/10352759";
 const FREE_WINDOW_MS = 10 * 60 * 1000;
 const FIRST_SHOW_DELAY_MS = 30 * 1000;
 const POLL_MS = 10 * 1000;
-const STORAGE_KEY = "rk-adfree-until";
+import { AD_FREE_STORAGE_KEY } from "@/lib/adFreeWindow";
+
+const STORAGE_KEY = AD_FREE_STORAGE_KEY;
 
 const SKIP_PREFIXES = ["/dashboard", "/premium", "/topup", "/auth", "/api", "/info/domain-baru"];
 

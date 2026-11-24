@@ -12,6 +12,7 @@ import ThemeColorProvider from "@/components/ThemeColorProvider";
 import MaintenanceBanner from "@/components/MaintenanceBanner";
 import MonetagScript from "@/components/MonetagScript";
 import AdGate from "@/components/AdGate";
+import SfwAdScript from "@/components/SfwAdScript";
 import HistatsCounter from "@/components/HistatsCounter";
 import Navbar from "@/components/Navbar";
 import BanGate from "@/components/BanGate";
@@ -130,6 +131,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <YukiChatEmbed />
         
         <AdGate />
+        {process.env.NEXT_PUBLIC_SITE_MODE === "sfw" && <SfwAdScript />}
         <AntiAdblock />
         <AdBanner />
         <Footer />
@@ -138,16 +140,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <BanLoginNotice />
         <Analytics />
 
-        {/* Iklan HANYA untuk deployment SFW (v1.ryukomik.com). */}
-        {process.env.NEXT_PUBLIC_SITE_MODE === "sfw" && (
-          <Script
-            id="ads-al5sm-v1"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `(function(s){s.dataset.zone='12328480',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
-            }}
-          />
-        )}
       </body>
     </html>
   );

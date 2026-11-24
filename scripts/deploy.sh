@@ -40,7 +40,10 @@ fi
 echo "== tukar build =="
 if [ -d .next ]; then mv .next ".next-old-$STAMP"; fi
 mv "$STAGE" .next
-pm2 restart ryukomik --update-env >/dev/null 2>&1 || true
+# Bersihkan env eksplisit sebelum --update-env: kalau shell kepajangan
+# NEXT_PUBLIC_SITE_MODE=sfw / NEXT_DIST_DIR=next-sfw, mode situs bisa berubah.
+env -u NEXT_PUBLIC_SITE_MODE -u NEXT_DIST_DIR \
+  pm2 restart ryukomik --update-env >/dev/null 2>&1 || true
 
 # Jangan simpan arsip build: cukup satu (yang aktif).
 rm -rf .next-old-* "$STAGE"
