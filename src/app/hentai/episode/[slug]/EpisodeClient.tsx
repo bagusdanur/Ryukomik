@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import { nekoImg } from "@/utils/neko";
 import HentaiPlayer from "@/components/hentai/HentaiPlayer";
+import WatchHistoryTracker from "@/components/anime/WatchHistoryTracker";
 
 type HentaiPlayerType = {
   label?: string;
@@ -34,9 +35,10 @@ type HentaiEpisode = {
 
 type HentaiEpisodeClientProps = {
   data: HentaiEpisode | null;
+  episodeSlug?: string;
 };
 
-export default function HentaiEpisodeClient({ data }: HentaiEpisodeClientProps) {
+export default function HentaiEpisodeClient({ data, episodeSlug }: HentaiEpisodeClientProps) {
   const cleanTitle = (data?.title || "")
     .replace(/^\[.*?\]\s*/, "")
     .replace(" Subtitle Indonesia", "")
@@ -52,12 +54,24 @@ export default function HentaiEpisodeClient({ data }: HentaiEpisodeClientProps) 
   if (!data) return <div>Error</div>;
 
   const titleBadgeMatch = data.title?.match(/^\[([^\]]+)\]/);
+  const epMatch = cleanTitle.match(/(?:episode|ep)\s*([\d.]+)/i)?.[1];
+  const seriesTitle = cleanTitle.replace(/\s*(?:episode|ep)\s*[\d.]+.*$/i, "").trim() || cleanTitle;
 
   return (
     <div
       className="rk-page text-white pb-28"
       style={{ fontFamily: "'Syne', sans-serif" }}
     >
+      {episodeSlug && (
+        <WatchHistoryTracker
+          type="hentai"
+          seriesSlug={data.allEpisode || episodeSlug}
+          title={seriesTitle}
+          thumbnail={data.thumbnail ? nekoImg(data.thumbnail) : null}
+          episodeSlug={episodeSlug}
+          episodeLabel={epMatch ? `EP ${epMatch}` : null}
+        />
+      )}
 
       {/* ── PLAYER ── */}
       <div className="w-full bg-[#0a0a0a] relative">

@@ -47,5 +47,5 @@ export default async function EpisodePage({ params }: RouteProps) {
   const { slug } = await params; // ✅ unwrap
 
   const data = await getData(slug);
-  return <EpisodeClient data={data} />;
+  return <EpisodeClient data={data} episodeSlug={slug} />;
 }

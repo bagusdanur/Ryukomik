@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Trash2 } from "lucide-react";
-import { useWatchHistoryStore } from "@/store/watchHistoryStore";
+import { getWatchEpisodeHref, useWatchHistoryStore } from "@/store/watchHistoryStore";
+import { ADULT_PREF_EVENT, isAdultHidden } from "@/utils/adultFilter";
+import AdultCoverGuard from "@/components/adult/AdultCoverGuard";
 
 function timeAgo(timestamp: number) {
   const diff = Math.max(0, Date.now() - timestamp) / 1000;
@@ -14,10 +16,11 @@ function timeAgo(timestamp: number) {
   return new Date(timestamp).toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
 }
 
-const ACCENT: Record<string, string> = { anime: "#22d3ee", donghua: "#ff9f1c" };
+const ACCENT: Record<string, string> = { anime: "#22d3ee", donghua: "#ff9f1c", hentai: "#f43f5e" };
+const LABEL: Record<string, string> = { anime: "ANIME", donghua: "DONGHUA", hentai: "18+" };
 
 /**
- * "Lanjut Tonton" — riwayat anime/donghua dari localStorage, nol query server.
+ * "Lanjut Tonton" — riwayat anime/donghua/dewasa dari localStorage, nol query server.
  * Kartunya sengaja memakai grid 3 kolom + rasio 2:3 yang sama dengan kartu
  * Anime/Donghua di halaman /tonton supaya ukurannya konsisten.
  */
@@ -25,12 +28,20 @@ export default function ContinueWatching() {
   const history = useWatchHistoryStore((state) => state.history);
   const remove = useWatchHistoryStore((state) => state.removeWatchHistory);
   const [mounted, setMounted] = useState(false);
+  const [adultHidden, setAdultHidden] = useState(true);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    setAdultHidden(isAdultHidden());
+    const onPref = () => setAdultHidden(isAdultHidden());
+    window.addEventListener(ADULT_PREF_EVENT, onPref);
+    return () => window.removeEventListener(ADULT_PREF_EVENT, onPref);
+  }, []);
 
-  if (!mounted || history.length === 0) return null;
+  const visible = adultHidden ? history.filter((item) => item.type !== "hentai") : history;
+  if (!mounted || visible.length === 0) return null;
 
-  const items = history.slice(0, 12);
+  const items = visible.slice(0, 12);
 
   return (
     <section className="mt-7 scroll-mt-28">
@@ -53,24 +64,26 @@ export default function ContinueWatching() {
           <Link
             prefetch={false}
             key={item.key}
-            href={`/${item.type === "donghua" ? "donghua" : "anime"}/episode/${item.episodeSlug}`}
+            href={getWatchEpisodeHref(item.type, item.episodeSlug)}
             className="rk-card-soft group block overflow-hidden rounded-2xl"
           >
             <div className="relative" style={{ aspectRatio: "2/3" }}>
-              {item.thumbnail ? (
-                <img
-                  src={item.thumbnail}
-                  alt={item.title}
-                  loading="lazy"
-                  decoding="async"
-                  referrerPolicy="no-referrer"
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-white/5 text-white/20">
-                  <span className="text-[10px] font-black uppercase tracking-widest">No Image</span>
-                </div>
-              )}
+              <AdultCoverGuard adult={item.type === "hentai"} revealKey="watch-hentai">
+                {item.thumbnail ? (
+                  <img
+                    src={item.thumbnail}
+                    alt={item.title}
+                    loading="lazy"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-white/5 text-white/20">
+                    <span className="text-[10px] font-black uppercase tracking-widest">No Image</span>
+                  </div>
+                )}
+              </AdultCoverGuard>
 
               <div className="absolute left-1.5 top-1.5">
                 <div
@@ -78,7 +91,7 @@ export default function ContinueWatching() {
                   style={{ background: ACCENT[item.type] || ACCENT.anime }}
                 >
                   <span className="text-[8px] font-black leading-none tracking-wide text-black">
-                    {item.type === "donghua" ? "DONGHUA" : "ANIME"}
+                    {LABEL[item.type] || "ANIME"}
                   </span>
                 </div>
               </div>

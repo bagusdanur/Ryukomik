@@ -3,9 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Trash2 } from "lucide-react";
-import { useWatchHistoryStore, type WatchType } from "@/store/watchHistoryStore";
+import { getWatchEpisodeHref, useWatchHistoryStore, type WatchType } from "@/store/watchHistoryStore";
+import { ADULT_ENABLED } from "@/config/siteMode";
+import { ADULT_PREF_EVENT, isAdultHidden } from "@/utils/adultFilter";
+import AdultCoverGuard from "@/components/adult/AdultCoverGuard";
 
-const ACCENT: Record<string, string> = { anime: "#22d3ee", donghua: "#ff9f1c" };
+const ACCENT: Record<string, string> = { anime: "#22d3ee", donghua: "#ff9f1c", hentai: "#f43f5e" };
+const LABEL: Record<string, string> = { anime: "ANIME", donghua: "DONGHUA", hentai: "18+" };
 
 function timeAgo(timestamp: number) {
   const diff = Math.max(0, Date.now() - timestamp) / 1000;
@@ -16,7 +20,7 @@ function timeAgo(timestamp: number) {
   return new Date(timestamp).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-const FILTERS: { key: "all" | WatchType; label: string }[] = [
+const BASE_FILTERS: { key: "all" | WatchType; label: string }[] = [
   { key: "all", label: "Semua" },
   { key: "anime", label: "Anime" },
   { key: "donghua", label: "Donghua" },
@@ -27,13 +31,37 @@ export default function RiwayatTontonClient() {
   const remove = useWatchHistoryStore((state) => state.removeWatchHistory);
   const clear = useWatchHistoryStore((state) => state.clearWatchHistory);
   const [mounted, setMounted] = useState(false);
+  const [adultHidden, setAdultHidden] = useState(true);
   const [filter, setFilter] = useState<"all" | WatchType>("all");
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    setAdultHidden(isAdultHidden());
+    const onPref = () => {
+      const hidden = isAdultHidden();
+      setAdultHidden(hidden);
+      if (hidden) setFilter((prev) => (prev === "hentai" ? "all" : prev));
+    };
+    window.addEventListener(ADULT_PREF_EVENT, onPref);
+    return () => window.removeEventListener(ADULT_PREF_EVENT, onPref);
+  }, []);
+
+  const filters = useMemo(
+    () =>
+      ADULT_ENABLED && !adultHidden
+        ? [...BASE_FILTERS, { key: "hentai" as const, label: "Dewasa" }]
+        : BASE_FILTERS,
+    [adultHidden],
+  );
+
+  const visibleHistory = useMemo(
+    () => (adultHidden ? history.filter((item) => item.type !== "hentai") : history),
+    [history, adultHidden],
+  );
 
   const items = useMemo(
-    () => (filter === "all" ? history : history.filter((item) => item.type === filter)),
-    [history, filter],
+    () => (filter === "all" ? visibleHistory : visibleHistory.filter((item) => item.type === filter)),
+    [visibleHistory, filter],
   );
 
   return (
@@ -60,7 +88,7 @@ export default function RiwayatTontonClient() {
         <div className="mb-4 h-px bg-white/10" />
 
         <div className="mb-4 flex gap-1 rounded-2xl border border-white/10 bg-white/[.03] p-1 w-fit">
-          {FILTERS.map((entry) => (
+          {filters.map((entry) => (
             <button
               key={entry.key}
               type="button"
@@ -86,24 +114,26 @@ export default function RiwayatTontonClient() {
               <div key={item.key} className="group relative">
                 <Link
                   prefetch={false}
-                  href={`/${item.type === "donghua" ? "donghua" : "anime"}/episode/${item.episodeSlug}`}
+                  href={getWatchEpisodeHref(item.type, item.episodeSlug)}
                   className="rk-card-soft block overflow-hidden rounded-2xl"
                 >
                   <div className="relative" style={{ aspectRatio: "2/3" }}>
-                    {item.thumbnail ? (
-                      <img
-                        src={item.thumbnail}
-                        alt={item.title}
-                        loading="lazy"
-                        decoding="async"
-                        referrerPolicy="no-referrer"
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-white/5 text-[10px] font-black uppercase tracking-widest text-white/20">
-                        No Image
-                      </div>
-                    )}
+                    <AdultCoverGuard adult={item.type === "hentai"} revealKey="watch-hentai">
+                      {item.thumbnail ? (
+                        <img
+                          src={item.thumbnail}
+                          alt={item.title}
+                          loading="lazy"
+                          decoding="async"
+                          referrerPolicy="no-referrer"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-white/5 text-[10px] font-black uppercase tracking-widest text-white/20">
+                          No Image
+                        </div>
+                      )}
+                    </AdultCoverGuard>
 
                     <div className="absolute left-1.5 top-1.5">
                       <div
@@ -111,7 +141,7 @@ export default function RiwayatTontonClient() {
                         style={{ background: ACCENT[item.type] || ACCENT.anime }}
                       >
                         <span className="text-[8px] font-black leading-none tracking-wide text-black">
-                          {item.type === "donghua" ? "DONGHUA" : "ANIME"}
+                          {LABEL[item.type] || "ANIME"}
                         </span>
                       </div>
                     </div>

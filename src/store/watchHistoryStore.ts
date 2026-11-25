@@ -1,7 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type WatchType = "anime" | "donghua";
+export type WatchType = "anime" | "donghua" | "hentai";
+
+export function getWatchEpisodeHref(type: WatchType, episodeSlug: string): string {
+  if (type === "donghua") return `/donghua/episode/${episodeSlug}`;
+  if (type === "hentai") return `/hentai/episode/${episodeSlug}`;
+  return `/anime/episode/${episodeSlug}`;
+}
 
 export type WatchHistoryItem = {
   /** Kunci unik: seriesSlug kalau ada, kalau tidak episodeSlug. */
