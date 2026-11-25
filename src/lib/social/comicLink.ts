@@ -9,7 +9,7 @@ export type ComicLinkInfo = {
 };
 
 const COMIC_URL_RE =
-  /https?:\/\/(?:www\.)?ryukomik\.my\.id\/(komik|chapter)\/([a-z0-9-]+)\/([^\s?#]+)/i;
+  /https?:\/\/(?:(?:www|v1)\.)?ryukomik\.(?:com|my\.id|web\.id|id)\/(komik|chapter)\/([a-z0-9-]+)\/([^\s?#]+)/i;
 
 function prettifySlug(slug: string): string {
   return slug

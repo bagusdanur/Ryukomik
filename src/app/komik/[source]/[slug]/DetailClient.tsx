@@ -9,6 +9,7 @@ import type { Chapter, Series } from "@/types/content";
 import { useHistoryStore } from "@/store/historyStore";
 import CommentsSupabase from "@/components/CommentsSupabase";
 import BookmarkButton from "@/components/BookmarkButton";
+import ShareButton from "@/components/ShareButton";
 import Button from "@/components/Button";
 import { FaArrowLeft, FaHeart, FaCommentDots } from "react-icons/fa";
 import { FiChevronRight, FiHeart } from "react-icons/fi";
@@ -260,13 +261,20 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
                 {statusLabel}
               </span>
             </div>
-            {/* TOMBOL SAVED/BOOKMARK */}
-            <div className="mt-4">
+            {/* TOMBOL SAVED/BOOKMARK & SHARE */}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <BookmarkButton
                 slug={slug}
                 source={source}
                 title={data.title}
                 image={data.thumbnail}
+              />
+              <ShareButton
+                title={`${data.title} - Ryukomik`}
+                text={`Baca ${data.title} bahasa Indonesia di Ryukomik!`}
+                path={`/komik/${encodeURIComponent(source)}/${encodeURIComponent(slug)}`}
+                variant="pill"
+                label="Bagikan"
               />
             </div>
           </div>
