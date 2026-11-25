@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AdultGate from "@/components/anime/AdultGate";
 import ContinueWatching from "@/components/anime/ContinueWatching";
+import NobarCard from "@/components/anime/NobarCard";
 import { adultContentHidden } from "@/lib/adultPrefServer";
 import { nekoImg } from "@/utils/neko";
 
@@ -142,6 +143,8 @@ export default async function TontonPage() {
           Anime dan donghua — update terbaru dalam satu tempat.
         </p>
       </div>
+
+      <NobarCard className="mt-5" />
 
       <ContinueWatching />
 

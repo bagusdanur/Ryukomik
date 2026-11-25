@@ -41,7 +41,13 @@ const stripSuffix = (s?: string | null) => s?.replace(/\s*Sub(?:title)?\s*Indo\s
 
 /** `animeSlug` = daftar ruang anime itu (halaman detail).
  *  Tanpa prop = semua ruang aktif (halaman utama anime). */
-export default function NobarCard({ animeSlug }: { animeSlug?: string }) {
+export default function NobarCard({
+  animeSlug,
+  className = "mb-6",
+}: {
+  animeSlug?: string;
+  className?: string;
+}) {
   const router = useRouter();
   const [rooms, setRooms] = useState<{ room: Room; memberCount: number }[]>([]);
   const [ready, setReady] = useState(false);
@@ -97,7 +103,7 @@ export default function NobarCard({ animeSlug }: { animeSlug?: string }) {
   const showAll = !animeSlug;
 
   return (
-    <div className="mb-6">
+    <div className={className}>
       {/* Header */}
       <div className="mb-2.5 flex items-center justify-between px-5">
         <div className="flex items-center gap-2">
