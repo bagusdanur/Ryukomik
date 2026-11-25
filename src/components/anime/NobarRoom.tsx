@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { Send, Copy, Check, X, Users, MessageCircle, Radio } from "lucide-react";
+import { Send, Copy, Check, X, Users, MessageCircle, Radio, Share2 } from "lucide-react";
 import AnimePlayer, { type AnimePlayerSyncState } from "@/components/anime/AnimePlayer";
 import { supabase } from "@/lib/supabaseClient";
 import { socialFetch, socialRead } from "@/lib/social/client";
@@ -67,6 +67,11 @@ export default function NobarRoom({
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareNote, setShareNote] = useState("");
+  const [shareSending, setShareSending] = useState(false);
+  const [shareError, setShareError] = useState("");
+  const [sharedPostId, setSharedPostId] = useState<string | null>(null);
   const [tab, setTab] = useState<"chat" | "members">("chat");
   const [syncCapable, setSyncCapable] = useState(false);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
@@ -341,6 +346,31 @@ export default function NobarRoom({
     });
   }
 
+  const displayTitle =
+    episode.title?.replace(" Sub Indo", "") || room?.episodeTitle || room?.animeTitle || "Ruang Nobar";
+
+  async function shareToCommunity(event: FormEvent) {
+    event.preventDefault();
+    if (!signedIn || shareSending) return;
+    setShareSending(true);
+    setShareError("");
+    try {
+      const nobarUrl = `https://ryukomik.com/anime/nobar/${encodeURIComponent(roomId)}`;
+      const body = shareNote.trim();
+      const content = `Lagi nobar ${displayTitle}${body ? `\n\n${body}` : ""}\n\n${nobarUrl}`.slice(0, 500);
+      const mediaUrl = room?.thumbnail && /^https:\/\//i.test(room.thumbnail) ? room.thumbnail : null;
+      const result = await socialFetch<{ post: { id: string } }>("/api/social/posts", {
+        method: "POST",
+        body: JSON.stringify({ content, image_url: mediaUrl, visibility: "public", is_sensitive: false }),
+      });
+      setSharedPostId(result.post.id);
+    } catch (failure) {
+      setShareError(failure instanceof Error ? failure.message : "Gagal membagikan nobar ke komunitas.");
+    } finally {
+      setShareSending(false);
+    }
+  }
+
   const ended = Boolean(room?.endedAt);
 
   return (
@@ -376,13 +406,32 @@ export default function NobarRoom({
             {episode.title?.replace(" Sub Indo", "") || room?.episodeTitle || "Ruang Nobar"}
           </h1>
         </div>
-        <button
-          onClick={copyLink}
-          className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-[11px] font-bold text-white/75 transition hover:bg-white/[0.1] hover:text-white"
-        >
-          {copied ? <Check className="text-emerald-300" /> : <Copy />}
-          <span className="hidden sm:inline">{copied ? "Tersalin" : "Bagikan"}</span>
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {!ended && (
+            <button
+              type="button"
+              onClick={() => {
+                setShareError("");
+                setSharedPostId(null);
+                setShareOpen(true);
+              }}
+              title="Bagikan nobar ke komunitas"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-rose-400/30 bg-rose-500/15 px-3 py-2 text-[11px] font-bold text-rose-200 transition hover:bg-rose-500/25 hover:text-white"
+            >
+              <Share2 size={14} />
+              <span className="hidden sm:inline">Komunitas</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={copyLink}
+            title={copied ? "Link tersalin" : "Salin link nobar"}
+            className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-[11px] font-bold text-white/75 transition hover:bg-white/[0.1] hover:text-white"
+          >
+            {copied ? <Check size={14} className="text-emerald-300" /> : <Copy size={14} />}
+            <span className="hidden sm:inline">{copied ? "Tersalin" : "Salin"}</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_350px]">
@@ -603,6 +652,126 @@ export default function NobarRoom({
           ← Kembali ke episode
         </Link>
       </p>
+
+      {shareOpen && (
+        <div className="fixed inset-0 z-[90] grid place-items-end bg-black/70 p-0 backdrop-blur-sm sm:place-items-center sm:p-4">
+          <button
+            type="button"
+            aria-label="Tutup"
+            onClick={() => setShareOpen(false)}
+            className="absolute inset-0"
+          />
+          <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-t-3xl border border-white/12 bg-[var(--surface-1)] shadow-2xl sm:rounded-3xl">
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-rose-300/80">
+                  Posting ke RyuSpace
+                </p>
+                <h2 className="mt-0.5 line-clamp-1 font-black">Ajak Nobar di Komunitas</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShareOpen(false)}
+                className="grid h-9 w-9 place-items-center rounded-full bg-white/5 text-white/60 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {sharedPostId ? (
+              <div className="p-6 text-center">
+                <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-400/15 text-emerald-300">
+                  <Check size={20} />
+                </div>
+                <h3 className="mt-3 text-lg font-black">Nobar dibagikan ke komunitas</h3>
+                <p className="mt-1 text-sm text-white/45">
+                  Pembaca lain sekarang bisa langsung klik Gabung Nobar dari timeline.
+                </p>
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShareOpen(false)}
+                    className="rounded-xl border border-white/10 py-3 text-xs font-bold text-white/65"
+                  >
+                    Tetap di nobar
+                  </button>
+                  <Link
+                    href={`/post/${sharedPostId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl bg-white py-3 text-xs font-black text-black"
+                  >
+                    Lihat postingan
+                  </Link>
+                </div>
+              </div>
+            ) : signedIn ? (
+              <form onSubmit={shareToCommunity} className="p-4">
+                <div className="flex gap-3 rounded-2xl border border-rose-400/20 bg-rose-500/[0.06] p-3">
+                  {thumbUrl(room?.thumbnail) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={thumbUrl(room?.thumbnail)!}
+                      alt=""
+                      className="h-20 w-14 shrink-0 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="grid h-20 w-14 shrink-0 place-items-center rounded-lg bg-white/5 text-rose-300">
+                      <Radio size={20} />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <span className="inline-flex items-center gap-1 rounded bg-rose-600/90 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-white">
+                      Live Nobar
+                    </span>
+                    <p className="mt-1 line-clamp-2 text-sm font-black">{displayTitle}</p>
+                    <p className="mt-0.5 text-[10px] text-white/45">Host: {room?.hostName || "-"}</p>
+                  </div>
+                </div>
+                <textarea
+                  value={shareNote}
+                  onChange={(event) => setShareNote(event.target.value.slice(0, 320))}
+                  disabled={shareSending}
+                  rows={4}
+                  autoFocus
+                  placeholder="Tulis ajakan singkat (opsional), misal: Yuk gas nobar bareng..."
+                  className="rk-input mt-3 w-full resize-none rounded-2xl p-4 text-sm"
+                />
+                <div className="mt-1 flex justify-between text-[10px] text-white/30">
+                  <span>Kartu & tombol Gabung Nobar ditambahkan otomatis</span>
+                  <span>{shareNote.length}/320</span>
+                </div>
+                {shareError && (
+                  <p className="mt-3 rounded-xl border border-red-400/20 bg-red-400/5 p-3 text-xs text-red-200">
+                    {shareError}
+                  </p>
+                )}
+                <button
+                  type="submit"
+                  disabled={shareSending}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500 py-3 text-sm font-black text-white transition hover:bg-rose-400 disabled:opacity-50"
+                >
+                  <Send size={15} className={shareSending ? "animate-pulse" : ""} />
+                  {shareSending ? "Membagikan..." : "Bagikan ke Komunitas"}
+                </button>
+              </form>
+            ) : (
+              <div className="p-6 text-center">
+                <h3 className="font-black">Masuk untuk membagikan nobar</h3>
+                <p className="mt-2 text-sm text-white/45">
+                  Gunakan akun Ryukomik kamu untuk membuat postingan ajakan nobar di komunitas.
+                </p>
+                <Link
+                  href="/setting"
+                  className="mt-5 block rounded-xl bg-white py-3 text-sm font-black text-black"
+                >
+                  Masuk ke akun
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
