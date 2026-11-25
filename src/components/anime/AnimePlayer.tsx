@@ -322,20 +322,38 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
     if (syncRole !== "host" || !syncCapable) return;
     const v = videoRef.current;
     if (!v) return;
+    let buffering = false;
     const report = () => {
       const current = syncRef.current;
-      if (current?.onHostState) current.onHostState({ isPlaying: !v.paused, positionSeconds: v.currentTime });
+      if (!current?.onHostState || !Number.isFinite(v.currentTime)) return;
+      // Saat host sedang buffering (waiting), laporkan isPlaying=false supaya
+      // penonton ikut berhenti di detik yang sama, bukan maju lalu ketarik mundur.
+      current.onHostState({ isPlaying: !v.paused && !buffering, positionSeconds: v.currentTime });
+    };
+    const onWaiting = () => {
+      if (buffering) return;
+      buffering = true;
+      report();
+    };
+    const onPlaying = () => {
+      if (!buffering) return;
+      buffering = false;
+      report();
     };
     v.addEventListener("play", report);
     v.addEventListener("pause", report);
     v.addEventListener("seeked", report);
+    v.addEventListener("waiting", onWaiting);
+    v.addEventListener("playing", onPlaying);
     const beat = setInterval(() => {
-      if (!v.paused && Number.isFinite(v.currentTime)) report();
+      if (!v.paused && !buffering && Number.isFinite(v.currentTime)) report();
     }, 4000);
     return () => {
       v.removeEventListener("play", report);
       v.removeEventListener("pause", report);
       v.removeEventListener("seeked", report);
+      v.removeEventListener("waiting", onWaiting);
+      v.removeEventListener("playing", onPlaying);
       clearInterval(beat);
     };
   }, [syncRole, syncCapable]);
@@ -385,32 +403,46 @@ export default function AnimePlayer({ src, sync }: { src?: string; sync?: AnimeP
       // Kecepatan selalu normal — tidak ada penyendatan akibat rate berubah.
       if (v.playbackRate !== 1) v.playbackRate = 1;
 
-      // Kalau video belum bisa diputar (mis. autoplay ditolak sebelum user
-      // menyalakan suara), JANGAN koreksi posisi: currentTime beku sementara
-      // acuan terus maju, sehingga akan melompat berulang tanpa guna.
-      if (v.paused) return;
+      // Jangan seek saat metadata belum siap atau seek sebelumnya belum selesai
+      // (mencegah spam seek tiap detik yang membatalkan buffer di sinyal lemot).
+      if (v.readyState < 1 || v.seeking) return;
 
       const drift = goal - v.currentTime;
-      const besar = Math.abs(drift) > 12; // darurat: langsung kejar
+      const now = Date.now();
+
+      // Kalau host sedang pause dan menggeser detik (seek), tetap ikut pindah
+      // ke posisi host tanpa harus menunggu host menekan Play lagi.
+      if (!st.isPlaying) {
+        if (Math.abs(drift) > 1 && now - lastSeek > 1000) {
+          lastSeek = now;
+          v.currentTime = goal;
+        }
+        return;
+      }
+
+      // Kalau host sedang play tapi video penonton masih paused (mis. autoplay
+      // ditolak sebelum unmute), JANGAN koreksi posisi dulu.
+      if (v.paused) return;
+
+      // Jangan paksa seek saat buffer frame belum cukup (readyState < 2).
+      if (v.readyState < 2) return;
+
+      const besar = Math.abs(drift) > 12; // darurat: kejar cepat, tetap beri jeda 3,5 dtk
       const merapat = Math.abs(drift) > 2; // jeda yang terlihat oleh penonton
 
-      // Penonton tertinggal 3–4 dtk dari host itu TERLIHAT, jadi harus
-      // dikoreksi — asal jaraknya dekat. Ambang 2 dtk memang sengaja: drift
-      // sebesar itu muncul alami di HLS (posisi mulai jatuh di batas segmen).
-      // Karena jaraknya dekat, seek-nya instan dan tidak perlu memuat segmen
-      // baru — justru inilah yang membuatnya TIDAK nyendat (dulu nyendat
-      // karena drift menumpuk dulu baru melompat jauh).
-      // Jeda 6 dtk antar koreksi merapat, kecuali darurat (>12 dtk) yang
-      // langsung dikejar tanpa menunggu.
-      if (besar || (merapat && Date.now() - lastSeek > 6000)) {
-        lastSeek = Date.now();
+      if ((besar && now - lastSeek > 3500) || (merapat && now - lastSeek > 6000)) {
+        lastSeek = now;
         v.currentTime = goal;
       }
     };
 
     correct();
     const timer = setInterval(correct, 1000);
-    return () => clearInterval(timer);
+    v.addEventListener("playing", correct);
+    return () => {
+      clearInterval(timer);
+      v.removeEventListener("playing", correct);
+    };
   }, [syncRole, syncCapable]);
 
   const togglePlay = () => {
