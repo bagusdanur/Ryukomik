@@ -262,7 +262,7 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
               </span>
             </div>
             {/* TOMBOL SAVED/BOOKMARK & SHARE */}
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex items-center gap-2">
               <BookmarkButton
                 slug={slug}
                 source={source}
@@ -273,8 +273,8 @@ export default function DetailClient({ data, slug, source }: DetailClientProps) 
                 title={`${data.title} - Ryukomik`}
                 text={`Baca ${data.title} bahasa Indonesia di Ryukomik!`}
                 path={`/komik/${encodeURIComponent(source)}/${encodeURIComponent(slug)}`}
-                variant="pill"
-                label="Bagikan"
+                variant="icon"
+                label="Bagikan komik"
               />
             </div>
           </div>

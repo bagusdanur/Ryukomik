@@ -189,7 +189,7 @@ export default function BookmarkButton({
         <button
           type="button"
           onClick={toggleBookmark}
-          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold transition active:scale-95 ${
+          className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-xs font-bold transition active:scale-95 ${
             saved
               ? "border-[var(--accent-2)]/35 bg-[var(--accent-2)]/15 text-[var(--accent-2)] hover:bg-[var(--accent-2)]/20"
               : "border-white/10 bg-white/[0.06] text-white/80 hover:border-[var(--accent-2)]/25 hover:bg-white/10 hover:text-[var(--accent-2)]"
