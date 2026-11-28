@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
   turbopack: {},
 
   // distDir bisa diarahkan lewat env supaya bisa build ke folder terpisah

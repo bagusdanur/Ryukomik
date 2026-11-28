@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       'Content-Type':response.headers['content-type'],
       'Content-Length':String(response.body.length),
       'X-Content-Type-Options':'nosniff',
+      'Content-Security-Policy':"sandbox; default-src 'none'",
       'Cache-Control':'public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400',
     }});
   } catch (error) {

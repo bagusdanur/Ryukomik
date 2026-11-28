@@ -52,7 +52,7 @@ export async function fetchProxyImage(input: URL, deadline = Date.now() + 15000,
       if (REDIRECT_CODES.has(status) || status < 200 || status >= 300) {
         res.destroy(); resolve({status,headers,body: Buffer.alloc(0)}); return;
       }
-      if (!/^image\//i.test(headers['content-type'] || '')) {
+      if (!/^image\/(jpeg|jpg|png|webp|gif|avif)\b/i.test(headers['content-type'] || '')) {
         res.destroy(); reject(new Error('Origin response is not an image')); return;
       }
       if (Number(headers['content-length'] || 0) > MAX_BYTES) {

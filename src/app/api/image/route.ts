@@ -1,12 +1,46 @@
 import { NextResponse } from "next/server";
+import { lookup } from "node:dns/promises";
 import { request as httpsRequest } from "node:https";
 import { request as httpRequest } from "node:http";
 import { bearerToken, getChapterAccess, getChapterLock } from "@/lib/chapterAccess";
 import { parseProjectImageScope } from "@/lib/chapterAccessPolicy";
 import { parseImageAccessCookie, signImageAccessCookie } from "@/lib/imageAccessCookie";
+import { isAllowedImageHostname, isHostnameOrSubdomain } from "@/lib/imageProxyPolicy";
+import { isPublicImageAddress } from "@/lib/imageProxyFetch";
+import { isStorageHost } from "@/lib/storageHosts";
 
 const IMAGE_TTL = 60 * 60 * 24 * 7;
 const MAX_BYTES = 12 * 1024 * 1024; // 12 MB guard
+const RASTER_IMAGE_TYPE_RE = /^image\/(jpeg|jpg|png|webp|gif|avif)\b/i;
+
+// Host tambahan yang sah dipakai reader/download/dashboard (di luar imageProxyPolicy).
+const EXTRA_ALLOWED_FAMILIES = [
+  "ryukomik.com",
+  "komiku.org",
+  "komiku.id",
+  "komiku.co.id",
+  "komiku.to",
+  "komiku.online",
+  "gogoanime.fit",
+  "rosyscans.id",
+  "rosyscans.com",
+  "luvyaa.co",
+  "cdn-nyaa.link",
+  "gmbr.pro",
+  "manhwaindo.my",
+  "komikindo.ch",
+  "ibb.co",
+  "wp.com",
+  "softkomik.com",
+  "lonedev.my.id",
+];
+
+function isAllowedApiImageHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/\.$/, "");
+  if (!host || host === "localhost" || host.endsWith(".local")) return false;
+  if (isStorageHost(host) || isAllowedImageHostname(host)) return true;
+  return EXTRA_ALLOWED_FAMILIES.some((domain) => isHostnameOrSubdomain(host, domain));
+}
 
 // Beberapa CDN gambar pakai sertifikat yang tidak cocok hostname / belum ada di
 // trust store Node (mis. img2.komiku.org, uploadcdn.lonedev.my.id). Route ini
@@ -41,7 +75,8 @@ function getCacheHeaders(etag: string, contentType?: string) {
     ...(contentType ? { "Content-Type": contentType } : {}),
     "Cache-Control": cacheControl,
     "CDN-Cache-Control": cacheControl,
-    "Vercel-CDN-Cache-Control": cacheControl,
+    "X-Content-Type-Options": "nosniff",
+    "Content-Security-Policy": "sandbox; default-src 'none'",
     ETag: etag,
     Vary: "Accept-Encoding, Accept",
   };
@@ -75,20 +110,31 @@ const IMAGE_GUARD_HOST = "storage.ryukomik.com";
 const IMAGE_GUARD_REFERER = "https://ryukomik.com/";
 // fetch() bawaan Next.js (undici) memakai verifikasi TLS ketat dan tidak bisa
 // dilonggarkan per-request. Pakai http(s).request native Node agar bisa.
-function fetchImage(url: string, referer: string, cookie?: string, timeoutMs = 15000): Promise<Fetched> {
-  return new Promise((resolve, reject) => {
-    const parsed = new URL(url);
-    const isHttps = parsed.protocol === "https:";
-    const doRequest = isHttps ? httpsRequest : httpRequest;
+async function fetchImage(url: string, referer: string, cookie?: string, timeoutMs = 15000): Promise<Fetched> {
+  const parsed = new URL(url);
+  const isHttps = parsed.protocol === "https:";
+  const doRequest = isHttps ? httpsRequest : httpRequest;
 
+  const addresses = await lookup(parsed.hostname, { all: true });
+  const chosen =
+    addresses.find((a) => a.family === 4 && isPublicImageAddress(a.address)) ||
+    addresses.find((a) => isPublicImageAddress(a.address));
+  if (!chosen) {
+    throw new Error("Blocked non-public image address");
+  }
+
+  return new Promise((resolve, reject) => {
     const req = doRequest(
       {
         protocol: parsed.protocol,
-        hostname: parsed.hostname,
-        port: parsed.port || (isHttps ? 443 : 80),
+        hostname: chosen.address,
+        family: chosen.family,
+        ...(isHttps ? { servername: parsed.hostname } : {}),
+        port: isHttps ? 443 : 80,
         path: `${parsed.pathname}${parsed.search}`,
         method: "GET",
         headers: {
+          Host: parsed.host,
           Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
@@ -142,8 +188,11 @@ export async function GET(req: Request) {
     if (!url) return new NextResponse("Missing url", { status: 400 });
 
     const parsedUrl = new URL(url);
-    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-      return new NextResponse("Invalid url", { status: 400 });
+    if (!["http:", "https:"].includes(parsedUrl.protocol) || parsedUrl.username || parsedUrl.password || parsedUrl.port) {
+      return new NextResponse("Invalid url", { status: 400, headers: { "Cache-Control": "no-store" } });
+    }
+    if (!isAllowedApiImageHost(parsedUrl.hostname)) {
+      return new NextResponse("Image host is not allowed", { status: 403, headers: { "Cache-Control": "no-store" } });
     }
 
     const guarded = parseProjectImageScope(url);
@@ -218,10 +267,21 @@ export async function GET(req: Request) {
       });
     }
 
-    const contentType = result.headers["content-type"] || "image/jpeg";
+    const rawContentType = (result.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
+    if (!RASTER_IMAGE_TYPE_RE.test(rawContentType)) {
+      return new NextResponse("Unsupported image content type", {
+        status: 415,
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
 
     return new NextResponse(new Uint8Array(result.body), {
-      headers: { ...cacheHeaders, "Content-Type": contentType },
+      headers: {
+        ...cacheHeaders,
+        "Content-Type": rawContentType,
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "sandbox; default-src 'none'",
+      },
     });
   } catch (error) {
     console.error(`Image route error: ${(error as Error)?.message || "unknown"} :: ${target}`);
